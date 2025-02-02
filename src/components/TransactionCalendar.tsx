@@ -7,6 +7,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 interface Transaction {
@@ -46,18 +47,15 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
     const dayTransactions = getTransactionsForDate(date);
     if (dayTransactions.length === 0) return null;
 
-    const totalAmount = dayTransactions.reduce(
-      (sum, transaction) => sum + transaction.amount,
-      0
-    );
+    const hasIncome = dayTransactions.some(t => t.amount > 0);
+    const hasExpense = dayTransactions.some(t => t.amount < 0);
+    const hasTransfer = dayTransactions.some(t => t.category === 'transfer');
 
     return (
-      <div className={`w-full h-full flex items-center justify-center ${
-        totalAmount > 0 ? 'text-emerald-500' : 'text-rose-500'
-      }`}>
-        <div className="text-[10px] font-medium">
-          {formatCurrency(totalAmount)}
-        </div>
+      <div className="w-full flex flex-col gap-0.5 mt-1">
+        {hasIncome && <div className="h-1 bg-emerald-500 rounded-full" />}
+        {hasExpense && <div className="h-1 bg-rose-500 rounded-full" />}
+        {hasTransfer && <div className="h-1 bg-blue-500 rounded-full" />}
       </div>
     );
   };
@@ -76,42 +74,69 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="w-full h-full p-0 hover:bg-transparent"
+                  className="w-full h-full p-0 hover:bg-transparent relative"
                 >
-                  <div className="flex flex-col items-center">
+                  <div className="flex flex-col items-center w-full">
                     <span>{date.getDate()}</span>
                     {getDayContent(date)}
                   </div>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="start">
-                <div className="p-4">
-                  <h3 className="font-medium mb-2">
+              <PopoverContent className="w-[500px] p-4" align="start">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium">
                     {date.toLocaleDateString('pt-BR', { 
-                      day: 'numeric',
-                      month: 'long',
+                      day: '2-digit',
+                      month: '2-digit',
                       year: 'numeric'
                     })}
                   </h3>
-                  <div className="space-y-2">
-                    {getTransactionsForDate(date).map((transaction) => (
-                      <div
-                        key={transaction.id}
-                        className="flex justify-between items-center text-sm"
-                      >
-                        <span>{transaction.description}</span>
-                        <span className={transaction.amount > 0 ? 'text-emerald-500' : 'text-rose-500'}>
-                          {formatCurrency(transaction.amount)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  <Button variant="ghost" size="icon" className="h-auto p-1.5">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-sm font-medium mb-2">Transações</div>
+                  {getTransactionsForDate(date).map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="grid grid-cols-[2fr,1fr,1fr,auto] gap-4 items-center py-2 border-b border-gray-700 last:border-0"
+                    >
+                      <span className="text-sm">{transaction.description}</span>
+                      <span className="text-sm">{transaction.category}</span>
+                      <span className="text-sm">{transaction.received_from}</span>
+                      <span className={`text-sm font-medium ${
+                        transaction.amount > 0 ? 'text-emerald-500' : 'text-rose-500'
+                      }`}>
+                        {formatCurrency(transaction.amount)}
+                      </span>
+                    </div>
+                  ))}
+                  {getTransactionsForDate(date).length === 0 && (
+                    <div className="text-center py-4 text-gray-400 text-sm">
+                      Nenhuma transação para este dia
+                    </div>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>
           ),
         }}
       />
+      <div className="flex gap-4 mt-4 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-1 bg-emerald-500 rounded-full" />
+          <span>Recebimentos</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-1 bg-rose-500 rounded-full" />
+          <span>Despesas</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-1 bg-blue-500 rounded-full" />
+          <span>Transferências</span>
+        </div>
+      </div>
     </div>
   );
 };
