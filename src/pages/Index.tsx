@@ -15,6 +15,7 @@ import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
+import type { Task } from "@/types/task";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>(() => {
@@ -289,3 +290,4 @@ const Index = () => {
 };
 
 export default Index;
+
