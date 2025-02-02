@@ -124,7 +124,7 @@ const Index = () => {
                   onClick={() => setActiveTab('dashboard')}
                 >
                   <LayoutDashboard size={20} />
-                  Dashboard
+                  Painel
                 </Button>
                 <Button 
                   variant={activeTab === 'tasks' ? "secondary" : "ghost"} 

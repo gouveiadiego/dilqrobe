@@ -16,6 +16,12 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
     low: "text-green-400 bg-green-400/10 border-green-400/20",
   }[task.priority];
 
+  const priorityLabel = {
+    high: "Alta",
+    medium: "Média",
+    low: "Baixa",
+  }[task.priority];
+
   const statusClass = task.completed ? "bg-gray-50" : "bg-white";
 
   return (
@@ -47,7 +53,7 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
               priorityClass
             )}
           >
-            {task.priority}
+            {priorityLabel}
           </span>
           {task.category && (
             <span className="text-xs px-2 py-0.5 rounded-full border text-purple-400 bg-purple-400/10 border-purple-400/20 flex items-center gap-1">

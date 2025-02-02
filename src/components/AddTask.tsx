@@ -37,7 +37,7 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
 
   const handleCategorySelect = (selectedCategory: string) => {
     setCategory(selectedCategory);
-    setIsOpen(false); // Fecha o popover após a seleção
+    setIsOpen(false);
   };
 
   const getPriorityColor = (p: Task["priority"]) => {
