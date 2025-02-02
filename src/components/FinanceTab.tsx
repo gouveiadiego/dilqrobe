@@ -256,59 +256,57 @@ export const FinanceTab = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-6">
-        {/* Calendar Section - Fixed */}
-        <div className="sticky top-0 h-[calc(100vh-200px)]">
-          <TransactionCalendar 
-            transactions={filteredTransactions}
-            onDateSelect={handleCalendarDateSelect}
-          />
-        </div>
-
-        {/* Transactions List Section - Fixed with Scroll */}
-        <div className="h-[calc(100vh-200px)] overflow-y-auto bg-[#221F26] rounded-lg p-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Recebido de</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Forma de Pagamento</TableHead>
-                <TableHead>Status</TableHead>
+      {/* Transactions List Section */}
+      <div className="bg-[#221F26] rounded-lg p-6 mb-6">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead>Recebido de</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Forma de Pagamento</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTransactions.map((transaction) => (
+              <TableRow key={transaction.id}>
+                <TableCell>{new Date(transaction.date).toLocaleDateString('pt-BR')}</TableCell>
+                <TableCell>{transaction.description}</TableCell>
+                <TableCell>{transaction.received_from}</TableCell>
+                <TableCell>{transaction.category}</TableCell>
+                <TableCell>{formatCurrency(transaction.amount)}</TableCell>
+                <TableCell>{transaction.payment_type}</TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    transaction.is_paid 
+                      ? 'bg-green-500/20 text-green-500' 
+                      : 'bg-yellow-500/20 text-yellow-500'
+                  }`}>
+                    {transaction.is_paid ? 'Pago' : 'Pendente'}
+                  </span>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTransactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>{new Date(transaction.date).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell>{transaction.description}</TableCell>
-                  <TableCell>{transaction.received_from}</TableCell>
-                  <TableCell>{transaction.category}</TableCell>
-                  <TableCell>{formatCurrency(transaction.amount)}</TableCell>
-                  <TableCell>{transaction.payment_type}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      transaction.is_paid 
-                        ? 'bg-green-500/20 text-green-500' 
-                        : 'bg-yellow-500/20 text-yellow-500'
-                    }`}>
-                      {transaction.is_paid ? 'Pago' : 'Pendente'}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredTransactions.length === 0 && !loading && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-400 py-8">
-                    Nenhuma transação encontrada
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+            {filteredTransactions.length === 0 && !loading && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-gray-400 py-8">
+                  Nenhuma transação encontrada
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Calendar Section */}
+      <div className="bg-[#221F26] rounded-lg">
+        <TransactionCalendar 
+          transactions={filteredTransactions}
+          onDateSelect={handleCalendarDateSelect}
+        />
       </div>
     </div>
   );
