@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DashboardTab } from "@/components/DashboardTab";
+import DashboardTab from "@/components/DashboardTab";
 import { FinanceTab } from "@/components/FinanceTab";
 import { HabitsTab } from "@/components/HabitsTab";
 import { JournalsTab } from "@/components/JournalsTab";
