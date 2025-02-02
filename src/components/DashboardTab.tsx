@@ -48,26 +48,26 @@ const DashboardTab = () => {
       
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6 bg-[#2A2F3C] border-none">
+        <Card className="p-6 bg-white border shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-lg bg-purple-500/10">
               <Activity className="w-6 h-6 text-purple-500" />
             </div>
             <div>
-              <p className="text-sm text-gray-400">Tarefas Pendentes</p>
-              <p className="text-2xl font-semibold">12</p>
+              <p className="text-sm text-gray-500">Tarefas Pendentes</p>
+              <p className="text-2xl font-semibold text-gray-900">12</p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 bg-[#2A2F3C] border-none">
+        <Card className="p-6 bg-white border shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-lg bg-green-500/10">
               <TrendingUp className="w-6 h-6 text-green-500" />
             </div>
             <div>
-              <p className="text-sm text-gray-400">Saldo</p>
-              <p className="text-2xl font-semibold">
+              <p className="text-sm text-gray-500">Saldo</p>
+              <p className="text-2xl font-semibold text-gray-900">
                 {new Intl.NumberFormat('pt-BR', {
                   style: 'currency',
                   currency: 'BRL'
@@ -77,34 +77,34 @@ const DashboardTab = () => {
           </div>
         </Card>
 
-        <Card className="p-6 bg-[#2A2F3C] border-none">
+        <Card className="p-6 bg-white border shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-lg bg-blue-500/10">
               <BookOpen className="w-6 h-6 text-blue-500" />
             </div>
             <div>
-              <p className="text-sm text-gray-400">Diários Escritos</p>
-              <p className="text-2xl font-semibold">15</p>
+              <p className="text-sm text-gray-500">Diários Escritos</p>
+              <p className="text-2xl font-semibold text-gray-900">15</p>
             </div>
           </div>
         </Card>
 
-        <Card className="p-6 bg-[#2A2F3C] border-none">
+        <Card className="p-6 bg-white border shadow-sm">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-lg bg-yellow-500/10">
               <ListChecks className="w-6 h-6 text-yellow-500" />
             </div>
             <div>
-              <p className="text-sm text-gray-400">Hábitos Completos</p>
-              <p className="text-2xl font-semibold">85%</p>
+              <p className="text-sm text-gray-500">Hábitos Completos</p>
+              <p className="text-2xl font-semibold text-gray-900">85%</p>
             </div>
           </div>
         </Card>
       </div>
 
       {/* Activity Chart */}
-      <Card className="p-6 bg-[#2A2F3C] border-none">
-        <h3 className="text-lg font-semibold mb-6">Atividade Semanal</h3>
+      <Card className="p-6 bg-white border shadow-sm">
+        <h3 className="text-lg font-semibold mb-6 text-gray-900">Atividade Semanal</h3>
         <ChartContainer className="h-[300px]" config={{
           tasks: { color: "#9333ea" },
           habits: { color: "#eab308" },

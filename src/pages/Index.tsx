@@ -104,8 +104,8 @@ const Index = () => {
     });
 
   return (
-    <div className="min-h-screen bg-[#1A1F2C] text-white">
-      <aside className={`fixed top-0 left-0 h-full w-64 bg-[#221F26] transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <div className="min-h-screen bg-white text-gray-900">
+      <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg" />
@@ -189,9 +189,9 @@ const Index = () => {
           ) : activeTab === 'tasks' ? (
             <>
               <div className="mb-8 space-y-6">
-                <h2 className="text-2xl font-bold">
+                <h2 className="text-2xl font-bold text-gray-900">
                   Execução
-                  <span className="text-sm font-normal text-gray-400 ml-2">
+                  <span className="text-sm font-normal text-gray-500 ml-2">
                     - Tarefas dos últimos 10 dias
                   </span>
                 </h2>
@@ -203,12 +203,12 @@ const Index = () => {
                       placeholder="Pesquisar..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="pl-9 bg-[#2A2F3C] border-none"
+                      className="pl-9 bg-white border-gray-200"
                     />
                   </div>
 
                   <Select value={filter} onValueChange={(v: typeof filter) => setFilter(v)}>
-                    <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
+                    <SelectTrigger className="w-[180px] bg-white border-gray-200">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -222,7 +222,7 @@ const Index = () => {
                     value={categoryFilter} 
                     onValueChange={(v: string) => setCategoryFilter(v)}
                   >
-                    <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
+                    <SelectTrigger className="w-[180px] bg-white border-gray-200">
                       <SelectValue placeholder="Categoria" />
                     </SelectTrigger>
                     <SelectContent>
@@ -237,7 +237,7 @@ const Index = () => {
                     value={priorityFilter} 
                     onValueChange={(v: Task["priority"] | "all") => setPriorityFilter(v)}
                   >
-                    <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
+                    <SelectTrigger className="w-[180px] bg-white border-gray-200">
                       <SelectValue placeholder="Prioridade" />
                     </SelectTrigger>
                     <SelectContent>
@@ -252,8 +252,8 @@ const Index = () => {
                     <PopoverTrigger asChild>
                       <Button 
                         variant="outline" 
-                        className={`w-[180px] justify-start text-left font-normal bg-[#2A2F3C] border-none ${
-                          dateFilter ? 'text-white' : 'text-gray-400'
+                        className={`w-[180px] justify-start text-left font-normal bg-white border-gray-200 ${
+                          dateFilter ? 'text-gray-900' : 'text-gray-500'
                         }`}
                       >
                         <Calendar className="mr-2 h-4 w-4" />
@@ -296,7 +296,7 @@ const Index = () => {
                   />
                 ))}
                 {filteredTasks.length === 0 && (
-                  <div className="text-center py-12 text-gray-400">
+                  <div className="text-center py-12 text-gray-500">
                     Nenhuma tarefa encontrada
                   </div>
                 )}
