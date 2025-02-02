@@ -234,7 +234,7 @@ export const FinanceTab = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Pesquisar transações..."
-            className="pl-9 bg-[#2A2F3C] border-none"
+            className="pl-9 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -249,7 +249,7 @@ export const FinanceTab = () => {
       </div>
 
       {showNewTransactionForm && (
-        <div className="bg-[#221F26] rounded-lg p-6 mb-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
           <NewTransactionForm 
             selectedFilter={selectedFilter}
             onTransactionCreated={handleTransactionCreated}
@@ -261,7 +261,7 @@ export const FinanceTab = () => {
       <FinancialSummary transactions={filteredTransactions} />
 
       {/* Transactions List Section */}
-      <div className="bg-[#221F26] rounded-lg p-6 mb-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
         <Table>
           <TableHeader>
             <TableRow>
@@ -306,7 +306,7 @@ export const FinanceTab = () => {
       </div>
 
       {/* Calendar Section */}
-      <div className="bg-[#221F26] rounded-lg">
+      <div className="bg-white border border-gray-200 rounded-lg">
         <TransactionCalendar 
           transactions={filteredTransactions}
           onDateSelect={handleCalendarDateSelect}

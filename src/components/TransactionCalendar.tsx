@@ -61,7 +61,7 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
   };
 
   return (
-    <div className="bg-[#221F26] rounded-lg p-6">
+    <div className="bg-white border border-gray-200 rounded-lg p-6">
       <Calendar
         mode="single"
         selected={selectedDate}
