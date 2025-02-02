@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Menu, Moon, User, Settings, BarChart2, BookOpen, Calendar, CheckSquare, Wallet, LayoutDashboard } from "lucide-react";
+import { Search, Menu, Moon, User, Settings, BarChart2, Calendar, CheckSquare, Wallet, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -17,6 +17,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { Task } from "@/types/task";
 import { FinanceTab } from "@/components/FinanceTab";
+import { JournalsTab } from "@/components/JournalsTab";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>(() => {
@@ -35,6 +36,7 @@ const Index = () => {
   const [priorityFilter, setPriorityFilter] = useState<Task["priority"] | "all">("all");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState<'tasks' | 'finance' | 'journals'>('tasks');
 
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -73,27 +75,22 @@ const Index = () => {
 
   const filteredTasks = tasks
     .filter((task) => {
-      // Status filter
       if (filter === "active") return !task.completed;
       if (filter === "completed") return task.completed;
       return true;
     })
     .filter((task) =>
-      // Text search
       task.title.toLowerCase().includes(search.toLowerCase())
     )
     .filter((task) => {
-      // Category filter
       if (categoryFilter === "all") return true;
       return task.category === categoryFilter;
     })
     .filter((task) => {
-      // Priority filter
       if (priorityFilter === "all") return true;
       return task.priority === priorityFilter;
     })
     .filter((task) => {
-      // Date filter
       if (!dateFilter) return true;
       if (!task.dueDate) return false;
       const taskDate = new Date(task.dueDate);
@@ -103,8 +100,6 @@ const Index = () => {
         taskDate.getDate() === dateFilter.getDate()
       );
     });
-
-  const [activeTab, setActiveTab] = useState<'tasks' | 'finance'>('tasks');
 
   return (
     <div className="min-h-screen bg-[#1A1F2C] text-white">
@@ -144,7 +139,11 @@ const Index = () => {
                   <Wallet size={20} />
                   Financeiro
                 </Button>
-                <Button variant="ghost" className="w-full justify-start gap-3">
+                <Button 
+                  variant={activeTab === 'journals' ? "secondary" : "ghost"}
+                  className="w-full justify-start gap-3"
+                  onClick={() => setActiveTab('journals')}
+                >
                   <Calendar size={20} />
                   Diários
                 </Button>
@@ -189,124 +188,125 @@ const Index = () => {
           {activeTab === 'tasks' ? (
             <>
               {/* Tasks Content */}
-          {/* Search and Filters */}
-          <div className="mb-8 space-y-6">
-            <h2 className="text-2xl font-bold">
-              Execução
-              <span className="text-sm font-normal text-gray-400 ml-2">
-                - Tarefas dos últimos 10 dias
-              </span>
-            </h2>
-            
-            <div className="flex gap-4 flex-wrap">
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Pesquisar..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 bg-[#2A2F3C] border-none"
-                />
-              </div>
+              <div className="mb-8 space-y-6">
+                <h2 className="text-2xl font-bold">
+                  Execução
+                  <span className="text-sm font-normal text-gray-400 ml-2">
+                    - Tarefas dos últimos 10 dias
+                  </span>
+                </h2>
+                
+                <div className="flex gap-4 flex-wrap">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Pesquisar..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-9 bg-[#2A2F3C] border-none"
+                    />
+                  </div>
 
-              <Select value={filter} onValueChange={(v: typeof filter) => setFilter(v)}>
-                <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="active">Ativas</SelectItem>
-                  <SelectItem value="completed">Concluídas</SelectItem>
-                </SelectContent>
-              </Select>
+                  <Select value={filter} onValueChange={(v: typeof filter) => setFilter(v)}>
+                    <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="active">Ativas</SelectItem>
+                      <SelectItem value="completed">Concluídas</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-              <Select 
-                value={categoryFilter} 
-                onValueChange={(v: string) => setCategoryFilter(v)}
-              >
-                <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
-                  <SelectValue placeholder="Categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as categorias</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select 
-                value={priorityFilter} 
-                onValueChange={(v: Task["priority"] | "all") => setPriorityFilter(v)}
-              >
-                <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
-                  <SelectValue placeholder="Prioridade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as prioridades</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="medium">Média</SelectItem>
-                  <SelectItem value="low">Baixa</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className={`w-[180px] justify-start text-left font-normal bg-[#2A2F3C] border-none ${
-                      dateFilter ? 'text-white' : 'text-gray-400'
-                    }`}
+                  <Select 
+                    value={categoryFilter} 
+                    onValueChange={(v: string) => setCategoryFilter(v)}
                   >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {dateFilter ? dateFilter.toLocaleDateString() : "Filtrar por data"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={dateFilter}
-                    onSelect={setDateFilter}
-                    locale={ptBR}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+                    <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
+                      <SelectValue placeholder="Categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as categorias</SelectItem>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-              {dateFilter && (
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setDateFilter(null)}
-                  className="px-2"
-                >
-                  Limpar data
-                </Button>
-              )}
-            </div>
+                  <Select 
+                    value={priorityFilter} 
+                    onValueChange={(v: Task["priority"] | "all") => setPriorityFilter(v)}
+                  >
+                    <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
+                      <SelectValue placeholder="Prioridade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as prioridades</SelectItem>
+                      <SelectItem value="high">Alta</SelectItem>
+                      <SelectItem value="medium">Média</SelectItem>
+                      <SelectItem value="low">Baixa</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-            <CategoryManager categories={categories} onAddCategory={addCategory} />
-            <AddTask onAdd={addTask} categories={categories} />
-          </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className={`w-[180px] justify-start text-left font-normal bg-[#2A2F3C] border-none ${
+                          dateFilter ? 'text-white' : 'text-gray-400'
+                        }`}
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {dateFilter ? dateFilter.toLocaleDateString() : "Filtrar por data"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={dateFilter}
+                        onSelect={setDateFilter}
+                        locale={ptBR}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
 
-          {/* Tasks List */}
-          <div className="space-y-4">
-            {filteredTasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                onToggle={toggleTask}
-                onDelete={deleteTask}
-              />
-            ))}
-            {filteredTasks.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
-                Nenhuma tarefa encontrada
+                  {dateFilter && (
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setDateFilter(null)}
+                      className="px-2"
+                    >
+                      Limpar data
+                    </Button>
+                  )}
+                </div>
+
+                <CategoryManager categories={categories} onAddCategory={addCategory} />
+                <AddTask onAdd={addTask} categories={categories} />
               </div>
-            )}
-          </div>
+
+              {/* Tasks List */}
+              <div className="space-y-4">
+                {filteredTasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={toggleTask}
+                    onDelete={deleteTask}
+                  />
+                ))}
+                {filteredTasks.length === 0 && (
+                  <div className="text-center py-12 text-gray-400">
+                    Nenhuma tarefa encontrada
+                  </div>
+                )}
+              </div>
             </>
-          ) : (
+          ) : activeTab === 'finance' ? (
             <FinanceTab />
+          ) : (
+            <JournalsTab />
           )}
         </div>
       </main>
