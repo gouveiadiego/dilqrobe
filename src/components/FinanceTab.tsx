@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Search, ChevronLeft, ChevronRight, Maximize, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NewTransactionForm } from "./NewTransactionForm";
+import { TransactionCalendar } from "./TransactionCalendar";
+import { formatCurrency } from "@/lib/utils";
 
 interface Transaction {
   id: string;
@@ -32,6 +34,7 @@ export const FinanceTab = () => {
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewTransactionForm, setShowNewTransactionForm] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
   useEffect(() => {
     fetchTransactions();
@@ -141,35 +144,56 @@ export const FinanceTab = () => {
     }).format(date).replace('.', '').toUpperCase();
   };
 
+  const handleCalendarDateSelect = (date: Date) => {
+    setCurrentDate(date);
+    // You could also add specific filtering for the selected date if needed
+  };
+
   return (
     <div className="space-y-6">
       {/* Date Navigation */}
-      <div className="flex items-center space-x-2">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={handlePreviousMonth}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="bg-violet-600 text-white px-4 py-2 rounded-md">
-          {formatMonth(currentDate)}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handlePreviousMonth}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="bg-violet-600 text-white px-4 py-2 rounded-md">
+            {formatMonth(currentDate)}
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handleNextMonth}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="ml-2"
+            onClick={handleFullscreen}
+          >
+            <Maximize className="h-4 w-4" />
+          </Button>
         </div>
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={handleNextMonth}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="icon"
-          className="ml-2"
-          onClick={handleFullscreen}
-        >
-          <Maximize className="h-4 w-4" />
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            variant={viewMode === "list" ? "default" : "outline"}
+            onClick={() => setViewMode("list")}
+          >
+            Lista
+          </Button>
+          <Button
+            variant={viewMode === "calendar" ? "default" : "outline"}
+            onClick={() => setViewMode("calendar")}
+          >
+            Calendário
+          </Button>
+        </div>
       </div>
 
       {/* Category Filters */}
@@ -246,49 +270,56 @@ export const FinanceTab = () => {
         </div>
       )}
 
-      <div className="bg-[#221F26] rounded-lg p-6">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Recebido de</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Forma de Pagamento</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTransactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell>{new Date(transaction.date).toLocaleDateString('pt-BR')}</TableCell>
-                <TableCell>{transaction.description}</TableCell>
-                <TableCell>{transaction.received_from}</TableCell>
-                <TableCell>{transaction.category}</TableCell>
-                <TableCell>{formatCurrency(transaction.amount)}</TableCell>
-                <TableCell>{transaction.payment_type}</TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    transaction.is_paid 
-                      ? 'bg-green-500/20 text-green-500' 
-                      : 'bg-yellow-500/20 text-yellow-500'
-                  }`}>
-                    {transaction.is_paid ? 'Pago' : 'Pendente'}
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filteredTransactions.length === 0 && !loading && (
+      {viewMode === "calendar" ? (
+        <TransactionCalendar 
+          transactions={filteredTransactions}
+          onDateSelect={handleCalendarDateSelect}
+        />
+      ) : (
+        <div className="bg-[#221F26] rounded-lg p-6">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-gray-400 py-8">
-                  Nenhuma transação encontrada
-                </TableCell>
+                <TableHead>Data</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Recebido de</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead>Valor</TableHead>
+                <TableHead>Forma de Pagamento</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filteredTransactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell>{new Date(transaction.date).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell>{transaction.description}</TableCell>
+                  <TableCell>{transaction.received_from}</TableCell>
+                  <TableCell>{transaction.category}</TableCell>
+                  <TableCell>{formatCurrency(transaction.amount)}</TableCell>
+                  <TableCell>{transaction.payment_type}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      transaction.is_paid 
+                        ? 'bg-green-500/20 text-green-500' 
+                        : 'bg-yellow-500/20 text-yellow-500'
+                    }`}>
+                      {transaction.is_paid ? 'Pago' : 'Pendente'}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredTransactions.length === 0 && !loading && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-gray-400 py-8">
+                    Nenhuma transação encontrada
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };
