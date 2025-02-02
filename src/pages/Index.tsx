@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
-import { Task } from "@/types/task";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -13,8 +12,8 @@ import {
 import { Search, Menu, Moon, User, Settings, BarChart2, BookOpen, Calendar, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Calendar as CalendarComponent } from "./ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
 
 const Index = () => {
