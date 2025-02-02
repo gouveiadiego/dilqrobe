@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Menu, Moon, User, Settings, BarChart2, BookOpen, Calendar, CheckSquare, Wallet } from "lucide-react";
+import { Search, Menu, Moon, User, Settings, BarChart2, BookOpen, Calendar, CheckSquare, Wallet, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -122,6 +122,13 @@ const Index = () => {
               <span className="text-xs font-semibold text-gray-400">MÓDULOS</span>
               <div className="space-y-1">
                 <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gap-3"
+                >
+                  <LayoutDashboard size={20} />
+                  Dashboard
+                </Button>
+                <Button 
                   variant={activeTab === 'tasks' ? "secondary" : "ghost"} 
                   className="w-full justify-start gap-3"
                   onClick={() => setActiveTab('tasks')}
@@ -139,15 +146,11 @@ const Index = () => {
                 </Button>
                 <Button variant="ghost" className="w-full justify-start gap-3">
                   <Calendar size={20} />
-                  Tarefas
+                  Diários
                 </Button>
                 <Button variant="ghost" className="w-full justify-start gap-3">
                   <BarChart2 size={20} />
                   Hábitos
-                </Button>
-                <Button variant="ghost" className="w-full justify-start gap-3">
-                  <BookOpen size={20} />
-                  Biblioteca
                 </Button>
               </div>
             </div>
