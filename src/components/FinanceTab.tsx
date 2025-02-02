@@ -54,6 +54,11 @@ export const FinanceTab = () => {
     }).format(value);
   };
 
+  const handleNewTransaction = () => {
+    console.log("Opening new transaction form");
+    // We'll implement the new transaction form in a future update
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -64,7 +69,10 @@ export const FinanceTab = () => {
             className="pl-9 bg-[#2A2F3C] border-none"
           />
         </div>
-        <Button className="bg-purple-600 hover:bg-purple-700">
+        <Button 
+          onClick={handleNewTransaction}
+          className="bg-black hover:bg-black/90 text-white"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nova Transação
         </Button>
