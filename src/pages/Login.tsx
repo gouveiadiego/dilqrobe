@@ -59,14 +59,8 @@ export const Login = () => {
       {/* Login Form Section */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-8">
         <div className="w-full max-w-md space-y-8">
-          {/* Logo and Title */}
+          {/* Title */}
           <div className="text-center space-y-4">
-            <div className="flex items-center justify-center gap-3 mb-8">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-xl" />
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Néctar
-              </h1>
-            </div>
             <h2 className="text-2xl font-semibold text-gray-800">
               {isSignUp ? "Criar nova conta" : "Bem-vindo de volta"}
             </h2>
@@ -139,7 +133,7 @@ export const Login = () => {
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+              className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
               disabled={isLoading}
             >
               {isLoading
