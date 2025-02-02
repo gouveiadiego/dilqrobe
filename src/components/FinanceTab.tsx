@@ -180,20 +180,6 @@ export const FinanceTab = () => {
             <Maximize className="h-4 w-4" />
           </Button>
         </div>
-        <div className="flex space-x-2">
-          <Button
-            variant={viewMode === "list" ? "default" : "outline"}
-            onClick={() => setViewMode("list")}
-          >
-            Lista
-          </Button>
-          <Button
-            variant={viewMode === "calendar" ? "default" : "outline"}
-            onClick={() => setViewMode("calendar")}
-          >
-            Calendário
-          </Button>
-        </div>
       </div>
 
       {/* Category Filters */}
@@ -270,13 +256,17 @@ export const FinanceTab = () => {
         </div>
       )}
 
-      {viewMode === "calendar" ? (
-        <TransactionCalendar 
-          transactions={filteredTransactions}
-          onDateSelect={handleCalendarDateSelect}
-        />
-      ) : (
-        <div className="bg-[#221F26] rounded-lg p-6">
+      <div className="grid grid-cols-2 gap-6">
+        {/* Calendar Section - Fixed */}
+        <div className="sticky top-0 h-[calc(100vh-200px)]">
+          <TransactionCalendar 
+            transactions={filteredTransactions}
+            onDateSelect={handleCalendarDateSelect}
+          />
+        </div>
+
+        {/* Transactions List Section - Fixed with Scroll */}
+        <div className="h-[calc(100vh-200px)] overflow-y-auto bg-[#221F26] rounded-lg p-6">
           <Table>
             <TableHeader>
               <TableRow>
@@ -319,7 +309,7 @@ export const FinanceTab = () => {
             </TableBody>
           </Table>
         </div>
-      )}
+      </div>
     </div>
   );
 };
