@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Menu, Moon, User, Settings, BarChart2, BookOpen, Calendar, CheckSquare } from "lucide-react";
+import { Search, Menu, Moon, User, Settings, BarChart2, BookOpen, Calendar, CheckSquare, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
-import type { Task } from "@/types/task";
+import { Task } from "@/types/task";
+import { FinanceTab } from "@/components/FinanceTab";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>(() => {
@@ -103,6 +104,8 @@ const Index = () => {
       );
     });
 
+  const [activeTab, setActiveTab] = useState<'tasks' | 'finance'>('tasks');
+
   return (
     <div className="min-h-screen bg-[#1A1F2C] text-white">
       <aside className={`fixed top-0 left-0 h-full w-64 bg-[#221F26] transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -118,9 +121,21 @@ const Index = () => {
             <div className="space-y-2">
               <span className="text-xs font-semibold text-gray-400">MÓDULOS</span>
               <div className="space-y-1">
-                <Button variant="ghost" className="w-full justify-start gap-3">
+                <Button 
+                  variant={activeTab === 'tasks' ? "secondary" : "ghost"} 
+                  className="w-full justify-start gap-3"
+                  onClick={() => setActiveTab('tasks')}
+                >
                   <CheckSquare size={20} />
                   Execução
+                </Button>
+                <Button 
+                  variant={activeTab === 'finance' ? "secondary" : "ghost"} 
+                  className="w-full justify-start gap-3"
+                  onClick={() => setActiveTab('finance')}
+                >
+                  <Wallet size={20} />
+                  Financeiro
                 </Button>
                 <Button variant="ghost" className="w-full justify-start gap-3">
                   <Calendar size={20} />
@@ -168,6 +183,9 @@ const Index = () => {
             </div>
           </div>
 
+          {activeTab === 'tasks' ? (
+            <>
+              {/* Tasks Content */}
           {/* Search and Filters */}
           <div className="mb-8 space-y-6">
             <h2 className="text-2xl font-bold">
@@ -283,6 +301,10 @@ const Index = () => {
               </div>
             )}
           </div>
+            </>
+          ) : (
+            <FinanceTab />
+          )}
         </div>
       </main>
     </div>
@@ -290,4 +312,3 @@ const Index = () => {
 };
 
 export default Index;
-
