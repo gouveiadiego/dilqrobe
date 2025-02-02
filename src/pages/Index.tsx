@@ -170,7 +170,7 @@ const Index = () => {
         </div>
       </aside>
 
-      <main className={`transition-all duration-200 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <main className={`transition-all duration-200 bg-white ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
         <div className="p-8">
           <div className="flex justify-between items-center mb-8">
             <Button variant="ghost" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -187,7 +187,7 @@ const Index = () => {
           {activeTab === 'dashboard' ? (
             <DashboardTab />
           ) : activeTab === 'tasks' ? (
-            <>
+            <div className="space-y-6 bg-white rounded-lg">
               <div className="mb-8 space-y-6">
                 <h2 className="text-2xl font-bold text-gray-900">
                   Execução
@@ -301,7 +301,7 @@ const Index = () => {
                   </div>
                 )}
               </div>
-            </>
+            </div>
           ) : activeTab === 'finance' ? (
             <FinanceTab />
           ) : activeTab === 'journals' ? (
