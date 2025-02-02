@@ -16,12 +16,12 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
     low: "text-green-400 bg-green-400/10 border-green-400/20",
   }[task.priority];
 
-  const statusClass = task.completed ? "bg-green-500/10" : "bg-[#2A2F3C]";
+  const statusClass = task.completed ? "bg-gray-50" : "bg-white";
 
   return (
     <div
       className={cn(
-        "group flex items-center gap-4 p-4 rounded-lg transition-all duration-200",
+        "group flex items-center gap-4 p-4 rounded-lg transition-all duration-200 border border-gray-100",
         statusClass,
         "hover:shadow-lg hover:shadow-purple-500/5"
       )}
@@ -29,12 +29,12 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
       <Checkbox
         checked={task.completed}
         onCheckedChange={() => onToggle(task.id)}
-        className="h-5 w-5 border-2 border-gray-600 data-[state=checked]:border-purple-500 data-[state=checked]:bg-purple-500"
+        className="h-5 w-5 border-2 border-gray-300 data-[state=checked]:border-purple-500 data-[state=checked]:bg-purple-500"
       />
       <div className="flex-1 min-w-0">
         <p
           className={cn(
-            "text-sm font-medium truncate",
+            "text-sm font-medium truncate text-gray-900",
             task.completed && "line-through text-gray-400"
           )}
         >
