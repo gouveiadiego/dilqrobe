@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Menu, Moon, User, Settings, BarChart2, Calendar, CheckSquare, Wallet, LayoutDashboard, ListCheck } from "lucide-react";
+import { Search, Menu, Moon, User, Settings, Calendar, CheckSquare, Wallet, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -19,6 +19,7 @@ import { Task } from "@/types/task";
 import { FinanceTab } from "@/components/FinanceTab";
 import { JournalsTab } from "@/components/JournalsTab";
 import { HabitsTab } from "@/components/HabitsTab";
+import { DashboardTab } from "@/components/DashboardTab";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>(() => {
@@ -37,7 +38,7 @@ const Index = () => {
   const [priorityFilter, setPriorityFilter] = useState<Task["priority"] | "all">("all");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'finance' | 'journals' | 'habits'>('tasks');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits'>('tasks');
 
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -118,8 +119,9 @@ const Index = () => {
               <span className="text-xs font-semibold text-gray-400">MÓDULOS</span>
               <div className="space-y-1">
                 <Button 
-                  variant="ghost" 
+                  variant={activeTab === 'dashboard' ? "secondary" : "ghost"}
                   className="w-full justify-start gap-3"
+                  onClick={() => setActiveTab('dashboard')}
                 >
                   <LayoutDashboard size={20} />
                   Dashboard
@@ -139,14 +141,6 @@ const Index = () => {
                 >
                   <Wallet size={20} />
                   Financeiro
-                </Button>
-                <Button 
-                  variant={activeTab === 'habits' ? "secondary" : "ghost"}
-                  className="w-full justify-start gap-3"
-                  onClick={() => setActiveTab('habits')}
-                >
-                  <ListCheck size={20} />
-                  Hábitos
                 </Button>
                 <Button 
                   variant={activeTab === 'journals' ? "secondary" : "ghost"}
@@ -190,9 +184,10 @@ const Index = () => {
             </div>
           </div>
 
-          {activeTab === 'tasks' ? (
+          {activeTab === 'dashboard' ? (
+            <DashboardTab />
+          ) : activeTab === 'tasks' ? (
             <>
-              {/* Tasks Content */}
               <div className="mb-8 space-y-6">
                 <h2 className="text-2xl font-bold">
                   Execução
@@ -291,7 +286,6 @@ const Index = () => {
                 <AddTask onAdd={addTask} categories={categories} />
               </div>
 
-              {/* Tasks List */}
               <div className="space-y-4">
                 {filteredTasks.map((task) => (
                   <TaskItem
