@@ -13,6 +13,9 @@ import {
 import { Search, Menu, Moon, User, Settings, BarChart2, BookOpen, Calendar, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Calendar as CalendarComponent } from "./ui/calendar";
+import { ptBR } from "date-fns/locale";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>(() => {
@@ -27,6 +30,9 @@ const Index = () => {
   
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
+  const [priorityFilter, setPriorityFilter] = useState<Task["priority"] | "all">("all");
+  const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
@@ -66,17 +72,39 @@ const Index = () => {
 
   const filteredTasks = tasks
     .filter((task) => {
+      // Status filter
       if (filter === "active") return !task.completed;
       if (filter === "completed") return task.completed;
       return true;
     })
     .filter((task) =>
+      // Text search
       task.title.toLowerCase().includes(search.toLowerCase())
-    );
+    )
+    .filter((task) => {
+      // Category filter
+      if (categoryFilter === "all") return true;
+      return task.category === categoryFilter;
+    })
+    .filter((task) => {
+      // Priority filter
+      if (priorityFilter === "all") return true;
+      return task.priority === priorityFilter;
+    })
+    .filter((task) => {
+      // Date filter
+      if (!dateFilter) return true;
+      if (!task.dueDate) return false;
+      const taskDate = new Date(task.dueDate);
+      return (
+        taskDate.getFullYear() === dateFilter.getFullYear() &&
+        taskDate.getMonth() === dateFilter.getMonth() &&
+        taskDate.getDate() === dateFilter.getDate()
+      );
+    });
 
   return (
     <div className="min-h-screen bg-[#1A1F2C] text-white">
-      {/* Sidebar */}
       <aside className={`fixed top-0 left-0 h-full w-64 bg-[#221F26] transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6">
           <div className="flex items-center gap-3 mb-8">
@@ -126,10 +154,8 @@ const Index = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className={`transition-all duration-200 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
         <div className="p-8">
-          {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <Button variant="ghost" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <Menu className="h-6 w-6" />
@@ -151,8 +177,8 @@ const Index = () => {
               </span>
             </h2>
             
-            <div className="flex gap-4">
-              <div className="relative flex-1">
+            <div className="flex gap-4 flex-wrap">
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Pesquisar..."
@@ -161,9 +187,10 @@ const Index = () => {
                   className="pl-9 bg-[#2A2F3C] border-none"
                 />
               </div>
+
               <Select value={filter} onValueChange={(v: typeof filter) => setFilter(v)}>
                 <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
-                  <SelectValue placeholder="Filtrar" />
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
@@ -171,6 +198,69 @@ const Index = () => {
                   <SelectItem value="completed">Concluídas</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Select 
+                value={categoryFilter} 
+                onValueChange={(v: string) => setCategoryFilter(v)}
+              >
+                <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select 
+                value={priorityFilter} 
+                onValueChange={(v: Task["priority"] | "all") => setPriorityFilter(v)}
+              >
+                <SelectTrigger className="w-[180px] bg-[#2A2F3C] border-none">
+                  <SelectValue placeholder="Prioridade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as prioridades</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="medium">Média</SelectItem>
+                  <SelectItem value="low">Baixa</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className={`w-[180px] justify-start text-left font-normal bg-[#2A2F3C] border-none ${
+                      dateFilter ? 'text-white' : 'text-gray-400'
+                    }`}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dateFilter ? dateFilter.toLocaleDateString() : "Filtrar por data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={dateFilter}
+                    onSelect={setDateFilter}
+                    locale={ptBR}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {dateFilter && (
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setDateFilter(null)}
+                  className="px-2"
+                >
+                  Limpar data
+                </Button>
+              )}
             </div>
 
             <CategoryManager categories={categories} onAddCategory={addCategory} />
