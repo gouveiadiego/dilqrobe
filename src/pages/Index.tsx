@@ -19,7 +19,7 @@ import { Task } from "@/types/task";
 import { FinanceTab } from "@/components/FinanceTab";
 import { JournalsTab } from "@/components/JournalsTab";
 import { HabitsTab } from "@/components/HabitsTab";
-import { DashboardTab } from "@/components/DashboardTab";
+import DashboardTab from "@/components/DashboardTab";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>(() => {
