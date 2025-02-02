@@ -2,6 +2,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Task } from "@/types/task";
 import { Trash2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 interface TaskItemProps {
   task: Task;
@@ -17,9 +18,9 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
   }[task.priority];
 
   return (
-    <div
+    <Card
       className={cn(
-        "flex items-center gap-4 p-4 rounded-lg border bg-white transition-all",
+        "flex items-center gap-4 p-4 transition-all hover:shadow-md",
         task.completed && "opacity-60"
       )}
     >
@@ -48,17 +49,17 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
           </span>
           {task.dueDate && (
             <span className="text-xs text-muted-foreground">
-              Due {new Date(task.dueDate).toLocaleDateString()}
+              Vence em {new Date(task.dueDate).toLocaleDateString()}
             </span>
           )}
         </div>
       </div>
       <button
         onClick={() => onDelete(task.id)}
-        className="text-muted-foreground hover:text-destructive transition-colors"
+        className="text-muted-foreground hover:text-destructive transition-colors p-2 rounded-full hover:bg-destructive/10"
       >
         <Trash2 className="h-4 w-4" />
       </button>
-    </div>
+    </Card>
   );
 }
