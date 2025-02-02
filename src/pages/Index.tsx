@@ -12,12 +12,19 @@ import {
 } from "@/components/ui/select";
 import { Search, Menu, Moon, User, Settings, BarChart2, BookOpen, Calendar, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CategoryManager } from "@/components/CategoryManager";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem("tasks");
     return saved ? JSON.parse(saved) : [];
   });
+  
+  const [categories, setCategories] = useState<string[]>(() => {
+    const saved = localStorage.getItem("categories");
+    return saved ? JSON.parse(saved) : [];
+  });
+  
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -25,6 +32,10 @@ const Index = () => {
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
+
+  useEffect(() => {
+    localStorage.setItem("categories", JSON.stringify(categories));
+  }, [categories]);
 
   const addTask = (newTask: Omit<Task, "id" | "completed">) => {
     const task: Task = {
@@ -45,6 +56,12 @@ const Index = () => {
 
   const deleteTask = (id: string) => {
     setTasks((prev) => prev.filter((task) => task.id !== id));
+  };
+
+  const addCategory = (category: string) => {
+    if (!categories.includes(category)) {
+      setCategories((prev) => [...prev, category]);
+    }
   };
 
   const filteredTasks = tasks
@@ -156,7 +173,8 @@ const Index = () => {
               </Select>
             </div>
 
-            <AddTask onAdd={addTask} />
+            <CategoryManager categories={categories} onAddCategory={addCategory} />
+            <AddTask onAdd={addTask} categories={categories} />
           </div>
 
           {/* Tasks List */}
