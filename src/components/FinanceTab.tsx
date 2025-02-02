@@ -13,6 +13,7 @@ import { Search, ChevronLeft, ChevronRight, Maximize, Plus } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client";
 import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendar } from "./TransactionCalendar";
+import { FinancialSummary } from "./FinancialSummary";
 import { formatCurrency } from "@/lib/utils";
 
 interface Transaction {
@@ -255,6 +256,9 @@ export const FinanceTab = () => {
           />
         </div>
       )}
+
+      {/* Financial Summary Section */}
+      <FinancialSummary transactions={filteredTransactions} />
 
       {/* Transactions List Section */}
       <div className="bg-[#221F26] rounded-lg p-6 mb-6">
