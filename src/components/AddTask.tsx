@@ -26,7 +26,6 @@ export function AddTask({ onAdd }: AddTaskProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Task["priority"]>("medium");
-  const [dueDate, setDueDate] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,12 +34,25 @@ export function AddTask({ onAdd }: AddTaskProps) {
     onAdd({
       title: title.trim(),
       priority,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      dueDate: null, // Simplified by removing due date for faster task creation
     });
 
     setTitle("");
     setPriority("medium");
-    setDueDate("");
+    setOpen(false);
+  };
+
+  // Quick add function - adds task with default medium priority
+  const handleQuickAdd = () => {
+    if (!title.trim()) return;
+    
+    onAdd({
+      title: title.trim(),
+      priority: "medium",
+      dueDate: null,
+    });
+
+    setTitle("");
     setOpen(false);
   };
 
@@ -49,43 +61,53 @@ export function AddTask({ onAdd }: AddTaskProps) {
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="h-4 w-4" />
-          Add Task
+          Nova Tarefa
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Task</DialogTitle>
+          <DialogTitle>Adicionar Nova Tarefa</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="space-y-2">
+          <div className="flex gap-2">
             <Input
-              placeholder="Task title"
+              placeholder="Digite sua tarefa aqui..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              className="flex-1"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleQuickAdd();
+                }
+              }}
             />
+            <Button 
+              type="button" 
+              onClick={handleQuickAdd}
+              className="whitespace-nowrap"
+            >
+              Adicionar Rápido
+            </Button>
           </div>
-          <div className="space-y-2">
+          
+          <div className="flex items-center gap-4">
             <Select value={priority} onValueChange={(v: Task["priority"]) => setPriority(v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select priority" />
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Prioridade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="low">Baixa</SelectItem>
+                <SelectItem value="medium">Média</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
               </SelectContent>
             </Select>
+            
+            <Button type="submit" className="flex-1">
+              Adicionar Tarefa
+            </Button>
           </div>
-          <div className="space-y-2">
-            <Input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-          </div>
-          <Button type="submit" className="w-full">
-            Add Task
-          </Button>
         </form>
       </DialogContent>
     </Dialog>
