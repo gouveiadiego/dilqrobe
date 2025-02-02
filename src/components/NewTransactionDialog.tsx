@@ -66,6 +66,17 @@ export const NewTransactionDialog = ({ selectedFilter }: NewTransactionDialogPro
     e.preventDefault();
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Erro!",
+          description: "Você precisa estar logado para criar uma transação.",
+        });
+        return;
+      }
+
       const { category } = getTransactionDefaults();
       const amount = selectedFilter === "recebimentos" 
         ? Math.abs(Number(formData.amount))
@@ -78,6 +89,7 @@ export const NewTransactionDialog = ({ selectedFilter }: NewTransactionDialogPro
             ...formData,
             amount,
             category,
+            user_id: user.id
           }
         ]);
 
