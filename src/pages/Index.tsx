@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Menu, Moon, User, Settings, BarChart2, Calendar, CheckSquare, Wallet, LayoutDashboard } from "lucide-react";
+import { Search, Menu, Moon, User, Settings, BarChart2, Calendar, CheckSquare, Wallet, LayoutDashboard, ListCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -18,6 +18,7 @@ import { ptBR } from "date-fns/locale";
 import { Task } from "@/types/task";
 import { FinanceTab } from "@/components/FinanceTab";
 import { JournalsTab } from "@/components/JournalsTab";
+import { HabitsTab } from "@/components/HabitsTab";
 
 const Index = () => {
   const [tasks, setTasks] = useState<Task[]>(() => {
@@ -36,7 +37,7 @@ const Index = () => {
   const [priorityFilter, setPriorityFilter] = useState<Task["priority"] | "all">("all");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'finance' | 'journals'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'finance' | 'journals' | 'habits'>('tasks');
 
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -140,16 +141,20 @@ const Index = () => {
                   Financeiro
                 </Button>
                 <Button 
+                  variant={activeTab === 'habits' ? "secondary" : "ghost"}
+                  className="w-full justify-start gap-3"
+                  onClick={() => setActiveTab('habits')}
+                >
+                  <ListCheck size={20} />
+                  Hábitos
+                </Button>
+                <Button 
                   variant={activeTab === 'journals' ? "secondary" : "ghost"}
                   className="w-full justify-start gap-3"
                   onClick={() => setActiveTab('journals')}
                 >
                   <Calendar size={20} />
                   Diários
-                </Button>
-                <Button variant="ghost" className="w-full justify-start gap-3">
-                  <BarChart2 size={20} />
-                  Hábitos
                 </Button>
               </div>
             </div>
@@ -305,9 +310,11 @@ const Index = () => {
             </>
           ) : activeTab === 'finance' ? (
             <FinanceTab />
-          ) : (
+          ) : activeTab === 'journals' ? (
             <JournalsTab />
-          )}
+          ) : activeTab === 'habits' ? (
+            <HabitsTab />
+          ) : null}
         </div>
       </main>
     </div>
