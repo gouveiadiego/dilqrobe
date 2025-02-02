@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Task } from "@/types/task";
-import { Trash2 } from "lucide-react";
+import { Trash2, Tag } from "lucide-react";
 
 interface TaskItemProps {
   task: Task;
@@ -49,6 +49,12 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
           >
             {task.priority}
           </span>
+          {task.category && (
+            <span className="text-xs px-2 py-0.5 rounded-full border text-purple-400 bg-purple-400/10 border-purple-400/20 flex items-center gap-1">
+              <Tag className="h-3 w-3" />
+              {task.category}
+            </span>
+          )}
           {task.dueDate && (
             <span className="text-xs text-gray-400">
               Vence em {new Date(task.dueDate).toLocaleDateString()}
