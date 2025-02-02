@@ -1,27 +1,45 @@
 import React from "react";
-import { Tooltip } from "recharts"; // Assuming you're using recharts for the Tooltip
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Activity, TrendingUp, Users } from "lucide-react";
 
 const data = [
-  { name: "Page A", uv: 4000, pv: 2400, amt: 2400 },
-  { name: "Page B", uv: 3000, pv: 1398, amt: 2210 },
-  { name: "Page C", uv: 2000, pv: 9800, amt: 2290 },
-  { name: "Page D", uv: 2780, pv: 3908, amt: 2000 },
-  { name: "Page E", uv: 1890, pv: 4800, amt: 2181 },
-  { name: "Page F", uv: 2390, pv: 3800, amt: 2500 },
-  { name: "Page G", uv: 3490, pv: 4300, amt: 2100 },
+  { name: "Jan", value: 4000 },
+  { name: "Feb", value: 3000 },
+  { name: "Mar", value: 2000 },
+  { name: "Apr", value: 2780 },
+  { name: "May", value: 1890 },
+  { name: "Jun", value: 2390 },
+  { name: "Jul", value: 3490 },
+];
+
+const stats = [
+  {
+    title: "Total Tasks",
+    value: "24",
+    icon: Activity,
+    trend: "+12%",
+  },
+  {
+    title: "Completed",
+    value: "18",
+    icon: TrendingUp,
+    trend: "+8%",
+  },
+  {
+    title: "Active Users",
+    value: "3",
+    icon: Users,
+    trend: "+2%",
+  },
 ];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-4 border rounded-lg shadow-lg">
-        <p className="text-sm font-medium text-gray-900">{`${label}`}</p>
-        {payload.map((pld: any) => (
-          <p key={pld.name} className="text-sm text-gray-600">
-            {`${pld.name}: ${pld.value}`}
-          </p>
-        ))}
+      <div className="bg-white p-2 border rounded-lg shadow-sm">
+        <p className="text-sm font-medium">{`${label}`}</p>
+        <p className="text-sm text-gray-600">{`Value: ${payload[0].value}`}</p>
       </div>
     );
   }
@@ -30,16 +48,48 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const DashboardTab = () => {
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
-      <LineChart width={600} height={300} data={data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
-        <YAxis />
-        <RechartsTooltip content={<CustomTooltip />} />
-        <Line type="monotone" dataKey="pv" stroke="#8884d8" />
-        <Line type="monotone" dataKey="uv" stroke="#82ca9d" />
-      </LineChart>
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        {stats.map((stat, index) => (
+          <Card key={index}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {stat.title}
+              </CardTitle>
+              <stat.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-green-500">{stat.trend} from last month</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Activity Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
+                <XAxis dataKey="name" className="text-xs" />
+                <YAxis className="text-xs" />
+                <Tooltip content={<CustomTooltip />} />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#8884d8"
+                  strokeWidth={2}
+                  dot={{ strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
