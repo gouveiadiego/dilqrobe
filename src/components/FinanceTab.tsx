@@ -25,28 +25,77 @@ interface Transaction {
 
 export const FinanceTab = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchTransactions();
-  }, []);
+  }, [currentDate]); // Refetch when month changes
 
   const fetchTransactions = async () => {
     try {
+      console.log("Fetching transactions for:", formatMonth(currentDate));
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
+        .gte("date", startOfMonth.toISOString())
+        .lte("date", endOfMonth.toISOString())
         .order("date", { ascending: false });
 
       if (error) throw error;
+      console.log("Fetched transactions:", data);
       setTransactions(data || []);
     } catch (error) {
       console.error("Error fetching transactions:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    filterTransactions();
+  }, [transactions, selectedFilter, searchQuery]);
+
+  const filterTransactions = () => {
+    let filtered = [...transactions];
+
+    // Apply category filter
+    if (selectedFilter !== "all") {
+      filtered = filtered.filter(transaction => {
+        switch (selectedFilter) {
+          case "recebimentos":
+            return transaction.amount > 0;
+          case "despesas-fixas":
+            return transaction.amount < 0 && transaction.category === "fixed";
+          case "despesas-variaveis":
+            return transaction.amount < 0 && transaction.category === "variable";
+          case "pessoas":
+            return transaction.category === "people";
+          case "impostos":
+            return transaction.category === "taxes";
+          case "transferencias":
+            return transaction.category === "transfer";
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(transaction =>
+        transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        transaction.received_from.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredTransactions(filtered);
   };
 
   const formatCurrency = (value: number) => {
@@ -75,6 +124,11 @@ export const FinanceTab = () => {
       newDate.setMonth(prev.getMonth() + 1);
       return newDate;
     });
+  };
+
+  const handleFullscreen = () => {
+    console.log("Toggle fullscreen view");
+    // Implement fullscreen toggle in a future update
   };
 
   const formatMonth = (date: Date) => {
@@ -110,6 +164,7 @@ export const FinanceTab = () => {
             variant="ghost" 
             size="icon"
             className="ml-2"
+            onClick={handleFullscreen}
           >
             <Maximize className="h-4 w-4" />
           </Button>
@@ -168,6 +223,8 @@ export const FinanceTab = () => {
           <Input
             placeholder="Pesquisar transações..."
             className="pl-9 bg-[#2A2F3C] border-none"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <Button 
@@ -193,7 +250,7 @@ export const FinanceTab = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions.map((transaction) => (
+            {filteredTransactions.map((transaction) => (
               <TableRow key={transaction.id}>
                 <TableCell>{new Date(transaction.date).toLocaleDateString('pt-BR')}</TableCell>
                 <TableCell>{transaction.description}</TableCell>
@@ -212,7 +269,7 @@ export const FinanceTab = () => {
                 </TableCell>
               </TableRow>
             ))}
-            {transactions.length === 0 && !loading && (
+            {filteredTransactions.length === 0 && !loading && (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-gray-400 py-8">
                   Nenhuma transação encontrada
