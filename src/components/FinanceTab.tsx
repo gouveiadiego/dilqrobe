@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, ChevronLeft, ChevronRight, Maximize } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Maximize } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { NewTransactionDialog } from "./NewTransactionDialog";
 
 interface Transaction {
   id: string;
@@ -140,7 +141,6 @@ export const FinanceTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col space-y-4">
         {/* Date Navigation */}
         <div className="flex items-center space-x-2">
           <Button 
@@ -215,7 +215,6 @@ export const FinanceTab = () => {
             Transferências
           </Button>
         </div>
-      </div>
 
       <div className="flex justify-between items-center">
         <div className="relative flex-1 max-w-sm">
@@ -227,13 +226,7 @@ export const FinanceTab = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button 
-          onClick={handleNewTransaction}
-          className="bg-black hover:bg-black/90 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Transação
-        </Button>
+        <NewTransactionDialog selectedFilter={selectedFilter} />
       </div>
 
       <div className="bg-[#221F26] rounded-lg p-6">
