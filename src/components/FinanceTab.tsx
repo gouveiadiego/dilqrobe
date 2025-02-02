@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronLeft, ChevronRight, Maximize } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Maximize, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { NewTransactionDialog } from "./NewTransactionDialog";
+import { NewTransactionForm } from "./NewTransactionForm";
 
 interface Transaction {
   id: string;
@@ -31,6 +31,7 @@ export const FinanceTab = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showNewTransactionForm, setShowNewTransactionForm] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -106,9 +107,10 @@ export const FinanceTab = () => {
     }).format(value);
   };
 
-  const handleNewTransaction = () => {
-    console.log("Opening new transaction form");
-    // We'll implement the new transaction form in a future update
+  const handleTransactionCreated = () => {
+    console.log("Transaction created, refreshing list...");
+    fetchTransactions();
+    setShowNewTransactionForm(false);
   };
 
   const handlePreviousMonth = () => {
@@ -141,80 +143,80 @@ export const FinanceTab = () => {
 
   return (
     <div className="space-y-6">
-        {/* Date Navigation */}
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={handlePreviousMonth}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="bg-violet-600 text-white px-4 py-2 rounded-md">
-            {formatMonth(currentDate)}
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={handleNextMonth}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="ml-2"
-            onClick={handleFullscreen}
-          >
-            <Maximize className="h-4 w-4" />
-          </Button>
+      {/* Date Navigation */}
+      <div className="flex items-center space-x-2">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={handlePreviousMonth}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="bg-violet-600 text-white px-4 py-2 rounded-md">
+          {formatMonth(currentDate)}
         </div>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={handleNextMonth}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="ml-2"
+          onClick={handleFullscreen}
+        >
+          <Maximize className="h-4 w-4" />
+        </Button>
+      </div>
 
-        {/* Category Filters */}
-        <div className="flex space-x-2 overflow-x-auto pb-2">
-          <Button
-            variant={selectedFilter === "recebimentos" ? "default" : "outline"}
-            className={`${selectedFilter === "recebimentos" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`}
-            onClick={() => setSelectedFilter("recebimentos")}
-          >
-            Recebimentos
-          </Button>
-          <Button
-            variant={selectedFilter === "despesas-fixas" ? "default" : "outline"}
-            className={`${selectedFilter === "despesas-fixas" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
-            onClick={() => setSelectedFilter("despesas-fixas")}
-          >
-            Despesas fixas
-          </Button>
-          <Button
-            variant={selectedFilter === "despesas-variaveis" ? "default" : "outline"}
-            className={`${selectedFilter === "despesas-variaveis" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
-            onClick={() => setSelectedFilter("despesas-variaveis")}
-          >
-            Despesas variáveis
-          </Button>
-          <Button
-            variant={selectedFilter === "pessoas" ? "default" : "outline"}
-            className={`${selectedFilter === "pessoas" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
-            onClick={() => setSelectedFilter("pessoas")}
-          >
-            Pessoas
-          </Button>
-          <Button
-            variant={selectedFilter === "impostos" ? "default" : "outline"}
-            className={`${selectedFilter === "impostos" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
-            onClick={() => setSelectedFilter("impostos")}
-          >
-            Impostos
-          </Button>
-          <Button
-            variant={selectedFilter === "transferencias" ? "default" : "outline"}
-            className={`${selectedFilter === "transferencias" ? "bg-blue-500 hover:bg-blue-600 text-white" : "text-blue-600 border-blue-200 hover:bg-blue-50"}`}
-            onClick={() => setSelectedFilter("transferencias")}
-          >
-            Transferências
-          </Button>
-        </div>
+      {/* Category Filters */}
+      <div className="flex space-x-2 overflow-x-auto pb-2">
+        <Button
+          variant={selectedFilter === "recebimentos" ? "default" : "outline"}
+          className={`${selectedFilter === "recebimentos" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`}
+          onClick={() => setSelectedFilter("recebimentos")}
+        >
+          Recebimentos
+        </Button>
+        <Button
+          variant={selectedFilter === "despesas-fixas" ? "default" : "outline"}
+          className={`${selectedFilter === "despesas-fixas" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
+          onClick={() => setSelectedFilter("despesas-fixas")}
+        >
+          Despesas fixas
+        </Button>
+        <Button
+          variant={selectedFilter === "despesas-variaveis" ? "default" : "outline"}
+          className={`${selectedFilter === "despesas-variaveis" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
+          onClick={() => setSelectedFilter("despesas-variaveis")}
+        >
+          Despesas variáveis
+        </Button>
+        <Button
+          variant={selectedFilter === "pessoas" ? "default" : "outline"}
+          className={`${selectedFilter === "pessoas" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
+          onClick={() => setSelectedFilter("pessoas")}
+        >
+          Pessoas
+        </Button>
+        <Button
+          variant={selectedFilter === "impostos" ? "default" : "outline"}
+          className={`${selectedFilter === "impostos" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
+          onClick={() => setSelectedFilter("impostos")}
+        >
+          Impostos
+        </Button>
+        <Button
+          variant={selectedFilter === "transferencias" ? "default" : "outline"}
+          className={`${selectedFilter === "transferencias" ? "bg-blue-500 hover:bg-blue-600 text-white" : "text-blue-600 border-blue-200 hover:bg-blue-50"}`}
+          onClick={() => setSelectedFilter("transferencias")}
+        >
+          Transferências
+        </Button>
+      </div>
 
       <div className="flex justify-between items-center">
         <div className="relative flex-1 max-w-sm">
@@ -226,8 +228,23 @@ export const FinanceTab = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <NewTransactionDialog selectedFilter={selectedFilter} />
+        <Button 
+          className="bg-black hover:bg-black/90 text-white"
+          onClick={() => setShowNewTransactionForm(!showNewTransactionForm)}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Transação
+        </Button>
       </div>
+
+      {showNewTransactionForm && (
+        <div className="bg-[#221F26] rounded-lg p-6 mb-6">
+          <NewTransactionForm 
+            selectedFilter={selectedFilter}
+            onTransactionCreated={handleTransactionCreated}
+          />
+        </div>
+      )}
 
       <div className="bg-[#221F26] rounded-lg p-6">
         <Table>
