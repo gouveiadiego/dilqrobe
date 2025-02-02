@@ -17,6 +17,7 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
   const [priority, setPriority] = useState<Task["priority"]>("medium");
   const [date, setDate] = useState<Date | null>(null);
   const [category, setCategory] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleQuickAdd = () => {
     if (!title.trim()) return;
@@ -32,6 +33,11 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
     setDate(null);
     setPriority("medium");
     setCategory(null);
+  };
+
+  const handleCategorySelect = (selectedCategory: string) => {
+    setCategory(selectedCategory);
+    setIsOpen(false); // Fecha o popover após a seleção
   };
 
   const getPriorityColor = (p: Task["priority"]) => {
@@ -60,7 +66,7 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
           autoFocus
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          <Popover>
+          <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
               <Button 
                 variant="ghost" 
@@ -77,7 +83,7 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
                     key={cat}
                     variant="ghost"
                     className={`justify-start ${category === cat ? 'text-purple-400' : ''}`}
-                    onClick={() => setCategory(cat)}
+                    onClick={() => handleCategorySelect(cat)}
                   >
                     <Tag className="h-4 w-4 mr-2" />
                     {cat}
