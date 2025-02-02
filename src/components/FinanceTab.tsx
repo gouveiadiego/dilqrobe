@@ -119,42 +119,42 @@ export const FinanceTab = () => {
         <div className="flex space-x-2 overflow-x-auto pb-2">
           <Button
             variant={selectedFilter === "recebimentos" ? "default" : "outline"}
-            className={selectedFilter === "recebimentos" ? "bg-emerald-500 hover:bg-emerald-600" : ""}
+            className={`${selectedFilter === "recebimentos" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`}
             onClick={() => setSelectedFilter("recebimentos")}
           >
             Recebimentos
           </Button>
           <Button
             variant={selectedFilter === "despesas-fixas" ? "default" : "outline"}
-            className={selectedFilter === "despesas-fixas" ? "bg-rose-500 hover:bg-rose-600" : ""}
+            className={`${selectedFilter === "despesas-fixas" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
             onClick={() => setSelectedFilter("despesas-fixas")}
           >
             Despesas fixas
           </Button>
           <Button
             variant={selectedFilter === "despesas-variaveis" ? "default" : "outline"}
-            className={selectedFilter === "despesas-variaveis" ? "bg-rose-500 hover:bg-rose-600" : ""}
+            className={`${selectedFilter === "despesas-variaveis" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
             onClick={() => setSelectedFilter("despesas-variaveis")}
           >
             Despesas variáveis
           </Button>
           <Button
             variant={selectedFilter === "pessoas" ? "default" : "outline"}
-            className={selectedFilter === "pessoas" ? "bg-rose-500 hover:bg-rose-600" : ""}
+            className={`${selectedFilter === "pessoas" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
             onClick={() => setSelectedFilter("pessoas")}
           >
             Pessoas
           </Button>
           <Button
             variant={selectedFilter === "impostos" ? "default" : "outline"}
-            className={selectedFilter === "impostos" ? "bg-rose-500 hover:bg-rose-600" : ""}
+            className={`${selectedFilter === "impostos" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`}
             onClick={() => setSelectedFilter("impostos")}
           >
             Impostos
           </Button>
           <Button
             variant={selectedFilter === "transferencias" ? "default" : "outline"}
-            className={selectedFilter === "transferencias" ? "bg-blue-500 hover:bg-blue-600" : ""}
+            className={`${selectedFilter === "transferencias" ? "bg-blue-500 hover:bg-blue-600 text-white" : "text-blue-600 border-blue-200 hover:bg-blue-50"}`}
             onClick={() => setSelectedFilter("transferencias")}
           >
             Transferências
