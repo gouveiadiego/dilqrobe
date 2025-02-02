@@ -56,7 +56,7 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
           placeholder="Digite sua tarefa e pressione Enter..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full bg-[#2A2F3C] border-none text-white placeholder:text-gray-400 pr-28"
+          className="w-full bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 pr-28"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();

@@ -23,7 +23,7 @@ export function CategoryManager({ categories, onAddCategory }: CategoryManagerPr
         placeholder="Nova categoria..."
         value={newCategory}
         onChange={(e) => setNewCategory(e.target.value)}
-        className="bg-[#2A2F3C] border-none text-white placeholder:text-gray-400"
+        className="bg-white border-gray-200 text-gray-900 placeholder:text-gray-500"
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
