@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, ChevronLeft, ChevronRight, Maximize } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Transaction {
@@ -26,6 +26,8 @@ interface Transaction {
 export const FinanceTab = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedFilter, setSelectedFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchTransactions();
@@ -59,8 +61,107 @@ export const FinanceTab = () => {
     // We'll implement the new transaction form in a future update
   };
 
+  const handlePreviousMonth = () => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() - 1);
+      return newDate;
+    });
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(prev.getMonth() + 1);
+      return newDate;
+    });
+  };
+
+  const formatMonth = (date: Date) => {
+    return new Intl.DateTimeFormat('pt-BR', {
+      month: 'short',
+      year: 'numeric'
+    }).format(date).replace('.', '').toUpperCase();
+  };
+
   return (
     <div className="space-y-6">
+      <div className="flex flex-col space-y-4">
+        {/* Date Navigation */}
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handlePreviousMonth}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="bg-violet-600 text-white px-4 py-2 rounded-md">
+            {formatMonth(currentDate)}
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handleNextMonth}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="ml-2"
+          >
+            <Maximize className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Category Filters */}
+        <div className="flex space-x-2 overflow-x-auto pb-2">
+          <Button
+            variant={selectedFilter === "recebimentos" ? "default" : "outline"}
+            className={selectedFilter === "recebimentos" ? "bg-emerald-500 hover:bg-emerald-600" : ""}
+            onClick={() => setSelectedFilter("recebimentos")}
+          >
+            Recebimentos
+          </Button>
+          <Button
+            variant={selectedFilter === "despesas-fixas" ? "default" : "outline"}
+            className={selectedFilter === "despesas-fixas" ? "bg-rose-500 hover:bg-rose-600" : ""}
+            onClick={() => setSelectedFilter("despesas-fixas")}
+          >
+            Despesas fixas
+          </Button>
+          <Button
+            variant={selectedFilter === "despesas-variaveis" ? "default" : "outline"}
+            className={selectedFilter === "despesas-variaveis" ? "bg-rose-500 hover:bg-rose-600" : ""}
+            onClick={() => setSelectedFilter("despesas-variaveis")}
+          >
+            Despesas variáveis
+          </Button>
+          <Button
+            variant={selectedFilter === "pessoas" ? "default" : "outline"}
+            className={selectedFilter === "pessoas" ? "bg-rose-500 hover:bg-rose-600" : ""}
+            onClick={() => setSelectedFilter("pessoas")}
+          >
+            Pessoas
+          </Button>
+          <Button
+            variant={selectedFilter === "impostos" ? "default" : "outline"}
+            className={selectedFilter === "impostos" ? "bg-rose-500 hover:bg-rose-600" : ""}
+            onClick={() => setSelectedFilter("impostos")}
+          >
+            Impostos
+          </Button>
+          <Button
+            variant={selectedFilter === "transferencias" ? "default" : "outline"}
+            className={selectedFilter === "transferencias" ? "bg-blue-500 hover:bg-blue-600" : ""}
+            onClick={() => setSelectedFilter("transferencias")}
+          >
+            Transferências
+          </Button>
+        </div>
+      </div>
+
       <div className="flex justify-between items-center">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
