@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -9,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Menu, Moon, User, Settings, Calendar, CheckSquare, Wallet, LayoutDashboard } from "lucide-react";
+import { Search, Menu, Moon, User, Settings, Calendar, CheckSquare, Wallet, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -22,6 +25,7 @@ import { HabitsTab } from "@/components/HabitsTab";
 import DashboardTab from "@/components/DashboardTab";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem("tasks");
     return saved ? JSON.parse(saved) : [];
@@ -47,6 +51,17 @@ const Index = () => {
   useEffect(() => {
     localStorage.setItem("categories", JSON.stringify(categories));
   }, [categories]);
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logout realizado com sucesso!");
+      navigate("/login");
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      toast.error("Erro ao fazer logout");
+    }
+  };
 
   const addTask = (newTask: Omit<Task, "id" | "completed">) => {
     const task: Task = {
@@ -163,6 +178,14 @@ const Index = () => {
                 <Button variant="ghost" className="w-full justify-start gap-3">
                   <Settings size={20} />
                   Configurações
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={handleLogout}
+                >
+                  <LogOut size={20} />
+                  Sair
                 </Button>
               </div>
             </div>
