@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Menu, Moon, User, Settings, Calendar, CheckSquare, Wallet, LayoutDashboard, LogOut, Trophy } from "lucide-react";
+import { Search, Menu, CheckSquare, Wallet, LayoutDashboard, LogOut, Trophy, Calendar, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -124,7 +124,7 @@ const Index = () => {
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6">
           <div className="flex items-center justify-center mb-8">
-            <div className="relative w-16 h-16 overflow-hidden">
+            <div className="relative w-24 h-24 overflow-hidden">
               <img
                 src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png"
                 alt="DILQ ORBE"
@@ -211,12 +211,6 @@ const Index = () => {
             <Button variant="ghost" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <Menu className="h-6 w-6" />
             </Button>
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" className="w-10 h-10 rounded-full p-0">
-                <Moon className="h-5 w-5" />
-              </Button>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
-            </div>
           </div>
 
           {activeTab === 'dashboard' ? (
