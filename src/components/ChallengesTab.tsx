@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Run, ChartLine, Medal, Users } from "lucide-react";
+import { Trophy, PersonRunning, ChartLine, Medal, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -51,7 +51,7 @@ export function ChallengesTab() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Distância Total</CardTitle>
-            <Run className="h-4 w-4 text-muted-foreground" />
+            <PersonRunning className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">523 km</div>
@@ -137,7 +137,7 @@ export function ChallengesTab() {
           Novo Desafio
         </Button>
         <Button variant="outline">
-          <Run className="mr-2 h-4 w-4" />
+          <PersonRunning className="mr-2 h-4 w-4" />
           Registrar Corrida
         </Button>
       </div>
