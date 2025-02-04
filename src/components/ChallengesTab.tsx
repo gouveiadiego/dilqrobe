@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, PersonStanding, ChartLine, Medal, Users } from "lucide-react";
@@ -31,6 +31,11 @@ export function ChallengesTab() {
     date: new Date().toISOString().split('T')[0],
     notes: ""
   });
+  const [currentStats, setCurrentStats] = useState({
+    totalDistance: 0,
+    percentageComplete: 0,
+    currentChallenge: null
+  });
 
   const { data: challenges, isLoading, refetch } = useQuery({
     queryKey: ['running-challenges'],
@@ -52,8 +57,48 @@ export function ChallengesTab() {
     }
   });
 
+  const { data: records } = useQuery({
+    queryKey: ['running-records'],
+    queryFn: async () => {
+      console.log("Fetching running records...");
+      const { data, error } = await supabase
+        .from('running_records')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching records:", error);
+        toast.error("Erro ao carregar registros");
+        throw error;
+      }
+
+      console.log("Records fetched:", data);
+      return data;
+    }
+  });
+
+  useEffect(() => {
+    if (challenges?.length > 0 && records) {
+      const latestChallenge = challenges[0];
+      const challengeRecords = records.filter(r => r.challenge_id === latestChallenge.id);
+      const totalDistance = challengeRecords.reduce((acc, curr) => acc + Number(curr.distance), 0);
+      const percentageComplete = (totalDistance / Number(latestChallenge.yearly_goal)) * 100;
+
+      setCurrentStats({
+        totalDistance,
+        percentageComplete,
+        currentChallenge: latestChallenge
+      });
+    }
+  }, [challenges, records]);
+
   const handleNewChallenge = async () => {
     try {
+      if (!newChallenge.title || !newChallenge.yearlyGoal || !newChallenge.endDate) {
+        toast.error("Por favor, preencha todos os campos");
+        return;
+      }
+
       console.log("Creating new challenge...");
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user?.id) {
@@ -88,6 +133,11 @@ export function ChallengesTab() {
 
   const handleNewRun = async () => {
     try {
+      if (!newRun.distance || !newRun.date) {
+        toast.error("Por favor, preencha os campos obrigatórios");
+        return;
+      }
+
       console.log("Creating new run record...");
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user?.id) {
@@ -159,7 +209,9 @@ export function ChallengesTab() {
             <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2025 km</div>
+            <div className="text-2xl font-bold">
+              {currentStats.currentChallenge?.yearly_goal || 0} km
+            </div>
             <p className="text-xs text-muted-foreground">
               Meta para o ano
             </p>
@@ -171,9 +223,9 @@ export function ChallengesTab() {
             <PersonStanding className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">523 km</div>
+            <div className="text-2xl font-bold">{currentStats.totalDistance.toFixed(1)} km</div>
             <p className="text-xs text-muted-foreground">
-              25% da meta alcançada
+              {currentStats.percentageComplete.toFixed(1)}% da meta alcançada
             </p>
           </CardContent>
         </Card>
@@ -239,7 +291,7 @@ export function ChallengesTab() {
                 </div>
                 <div className="flex-1">
                   <div className="font-medium">Você</div>
-                  <div className="text-sm text-muted-foreground">523 km</div>
+                  <div className="text-sm text-muted-foreground">{currentStats.totalDistance.toFixed(1)} km</div>
                 </div>
               </div>
             </div>
