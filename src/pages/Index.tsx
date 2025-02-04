@@ -122,8 +122,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-6">
-          <div className="flex items-center justify-center mb-8">
+        <div className="p-4">
+          <div className="flex items-center justify-center mb-6">
             <div className="relative w-24 h-24 overflow-hidden">
               <img
                 src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png"
@@ -206,8 +206,8 @@ const Index = () => {
       </aside>
 
       <main className={`transition-all duration-200 bg-white ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
-        <div className="p-8">
-          <div className="flex justify-between items-center mb-8">
+        <div className="p-4">
+          <div className="flex justify-between items-center mb-6">
             <Button variant="ghost" onClick={() => setSidebarOpen(!sidebarOpen)}>
               <Menu className="h-6 w-6" />
             </Button>
