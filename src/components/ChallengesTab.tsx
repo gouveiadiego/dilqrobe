@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -34,24 +35,29 @@ export function ChallengesTab() {
   const { data: challenges, isLoading, refetch } = useQuery({
     queryKey: ['running-challenges'],
     queryFn: async () => {
+      console.log("Fetching challenges...");
       const { data, error } = await supabase
         .from('running_challenges')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
+        console.error("Error fetching challenges:", error);
         toast.error("Erro ao carregar desafios");
         throw error;
       }
 
+      console.log("Challenges fetched:", data);
       return data;
     }
   });
 
   const handleNewChallenge = async () => {
     try {
+      console.log("Creating new challenge...");
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user?.id) {
+        console.error("No user session found");
         toast.error("Usuário não autenticado");
         return;
       }
@@ -60,41 +66,51 @@ export function ChallengesTab() {
         user_id: session.session.user.id,
         title: newChallenge.title,
         yearly_goal: parseFloat(newChallenge.yearlyGoal),
-        end_date: newChallenge.endDate
+        end_date: newChallenge.endDate,
+        start_date: new Date().toISOString().split('T')[0]
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating challenge:", error);
+        throw error;
+      }
 
+      console.log("Challenge created successfully");
       toast.success("Desafio criado com sucesso!");
       setNewChallengeOpen(false);
       refetch();
       setNewChallenge({ title: "", yearlyGoal: "", endDate: "" });
     } catch (error) {
-      console.error("Erro ao criar desafio:", error);
+      console.error("Error in handleNewChallenge:", error);
       toast.error("Erro ao criar desafio");
     }
   };
 
   const handleNewRun = async () => {
     try {
+      console.log("Creating new run record...");
       const { data: session } = await supabase.auth.getSession();
       if (!session?.session?.user?.id) {
+        console.error("No user session found");
         toast.error("Usuário não autenticado");
         return;
       }
 
       // Get the latest challenge
-      const { data: latestChallenge } = await supabase
+      const { data: latestChallenge, error: challengeError } = await supabase
         .from('running_challenges')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
-      if (!latestChallenge) {
+      if (challengeError || !latestChallenge) {
+        console.error("Error fetching latest challenge:", challengeError);
         toast.error("Nenhum desafio encontrado");
         return;
       }
+
+      console.log("Latest challenge found:", latestChallenge);
 
       const { error } = await supabase.from('running_records').insert({
         user_id: session.session.user.id,
@@ -105,8 +121,12 @@ export function ChallengesTab() {
         notes: newRun.notes
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating run record:", error);
+        throw error;
+      }
 
+      console.log("Run record created successfully");
       toast.success("Corrida registrada com sucesso!");
       setNewRunOpen(false);
       refetch();
@@ -117,7 +137,7 @@ export function ChallengesTab() {
         notes: ""
       });
     } catch (error) {
-      console.error("Erro ao registrar corrida:", error);
+      console.error("Error in handleNewRun:", error);
       toast.error("Erro ao registrar corrida");
     }
   };
@@ -239,6 +259,9 @@ export function ChallengesTab() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Criar Novo Desafio</DialogTitle>
+              <DialogDescription>
+                Defina as metas do seu novo desafio de corrida
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -286,6 +309,9 @@ export function ChallengesTab() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Registrar Nova Corrida</DialogTitle>
+              <DialogDescription>
+                Registre os detalhes da sua corrida
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
