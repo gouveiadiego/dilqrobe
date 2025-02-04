@@ -182,24 +182,22 @@ export const Login = () => {
       </div>
 
       {/* Image and Text Section */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-purple-50 to-pink-50 p-12 items-center justify-center">
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-[#4A5568] to-[#2D3748] p-12 items-center justify-center">
         <div className="max-w-lg space-y-8">
-          <div className="aspect-[4/3] w-full relative overflow-hidden rounded-xl shadow-lg">
+          <div className="aspect-square w-64 mx-auto relative overflow-hidden">
             <img
-              src="/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png"
-              alt="O Grande Alinhamento"
-              className="w-full h-full object-cover"
+              src="/lovable-uploads/bdb83d6a-adb4-418d-9525-4620d82ac02b.png"
+              alt="DILQ ORBE"
+              className="w-full h-full object-contain"
             />
           </div>
-          <div className="space-y-4">
-            <h1 className="text-4xl font-bold text-gray-800 leading-tight">
-              O Grande Alinhamento: Sincronize Sua Mente, Corpo e Propósito
+          <div className="space-y-4 text-white">
+            <h1 className="text-4xl font-bold leading-tight text-center">
+              DILQ ORBE
             </h1>
-            <p className="text-lg text-gray-600 leading-relaxed">
-              Esta é a reinicialização que vai redesenhar sua vida: assuma o
-              controle das suas tarefas, finanças, corpo, hábitos e conexão com o
-              essencial. Transforme sua existência em um estado de alta
-              performance e significado.
+            <p className="text-lg leading-relaxed text-gray-300 text-center">
+              Transforme sua jornada em uma experiência extraordinária. 
+              Gerencie seus objetivos, finanças e hábitos em um só lugar.
             </p>
           </div>
         </div>
