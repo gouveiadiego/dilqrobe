@@ -184,11 +184,16 @@ export const Login = () => {
       {/* Image and Text Section */}
       <div className="hidden lg:flex w-1/2 bg-[#465E73] p-12 items-center justify-center">
         <div className="max-w-lg space-y-8">
-          <div className="aspect-square w-64 mx-auto relative overflow-hidden">
+          <div className="aspect-square w-64 mx-auto relative overflow-visible group">
             <img
               src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png"
               alt="DILQ ORBE"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain transition-all duration-300 transform 
+                hover:scale-105 hover:-translate-y-2
+                [transform-style:preserve-3d]
+                shadow-[0_10px_20px_rgba(0,0,0,0.3)]
+                hover:shadow-[0_20px_30px_rgba(0,0,0,0.4)]
+                rounded-xl"
             />
           </div>
           <div className="space-y-4">
