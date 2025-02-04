@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Menu, Moon, User, Settings, Calendar, CheckSquare, Wallet, LayoutDashboard, LogOut } from "lucide-react";
+import { Search, Menu, Moon, User, Settings, Calendar, CheckSquare, Wallet, LayoutDashboard, LogOut, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,6 +23,7 @@ import { FinanceTab } from "@/components/FinanceTab";
 import { JournalsTab } from "@/components/JournalsTab";
 import { HabitsTab } from "@/components/HabitsTab";
 import DashboardTab from "@/components/DashboardTab";
+import { ChallengesTab } from "@/components/ChallengesTab";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ const Index = () => {
   const [priorityFilter, setPriorityFilter] = useState<Task["priority"] | "all">("all");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits'>('tasks');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges'>('tasks');
 
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -164,6 +165,14 @@ const Index = () => {
                 >
                   <Calendar size={20} />
                   Diários
+                </Button>
+                <Button 
+                  variant={activeTab === 'challenges' ? "secondary" : "ghost"}
+                  className="w-full justify-start gap-3"
+                  onClick={() => setActiveTab('challenges')}
+                >
+                  <Trophy size={20} />
+                  Desafios
                 </Button>
               </div>
             </div>
@@ -329,6 +338,8 @@ const Index = () => {
             <FinanceTab />
           ) : activeTab === 'journals' ? (
             <JournalsTab />
+          ) : activeTab === 'challenges' ? (
+            <ChallengesTab />
           ) : activeTab === 'habits' ? (
             <HabitsTab />
           ) : null}

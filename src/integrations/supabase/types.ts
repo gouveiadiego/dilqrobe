@@ -30,6 +30,80 @@ export type Database = {
         }
         Relationships: []
       }
+      running_challenges: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          id: string
+          start_date: string
+          title: string
+          updated_at: string | null
+          user_id: string
+          yearly_goal: number
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          id?: string
+          start_date?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+          yearly_goal: number
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          yearly_goal?: number
+        }
+        Relationships: []
+      }
+      running_records: {
+        Row: {
+          challenge_id: string
+          created_at: string | null
+          date: string
+          distance: number
+          duration: number | null
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string | null
+          date: string
+          distance: number
+          duration?: number | null
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string | null
+          date?: string
+          distance?: number
+          duration?: number | null
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "running_records_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "running_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
