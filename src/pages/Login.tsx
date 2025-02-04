@@ -191,11 +191,11 @@ export const Login = () => {
               className="w-full h-full object-contain"
             />
           </div>
-          <div className="space-y-4">
-            <h1 className="text-4xl font-bold text-white leading-tight">
+          <div className="space-y-4 text-center max-w-md mx-auto">
+            <h1 className="text-3xl font-bold text-white leading-tight">
               O Grande Alinhamento: Sincronize Sua Mente, Corpo e Propósito
             </h1>
-            <p className="text-lg text-gray-100 leading-relaxed">
+            <p className="text-base text-gray-100 leading-relaxed">
               Esta é a reinicialização que vai redesenhar sua vida: assuma o
               controle das suas tarefas, finanças, corpo, hábitos e conexão com o
               essencial. Transforme sua existência em um estado de alta
