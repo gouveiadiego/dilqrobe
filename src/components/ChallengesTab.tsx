@@ -124,7 +124,6 @@ export function ChallengesTab() {
 
   return (
     <div className="space-y-8">
-      {/* Header Section */}
       <div>
         <h2 className="text-2xl font-bold mb-2">Desafios de Corrida</h2>
         <p className="text-muted-foreground">
