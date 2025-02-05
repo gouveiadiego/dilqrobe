@@ -6,6 +6,18 @@ import { toast } from "sonner";
 import { ProfileTextarea } from "./ProfileTextarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useNavigate } from "react-router-dom";
 
 export function ProfileTab() {
   const [loading, setLoading] = useState(true);
@@ -13,6 +25,7 @@ export function ProfileTab() {
   const [fullName, setFullName] = useState("");
   const [about, setAbout] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     getProfile();
@@ -145,6 +158,26 @@ export function ProfileTab() {
     }
   }
 
+  async function handleDeleteAccount() {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.admin.deleteUser(
+        (await supabase.auth.getSession()).data.session?.user?.id || ''
+      );
+
+      if (error) throw error;
+
+      await supabase.auth.signOut();
+      toast.success('Conta deletada com sucesso');
+      navigate('/login');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast.error('Erro ao deletar conta');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -219,10 +252,33 @@ export function ProfileTab() {
           />
         </div>
 
-        <div className="pt-4">
+        <div className="pt-4 flex justify-between">
           <Button onClick={updateProfile} disabled={loading}>
             {loading ? 'Salvando...' : 'Salvar alterações'}
           </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                Deletar conta
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação não pode ser desfeita. Isso irá deletar permanentemente sua conta
+                  e remover seus dados dos nossos servidores.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground">
+                  Deletar conta
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </div>
