@@ -5,6 +5,7 @@ import { Trophy, PersonStanding, ChartLine, Medal, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ChallengesList } from "./challenges/ChallengesList";
 
 export function ChallengesTab() {
+  const navigate = useNavigate();
   const [newChallengeOpen, setNewChallengeOpen] = useState(false);
   const [newRunOpen, setNewRunOpen] = useState(false);
   const [newChallenge, setNewChallenge] = useState({
@@ -38,10 +40,44 @@ export function ChallengesTab() {
     currentChallenge: null
   });
 
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log("No active session found, redirecting to login");
+        toast.error("Por favor, faça login para acessar esta página");
+        navigate("/login");
+      }
+    };
+
+    checkAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        console.log("Auth state changed: no session, redirecting to login");
+        toast.error("Sua sessão expirou. Por favor, faça login novamente");
+        navigate("/login");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
   const { data: challenges, isLoading, refetch } = useQuery({
     queryKey: ['running-challenges'],
     queryFn: async () => {
       console.log("Fetching challenges...");
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("No session found during challenges fetch");
+        throw new Error("No active session");
+      }
+
       const { data, error } = await supabase
         .from('running_challenges')
         .select('*')
@@ -55,6 +91,13 @@ export function ChallengesTab() {
 
       console.log("Challenges fetched:", data);
       return data;
+    },
+    retry: false,
+    onError: (error) => {
+      console.error("Query error:", error);
+      if (error.message === "No active session") {
+        navigate("/login");
+      }
     }
   });
 
@@ -62,6 +105,13 @@ export function ChallengesTab() {
     queryKey: ['running-records'],
     queryFn: async () => {
       console.log("Fetching running records...");
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("No session found during records fetch");
+        throw new Error("No active session");
+      }
+
       const { data, error } = await supabase
         .from('running_records')
         .select('*')
@@ -75,6 +125,13 @@ export function ChallengesTab() {
 
       console.log("Records fetched:", data);
       return data;
+    },
+    retry: false,
+    onError: (error) => {
+      console.error("Query error:", error);
+      if (error.message === "No active session") {
+        navigate("/login");
+      }
     }
   });
 
@@ -101,15 +158,16 @@ export function ChallengesTab() {
       }
 
       console.log("Creating new challenge...");
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user?.id) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
         console.error("No user session found");
         toast.error("Usuário não autenticado");
+        navigate("/login");
         return;
       }
 
       const { error } = await supabase.from('running_challenges').insert({
-        user_id: session.session.user.id,
+        user_id: session.user.id,
         title: newChallenge.title,
         yearly_goal: parseFloat(newChallenge.yearlyGoal),
         end_date: newChallenge.endDate,
@@ -140,10 +198,11 @@ export function ChallengesTab() {
       }
 
       console.log("Creating new run record...");
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session?.user?.id) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
         console.error("No user session found");
         toast.error("Usuário não autenticado");
+        navigate("/login");
         return;
       }
 
@@ -164,7 +223,7 @@ export function ChallengesTab() {
       console.log("Latest challenge found:", latestChallenge);
 
       const { error } = await supabase.from('running_records').insert({
-        user_id: session.session.user.id,
+        user_id: session.user.id,
         challenge_id: latestChallenge.id,
         distance: parseFloat(newRun.distance),
         duration: newRun.duration ? parseInt(newRun.duration) : null,
@@ -428,4 +487,3 @@ export function ChallengesTab() {
       </div>
     </div>
   );
-}
