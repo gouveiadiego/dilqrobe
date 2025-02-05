@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ChallengeRanking } from "./challenges/ChallengeRanking";
 
 export function ChallengesTab() {
   const navigate = useNavigate();
@@ -307,7 +308,8 @@ export function ChallengesTab() {
 
       console.log("Latest challenge found:", latestChallenge);
 
-      const { error } = await supabase.from('running_records').insert({
+      // Create run record
+      const { error: runError } = await supabase.from('running_records').insert({
         user_id: session.user.id,
         challenge_id: latestChallenge.id,
         distance: parseFloat(newRun.distance),
@@ -316,9 +318,20 @@ export function ChallengesTab() {
         notes: newRun.notes
       });
 
-      if (error) {
-        console.error("Error creating run record:", error);
-        throw error;
+      if (runError) {
+        console.error("Error creating run record:", runError);
+        throw runError;
+      }
+
+      // Update participant's total distance and runs
+      const { error: participantError } = await supabase.rpc('update_challenge_rankings', {
+        challenge_id: latestChallenge.id
+      });
+
+      if (participantError) {
+        console.error("Error updating rankings:", participantError);
+        // Don't throw here, as the run was already recorded
+        toast.error("Erro ao atualizar ranking");
       }
 
       console.log("Run record created successfully");

@@ -30,6 +30,44 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_participants: {
+        Row: {
+          challenge_id: string
+          id: string
+          joined_at: string | null
+          ranking: number | null
+          total_distance: number | null
+          total_runs: number | null
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          id?: string
+          joined_at?: string | null
+          ranking?: number | null
+          total_distance?: number | null
+          total_runs?: number | null
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          id?: string
+          joined_at?: string | null
+          ranking?: number | null
+          total_distance?: number | null
+          total_runs?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participants_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "running_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       running_badges: {
         Row: {
           badge_type: string
@@ -254,7 +292,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_challenge_rankings: {
+        Args: {
+          challenge_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
