@@ -177,21 +177,16 @@ export function ProfileTab() {
         return;
       }
 
-      // Call the Edge Function to delete the user
-      const response = await fetch(
-        'https://wgnvrxubwifcscrbkimm.supabase.co/functions/v1/delete-user',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        }
-      );
+      // Call the Edge Function with the access token
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Error deleting account');
+      if (error) {
+        console.error('Error deleting account:', error);
+        throw error;
       }
 
       toast.success('Account deleted successfully');

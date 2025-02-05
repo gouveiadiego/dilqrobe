@@ -12,13 +12,19 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
     // Create a Supabase client with the Auth context of the logged in user
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     )
@@ -30,6 +36,7 @@ Deno.serve(async (req) => {
     } = await supabaseClient.auth.getSession()
 
     if (sessionError || !session) {
+      console.error('Session error:', sessionError);
       throw new Error('Not authenticated')
     }
 
