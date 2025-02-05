@@ -487,3 +487,4 @@ export function ChallengesTab() {
       </div>
     </div>
   );
+} // Added missing closing brace here
