@@ -55,6 +55,7 @@ export function ChallengesTab() {
     };
   }, [navigate]);
 
+  // Fetch all challenges (agora mostra todos os desafios, não apenas os do usuário)
   const { data: challenges, isLoading, refetch } = useQuery({
     queryKey: ['running-challenges'],
     queryFn: async () => {
@@ -209,7 +210,7 @@ export function ChallengesTab() {
       <div>
         <h2 className="text-2xl font-bold mb-2">Desafios de Corrida</h2>
         <p className="text-muted-foreground">
-          Acompanhe seus objetivos e celebre suas conquistas
+          Participe de desafios e acompanhe seu progresso
         </p>
       </div>
 
@@ -225,7 +226,7 @@ export function ChallengesTab() {
           <DialogTrigger asChild>
             <Button>
               <Trophy className="mr-2 h-4 w-4" />
-              Novo Desafio
+              Criar Desafio
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
@@ -265,7 +266,7 @@ export function ChallengesTab() {
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold mb-4">Seus Desafios</h3>
+        <h3 className="text-lg font-semibold mb-4">Desafios Disponíveis</h3>
         <ChallengesList 
           challenges={challenges || []} 
           onDelete={handleDeleteChallenge} 

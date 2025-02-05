@@ -5,6 +5,7 @@ import { Trophy, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChallengeRanking } from "./ChallengeRanking";
+import { useState, useEffect } from "react";
 
 type Challenge = {
   id: string;
@@ -15,6 +16,7 @@ type Challenge = {
   description?: string;
   difficulty?: string;
   visibility?: string;
+  user_id: string;
 };
 
 interface ChallengesListProps {
@@ -23,6 +25,16 @@ interface ChallengesListProps {
 }
 
 export function ChallengesList({ challenges, onDelete }: ChallengesListProps) {
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setCurrentUserId(session?.user?.id || null);
+    };
+    getUser();
+  }, []);
+
   const handleDelete = async (id: string) => {
     try {
       // First, delete all associated running records
@@ -72,7 +84,7 @@ export function ChallengesList({ challenges, onDelete }: ChallengesListProps) {
   if (!challenges?.length) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        Nenhum desafio criado ainda
+        Nenhum desafio disponível ainda
       </div>
     );
   }
@@ -88,14 +100,16 @@ export function ChallengesList({ challenges, onDelete }: ChallengesListProps) {
               </CardTitle>
               <div className="flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-muted-foreground" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                  onClick={() => handleDelete(challenge.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {currentUserId === challenge.user_id && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                    onClick={() => handleDelete(challenge.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
