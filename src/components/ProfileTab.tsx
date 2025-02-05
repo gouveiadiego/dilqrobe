@@ -161,18 +161,36 @@ export function ProfileTab() {
   async function handleDeleteAccount() {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.admin.deleteUser(
-        (await supabase.auth.getSession()).data.session?.user?.id || ''
-      );
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        throw new Error('No user found');
+      }
 
-      if (error) throw error;
+      // First delete the profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', session.user.id);
 
-      await supabase.auth.signOut();
-      toast.success('Conta deletada com sucesso');
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+        throw profileError;
+      }
+
+      // Then sign out
+      const { error: signOutError } = await supabase.auth.signOut();
+      
+      if (signOutError) {
+        console.error('Error signing out:', signOutError);
+        throw signOutError;
+      }
+
+      toast.success('Conta desativada com sucesso');
       navigate('/login');
     } catch (error) {
-      console.error('Error deleting account:', error);
-      toast.error('Erro ao deletar conta');
+      console.error('Error deactivating account:', error);
+      toast.error('Erro ao desativar conta');
     } finally {
       setLoading(false);
     }
