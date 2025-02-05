@@ -11,6 +11,25 @@ interface ChallengeRankingProps {
 }
 
 export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
+  // First, fetch all running records for this challenge
+  const { data: records } = useQuery({
+    queryKey: ['challenge-records', challengeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('running_records')
+        .select('*')
+        .eq('challenge_id', challengeId);
+
+      if (error) {
+        console.error("Error fetching records:", error);
+        throw error;
+      }
+
+      return data || [];
+    },
+  });
+
+  // Then fetch participants with their profiles
   const { data: participants, isLoading } = useQuery({
     queryKey: ['challenge-participants', challengeId],
     queryFn: async () => {
@@ -29,8 +48,23 @@ export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
         throw error;
       }
 
-      return data || [];
+      // Calculate total distance for each participant from records
+      const participantsWithDistance = (data || []).map(participant => {
+        const userRecords = records?.filter(record => record.user_id === participant.user_id) || [];
+        const totalDistance = userRecords.reduce((sum, record) => sum + Number(record.distance), 0);
+        const totalRuns = userRecords.length;
+
+        return {
+          ...participant,
+          total_distance: totalDistance,
+          total_runs: totalRuns
+        };
+      });
+
+      // Sort participants by total distance in descending order
+      return participantsWithDistance.sort((a, b) => b.total_distance - a.total_distance);
     },
+    enabled: !!records, // Only run this query after records are fetched
   });
 
   const handleJoinChallenge = async () => {
@@ -118,7 +152,7 @@ export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
                     index === 2 ? 'bg-amber-500 text-white' :
                     'bg-muted text-muted-foreground'
                   }`}>
-                    {participant.ranking}
+                    {index + 1}
                   </div>
                   <Avatar className="h-8 w-8">
                     <AvatarImage 
