@@ -82,8 +82,7 @@ export function ProfileTab() {
         id: session.user.id,
         username,
         full_name: fullName,
-        about,
-        updated_at: new Date().toISOString(),
+        about
       };
 
       console.log('Updating profile with:', updates);
