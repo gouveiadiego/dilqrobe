@@ -177,36 +177,23 @@ export function ProfileTab() {
         return;
       }
 
-      // First delete the profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', session.user.id);
-
-      if (profileError) {
-        console.error('Error deleting profile:', profileError);
-        toast.error('Error deleting profile');
-        return;
-      }
-
-      console.log('Profile deleted successfully');
-
-      // Then delete the user from auth.users using admin access
-      const { error: userError } = await supabase.auth.admin.deleteUser(
-        session.user.id
+      // Call the Edge Function to delete the user
+      const response = await fetch(
+        'https://wgnvrxubwifcscrbkimm.supabase.co/functions/v1/delete-user',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        }
       );
 
-      if (userError) {
-        console.error('Error deleting user:', userError);
-        toast.error('Error deleting user account');
-        return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error deleting account');
       }
 
-      console.log('User deleted successfully');
-
-      // Sign out the user
-      await supabase.auth.signOut();
-      
       toast.success('Account deleted successfully');
       navigate('/login');
     } catch (error) {
