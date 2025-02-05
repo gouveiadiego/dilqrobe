@@ -189,6 +189,7 @@ export function ProfileTab() {
         throw error;
       }
 
+      console.log('Account deleted successfully:', data);
       toast.success('Account deleted successfully');
       navigate('/login');
     } catch (error) {

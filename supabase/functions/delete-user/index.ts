@@ -12,10 +12,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get the authorization header
-    const authHeader = req.headers.get('Authorization');
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      throw new Error('No authorization header');
+      console.error('No authorization header provided')
+      throw new Error('No authorization header')
     }
 
     // Create a Supabase client with the Auth context of the logged in user
@@ -35,14 +36,19 @@ Deno.serve(async (req) => {
       error: sessionError,
     } = await supabaseClient.auth.getSession()
 
-    if (sessionError || !session) {
-      console.error('Session error:', sessionError);
+    if (sessionError) {
+      console.error('Session error:', sessionError)
+      throw new Error('Session error')
+    }
+
+    if (!session) {
+      console.error('No session found')
       throw new Error('Not authenticated')
     }
 
     console.log('Authenticated user:', session.user.id)
 
-    // Create a Supabase client with admin privileges
+    // Create a Supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -89,7 +95,10 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error in delete-user function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack 
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
