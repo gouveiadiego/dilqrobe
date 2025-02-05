@@ -30,35 +30,91 @@ export type Database = {
         }
         Relationships: []
       }
+      running_badges: {
+        Row: {
+          badge_type: string
+          challenge_id: string
+          description: string | null
+          earned_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_type: string
+          challenge_id: string
+          description?: string | null
+          earned_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_type?: string
+          challenge_id?: string
+          description?: string | null
+          earned_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "running_badges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "running_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       running_challenges: {
         Row: {
+          category: string | null
+          completion_criteria: Json | null
           created_at: string | null
+          description: string | null
+          difficulty: string | null
           end_date: string
           id: string
+          participants_count: number | null
+          reward_badges: string[] | null
           start_date: string
           title: string
           updated_at: string | null
           user_id: string
+          visibility: string | null
           yearly_goal: number
         }
         Insert: {
+          category?: string | null
+          completion_criteria?: Json | null
           created_at?: string | null
+          description?: string | null
+          difficulty?: string | null
           end_date: string
           id?: string
+          participants_count?: number | null
+          reward_badges?: string[] | null
           start_date?: string
           title: string
           updated_at?: string | null
           user_id: string
+          visibility?: string | null
           yearly_goal: number
         }
         Update: {
+          category?: string | null
+          completion_criteria?: Json | null
           created_at?: string | null
+          description?: string | null
+          difficulty?: string | null
           end_date?: string
           id?: string
+          participants_count?: number | null
+          reward_badges?: string[] | null
           start_date?: string
           title?: string
           updated_at?: string | null
           user_id?: string
+          visibility?: string | null
           yearly_goal?: number
         }
         Relationships: []
@@ -97,6 +153,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "running_records_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "running_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      running_weekly_stats: {
+        Row: {
+          avg_pace: number | null
+          challenge_id: string
+          completed_runs: number | null
+          id: string
+          total_distance: number
+          total_duration: number | null
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          avg_pace?: number | null
+          challenge_id: string
+          completed_runs?: number | null
+          id?: string
+          total_distance?: number
+          total_duration?: number | null
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          avg_pace?: number | null
+          challenge_id?: string
+          completed_runs?: number | null
+          id?: string
+          total_distance?: number
+          total_duration?: number | null
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "running_weekly_stats_challenge_id_fkey"
             columns: ["challenge_id"]
             isOneToOne: false
             referencedRelation: "running_challenges"

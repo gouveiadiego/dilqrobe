@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, PersonStanding, ChartLine, Medal, Users } from "lucide-react";
+import { Trophy, PersonStanding } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,6 +17,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ChallengesList } from "./challenges/ChallengesList";
+import { ChallengeStats } from "./challenges/ChallengeStats";
+import { WeeklyProgress } from "./challenges/WeeklyProgress";
+import { Achievements } from "./challenges/Achievements";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function ChallengesTab() {
   const navigate = useNavigate();
@@ -26,7 +35,11 @@ export function ChallengesTab() {
   const [newChallenge, setNewChallenge] = useState({
     title: "",
     yearlyGoal: "",
-    endDate: ""
+    endDate: "",
+    description: "",
+    category: "",
+    difficulty: "médio",
+    visibility: "público"
   });
   const [newRun, setNewRun] = useState({
     distance: "",
@@ -154,17 +167,77 @@ export function ChallengesTab() {
     }
   }, [challenges, records]);
 
+  const { data: weeklyStats } = useQuery({
+    queryKey: ['weekly-stats'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) throw new Error("No active session");
+
+      const { data, error } = await supabase
+        .from('running_weekly_stats')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('week_start', { ascending: true });
+
+      if (error) {
+        console.error("Error fetching weekly stats:", error);
+        toast.error("Erro ao carregar estatísticas semanais");
+        throw error;
+      }
+
+      return data || [];
+    },
+    meta: {
+      onError: (error: Error) => {
+        console.error("Query error:", error);
+        if (error.message === "No active session") {
+          navigate("/login");
+        }
+      }
+    }
+  });
+
+  const { data: achievements } = useQuery({
+    queryKey: ['achievements'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) throw new Error("No active session");
+
+      const { data, error } = await supabase
+        .from('running_badges')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('earned_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching achievements:", error);
+        toast.error("Erro ao carregar conquistas");
+        throw error;
+      }
+
+      return data || [];
+    },
+    meta: {
+      onError: (error: Error) => {
+        console.error("Query error:", error);
+        if (error.message === "No active session") {
+          navigate("/login");
+        }
+      }
+    }
+  });
+
   const handleNewChallenge = async () => {
     try {
       if (!newChallenge.title || !newChallenge.yearlyGoal || !newChallenge.endDate) {
-        toast.error("Por favor, preencha todos os campos");
+        toast.error("Por favor, preencha todos os campos obrigatórios");
         return;
       }
 
-      console.log("Creating new challenge...");
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) {
-        console.error("No user session found");
         toast.error("Usuário não autenticado");
         navigate("/login");
         return;
@@ -175,19 +248,27 @@ export function ChallengesTab() {
         title: newChallenge.title,
         yearly_goal: parseFloat(newChallenge.yearlyGoal),
         end_date: newChallenge.endDate,
-        start_date: new Date().toISOString().split('T')[0]
+        start_date: new Date().toISOString().split('T')[0],
+        description: newChallenge.description,
+        category: newChallenge.category,
+        difficulty: newChallenge.difficulty,
+        visibility: newChallenge.visibility
       });
 
-      if (error) {
-        console.error("Error creating challenge:", error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log("Challenge created successfully");
       toast.success("Desafio criado com sucesso!");
       setNewChallengeOpen(false);
       refetch();
-      setNewChallenge({ title: "", yearlyGoal: "", endDate: "" });
+      setNewChallenge({
+        title: "",
+        yearlyGoal: "",
+        endDate: "",
+        description: "",
+        category: "",
+        difficulty: "médio",
+        visibility: "público"
+      });
     } catch (error) {
       console.error("Error in handleNewChallenge:", error);
       toast.error("Erro ao criar desafio");
@@ -269,105 +350,13 @@ export function ChallengesTab() {
         </p>
       </div>
 
-      {/* Quick Stats */}
+      <ChallengeStats currentStats={currentStats} />
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Desafio Atual</CardTitle>
-            <Trophy className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {currentStats.currentChallenge?.yearly_goal || 0} km
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Meta para o ano
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Distância Total</CardTitle>
-            <PersonStanding className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{currentStats.totalDistance.toFixed(1)} km</div>
-            <p className="text-xs text-muted-foreground">
-              {currentStats.percentageComplete.toFixed(1)}% da meta alcançada
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ranking</CardTitle>
-            <Medal className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">3º lugar</div>
-            <p className="text-xs text-muted-foreground">
-              Entre todos os participantes
-            </p>
-          </CardContent>
-        </Card>
+        <WeeklyProgress weeklyStats={weeklyStats || []} />
+        <Achievements achievements={achievements || []} />
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ChartLine className="h-5 w-5" />
-              Progresso
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[200px] flex items-center justify-center text-muted-foreground">
-              Gráfico de progresso será implementado aqui
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Ranking
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                  1
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">João Silva</div>
-                  <div className="text-sm text-muted-foreground">750 km</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold">
-                  2
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">Maria Santos</div>
-                  <div className="text-sm text-muted-foreground">680 km</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-300 to-pink-300 flex items-center justify-center text-white font-bold">
-                  3
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium">Você</div>
-                  <div className="text-sm text-muted-foreground">{currentStats.totalDistance.toFixed(1)} km</div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Action Buttons with Dialogs */}
       <div className="flex gap-4">
         <Dialog open={newChallengeOpen} onOpenChange={setNewChallengeOpen}>
           <DialogTrigger asChild>
@@ -376,7 +365,7 @@ export function ChallengesTab() {
               Novo Desafio
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Criar Novo Desafio</DialogTitle>
               <DialogDescription>
@@ -394,6 +383,15 @@ export function ChallengesTab() {
                 />
               </div>
               <div>
+                <Label htmlFor="description">Descrição</Label>
+                <Textarea
+                  id="description"
+                  value={newChallenge.description}
+                  onChange={(e) => setNewChallenge(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Descreva seu desafio..."
+                />
+              </div>
+              <div>
                 <Label htmlFor="yearlyGoal">Meta Anual (km)</Label>
                 <Input
                   id="yearlyGoal"
@@ -402,6 +400,37 @@ export function ChallengesTab() {
                   onChange={(e) => setNewChallenge(prev => ({ ...prev, yearlyGoal: e.target.value }))}
                   placeholder="Ex: 2025"
                 />
+              </div>
+              <div>
+                <Label htmlFor="difficulty">Dificuldade</Label>
+                <Select
+                  value={newChallenge.difficulty}
+                  onValueChange={(value) => setNewChallenge(prev => ({ ...prev, difficulty: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a dificuldade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fácil">Fácil</SelectItem>
+                    <SelectItem value="médio">Médio</SelectItem>
+                    <SelectItem value="difícil">Difícil</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="visibility">Visibilidade</Label>
+                <Select
+                  value={newChallenge.visibility}
+                  onValueChange={(value) => setNewChallenge(prev => ({ ...prev, visibility: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a visibilidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="público">Público</SelectItem>
+                    <SelectItem value="privado">Privado</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="endDate">Data Final</Label>
@@ -481,7 +510,6 @@ export function ChallengesTab() {
         </Dialog>
       </div>
 
-      {/* Challenges List */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Seus Desafios</h3>
         <ChallengesList 
