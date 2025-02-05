@@ -1,10 +1,10 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ChallengeRankingProps {
   challengeId: string;
@@ -16,7 +16,11 @@ export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('challenge_participants')
-        .select('*, user_id')
+        .select(`
+          *,
+          user_id,
+          profiles:profiles(username, full_name, avatar_url)
+        `)
         .eq('challenge_id', challengeId)
         .order('ranking', { ascending: true });
 
@@ -116,8 +120,19 @@ export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
                   }`}>
                     {participant.ranking}
                   </div>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage 
+                      src={participant.profiles?.avatar_url || ''} 
+                      alt={participant.profiles?.full_name || 'Avatar'} 
+                    />
+                    <AvatarFallback>
+                      {participant.profiles?.full_name?.charAt(0) || '?'}
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
-                    <div className="font-medium">Participante {participant.ranking}</div>
+                    <div className="font-medium">
+                      {participant.profiles?.full_name || participant.profiles?.username || 'Usuário'}
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {participant.total_distance.toFixed(1)} km percorridos
                     </div>
