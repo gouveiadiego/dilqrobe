@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,18 +23,43 @@ export function ProfileTab() {
         throw new Error('No user found');
       }
 
+      console.log('Fetching profile for user:', session.user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('username, full_name, about')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        throw error;
+      }
+
+      console.log('Profile data:', data);
 
       if (data) {
         setUsername(data.username || '');
         setFullName(data.full_name || '');
         setAbout(data.about || '');
+      } else {
+        console.log('No profile found, creating one...');
+        // If no profile exists, create one
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([
+            { 
+              id: session.user.id,
+              username: '',
+              full_name: '',
+              about: ''
+            }
+          ]);
+
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+          throw insertError;
+        }
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -61,6 +85,8 @@ export function ProfileTab() {
         about,
         updated_at: new Date().toISOString(),
       };
+
+      console.log('Updating profile with:', updates);
 
       const { error } = await supabase
         .from('profiles')
