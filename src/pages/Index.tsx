@@ -24,6 +24,7 @@ import { JournalsTab } from "@/components/JournalsTab";
 import { HabitsTab } from "@/components/HabitsTab";
 import DashboardTab from "@/components/DashboardTab";
 import { ChallengesTab } from "@/components/ChallengesTab";
+import { ProfileTab } from "@/components/ProfileTab";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ const Index = () => {
   const [priorityFilter, setPriorityFilter] = useState<Task["priority"] | "all">("all");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges'>('tasks');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges' | 'profile'>('tasks');
 
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -183,7 +184,11 @@ const Index = () => {
             <div className="space-y-2">
               <span className="text-xs font-semibold text-gray-400">CONFIGURAÇÕES</span>
               <div className="space-y-1">
-                <Button variant="ghost" className="w-full justify-start gap-3">
+                <Button 
+                  variant={activeTab === 'profile' ? "secondary" : "ghost"}
+                  className="w-full justify-start gap-3"
+                  onClick={() => setActiveTab('profile')}
+                >
                   <User size={20} />
                   Perfil
                 </Button>
@@ -339,6 +344,8 @@ const Index = () => {
             <ChallengesTab />
           ) : activeTab === 'habits' ? (
             <HabitsTab />
+          ) : activeTab === 'profile' ? (
+            <ProfileTab />
           ) : null}
         </div>
       </main>
