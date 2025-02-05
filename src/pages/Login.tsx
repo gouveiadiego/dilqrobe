@@ -44,7 +44,21 @@ export const Login = () => {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        // Verificar se o email já está em uso
+        const { data: existingUser } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('username', formData.email)
+          .single();
+
+        if (existingUser) {
+          toast.error("Este email já está em uso. Tente fazer login.");
+          setIsSignUp(false);
+          setIsLoading(false);
+          return;
+        }
+
+        const { error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -54,16 +68,32 @@ export const Login = () => {
           },
         });
 
-        if (error) throw error;
+        if (signUpError) {
+          console.error("Signup error:", signUpError);
+          if (signUpError.message.includes("Password")) {
+            toast.error("A senha deve ter pelo menos 6 caracteres");
+          } else {
+            toast.error(signUpError.message);
+          }
+          return;
+        }
 
         toast.success("Conta criada com sucesso! Verifique seu email.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
 
-        if (error) throw error;
+        if (signInError) {
+          console.error("Login error:", signInError);
+          if (signInError.message.includes("Invalid login credentials")) {
+            toast.error("Email ou senha incorretos");
+          } else {
+            toast.error("Erro ao fazer login. Tente novamente.");
+          }
+          return;
+        }
 
         toast.success("Login realizado com sucesso!");
         navigate("/");

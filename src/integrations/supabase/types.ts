@@ -66,6 +66,13 @@ export type Database = {
             referencedRelation: "running_challenges"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "challenge_participants_user_id_fkey_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
