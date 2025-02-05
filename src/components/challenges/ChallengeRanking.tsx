@@ -25,6 +25,7 @@ export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
         throw error;
       }
 
+      console.log("Fetched records:", data);
       return data || [];
     },
   });
@@ -40,19 +41,26 @@ export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
           user_id,
           profiles:profiles(username, full_name, avatar_url)
         `)
-        .eq('challenge_id', challengeId)
-        .order('ranking', { ascending: true });
+        .eq('challenge_id', challengeId);
 
       if (error) {
         console.error("Error fetching participants:", error);
         throw error;
       }
 
+      console.log("Fetched participants:", data);
+
       // Calculate total distance for each participant from records
       const participantsWithDistance = (data || []).map(participant => {
         const userRecords = records?.filter(record => record.user_id === participant.user_id) || [];
         const totalDistance = userRecords.reduce((sum, record) => sum + Number(record.distance), 0);
         const totalRuns = userRecords.length;
+
+        console.log(`Calculating for user ${participant.user_id}:`, {
+          records: userRecords,
+          totalDistance,
+          totalRuns
+        });
 
         return {
           ...participant,
