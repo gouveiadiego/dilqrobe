@@ -44,12 +44,36 @@ export function ChallengesList({ challenges, onDelete }: ChallengesListProps) {
         .eq('challenge_id', id);
 
       if (recordsError) {
-        console.error("Error deleting associated records:", recordsError);
-        toast.error("Erro ao deletar registros associados");
+        console.error("Error deleting running records:", recordsError);
+        toast.error("Erro ao deletar registros de corrida");
         return;
       }
 
-      // Delete challenge participants
+      // Delete running badges
+      const { error: badgesError } = await supabase
+        .from('running_badges')
+        .delete()
+        .eq('challenge_id', id);
+
+      if (badgesError) {
+        console.error("Error deleting badges:", badgesError);
+        toast.error("Erro ao deletar medalhas");
+        return;
+      }
+
+      // Delete weekly stats
+      const { error: statsError } = await supabase
+        .from('running_weekly_stats')
+        .delete()
+        .eq('challenge_id', id);
+
+      if (statsError) {
+        console.error("Error deleting weekly stats:", statsError);
+        toast.error("Erro ao deletar estatísticas semanais");
+        return;
+      }
+
+      // Then delete challenge participants
       const { error: participantsError } = await supabase
         .from('challenge_participants')
         .delete()
@@ -61,7 +85,7 @@ export function ChallengesList({ challenges, onDelete }: ChallengesListProps) {
         return;
       }
 
-      // Then delete the challenge
+      // Finally delete the challenge
       const { error } = await supabase
         .from('running_challenges')
         .delete()
