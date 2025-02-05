@@ -93,10 +93,12 @@ export function ChallengesTab() {
       return data;
     },
     retry: false,
-    onError: (error) => {
-      console.error("Query error:", error);
-      if (error.message === "No active session") {
-        navigate("/login");
+    meta: {
+      onError: (error: Error) => {
+        console.error("Query error:", error);
+        if (error.message === "No active session") {
+          navigate("/login");
+        }
       }
     }
   });
@@ -127,10 +129,12 @@ export function ChallengesTab() {
       return data;
     },
     retry: false,
-    onError: (error) => {
-      console.error("Query error:", error);
-      if (error.message === "No active session") {
-        navigate("/login");
+    meta: {
+      onError: (error: Error) => {
+        console.error("Query error:", error);
+        if (error.message === "No active session") {
+          navigate("/login");
+        }
       }
     }
   });
@@ -487,4 +491,4 @@ export function ChallengesTab() {
       </div>
     </div>
   );
-} // Added missing closing brace here
+}

@@ -20,6 +20,19 @@ interface ChallengesListProps {
 export function ChallengesList({ challenges, onDelete }: ChallengesListProps) {
   const handleDelete = async (id: string) => {
     try {
+      // First, delete all associated running records
+      const { error: recordsError } = await supabase
+        .from('running_records')
+        .delete()
+        .eq('challenge_id', id);
+
+      if (recordsError) {
+        console.error("Error deleting associated records:", recordsError);
+        toast.error("Erro ao deletar registros associados");
+        return;
+      }
+
+      // Then delete the challenge
       const { error } = await supabase
         .from('running_challenges')
         .delete()
