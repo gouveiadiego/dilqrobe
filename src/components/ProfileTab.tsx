@@ -4,12 +4,15 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProfileTextarea } from "./ProfileTextarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Upload } from "lucide-react";
 
 export function ProfileTab() {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
   const [about, setAbout] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     getProfile();
@@ -27,7 +30,7 @@ export function ProfileTab() {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, full_name, about')
+        .select('username, full_name, about, avatar_url')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -42,9 +45,9 @@ export function ProfileTab() {
         setUsername(data.username || '');
         setFullName(data.full_name || '');
         setAbout(data.about || '');
+        setAvatarUrl(data.avatar_url);
       } else {
         console.log('No profile found, creating one...');
-        // If no profile exists, create one
         const { error: insertError } = await supabase
           .from('profiles')
           .insert([
@@ -52,7 +55,8 @@ export function ProfileTab() {
               id: session.user.id,
               username: '',
               full_name: '',
-              about: ''
+              about: '',
+              avatar_url: null
             }
           ]);
 
@@ -82,7 +86,8 @@ export function ProfileTab() {
         id: session.user.id,
         username,
         full_name: fullName,
-        about
+        about,
+        avatar_url: avatarUrl
       };
 
       console.log('Updating profile with:', updates);
@@ -101,6 +106,45 @@ export function ProfileTab() {
     }
   }
 
+  async function uploadAvatar(event: React.ChangeEvent<HTMLInputElement>) {
+    try {
+      setLoading(true);
+      const file = event.target.files?.[0];
+      
+      if (!file) {
+        throw new Error('No file selected');
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error('No user found');
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${session.user.id}/${crypto.randomUUID()}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+      toast.success('Avatar uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Error uploading avatar');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -111,6 +155,32 @@ export function ProfileTab() {
       </div>
 
       <div className="space-y-4">
+        <div className="flex flex-col items-center space-y-4">
+          <Avatar className="h-24 w-24">
+            <AvatarImage src={avatarUrl || ''} alt={fullName} />
+            <AvatarFallback>{fullName?.charAt(0) || '?'}</AvatarFallback>
+          </Avatar>
+          <div className="flex items-center space-x-2">
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={uploadAvatar}
+              className="hidden"
+              id="avatar-upload"
+              disabled={loading}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => document.getElementById('avatar-upload')?.click()}
+              disabled={loading}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Upload foto
+            </Button>
+          </div>
+        </div>
+
         <div>
           <label htmlFor="username" className="block text-sm font-medium mb-2">
             Nome de usuário
