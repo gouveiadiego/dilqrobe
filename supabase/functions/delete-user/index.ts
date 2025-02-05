@@ -6,6 +6,7 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -32,6 +33,8 @@ Deno.serve(async (req) => {
       throw new Error('Not authenticated')
     }
 
+    console.log('Authenticated user:', session.user.id)
+
     // Create a Supabase client with admin privileges
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -51,8 +54,11 @@ Deno.serve(async (req) => {
       .eq('id', session.user.id)
 
     if (profileError) {
+      console.error('Error deleting profile:', profileError)
       throw new Error(`Error deleting profile: ${profileError.message}`)
     }
+
+    console.log('Profile deleted successfully')
 
     // Delete the user from auth.users
     const { error: userError } = await supabaseAdmin.auth.admin.deleteUser(
@@ -60,8 +66,11 @@ Deno.serve(async (req) => {
     )
 
     if (userError) {
+      console.error('Error deleting user:', userError)
       throw new Error(`Error deleting user: ${userError.message}`)
     }
+
+    console.log('User deleted successfully')
 
     return new Response(
       JSON.stringify({ message: 'User deleted successfully' }),
@@ -71,6 +80,7 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error) {
+    console.error('Error in delete-user function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
