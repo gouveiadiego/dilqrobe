@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
 
     // Extract the JWT token from the Authorization header
     const token = authHeader.replace('Bearer ', '')
-    console.log('Received token:', token.substring(0, 10) + '...')
+    console.log('Processing request with token:', token.substring(0, 10) + '...')
 
     // Create a Supabase client with the Auth context of the logged in user
     const supabaseClient = createClient(
