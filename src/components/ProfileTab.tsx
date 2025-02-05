@@ -161,14 +161,13 @@ export function ProfileTab() {
   async function handleDeleteAccount() {
     try {
       setLoading(true);
-      console.log('Starting account deactivation process...');
+      console.log('Starting account deletion process...');
       
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
         console.error('Error getting session:', sessionError);
-        toast.error('Erro de sessão. Por favor, faça login novamente.');
-        navigate('/login');
+        toast.error('Error getting session');
         return;
       }
       
@@ -178,7 +177,7 @@ export function ProfileTab() {
         return;
       }
 
-      // First delete the profile while we still have a valid session
+      // First delete the profile
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
@@ -186,25 +185,35 @@ export function ProfileTab() {
 
       if (profileError) {
         console.error('Error deleting profile:', profileError);
-        toast.error('Erro ao deletar perfil');
+        toast.error('Error deleting profile');
         return;
       }
 
-      console.log('Profile deleted successfully, now signing out');
+      console.log('Profile deleted successfully');
 
-      // Now do a local signout that doesn't require session verification
-      await supabase.auth.signOut({
-        scope: 'local'
-      });
+      // Then delete the user from auth.users using admin access
+      const { error: userError } = await supabase.auth.admin.deleteUser(
+        session.user.id
+      );
 
-      toast.success('Conta desativada com sucesso');
+      if (userError) {
+        console.error('Error deleting user:', userError);
+        toast.error('Error deleting user account');
+        return;
+      }
+
+      console.log('User deleted successfully');
+
+      // Sign out the user
+      await supabase.auth.signOut();
+      
+      toast.success('Account deleted successfully');
       navigate('/login');
     } catch (error) {
-      console.error('Error deactivating account:', error);
-      toast.error('Erro ao desativar conta');
+      console.error('Error deleting account:', error);
+      toast.error('Error deleting account');
     } finally {
       setLoading(false);
-      navigate('/login');
     }
   }
 
