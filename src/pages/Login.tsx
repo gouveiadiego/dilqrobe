@@ -17,19 +17,27 @@ export const Login = () => {
     name: "",
   });
 
-  // Check for existing session on component mount
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/");
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Session check error:", error);
+          return;
+        }
+        if (session) {
+          console.log("Active session found, redirecting to home");
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
       }
     };
     
     checkSession();
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed in Login:", _event);
       if (session) {
         navigate("/");
       }
@@ -44,20 +52,6 @@ export const Login = () => {
 
     try {
       if (isSignUp) {
-        // Verificar se o email já está em uso
-        const { data: existingUser } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('username', formData.email)
-          .single();
-
-        if (existingUser) {
-          toast.error("Este email já está em uso. Tente fazer login.");
-          setIsSignUp(false);
-          setIsLoading(false);
-          return;
-        }
-
         const { error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -95,8 +89,8 @@ export const Login = () => {
           return;
         }
 
+        console.log("Login successful");
         toast.success("Login realizado com sucesso!");
-        navigate("/");
       }
     } catch (error: any) {
       console.error("Auth error:", error);
