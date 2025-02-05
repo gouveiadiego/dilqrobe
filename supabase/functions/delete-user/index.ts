@@ -35,9 +35,14 @@ Deno.serve(async (req) => {
     // Get the current user
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
 
-    if (userError || !user) {
+    if (userError) {
       console.error('Error getting user:', userError)
-      throw new Error('Authentication failed')
+      throw userError
+    }
+
+    if (!user) {
+      console.error('No user found')
+      throw new Error('No user found')
     }
 
     console.log('Authenticated user:', user.id)
