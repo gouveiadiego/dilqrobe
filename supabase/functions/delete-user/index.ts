@@ -12,6 +12,8 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('Starting delete user process...')
+    
     // Get the authorization header from the request
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -29,28 +31,23 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: authHeader },
         },
       }
     )
 
     // Get the current user session
     const {
-      data: { session },
-      error: sessionError,
-    } = await supabaseClient.auth.getSession()
+      data: { user },
+      error: authError,
+    } = await supabaseClient.auth.getUser()
 
-    if (sessionError) {
-      console.error('Session error:', sessionError)
-      throw sessionError
+    if (authError || !user) {
+      console.error('Auth error or no user:', authError)
+      throw new Error('Authentication failed')
     }
 
-    if (!session) {
-      console.error('No session found')
-      throw new Error('Not authenticated')
-    }
-
-    console.log('Authenticated user:', session.user.id)
+    console.log('Authenticated user:', user.id)
 
     // Create a Supabase admin client
     const supabaseAdmin = createClient(
@@ -68,7 +65,7 @@ Deno.serve(async (req) => {
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
-      .eq('id', session.user.id)
+      .eq('id', user.id)
 
     if (profileError) {
       console.error('Error deleting profile:', profileError)
@@ -79,7 +76,7 @@ Deno.serve(async (req) => {
 
     // Delete the user from auth.users
     const { error: userError } = await supabaseAdmin.auth.admin.deleteUser(
-      session.user.id
+      user.id
     )
 
     if (userError) {

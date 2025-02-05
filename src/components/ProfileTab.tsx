@@ -59,24 +59,6 @@ export function ProfileTab() {
         setFullName(data.full_name || '');
         setAbout(data.about || '');
         setAvatarUrl(data.avatar_url);
-      } else {
-        console.log('No profile found, creating one...');
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert([
-            { 
-              id: session.user.id,
-              username: '',
-              full_name: '',
-              about: '',
-              avatar_url: null
-            }
-          ]);
-
-        if (insertError) {
-          console.error('Error creating profile:', insertError);
-          throw insertError;
-        }
       }
     } catch (error) {
       console.error('Error loading profile:', error);
