@@ -66,6 +66,9 @@ export const Login = () => {
           console.error("Signup error:", signUpError);
           if (signUpError.message.includes("Password")) {
             toast.error("A senha deve ter pelo menos 6 caracteres");
+          } else if (signUpError.message.includes("User already registered")) {
+            toast.error("Este email já está registrado. Tente fazer login.");
+            setIsSignUp(false);
           } else {
             toast.error(signUpError.message);
           }
