@@ -149,8 +149,7 @@ export function ProfileTab() {
       
       if (sessionError) {
         console.error('Error getting session:', sessionError);
-        toast.error('Error getting session');
-        return;
+        throw sessionError;
       }
       
       if (!session?.user) {

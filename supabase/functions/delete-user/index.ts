@@ -21,10 +21,6 @@ Deno.serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    // Extract the JWT token from the Authorization header
-    const token = authHeader.replace('Bearer ', '')
-    console.log('Processing request with token:', token.substring(0, 10) + '...')
-
     // Create a Supabase client with the Auth context of the logged in user
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -36,14 +32,11 @@ Deno.serve(async (req) => {
       }
     )
 
-    // Get the current user session
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseClient.auth.getUser()
+    // Get the current user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
 
-    if (authError || !user) {
-      console.error('Auth error or no user:', authError)
+    if (userError || !user) {
+      console.error('Error getting user:', userError)
       throw new Error('Authentication failed')
     }
 
@@ -61,7 +54,8 @@ Deno.serve(async (req) => {
       }
     )
 
-    // Delete the user's profile first
+    // Delete user data in this order: profile, then auth user
+    console.log('Deleting user profile...')
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
@@ -75,13 +69,12 @@ Deno.serve(async (req) => {
     console.log('Profile deleted successfully')
 
     // Delete the user from auth.users
-    const { error: userError } = await supabaseAdmin.auth.admin.deleteUser(
-      user.id
-    )
+    console.log('Deleting auth user...')
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id)
 
-    if (userError) {
-      console.error('Error deleting user:', userError)
-      throw new Error(`Error deleting user: ${userError.message}`)
+    if (deleteError) {
+      console.error('Error deleting user:', deleteError)
+      throw new Error(`Error deleting user: ${deleteError.message}`)
     }
 
     console.log('User deleted successfully')
