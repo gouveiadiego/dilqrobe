@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ChallengesList } from "./challenges/ChallengesList";
 
 export function ChallengesTab() {
   const [newChallengeOpen, setNewChallengeOpen] = useState(false);
@@ -190,6 +191,10 @@ export function ChallengesTab() {
       console.error("Error in handleNewRun:", error);
       toast.error("Erro ao registrar corrida");
     }
+  };
+
+  const handleDeleteChallenge = (id: string) => {
+    refetch();
   };
 
   return (
@@ -411,6 +416,15 @@ export function ChallengesTab() {
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Challenges List */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Seus Desafios</h3>
+        <ChallengesList 
+          challenges={challenges || []} 
+          onDelete={handleDeleteChallenge} 
+        />
       </div>
     </div>
   );
