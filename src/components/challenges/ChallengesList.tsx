@@ -37,55 +37,7 @@ export function ChallengesList({ challenges, onDelete }: ChallengesListProps) {
 
   const handleDelete = async (id: string) => {
     try {
-      // First, delete all associated running records
-      const { error: recordsError } = await supabase
-        .from('running_records')
-        .delete()
-        .eq('challenge_id', id);
-
-      if (recordsError) {
-        console.error("Error deleting running records:", recordsError);
-        toast.error("Erro ao deletar registros de corrida");
-        return;
-      }
-
-      // Delete running badges
-      const { error: badgesError } = await supabase
-        .from('running_badges')
-        .delete()
-        .eq('challenge_id', id);
-
-      if (badgesError) {
-        console.error("Error deleting badges:", badgesError);
-        toast.error("Erro ao deletar medalhas");
-        return;
-      }
-
-      // Delete weekly stats
-      const { error: statsError } = await supabase
-        .from('running_weekly_stats')
-        .delete()
-        .eq('challenge_id', id);
-
-      if (statsError) {
-        console.error("Error deleting weekly stats:", statsError);
-        toast.error("Erro ao deletar estatísticas semanais");
-        return;
-      }
-
-      // Then delete challenge participants
-      const { error: participantsError } = await supabase
-        .from('challenge_participants')
-        .delete()
-        .eq('challenge_id', id);
-
-      if (participantsError) {
-        console.error("Error deleting participants:", participantsError);
-        toast.error("Erro ao deletar participantes");
-        return;
-      }
-
-      // Finally delete the challenge
+      console.log("Deleting challenge:", id);
       const { error } = await supabase
         .from('running_challenges')
         .delete()
