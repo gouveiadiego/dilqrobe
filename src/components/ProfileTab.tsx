@@ -163,7 +163,6 @@ export function ProfileTab() {
       setLoading(true);
       console.log('Starting account deactivation process...');
       
-      // First check if we have a valid session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -174,21 +173,12 @@ export function ProfileTab() {
       }
       
       if (!session?.user) {
-        console.log('No active session found, redirecting to login');
+        console.log('No active session found');
         navigate('/login');
         return;
       }
 
-      console.log('Attempting to sign out first');
-      
-      // First try to sign out
-      await supabase.auth.signOut({
-        scope: 'local'
-      });
-
-      console.log('Sign out successful, now deleting profile data');
-      
-      // Then delete the profile
+      // First delete the profile while we still have a valid session
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
@@ -196,20 +186,25 @@ export function ProfileTab() {
 
       if (profileError) {
         console.error('Error deleting profile:', profileError);
-        toast.error('Erro ao deletar perfil. Por favor, tente novamente.');
-        navigate('/login');
+        toast.error('Erro ao deletar perfil');
         return;
       }
 
-      console.log('Profile deleted successfully');
+      console.log('Profile deleted successfully, now signing out');
+
+      // Now do a local signout that doesn't require session verification
+      await supabase.auth.signOut({
+        scope: 'local'
+      });
+
       toast.success('Conta desativada com sucesso');
       navigate('/login');
     } catch (error) {
       console.error('Error deactivating account:', error);
-      toast.error('Erro ao desativar conta. Por favor, tente novamente.');
-      navigate('/login');
+      toast.error('Erro ao desativar conta');
     } finally {
       setLoading(false);
+      navigate('/login');
     }
   }
 
