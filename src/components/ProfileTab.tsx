@@ -161,12 +161,24 @@ export function ProfileTab() {
   async function handleDeleteAccount() {
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Starting account deactivation process...');
+      
+      // First check if we have a valid session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Error getting session:', sessionError);
+        throw new Error('Failed to verify current session');
+      }
       
       if (!session?.user) {
-        throw new Error('No user found');
+        console.log('No active session found, redirecting to login');
+        navigate('/login');
+        return;
       }
 
+      console.log('Deleting profile data for user:', session.user.id);
+      
       // First delete the profile
       const { error: profileError } = await supabase
         .from('profiles')
@@ -178,19 +190,28 @@ export function ProfileTab() {
         throw profileError;
       }
 
-      // Then sign out
-      const { error: signOutError } = await supabase.auth.signOut();
+      console.log('Profile deleted successfully, attempting to sign out');
+
+      // Then attempt to sign out
+      const { error: signOutError } = await supabase.auth.signOut({
+        scope: 'local'  // Changed to local scope to avoid session verification
+      });
       
       if (signOutError) {
         console.error('Error signing out:', signOutError);
-        throw signOutError;
+        // Even if sign out fails, we'll redirect the user
+        navigate('/login');
+        return;
       }
 
+      console.log('Sign out successful');
       toast.success('Conta desativada com sucesso');
       navigate('/login');
     } catch (error) {
       console.error('Error deactivating account:', error);
-      toast.error('Erro ao desativar conta');
+      toast.error('Erro ao desativar conta. Por favor, tente novamente.');
+      // If there's an error, we'll still try to redirect the user to login
+      navigate('/login');
     } finally {
       setLoading(false);
     }
