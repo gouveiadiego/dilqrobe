@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { FilePlus, FileText, Printer, Eye, Trash2 } from "lucide-react";
+import { FilePlus, FileText, Printer, Eye, Trash2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/utils";
@@ -44,15 +45,20 @@ interface BudgetItem {
 
 interface Budget {
   id: string;
-  client_name: string;
-  client_document: string;
+  client_name?: string;
+  client_document?: string;
   client_email?: string;
   client_phone?: string;
   client_address?: string;
+  company_logo?: string;
+  company_name?: string;
+  company_phone?: string;
+  company_address?: string;
+  company_document?: string;
   total_amount: number;
   created_at: string;
-  valid_until: string;
-  payment_terms: string;
+  valid_until?: string;
+  payment_terms?: string;
   delivery_time?: string;
   items: string | Database['public']['Tables']['budgets']['Row']['items'];
   notes?: string;
@@ -69,6 +75,13 @@ export function BudgetTab() {
     email: '',
     phone: '',
     address: '',
+  });
+  const [companyData, setCompanyData] = useState({
+    name: '',
+    document: '',
+    phone: '',
+    address: '',
+    logo: '',
   });
   const [budgetDetails, setBudgetDetails] = useState({
     validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -94,7 +107,7 @@ export function BudgetTab() {
 
       const { data, error } = await supabase
         .from('budgets')
-        .select('id, client_name, client_document, total_amount, created_at, valid_until, payment_terms, items')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -118,6 +131,13 @@ export function BudgetTab() {
     });
   };
 
+  const handleCompanyDataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setCompanyData({
+      ...companyData,
+      [e.target.id]: e.target.value,
+    });
+  };
+
   const handleBudgetDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setBudgetDetails({
       ...budgetDetails,
@@ -130,6 +150,44 @@ export function BudgetTab() {
       ...budgetDetails,
       paymentTerms: value,
     });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      if (!e.target.files || e.target.files.length === 0) return;
+      
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${crypto.randomUUID()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('company-logos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(filePath);
+
+      setCompanyData(prev => ({
+        ...prev,
+        logo: publicUrl,
+      }));
+
+      toast({
+        title: "Logo enviada com sucesso!",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar logo",
+        description: "Não foi possível enviar a imagem. Tente novamente.",
+        duration: 5000,
+      });
+    }
   };
 
   const handleItemChange = (index: number, field: keyof BudgetItem, value: string | number) => {
@@ -162,27 +220,6 @@ export function BudgetTab() {
 
   const handleSaveBudget = async () => {
     try {
-      // Validate required fields
-      if (!budgetDetails.validUntil) {
-        toast({
-          variant: "destructive",
-          title: "Data inválida",
-          description: "Por favor, selecione uma data de validade para o orçamento.",
-          duration: 5000,
-        });
-        return;
-      }
-
-      if (!clientData.name || !clientData.document || !budgetDetails.paymentTerms) {
-        toast({
-          variant: "destructive",
-          title: "Campos obrigatórios",
-          description: "Por favor, preencha todos os campos obrigatórios.",
-          duration: 5000,
-        });
-        return;
-      }
-
       setLoading(true);
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -195,6 +232,11 @@ export function BudgetTab() {
         client_email: clientData.email,
         client_phone: clientData.phone,
         client_address: clientData.address,
+        company_name: companyData.name,
+        company_document: companyData.document,
+        company_phone: companyData.phone,
+        company_address: companyData.address,
+        company_logo: companyData.logo,
         valid_until: budgetDetails.validUntil,
         payment_terms: budgetDetails.paymentTerms,
         delivery_time: budgetDetails.delivery,
@@ -280,18 +322,18 @@ export function BudgetTab() {
 
   const handleViewBudget = async (budget: Budget) => {
     try {
-      // Parse items if it's a string, otherwise use as is
       const items = typeof budget.items === 'string' ? JSON.parse(budget.items) : budget.items;
       
-      // Create HTML content for the PDF
       const content = `
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Orçamento - ${budget.client_name}</title>
+          <title>Orçamento - ${budget.client_name || 'Sem nome'}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             .header { text-align: center; margin-bottom: 30px; }
+            .company-info { margin-bottom: 20px; }
+            .company-logo { max-width: 200px; max-height: 100px; }
             .section { margin-bottom: 20px; }
             table { width: 100%; border-collapse: collapse; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -300,14 +342,23 @@ export function BudgetTab() {
         </head>
         <body>
           <div class="header">
+            ${budget.company_logo ? `<img src="${budget.company_logo}" class="company-logo" alt="Logo da empresa"/>` : ''}
             <h1>Orçamento</h1>
             <p>Data: ${new Date(budget.created_at).toLocaleDateString('pt-BR')}</p>
           </div>
           
+          <div class="company-info">
+            <h2>Dados da Empresa</h2>
+            ${budget.company_name ? `<p><strong>Nome:</strong> ${budget.company_name}</p>` : ''}
+            ${budget.company_document ? `<p><strong>CNPJ:</strong> ${budget.company_document}</p>` : ''}
+            ${budget.company_phone ? `<p><strong>Telefone:</strong> ${budget.company_phone}</p>` : ''}
+            ${budget.company_address ? `<p><strong>Endereço:</strong> ${budget.company_address}</p>` : ''}
+          </div>
+
           <div class="section">
             <h2>Dados do Cliente</h2>
-            <p><strong>Nome:</strong> ${budget.client_name}</p>
-            <p><strong>Documento:</strong> ${budget.client_document}</p>
+            ${budget.client_name ? `<p><strong>Nome:</strong> ${budget.client_name}</p>` : ''}
+            ${budget.client_document ? `<p><strong>Documento:</strong> ${budget.client_document}</p>` : ''}
             ${budget.client_email ? `<p><strong>Email:</strong> ${budget.client_email}</p>` : ''}
             ${budget.client_phone ? `<p><strong>Telefone:</strong> ${budget.client_phone}</p>` : ''}
             ${budget.client_address ? `<p><strong>Endereço:</strong> ${budget.client_address}</p>` : ''}
@@ -342,8 +393,8 @@ export function BudgetTab() {
 
           <div class="section">
             <h2>Condições</h2>
-            <p><strong>Validade:</strong> ${new Date(budget.valid_until).toLocaleDateString('pt-BR')}</p>
-            <p><strong>Forma de Pagamento:</strong> ${budget.payment_terms}</p>
+            ${budget.valid_until ? `<p><strong>Validade:</strong> ${new Date(budget.valid_until).toLocaleDateString('pt-BR')}</p>` : ''}
+            ${budget.payment_terms ? `<p><strong>Forma de Pagamento:</strong> ${budget.payment_terms}</p>` : ''}
             ${budget.delivery_time ? `<p><strong>Prazo de Entrega:</strong> ${budget.delivery_time}</p>` : ''}
             ${budget.notes ? `<p><strong>Observações:</strong> ${budget.notes}</p>` : ''}
           </div>
@@ -351,11 +402,9 @@ export function BudgetTab() {
         </html>
       `;
 
-      // Create a Blob with the HTML content
       const blob = new Blob([content], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
 
-      // Open in a new window for printing
       const printWindow = window.open(url, '_blank');
       if (printWindow) {
         printWindow.onload = () => {
@@ -386,10 +435,6 @@ export function BudgetTab() {
           <Button variant="outline" onClick={() => setShowForm(false)}>
             <FileText className="mr-2 h-4 w-4" />
             Ver Lista
-          </Button>
-          <Button variant="outline">
-            <Printer className="mr-2 h-4 w-4" />
-            Exportar PDF
           </Button>
           <Button onClick={() => setShowForm(true)}>
             <FilePlus className="mr-2 h-4 w-4" />
@@ -485,6 +530,83 @@ export function BudgetTab() {
         </Card>
       ) : (
         <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações da Empresa</CardTitle>
+              <CardDescription>
+                Configure as informações da sua empresa que aparecerão no orçamento
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="company-name">Nome da Empresa</Label>
+                  <Input 
+                    id="name" 
+                    placeholder="Nome ou razão social" 
+                    value={companyData.name}
+                    onChange={handleCompanyDataChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="document">CNPJ</Label>
+                  <Input 
+                    id="document" 
+                    placeholder="Digite o CNPJ" 
+                    value={companyData.document}
+                    onChange={handleCompanyDataChange}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input 
+                    id="phone" 
+                    placeholder="(00) 00000-0000" 
+                    value={companyData.phone}
+                    onChange={handleCompanyDataChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Endereço</Label>
+                  <Input 
+                    id="address" 
+                    placeholder="Endereço completo" 
+                    value={companyData.address}
+                    onChange={handleCompanyDataChange}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Logo da Empresa</Label>
+                <div className="flex items-center gap-4">
+                  {companyData.logo && (
+                    <img 
+                      src={companyData.logo} 
+                      alt="Logo da empresa" 
+                      className="h-12 w-auto object-contain"
+                    />
+                  )}
+                  <Label 
+                    htmlFor="logo-upload" 
+                    className="cursor-pointer flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Enviar Logo
+                  </Label>
+                  <Input 
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Informações do Cliente</CardTitle>

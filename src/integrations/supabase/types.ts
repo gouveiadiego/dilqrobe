@@ -14,52 +14,67 @@ export type Database = {
           client_address: string | null
           client_document: string | null
           client_email: string | null
-          client_name: string
+          client_name: string | null
           client_phone: string | null
+          company_address: string | null
+          company_document: string | null
+          company_logo: string | null
+          company_name: string | null
+          company_phone: string | null
           created_at: string | null
           delivery_time: string | null
           id: string
           items: Json
           notes: string | null
-          payment_terms: string
+          payment_terms: string | null
           total_amount: number
           updated_at: string | null
           user_id: string
-          valid_until: string
+          valid_until: string | null
         }
         Insert: {
           client_address?: string | null
           client_document?: string | null
           client_email?: string | null
-          client_name: string
+          client_name?: string | null
           client_phone?: string | null
+          company_address?: string | null
+          company_document?: string | null
+          company_logo?: string | null
+          company_name?: string | null
+          company_phone?: string | null
           created_at?: string | null
           delivery_time?: string | null
           id?: string
           items?: Json
           notes?: string | null
-          payment_terms: string
+          payment_terms?: string | null
           total_amount?: number
           updated_at?: string | null
           user_id: string
-          valid_until: string
+          valid_until?: string | null
         }
         Update: {
           client_address?: string | null
           client_document?: string | null
           client_email?: string | null
-          client_name?: string
+          client_name?: string | null
           client_phone?: string | null
+          company_address?: string | null
+          company_document?: string | null
+          company_logo?: string | null
+          company_name?: string | null
+          company_phone?: string | null
           created_at?: string | null
           delivery_time?: string | null
           id?: string
           items?: Json
           notes?: string | null
-          payment_terms?: string
+          payment_terms?: string | null
           total_amount?: number
           updated_at?: string | null
           user_id?: string
-          valid_until?: string
+          valid_until?: string | null
         }
         Relationships: []
       }
