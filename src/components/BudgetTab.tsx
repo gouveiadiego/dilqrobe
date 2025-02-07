@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,9 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FilePlus, FileText, Printer } from "lucide-react";
+import { FilePlus, FileText, Printer, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { formatCurrency } from "@/lib/utils";
 
 interface BudgetItem {
   description: string;
@@ -31,9 +31,20 @@ interface BudgetItem {
   totalPrice: number;
 }
 
+interface Budget {
+  id: string;
+  client_name: string;
+  client_document: string;
+  total_amount: number;
+  created_at: string;
+  valid_until: string;
+}
+
 export function BudgetTab() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [clientData, setClientData] = useState({
     name: '',
     document: '',
@@ -53,6 +64,34 @@ export function BudgetTab() {
     unitPrice: 0,
     totalPrice: 0,
   }]);
+
+  useEffect(() => {
+    fetchBudgets();
+  }, []);
+
+  const fetchBudgets = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('budgets')
+        .select('id, client_name, client_document, total_amount, created_at, valid_until')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setBudgets(data || []);
+    } catch (error) {
+      console.error('Error fetching budgets:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar orçamentos",
+        description: "Não foi possível carregar a lista de orçamentos.",
+        duration: 5000,
+      });
+    }
+  };
 
   const handleClientDataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setClientData({
@@ -133,11 +172,11 @@ export function BudgetTab() {
 
       toast({
         title: "Orçamento salvo com sucesso!",
-        description: "O orçamento foi salvo e pode ser visualizado na lista de orçamentos. Em breve adicionaremos a visualização dos orçamentos salvos.",
+        description: "O orçamento foi salvo e pode ser visualizado na lista abaixo.",
         duration: 5000,
       });
 
-      // Reset form
+      // Reset form and fetch updated list
       setClientData({
         name: '',
         document: '',
@@ -157,6 +196,8 @@ export function BudgetTab() {
         unitPrice: 0,
         totalPrice: 0,
       }]);
+      setShowForm(false);
+      fetchBudgets();
 
     } catch (error) {
       console.error('Error saving budget:', error);
@@ -181,212 +222,271 @@ export function BudgetTab() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowForm(false)}>
             <FileText className="mr-2 h-4 w-4" />
-            Visualizar
+            Ver Lista
           </Button>
           <Button variant="outline">
             <Printer className="mr-2 h-4 w-4" />
             Exportar PDF
           </Button>
-          <Button>
+          <Button onClick={() => setShowForm(true)}>
             <FilePlus className="mr-2 h-4 w-4" />
             Novo Orçamento
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-6">
+      {!showForm ? (
         <Card>
           <CardHeader>
-            <CardTitle>Informações do Cliente</CardTitle>
+            <CardTitle>Lista de Orçamentos</CardTitle>
             <CardDescription>
-              Preencha os dados do cliente para o orçamento
+              Visualize e gerencie todos os seus orçamentos
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome do Cliente</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Nome completo ou razão social" 
-                  value={clientData.name}
-                  onChange={handleClientDataChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="document">CPF/CNPJ</Label>
-                <Input 
-                  id="document" 
-                  placeholder="Digite o documento" 
-                  value={clientData.document}
-                  onChange={handleClientDataChange}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="email@exemplo.com" 
-                  value={clientData.email}
-                  onChange={handleClientDataChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input 
-                  id="phone" 
-                  placeholder="(00) 00000-0000" 
-                  value={clientData.phone}
-                  onChange={handleClientDataChange}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address">Endereço Completo</Label>
-              <Textarea 
-                id="address" 
-                placeholder="Digite o endereço completo" 
-                value={clientData.address}
-                onChange={handleClientDataChange}
-              />
+          <CardContent>
+            <div className="grid gap-4">
+              {budgets.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">
+                  Nenhum orçamento encontrado. Clique em "Novo Orçamento" para criar um.
+                </p>
+              ) : (
+                budgets.map((budget) => (
+                  <Card key={budget.id}>
+                    <CardContent className="pt-6">
+                      <div className="grid grid-cols-5 gap-4">
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Cliente</Label>
+                          <p className="font-medium">{budget.client_name}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">CPF/CNPJ</Label>
+                          <p className="font-medium">{budget.client_document}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Data</Label>
+                          <p className="font-medium">
+                            {new Date(budget.created_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Validade</Label>
+                          <p className="font-medium">
+                            {new Date(budget.valid_until).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-sm text-muted-foreground">Valor Total</Label>
+                          <p className="font-medium">{formatCurrency(budget.total_amount)}</p>
+                        </div>
+                      </div>
+                      <div className="flex justify-end mt-4">
+                        <Button variant="outline" size="sm">
+                          <Eye className="mr-2 h-4 w-4" />
+                          Visualizar
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Detalhes do Orçamento</CardTitle>
-            <CardDescription>
-              Configure os itens e condições do orçamento
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+      ) : (
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações do Cliente</CardTitle>
+              <CardDescription>
+                Preencha os dados do cliente para o orçamento
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome do Cliente</Label>
+                  <Input 
+                    id="name" 
+                    placeholder="Nome completo ou razão social" 
+                    value={clientData.name}
+                    onChange={handleClientDataChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="document">CPF/CNPJ</Label>
+                  <Input 
+                    id="document" 
+                    placeholder="Digite o documento" 
+                    value={clientData.document}
+                    onChange={handleClientDataChange}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="email@exemplo.com" 
+                    value={clientData.email}
+                    onChange={handleClientDataChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input 
+                    id="phone" 
+                    placeholder="(00) 00000-0000" 
+                    value={clientData.phone}
+                    onChange={handleClientDataChange}
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="validUntil">Validade</Label>
-                <Input 
-                  id="validUntil" 
-                  type="date" 
-                  value={budgetDetails.validUntil}
-                  onChange={handleBudgetDetailsChange}
+                <Label htmlFor="address">Endereço Completo</Label>
+                <Textarea 
+                  id="address" 
+                  placeholder="Digite o endereço completo" 
+                  value={clientData.address}
+                  onChange={handleClientDataChange}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="paymentTerms">Condição de Pagamento</Label>
-                <Select value={budgetDetails.paymentTerms} onValueChange={handlePaymentTermsChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="vista">À Vista</SelectItem>
-                    <SelectItem value="30dias">30 Dias</SelectItem>
-                    <SelectItem value="2x">2x Sem Juros</SelectItem>
-                    <SelectItem value="3x">3x Sem Juros</SelectItem>
-                    <SelectItem value="custom">Personalizado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="delivery">Prazo de Entrega</Label>
-                <Input 
-                  id="delivery" 
-                  placeholder="Ex: 30 dias úteis" 
-                  value={budgetDetails.delivery}
-                  onChange={handleBudgetDetailsChange}
-                />
-              </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-2">
-              <Label>Itens do Orçamento</Label>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-12 gap-4 mb-4 font-semibold">
-                    <div className="col-span-5">Descrição</div>
-                    <div className="col-span-2">Quantidade</div>
-                    <div className="col-span-2">Valor Unit.</div>
-                    <div className="col-span-2">Valor Total</div>
-                    <div className="col-span-1"></div>
-                  </div>
-                  {items.map((item, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-4 items-center mb-2">
-                      <div className="col-span-5">
-                        <Input 
-                          placeholder="Descrição do item"
-                          value={item.description}
-                          onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          placeholder="Qtd"
-                          value={item.quantity}
-                          onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <Input 
-                          type="number" 
-                          step="0.01" 
-                          min="0" 
-                          placeholder="R$ 0,00"
-                          value={item.unitPrice}
-                          onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <Input 
-                          type="number" 
-                          value={item.totalPrice.toFixed(2)} 
-                          readOnly
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <Button variant="ghost" size="sm" onClick={addItem}>+</Button>
-                      </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Detalhes do Orçamento</CardTitle>
+              <CardDescription>
+                Configure os itens e condições do orçamento
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="validUntil">Validade</Label>
+                  <Input 
+                    id="validUntil" 
+                    type="date" 
+                    value={budgetDetails.validUntil}
+                    onChange={handleBudgetDetailsChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="paymentTerms">Condição de Pagamento</Label>
+                  <Select value={budgetDetails.paymentTerms} onValueChange={handlePaymentTermsChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vista">À Vista</SelectItem>
+                      <SelectItem value="30dias">30 Dias</SelectItem>
+                      <SelectItem value="2x">2x Sem Juros</SelectItem>
+                      <SelectItem value="3x">3x Sem Juros</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="delivery">Prazo de Entrega</Label>
+                  <Input 
+                    id="delivery" 
+                    placeholder="Ex: 30 dias úteis" 
+                    value={budgetDetails.delivery}
+                    onChange={handleBudgetDetailsChange}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Itens do Orçamento</Label>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-12 gap-4 mb-4 font-semibold">
+                      <div className="col-span-5">Descrição</div>
+                      <div className="col-span-2">Quantidade</div>
+                      <div className="col-span-2">Valor Unit.</div>
+                      <div className="col-span-2">Valor Total</div>
+                      <div className="col-span-1"></div>
                     </div>
-                  ))}
-                  <div className="mt-4 text-right">
-                    <p className="font-semibold">Total: R$ {calculateTotal().toFixed(2)}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    {items.map((item, index) => (
+                      <div key={index} className="grid grid-cols-12 gap-4 items-center mb-2">
+                        <div className="col-span-5">
+                          <Input 
+                            placeholder="Descrição do item"
+                            value={item.description}
+                            onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Input 
+                            type="number" 
+                            min="1" 
+                            placeholder="Qtd"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Input 
+                            type="number" 
+                            step="0.01" 
+                            min="0" 
+                            placeholder="R$ 0,00"
+                            value={item.unitPrice}
+                            onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Input 
+                            type="number" 
+                            value={item.totalPrice.toFixed(2)} 
+                            readOnly
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Button variant="ghost" size="sm" onClick={addItem}>+</Button>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="mt-4 text-right">
+                      <p className="font-semibold">Total: R$ {calculateTotal().toFixed(2)}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Textarea
-                id="notes"
-                placeholder="Adicione informações importantes, termos e condições"
-                className="min-h-[100px]"
-                value={budgetDetails.notes}
-                onChange={handleBudgetDetailsChange}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <div className="text-sm text-muted-foreground">
-              * Todos os campos são obrigatórios
-            </div>
-            <div className="space-x-2">
-              <Button variant="outline">Cancelar</Button>
-              <Button 
-                onClick={handleSaveBudget}
-                disabled={loading}
-              >
-                {loading ? "Salvando..." : "Salvar Orçamento"}
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Observações</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Adicione informações importantes, termos e condições"
+                  className="min-h-[100px]"
+                  value={budgetDetails.notes}
+                  onChange={handleBudgetDetailsChange}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <div className="text-sm text-muted-foreground">
+                * Todos os campos são obrigatórios
+              </div>
+              <div className="space-x-2">
+                <Button variant="outline">Cancelar</Button>
+                <Button 
+                  onClick={handleSaveBudget}
+                  disabled={loading}
+                >
+                  {loading ? "Salvando..." : "Salvar Orçamento"}
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
