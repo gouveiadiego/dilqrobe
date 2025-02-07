@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
@@ -47,7 +46,7 @@ const Index = () => {
   const [priorityFilter, setPriorityFilter] = useState<Task["priority"] | "all">("all");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges' | 'profile' | 'settings'>('tasks');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges' | 'profile' | 'settings' | 'budget'>('tasks');
 
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));

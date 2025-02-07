@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { FilePlus, FileText, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 
 interface BudgetItem {
   description: string;
@@ -119,7 +120,7 @@ export function BudgetTab() {
         valid_until: budgetDetails.validUntil,
         payment_terms: budgetDetails.paymentTerms,
         delivery_time: budgetDetails.delivery,
-        items: items,
+        items: JSON.stringify(items),
         notes: budgetDetails.notes,
         total_amount: calculateTotal(),
       };
