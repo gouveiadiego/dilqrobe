@@ -496,7 +496,7 @@ export function BudgetTab() {
                         <div>
                           <Label className="text-sm text-muted-foreground">Validade</Label>
                           <p className="font-medium">
-                            {new Date(budget.valid_until).toLocaleDateString('pt-BR')}
+                            {budget.valid_until ? new Date(budget.valid_until).toLocaleDateString('pt-BR') : '-'}
                           </p>
                         </div>
                         <div>
@@ -511,7 +511,7 @@ export function BudgetTab() {
                           onClick={() => handleViewBudget(budget)}
                         >
                           <Eye className="mr-2 h-4 w-4" />
-                          Visualizar/PDF
+                          Visualizar/Imprimir
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -557,7 +557,7 @@ export function BudgetTab() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="company-name">Nome da Empresa</Label>
+                  <Label htmlFor="name">Nome da Empresa</Label>
                   <Input 
                     id="name" 
                     placeholder="Nome ou razão social" 
@@ -626,7 +626,7 @@ export function BudgetTab() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Informações do Cliente</CardTitle>
+              <CardTitle>Dados do Cliente</CardTitle>
               <CardDescription>
                 Preencha os dados do cliente para o orçamento
               </CardDescription>
@@ -736,7 +736,7 @@ export function BudgetTab() {
                     <div className="grid grid-cols-12 gap-4 mb-4 font-semibold">
                       <div className="col-span-5">Descrição</div>
                       <div className="col-span-2">Quantidade</div>
-                      <div className="col-span-2">Valor Unit.</div>
+                      <div className="col-span-2">Valor Unitário</div>
                       <div className="col-span-2">Valor Total</div>
                       <div className="col-span-1"></div>
                     </div>
@@ -781,7 +781,7 @@ export function BudgetTab() {
                       </div>
                     ))}
                     <div className="mt-4 text-right">
-                      <p className="font-semibold">Total: R$ {calculateTotal().toFixed(2)}</p>
+                      <p className="font-semibold">Total: {formatCurrency(calculateTotal())}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -803,7 +803,7 @@ export function BudgetTab() {
                 * Todos os campos são obrigatórios
               </div>
               <div className="space-x-2">
-                <Button variant="outline">Cancelar</Button>
+                <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
                 <Button 
                   onClick={handleSaveBudget}
                   disabled={loading}
