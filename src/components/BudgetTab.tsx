@@ -141,6 +141,17 @@ export function BudgetTab() {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
       
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          variant: "destructive",
+          title: "Erro de autenticação",
+          description: "Você precisa estar logado para fazer upload de arquivos.",
+          duration: 5000,
+        });
+        return;
+      }
+      
       const file = e.target.files[0];
       const fileExt = file.name.split('.').pop();
       const filePath = `${crypto.randomUUID()}.${fileExt}`;
