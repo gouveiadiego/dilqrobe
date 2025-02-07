@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,20 +137,6 @@ export function BudgetTab() {
     });
   };
 
-  const handleBudgetDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setBudgetDetails({
-      ...budgetDetails,
-      [e.target.id]: e.target.value,
-    });
-  };
-
-  const handlePaymentTermsChange = (value: string) => {
-    setBudgetDetails({
-      ...budgetDetails,
-      paymentTerms: value,
-    });
-  };
-
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
@@ -264,6 +249,13 @@ export function BudgetTab() {
         email: '',
         phone: '',
         address: '',
+      });
+      setCompanyData({
+        name: '',
+        document: '',
+        phone: '',
+        address: '',
+        logo: '',
       });
       setBudgetDetails({
         validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
