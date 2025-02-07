@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -25,6 +25,24 @@ export function SettingsTab() {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+
+  // Effect to initialize dark mode state from system/localStorage
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains("dark");
+    setDarkMode(isDark);
+  }, []);
+
+  const toggleDarkMode = (enabled: boolean) => {
+    setDarkMode(enabled);
+    if (enabled) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+    toast.success(`Modo ${enabled ? 'escuro' : 'claro'} ativado`);
+  };
 
   const handleSaveSettings = () => {
     toast.success("Configurações salvas com sucesso!");
@@ -111,7 +129,7 @@ export function SettingsTab() {
                 <Switch
                   id="dark-mode"
                   checked={darkMode}
-                  onCheckedChange={setDarkMode}
+                  onCheckedChange={toggleDarkMode}
                 />
               </div>
             </CardContent>
