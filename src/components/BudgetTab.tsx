@@ -133,7 +133,8 @@ export function BudgetTab() {
 
       toast({
         title: "Orçamento salvo com sucesso!",
-        description: "O orçamento foi cadastrado no sistema.",
+        description: "O orçamento foi salvo e pode ser visualizado na lista de orçamentos. Em breve adicionaremos a visualização dos orçamentos salvos.",
+        duration: 5000,
       });
 
       // Reset form
@@ -163,6 +164,7 @@ export function BudgetTab() {
         variant: "destructive",
         title: "Erro ao salvar orçamento",
         description: "Ocorreu um erro ao tentar salvar o orçamento. Tente novamente.",
+        duration: 5000,
       });
     } finally {
       setLoading(false);
