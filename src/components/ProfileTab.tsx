@@ -158,7 +158,9 @@ export function ProfileTab() {
         return;
       }
 
-      // Call the Edge Function with the access token
+      console.log('Session found, proceeding with deletion...');
+      console.log('Access token:', session.access_token);
+
       const { data, error } = await supabase.functions.invoke('delete-user', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -166,16 +168,19 @@ export function ProfileTab() {
       });
 
       if (error) {
-        console.error('Error deleting account:', error);
+        console.error('Error from Edge Function:', error);
         throw error;
       }
 
       console.log('Account deleted successfully:', data);
       toast.success('Account deleted successfully');
+      
+      // Sign out after successful deletion
+      await supabase.auth.signOut();
       navigate('/login');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting account:', error);
-      toast.error('Error deleting account');
+      toast.error(error.message || 'Error deleting account');
     } finally {
       setLoading(false);
     }
