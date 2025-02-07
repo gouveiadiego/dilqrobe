@@ -71,7 +71,7 @@ export function BudgetTab() {
     address: '',
   });
   const [budgetDetails, setBudgetDetails] = useState({
-    validUntil: '',
+    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     paymentTerms: '',
     delivery: '',
     notes: '',
@@ -162,6 +162,27 @@ export function BudgetTab() {
 
   const handleSaveBudget = async () => {
     try {
+      // Validate required fields
+      if (!budgetDetails.validUntil) {
+        toast({
+          variant: "destructive",
+          title: "Data inválida",
+          description: "Por favor, selecione uma data de validade para o orçamento.",
+          duration: 5000,
+        });
+        return;
+      }
+
+      if (!clientData.name || !clientData.document || !budgetDetails.paymentTerms) {
+        toast({
+          variant: "destructive",
+          title: "Campos obrigatórios",
+          description: "Por favor, preencha todos os campos obrigatórios.",
+          duration: 5000,
+        });
+        return;
+      }
+
       setLoading(true);
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -194,7 +215,7 @@ export function BudgetTab() {
         duration: 5000,
       });
 
-      // Reset form and fetch updated list
+      // Reset form
       setClientData({
         name: '',
         document: '',
@@ -203,7 +224,7 @@ export function BudgetTab() {
         address: '',
       });
       setBudgetDetails({
-        validUntil: '',
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         paymentTerms: '',
         delivery: '',
         notes: '',
