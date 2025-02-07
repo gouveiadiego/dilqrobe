@@ -203,6 +203,20 @@ export function BudgetTab() {
     return items.reduce((sum, item) => sum + item.totalPrice, 0);
   };
 
+  const handleBudgetDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setBudgetDetails({
+      ...budgetDetails,
+      [e.target.id]: e.target.value,
+    });
+  };
+
+  const handlePaymentTermsChange = (value: string) => {
+    setBudgetDetails({
+      ...budgetDetails,
+      paymentTerms: value,
+    });
+  };
+
   const handleSaveBudget = async () => {
     try {
       setLoading(true);
