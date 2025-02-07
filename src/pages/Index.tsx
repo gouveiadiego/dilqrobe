@@ -25,6 +25,7 @@ import { HabitsTab } from "@/components/HabitsTab";
 import DashboardTab from "@/components/DashboardTab";
 import { ChallengesTab } from "@/components/ChallengesTab";
 import { ProfileTab } from "@/components/ProfileTab";
+import { SettingsTab } from "@/components/SettingsTab";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ const Index = () => {
   const [priorityFilter, setPriorityFilter] = useState<Task["priority"] | "all">("all");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges' | 'profile'>('tasks');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges' | 'profile' | 'settings'>('tasks');
 
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -192,7 +193,11 @@ const Index = () => {
                   <User size={20} />
                   Perfil
                 </Button>
-                <Button variant="ghost" className="w-full justify-start gap-3">
+                <Button 
+                  variant={activeTab === 'settings' ? "secondary" : "ghost"}
+                  className="w-full justify-start gap-3"
+                  onClick={() => setActiveTab('settings')}
+                >
                   <Settings size={20} />
                   Configurações
                 </Button>
@@ -346,6 +351,8 @@ const Index = () => {
             <HabitsTab />
           ) : activeTab === 'profile' ? (
             <ProfileTab />
+          ) : activeTab === 'settings' ? (
+            <SettingsTab />
           ) : null}
         </div>
       </main>
