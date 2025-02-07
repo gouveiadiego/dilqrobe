@@ -19,7 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FilePlus, FileText, Printer, Eye } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { FilePlus, FileText, Printer, Eye, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/utils";
@@ -35,9 +46,16 @@ interface Budget {
   id: string;
   client_name: string;
   client_document: string;
+  client_email?: string;
+  client_phone?: string;
+  client_address?: string;
   total_amount: number;
   created_at: string;
   valid_until: string;
+  payment_terms: string;
+  delivery_time?: string;
+  items: string;
+  notes?: string;
 }
 
 export function BudgetTab() {
@@ -212,6 +230,128 @@ export function BudgetTab() {
     }
   };
 
+  const handleDeleteBudget = async (budgetId: string) => {
+    try {
+      const { error } = await supabase
+        .from('budgets')
+        .delete()
+        .eq('id', budgetId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Orçamento excluído com sucesso!",
+        description: "O orçamento foi removido da sua lista.",
+        duration: 5000,
+      });
+
+      fetchBudgets(); // Refresh the list
+    } catch (error) {
+      console.error('Error deleting budget:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir orçamento",
+        description: "Não foi possível excluir o orçamento. Tente novamente.",
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleViewBudget = async (budget: Budget) => {
+    try {
+      // Parse items from JSON string to array
+      const items = JSON.parse(budget.items);
+      
+      // Create HTML content for the PDF
+      const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Orçamento - ${budget.client_name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .total { font-weight: bold; text-align: right; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Orçamento</h1>
+            <p>Data: ${new Date(budget.created_at).toLocaleDateString('pt-BR')}</p>
+          </div>
+          
+          <div class="section">
+            <h2>Dados do Cliente</h2>
+            <p><strong>Nome:</strong> ${budget.client_name}</p>
+            <p><strong>Documento:</strong> ${budget.client_document}</p>
+            ${budget.client_email ? `<p><strong>Email:</strong> ${budget.client_email}</p>` : ''}
+            ${budget.client_phone ? `<p><strong>Telefone:</strong> ${budget.client_phone}</p>` : ''}
+            ${budget.client_address ? `<p><strong>Endereço:</strong> ${budget.client_address}</p>` : ''}
+          </div>
+
+          <div class="section">
+            <h2>Itens do Orçamento</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th>Quantidade</th>
+                  <th>Valor Unitário</th>
+                  <th>Valor Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items.map((item: BudgetItem) => `
+                  <tr>
+                    <td>${item.description}</td>
+                    <td>${item.quantity}</td>
+                    <td>${formatCurrency(item.unitPrice)}</td>
+                    <td>${formatCurrency(item.totalPrice)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div class="total">
+              <p>Total: ${formatCurrency(budget.total_amount)}</p>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Condições</h2>
+            <p><strong>Validade:</strong> ${new Date(budget.valid_until).toLocaleDateString('pt-BR')}</p>
+            <p><strong>Forma de Pagamento:</strong> ${budget.payment_terms}</p>
+            ${budget.delivery_time ? `<p><strong>Prazo de Entrega:</strong> ${budget.delivery_time}</p>` : ''}
+            ${budget.notes ? `<p><strong>Observações:</strong> ${budget.notes}</p>` : ''}
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Create a Blob with the HTML content
+      const blob = new Blob([content], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+
+      // Open in a new window for printing
+      const printWindow = window.open(url, '_blank');
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+      }
+    } catch (error) {
+      console.error('Error viewing budget:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao visualizar orçamento",
+        description: "Não foi possível gerar a visualização do orçamento.",
+        duration: 5000,
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -281,11 +421,39 @@ export function BudgetTab() {
                           <p className="font-medium">{formatCurrency(budget.total_amount)}</p>
                         </div>
                       </div>
-                      <div className="flex justify-end mt-4">
-                        <Button variant="outline" size="sm">
+                      <div className="flex justify-end mt-4 space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewBudget(budget)}
+                        >
                           <Eye className="mr-2 h-4 w-4" />
-                          Visualizar
+                          Visualizar/PDF
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteBudget(budget.id)}
+                              >
+                                Confirmar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </CardContent>
                   </Card>
