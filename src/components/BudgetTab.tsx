@@ -94,7 +94,7 @@ export function BudgetTab() {
 
       const { data, error } = await supabase
         .from('budgets')
-        .select('id, client_name, client_document, total_amount, created_at, valid_until')
+        .select('id, client_name, client_document, total_amount, created_at, valid_until, payment_terms, items')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
