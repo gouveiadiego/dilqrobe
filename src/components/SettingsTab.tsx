@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,21 +25,29 @@ export function SettingsTab() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
 
-  // Effect to initialize dark mode state from system/localStorage
+  // Effect to initialize dark mode state from localStorage
   useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark");
-    setDarkMode(isDark);
+    // Check localStorage first
+    const savedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    
+    // If theme is saved in localStorage, use that
+    if (savedTheme) {
+      setDarkMode(savedTheme === "dark");
+      document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    } 
+    // Otherwise use system preference
+    else {
+      setDarkMode(systemPrefersDark);
+      document.documentElement.classList.toggle("dark", systemPrefersDark);
+      localStorage.setItem("theme", systemPrefersDark ? "dark" : "light");
+    }
   }, []);
 
   const toggleDarkMode = (enabled: boolean) => {
     setDarkMode(enabled);
-    if (enabled) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    document.documentElement.classList.toggle("dark", enabled);
+    localStorage.setItem("theme", enabled ? "dark" : "light");
     toast.success(`Modo ${enabled ? 'escuro' : 'claro'} ativado`);
   };
 
