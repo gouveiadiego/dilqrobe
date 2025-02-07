@@ -54,7 +54,7 @@ interface Budget {
   valid_until: string;
   payment_terms: string;
   delivery_time?: string;
-  items: string;
+  items: string | Database['public']['Tables']['budgets']['Row']['items'];
   notes?: string;
 }
 
