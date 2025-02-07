@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,8 +18,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
-          console.error("Error getting session:", error);
-          setSession(null);
+          if (error.message.includes("Invalid Refresh Token")) {
+            console.log("Invalid refresh token, signing out");
+            await supabase.auth.signOut();
+            setSession(null);
+          } else {
+            console.error("Error getting session:", error);
+            setSession(null);
+          }
         } else {
           setSession(session);
         }
@@ -37,9 +44,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log("Auth state changed:", _event);
+      
       if (_event === 'TOKEN_REFRESHED') {
         console.log('Token was refreshed successfully');
+      } else if (_event === 'SIGNED_OUT') {
+        console.log('User signed out');
       }
+      
       setSession(session);
       setLoading(false);
     });
