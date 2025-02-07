@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Menu, CheckSquare, Wallet, LayoutDashboard, LogOut, Trophy, Calendar, User, Settings } from "lucide-react";
+import { Search, Menu, CheckSquare, Wallet, LayoutDashboard, LogOut, Trophy, Calendar, User, Settings, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,6 +27,7 @@ import DashboardTab from "@/components/DashboardTab";
 import { ChallengesTab } from "@/components/ChallengesTab";
 import { ProfileTab } from "@/components/ProfileTab";
 import { SettingsTab } from "@/components/SettingsTab";
+import { BudgetTab } from "@/components/BudgetTab";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -164,6 +166,14 @@ const Index = () => {
                   Financeiro
                 </Button>
                 <Button 
+                  variant={activeTab === 'budget' ? "secondary" : "ghost"}
+                  className="w-full justify-start gap-3"
+                  onClick={() => setActiveTab('budget')}
+                >
+                  <FileText size={20} />
+                  Orçamentos
+                </Button>
+                <Button 
                   variant={activeTab === 'journals' ? "secondary" : "ghost"}
                   className="w-full justify-start gap-3"
                   onClick={() => setActiveTab('journals')}
@@ -215,7 +225,7 @@ const Index = () => {
         </div>
       </aside>
 
-      <main className={`transition-all duration-200 bg-white ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <main className={`transition-all duration-200 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
         <div className="p-4">
           <div className="flex justify-between items-center mb-6">
             <Button variant="ghost" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -343,6 +353,8 @@ const Index = () => {
             </div>
           ) : activeTab === 'finance' ? (
             <FinanceTab />
+          ) : activeTab === 'budget' ? (
+            <BudgetTab />
           ) : activeTab === 'journals' ? (
             <JournalsTab />
           ) : activeTab === 'challenges' ? (
