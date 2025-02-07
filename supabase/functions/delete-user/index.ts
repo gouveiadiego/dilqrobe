@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -48,8 +49,79 @@ serve(async (req) => {
 
     console.log('User found:', user.id)
 
-    // Delete the user's data from various tables
+    // Delete the user's data from various tables in the correct order
     const userId = user.id
+
+    // Delete running records first (due to foreign key constraint)
+    const { error: runningRecordsError } = await supabaseAdmin
+      .from('running_records')
+      .delete()
+      .eq('user_id', userId)
+
+    if (runningRecordsError) {
+      console.error('Error deleting running records:', runningRecordsError)
+      throw new Error('Database error deleting running records')
+    }
+
+    // Delete running weekly stats
+    const { error: weeklyStatsError } = await supabaseAdmin
+      .from('running_weekly_stats')
+      .delete()
+      .eq('user_id', userId)
+
+    if (weeklyStatsError) {
+      console.error('Error deleting weekly stats:', weeklyStatsError)
+    }
+
+    // Delete challenge participants
+    const { error: participantsError } = await supabaseAdmin
+      .from('challenge_participants')
+      .delete()
+      .eq('user_id', userId)
+
+    if (participantsError) {
+      console.error('Error deleting challenge participants:', participantsError)
+    }
+
+    // Delete running badges
+    const { error: badgesError } = await supabaseAdmin
+      .from('running_badges')
+      .delete()
+      .eq('user_id', userId)
+
+    if (badgesError) {
+      console.error('Error deleting badges:', badgesError)
+    }
+
+    // Delete running challenges
+    const { error: challengesError } = await supabaseAdmin
+      .from('running_challenges')
+      .delete()
+      .eq('user_id', userId)
+
+    if (challengesError) {
+      console.error('Error deleting challenges:', challengesError)
+    }
+
+    // Delete transactions
+    const { error: transactionsError } = await supabaseAdmin
+      .from('transactions')
+      .delete()
+      .eq('user_id', userId)
+
+    if (transactionsError) {
+      console.error('Error deleting transactions:', transactionsError)
+    }
+
+    // Delete categories
+    const { error: categoriesError } = await supabaseAdmin
+      .from('categories')
+      .delete()
+      .eq('user_id', userId)
+
+    if (categoriesError) {
+      console.error('Error deleting categories:', categoriesError)
+    }
 
     // Delete user's profile
     const { error: profileError } = await supabaseAdmin
@@ -59,9 +131,10 @@ serve(async (req) => {
 
     if (profileError) {
       console.error('Error deleting profile:', profileError)
+      throw new Error('Database error deleting profile')
     }
 
-    // Delete the user's auth record
+    // Finally, delete the user's auth record
     const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
     if (deleteUserError) {
@@ -69,7 +142,7 @@ serve(async (req) => {
       throw deleteUserError
     }
 
-    console.log('User deleted successfully')
+    console.log('User and all related data deleted successfully')
 
     return new Response(
       JSON.stringify({ message: 'User deleted successfully' }),
@@ -83,7 +156,7 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({
-        error: error.message || 'An error occurred while deleting the user',
+        error: error.message || 'Database error deleting user',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
