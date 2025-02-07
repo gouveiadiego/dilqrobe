@@ -20,40 +20,17 @@ export const Login = () => {
 
   useEffect(() => {
     const checkSession = async () => {
-      try {
-        // Clear any existing session first to ensure a clean state
-        const { error: signOutError } = await supabase.auth.signOut();
-        if (signOutError) {
-          console.error("Error signing out:", signOutError);
-        }
-
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          if (error.message.includes("User from sub claim in JWT does not exist")) {
-            await supabase.auth.signOut();
-            console.log("Signed out after account deletion");
-            return;
-          }
-          console.error("Session check error:", error);
-          return;
-        }
-        if (session) {
-          console.log("Active session found, redirecting to home");
-          navigate("/");
-        }
-      } catch (error: any) {
-        console.error("Error checking session:", error);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log("Active session found, redirecting to home");
+        navigate("/");
       }
     };
     
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log("Auth state changed in Login:", _event);
-      if (_event === 'SIGNED_OUT') {
-        // Clear any residual session data
-        await supabase.auth.signOut();
-      }
       if (session) {
         navigate("/");
       }
@@ -67,9 +44,6 @@ export const Login = () => {
     setIsLoading(true);
 
     try {
-      // Clear any existing session before attempting login/signup
-      await supabase.auth.signOut();
-
       if (isSignUp) {
         const { error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
@@ -108,6 +82,7 @@ export const Login = () => {
           } else {
             toast.error("Erro ao fazer login. Tente novamente.");
           }
+          setIsLoading(false);
           return;
         }
 
