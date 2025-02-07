@@ -25,29 +25,16 @@ export function SettingsTab() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
 
-  // Effect to initialize dark mode state from localStorage
   useEffect(() => {
-    // Check localStorage first
-    const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    
-    // If theme is saved in localStorage, use that
-    if (savedTheme) {
-      setDarkMode(savedTheme === "dark");
-      document.documentElement.classList.toggle("dark", savedTheme === "dark");
-    } 
-    // Otherwise use system preference
-    else {
-      setDarkMode(systemPrefersDark);
-      document.documentElement.classList.toggle("dark", systemPrefersDark);
-      localStorage.setItem("theme", systemPrefersDark ? "dark" : "light");
-    }
+    // Check if dark mode is enabled
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    setDarkMode(isDarkMode);
   }, []);
 
   const toggleDarkMode = (enabled: boolean) => {
     setDarkMode(enabled);
-    document.documentElement.classList.toggle("dark", enabled);
-    localStorage.setItem("theme", enabled ? "dark" : "light");
+    document.documentElement.classList.toggle('dark', enabled);
+    localStorage.setItem('theme', enabled ? 'dark' : 'light');
     toast.success(`Modo ${enabled ? 'escuro' : 'claro'} ativado`);
   };
 
