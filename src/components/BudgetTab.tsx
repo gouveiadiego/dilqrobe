@@ -345,6 +345,7 @@ export function BudgetTab() {
         <!DOCTYPE html>
         <html>
         <head>
+          <meta charset="UTF-8">
           <title>Orçamento - ${budget.client_name || 'Sem nome'}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
@@ -419,7 +420,7 @@ export function BudgetTab() {
         </html>
       `;
 
-      const blob = new Blob([content], { type: 'text/html' });
+      const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
       const url = URL.createObjectURL(blob);
 
       const printWindow = window.open(url, '_blank');
