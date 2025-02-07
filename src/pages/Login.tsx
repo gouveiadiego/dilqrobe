@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -24,9 +23,9 @@ export const Login = () => {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           if (error.message.includes("User from sub claim in JWT does not exist")) {
-            // User was deleted, clear the session locally
-            await supabase.auth.clearSession();
-            console.log("Cleared session after account deletion");
+            // User was deleted, sign out locally
+            await supabase.auth.signOut();
+            console.log("Signed out after account deletion");
             return;
           }
           console.error("Session check error:", error);
@@ -38,9 +37,9 @@ export const Login = () => {
         }
       } catch (error: any) {
         if (error.message.includes("User from sub claim in JWT does not exist")) {
-          // User was deleted, clear the session locally
-          await supabase.auth.clearSession();
-          console.log("Cleared session after account deletion");
+          // User was deleted, sign out locally
+          await supabase.auth.signOut();
+          console.log("Signed out after account deletion");
           return;
         }
         console.error("Error checking session:", error);
@@ -53,7 +52,7 @@ export const Login = () => {
       console.log("Auth state changed in Login:", _event);
       if (_event === 'SIGNED_OUT') {
         // Clear any residual session data
-        await supabase.auth.clearSession();
+        await supabase.auth.signOut();
       }
       if (session) {
         navigate("/");
@@ -253,4 +252,3 @@ export const Login = () => {
 };
 
 export default Login;
-
