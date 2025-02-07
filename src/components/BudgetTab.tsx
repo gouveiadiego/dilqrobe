@@ -259,8 +259,8 @@ export function BudgetTab() {
 
   const handleViewBudget = async (budget: Budget) => {
     try {
-      // Parse items from JSON string to array
-      const items = JSON.parse(budget.items);
+      // Parse items if it's a string, otherwise use as is
+      const items = typeof budget.items === 'string' ? JSON.parse(budget.items) : budget.items;
       
       // Create HTML content for the PDF
       const content = `
@@ -304,14 +304,14 @@ export function BudgetTab() {
                 </tr>
               </thead>
               <tbody>
-                ${items.map((item: BudgetItem) => `
+                ${Array.isArray(items) ? items.map((item: BudgetItem) => `
                   <tr>
                     <td>${item.description}</td>
                     <td>${item.quantity}</td>
                     <td>${formatCurrency(item.unitPrice)}</td>
                     <td>${formatCurrency(item.totalPrice)}</td>
                   </tr>
-                `).join('')}
+                `).join('') : ''}
               </tbody>
             </table>
             <div class="total">
