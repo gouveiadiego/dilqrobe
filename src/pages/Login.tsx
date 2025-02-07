@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,12 @@ export const Login = () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
+          if (error.message.includes("User from sub claim in JWT does not exist")) {
+            // User was deleted, clear the session locally
+            await supabase.auth.clearSession();
+            console.log("Cleared session after account deletion");
+            return;
+          }
           console.error("Session check error:", error);
           return;
         }
@@ -29,15 +36,25 @@ export const Login = () => {
           console.log("Active session found, redirecting to home");
           navigate("/");
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error.message.includes("User from sub claim in JWT does not exist")) {
+          // User was deleted, clear the session locally
+          await supabase.auth.clearSession();
+          console.log("Cleared session after account deletion");
+          return;
+        }
         console.error("Error checking session:", error);
       }
     };
     
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log("Auth state changed in Login:", _event);
+      if (_event === 'SIGNED_OUT') {
+        // Clear any residual session data
+        await supabase.auth.clearSession();
+      }
       if (session) {
         navigate("/");
       }
@@ -236,3 +253,4 @@ export const Login = () => {
 };
 
 export default Login;
+
