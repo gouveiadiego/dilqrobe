@@ -45,6 +45,9 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges' | 'profile' | 'settings' | 'budget'>('tasks');
   const [sectionFilter, setSectionFilter] = useState<string>("all");
+  const [showThisWeek, setShowThisWeek] = useState(false);
+  const [showThisMonth, setShowThisMonth] = useState(false);
+  const [showOlder, setShowOlder] = useState(false);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -336,16 +339,16 @@ const Index = () => {
     const completedTasks = tasks.filter(task => task.completed);
     
     const thisWeekTasks = completedTasks.filter(task => 
-      isThisWeek(parseISO(task.created_at || ''), { locale: ptBR })
+      isThisWeek(parseISO(task.created_at || ''))
     );
 
     const thisMonthTasks = completedTasks.filter(task => 
-      isThisMonth(parseISO(task.created_at || ''), { locale: ptBR }) && 
-      !isThisWeek(parseISO(task.created_at || ''), { locale: ptBR })
+      isThisMonth(parseISO(task.created_at || '')) && 
+      !isThisWeek(parseISO(task.created_at || ''))
     );
 
     const olderTasks = completedTasks.filter(task => 
-      !isThisMonth(parseISO(task.created_at || ''), { locale: ptBR })
+      !isThisMonth(parseISO(task.created_at || ''))
     );
 
     return {
@@ -623,51 +626,78 @@ const Index = () => {
                     {/* Esta Semana */}
                     {groupedCompletedTasks.thisWeek.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-500">Esta Semana</h4>
-                        {groupedCompletedTasks.thisWeek.map((task) => (
-                          <TaskItem
-                            key={task.id}
-                            task={task}
-                            onToggle={toggleTask}
-                            onDelete={deleteTask}
-                            onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
-                            onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
-                          />
-                        ))}
+                        <button
+                          onClick={() => setShowThisWeek(!showThisWeek)}
+                          className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+                        >
+                          {showThisWeek ? '▼' : '▶'} Esta Semana ({groupedCompletedTasks.thisWeek.length})
+                        </button>
+                        {showThisWeek && (
+                          <div className="space-y-2 pl-4">
+                            {groupedCompletedTasks.thisWeek.map((task) => (
+                              <TaskItem
+                                key={task.id}
+                                task={task}
+                                onToggle={toggleTask}
+                                onDelete={deleteTask}
+                                onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
+                                onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* Este Mês */}
                     {groupedCompletedTasks.thisMonth.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-500">Este Mês</h4>
-                        {groupedCompletedTasks.thisMonth.map((task) => (
-                          <TaskItem
-                            key={task.id}
-                            task={task}
-                            onToggle={toggleTask}
-                            onDelete={deleteTask}
-                            onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
-                            onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
-                          />
-                        ))}
+                        <button
+                          onClick={() => setShowThisMonth(!showThisMonth)}
+                          className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+                        >
+                          {showThisMonth ? '▼' : '▶'} Este Mês ({groupedCompletedTasks.thisMonth.length})
+                        </button>
+                        {showThisMonth && (
+                          <div className="space-y-2 pl-4">
+                            {groupedCompletedTasks.thisMonth.map((task) => (
+                              <TaskItem
+                                key={task.id}
+                                task={task}
+                                onToggle={toggleTask}
+                                onDelete={deleteTask}
+                                onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
+                                onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* Mais Antigas */}
                     {groupedCompletedTasks.older.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-500">Mais Antigas</h4>
-                        {groupedCompletedTasks.older.map((task) => (
-                          <TaskItem
-                            key={task.id}
-                            task={task}
-                            onToggle={toggleTask}
-                            onDelete={deleteTask}
-                            onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
-                            onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
-                          />
-                        ))}
+                        <button
+                          onClick={() => setShowOlder(!showOlder)}
+                          className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+                        >
+                          {showOlder ? '▼' : '▶'} Mais Antigas ({groupedCompletedTasks.older.length})
+                        </button>
+                        {showOlder && (
+                          <div className="space-y-2 pl-4">
+                            {groupedCompletedTasks.older.map((task) => (
+                              <TaskItem
+                                key={task.id}
+                                task={task}
+                                onToggle={toggleTask}
+                                onDelete={deleteTask}
+                                onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
+                                onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
