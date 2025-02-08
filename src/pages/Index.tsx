@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
@@ -27,14 +28,11 @@ import { ChallengesTab } from "@/components/ChallengesTab";
 import { ProfileTab } from "@/components/ProfileTab";
 import { SettingsTab } from "@/components/SettingsTab";
 import { BudgetTab } from "@/components/BudgetTab";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem("tasks");
-    return saved ? JSON.parse(saved) : [];
-  });
-  
+  const queryClient = useQueryClient();
   const [categories, setCategories] = useState<string[]>(() => {
     const saved = localStorage.getItem("categories");
     return saved ? JSON.parse(saved) : [];
@@ -48,9 +46,87 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges' | 'profile' | 'settings' | 'budget'>('tasks');
 
-  useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+  // Fetch tasks
+  const { data: tasks = [], isLoading } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        toast.error('Erro ao carregar tarefas');
+        throw error;
+      }
+      
+      return data as Task[];
+    }
+  });
+
+  // Add task mutation
+  const addTaskMutation = useMutation({
+    mutationFn: async (newTask: Omit<Task, "id" | "completed">) => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([{
+          title: newTask.title,
+          priority: newTask.priority,
+          due_date: newTask.dueDate,
+          category: newTask.category,
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        toast.error('Erro ao adicionar tarefa');
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Tarefa adicionada com sucesso');
+    }
+  });
+
+  // Toggle task mutation
+  const toggleTaskMutation = useMutation({
+    mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ completed })
+        .eq('id', id);
+
+      if (error) {
+        toast.error('Erro ao atualizar tarefa');
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    }
+  });
+
+  // Delete task mutation
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        toast.error('Erro ao deletar tarefa');
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Tarefa removida com sucesso');
+    }
+  });
 
   useEffect(() => {
     localStorage.setItem("categories", JSON.stringify(categories));
@@ -68,24 +144,18 @@ const Index = () => {
   };
 
   const addTask = (newTask: Omit<Task, "id" | "completed">) => {
-    const task: Task = {
-      ...newTask,
-      id: crypto.randomUUID(),
-      completed: false,
-    };
-    setTasks((prev) => [task, ...prev]);
+    addTaskMutation.mutate(newTask);
   };
 
   const toggleTask = (id: string) => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      toggleTaskMutation.mutate({ id, completed: !task.completed });
+    }
   };
 
   const deleteTask = (id: string) => {
-    setTasks((prev) => prev.filter((task) => task.id !== id));
+    deleteTaskMutation.mutate(id);
   };
 
   const addCategory = (category: string) => {
@@ -335,18 +405,23 @@ const Index = () => {
               </div>
 
               <div className="space-y-4">
-                {filteredTasks.map((task) => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    onToggle={toggleTask}
-                    onDelete={deleteTask}
-                  />
-                ))}
-                {filteredTasks.length === 0 && (
+                {isLoading ? (
+                  <div className="text-center py-12 text-gray-500">
+                    Carregando tarefas...
+                  </div>
+                ) : filteredTasks.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
                     Nenhuma tarefa encontrada
                   </div>
+                ) : (
+                  filteredTasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onToggle={toggleTask}
+                      onDelete={deleteTask}
+                    />
+                  ))
                 )}
               </div>
             </div>
