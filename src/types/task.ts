@@ -1,8 +1,12 @@
+
 export interface Task {
   id: string;
+  user_id: string;
   title: string;
   completed: boolean;
   priority: "low" | "medium" | "high";
-  dueDate: string | null;
+  due_date: string | null;
   category: string | null;
+  created_at?: string;
+  updated_at?: string;
 }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
@@ -60,20 +59,29 @@ const Index = () => {
         throw error;
       }
       
-      return data as Task[];
+      return data.map(task => ({
+        ...task,
+        completed: task.completed || false,
+        due_date: task.due_date || null,
+        category: task.category || null
+      })) as Task[];
     }
   });
 
   // Add task mutation
   const addTaskMutation = useMutation({
-    mutationFn: async (newTask: Omit<Task, "id" | "completed">) => {
+    mutationFn: async (newTask: Omit<Task, "id" | "completed" | "user_id">) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       const { data, error } = await supabase
         .from('tasks')
         .insert([{
           title: newTask.title,
           priority: newTask.priority,
-          due_date: newTask.dueDate,
+          due_date: newTask.due_date,
           category: newTask.category,
+          user_id: user.id
         }])
         .select()
         .single();
@@ -143,7 +151,7 @@ const Index = () => {
     }
   };
 
-  const addTask = (newTask: Omit<Task, "id" | "completed">) => {
+  const addTask = (newTask: Omit<Task, "id" | "completed" | "user_id">) => {
     addTaskMutation.mutate(newTask);
   };
 
