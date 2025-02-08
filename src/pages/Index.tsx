@@ -397,7 +397,7 @@ const Index = () => {
                     <SelectContent>
                       <SelectItem value="all">Todas as categorias</SelectItem>
                       {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
