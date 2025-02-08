@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
@@ -31,6 +32,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Database } from "@/integrations/supabase/types";
 
 type TaskResponse = Database['public']['Tables']['tasks']['Row'];
+type Json = Database['public']['Tables']['tasks']['Insert']['subtasks'];
 
 const Index = () => {
   const navigate = useNavigate();
@@ -167,7 +169,7 @@ const Index = () => {
         completed: false
       };
 
-      const updatedSubtasks = [...task.subtasks, newSubtask];
+      const updatedSubtasks = [...task.subtasks, newSubtask] as Json;
 
       const { error } = await supabase
         .from('tasks')
@@ -195,7 +197,7 @@ const Index = () => {
 
       const updatedSubtasks = task.subtasks.map(st =>
         st.id === subtaskId ? { ...st, completed: !st.completed } : st
-      );
+      ) as Json;
 
       const { error } = await supabase
         .from('tasks')
