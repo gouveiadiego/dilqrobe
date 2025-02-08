@@ -28,6 +28,9 @@ import { ProfileTab } from "@/components/ProfileTab";
 import { SettingsTab } from "@/components/SettingsTab";
 import { BudgetTab } from "@/components/BudgetTab";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Database } from "@/integrations/supabase/types";
+
+type TaskResponse = Database['public']['Tables']['tasks']['Row'];
 
 const Index = () => {
   const navigate = useNavigate();
@@ -101,14 +104,20 @@ const Index = () => {
         throw error;
       }
       
-      return data.map(task => ({
+      return data.map((task: TaskResponse) => ({
         ...task,
         completed: task.completed || false,
         due_date: task.due_date || null,
         category: task.category || null,
         priority: (task.priority as Task['priority']) || 'medium',
         section: task.section || 'inbox',
-        subtasks: (Array.isArray(task.subtasks) ? task.subtasks : []) as SubTask[]
+        subtasks: Array.isArray(task.subtasks) 
+          ? (task.subtasks as any[]).map(st => ({
+              id: st.id || crypto.randomUUID(),
+              title: st.title || '',
+              completed: st.completed || false
+            }))
+          : []
       })) as Task[];
     }
   });
@@ -128,7 +137,7 @@ const Index = () => {
           category: newTask.category,
           section: newTask.section,
           user_id: user.id,
-          subtasks: [] as SubTask[]
+          subtasks: []
         }])
         .select()
         .single();
@@ -152,7 +161,7 @@ const Index = () => {
       const task = tasks.find(t => t.id === taskId);
       if (!task) throw new Error('Task not found');
 
-      const newSubtask: SubTask = {
+      const newSubtask = {
         id: crypto.randomUUID(),
         title,
         completed: false
