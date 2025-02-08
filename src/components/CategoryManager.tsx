@@ -1,10 +1,11 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 interface CategoryManagerProps {
-  categories: string[];
+  categories: { id: string; name: string }[];
   onAddCategory: (category: string) => void;
 }
 

@@ -10,7 +10,7 @@ import { ptBR } from "date-fns/locale";
 
 interface AddTaskProps {
   onAdd: (task: Omit<Task, "id" | "completed" | "user_id">) => void;
-  categories: string[];
+  categories: { id: string; name: string }[];
 }
 
 export function AddTask({ onAdd, categories }: AddTaskProps) {
@@ -81,13 +81,13 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
               <div className="flex flex-col gap-1">
                 {categories.map((cat) => (
                   <Button
-                    key={cat}
+                    key={cat.id}
                     variant="ghost"
-                    className={`justify-start ${category === cat ? 'text-purple-400' : ''}`}
-                    onClick={() => handleCategorySelect(cat)}
+                    className={`justify-start ${category === cat.name ? 'text-purple-400' : ''}`}
+                    onClick={() => handleCategorySelect(cat.name)}
                   >
                     <Tag className="h-4 w-4 mr-2" />
-                    {cat}
+                    {cat.name}
                   </Button>
                 ))}
                 {categories.length === 0 && (
