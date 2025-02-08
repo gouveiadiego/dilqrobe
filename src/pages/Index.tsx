@@ -39,6 +39,7 @@ const Index = () => {
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges' | 'profile' | 'settings' | 'budget'>('tasks');
+  const [sectionFilter, setSectionFilter] = useState<string>("all");
 
   // Fetch categories
   const { data: categories = [] } = useQuery({
@@ -111,7 +112,7 @@ const Index = () => {
 
   // Add task mutation
   const addTaskMutation = useMutation({
-    mutationFn: async (newTask: Omit<Task, "id" | "completed" | "user_id">) => {
+    mutationFn: async (newTask: Omit<Task, "id" | "completed" | "user_id" | "subtasks">) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
@@ -122,7 +123,9 @@ const Index = () => {
           priority: newTask.priority,
           due_date: newTask.due_date,
           category: newTask.category,
-          user_id: user.id
+          section: newTask.section,
+          user_id: user.id,
+          subtasks: []
         }])
         .select()
         .single();
@@ -137,6 +140,63 @@ const Index = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Tarefa adicionada com sucesso');
+    }
+  });
+
+  // Add subtask mutation
+  const addSubtaskMutation = useMutation({
+    mutationFn: async ({ taskId, title }: { taskId: string; title: string }) => {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) throw new Error('Task not found');
+
+      const newSubtask = {
+        id: crypto.randomUUID(),
+        title,
+        completed: false
+      };
+
+      const updatedSubtasks = [...task.subtasks, newSubtask];
+
+      const { error } = await supabase
+        .from('tasks')
+        .update({ subtasks: updatedSubtasks })
+        .eq('id', taskId);
+
+      if (error) {
+        toast.error('Erro ao adicionar sub-tarefa');
+        throw error;
+      }
+
+      return { taskId, newSubtask };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Sub-tarefa adicionada com sucesso');
+    }
+  });
+
+  // Toggle subtask mutation
+  const toggleSubtaskMutation = useMutation({
+    mutationFn: async ({ taskId, subtaskId }: { taskId: string; subtaskId: string }) => {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) throw new Error('Task not found');
+
+      const updatedSubtasks = task.subtasks.map(st =>
+        st.id === subtaskId ? { ...st, completed: !st.completed } : st
+      );
+
+      const { error } = await supabase
+        .from('tasks')
+        .update({ subtasks: updatedSubtasks })
+        .eq('id', taskId);
+
+      if (error) {
+        toast.error('Erro ao atualizar sub-tarefa');
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     }
   });
 
@@ -192,7 +252,7 @@ const Index = () => {
     }
   };
 
-  const addTask = (newTask: Omit<Task, "id" | "completed" | "user_id">) => {
+  const addTask = (newTask: Omit<Task, "id" | "completed" | "user_id" | "subtasks">) => {
     addTaskMutation.mutate(newTask);
   };
 
@@ -241,7 +301,22 @@ const Index = () => {
         taskDate.getMonth() === dateFilter.getMonth() &&
         taskDate.getDate() === dateFilter.getDate()
       );
+    })
+    .filter((task) => {
+      if (sectionFilter === "all") return true;
+      return task.section === sectionFilter;
     });
+
+  const sections = [
+    { value: "all", label: "Todas as seções" },
+    { value: "inbox", label: "Caixa de entrada" },
+    { value: "monday", label: "Segunda-feira" },
+    { value: "tuesday", label: "Terça-feira" },
+    { value: "wednesday", label: "Quarta-feira" },
+    { value: "thursday", label: "Quinta-feira" },
+    { value: "friday", label: "Sexta-feira" },
+    { value: "weekend", label: "Fim de semana" },
+  ];
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -417,6 +492,22 @@ const Index = () => {
                     </SelectContent>
                   </Select>
 
+                  <Select 
+                    value={sectionFilter} 
+                    onValueChange={(v: string) => setSectionFilter(v)}
+                  >
+                    <SelectTrigger className="w-[180px] bg-white border-gray-200">
+                      <SelectValue placeholder="Seção" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sections.map((section) => (
+                        <SelectItem key={section.value} value={section.value}>
+                          {section.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
@@ -455,7 +546,7 @@ const Index = () => {
                   categories={categories} 
                   onAddCategory={addCategory} 
                 />
-                <AddTask onAdd={addTask} categories={categories} />
+                <AddTask onAdd={addTask} categories={categories} sections={sections} />
               </div>
 
               <div className="space-y-4">
@@ -474,6 +565,8 @@ const Index = () => {
                       task={task}
                       onToggle={toggleTask}
                       onDelete={deleteTask}
+                      onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
+                      onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
                     />
                   ))
                 )}

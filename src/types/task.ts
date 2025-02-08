@@ -1,4 +1,10 @@
 
+export interface SubTask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   user_id: string;
@@ -9,4 +15,6 @@ export interface Task {
   category: string | null;
   created_at?: string;
   updated_at?: string;
+  subtasks: SubTask[];
+  section: string;
 }

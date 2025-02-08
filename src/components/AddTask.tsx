@@ -9,16 +9,19 @@ import { Calendar } from "./ui/calendar";
 import { ptBR } from "date-fns/locale";
 
 interface AddTaskProps {
-  onAdd: (task: Omit<Task, "id" | "completed" | "user_id">) => void;
+  onAdd: (task: Omit<Task, "id" | "completed" | "user_id" | "subtasks">) => void;
   categories: { id: string; name: string }[];
+  sections: { value: string; label: string }[];
 }
 
-export function AddTask({ onAdd, categories }: AddTaskProps) {
+export function AddTask({ onAdd, categories, sections }: AddTaskProps) {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Task["priority"]>("medium");
   const [date, setDate] = useState<Date | null>(null);
   const [category, setCategory] = useState<string | null>(null);
+  const [section, setSection] = useState("inbox");
   const [isOpen, setIsOpen] = useState(false);
+  const [isSectionOpen, setIsSectionOpen] = useState(false);
 
   const handleQuickAdd = () => {
     if (!title.trim()) return;
@@ -28,17 +31,24 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
       priority,
       due_date: date ? date.toISOString() : null,
       category,
+      section
     });
 
     setTitle("");
     setDate(null);
     setPriority("medium");
     setCategory(null);
+    setSection("inbox");
   };
 
   const handleCategorySelect = (selectedCategory: string) => {
     setCategory(selectedCategory);
     setIsOpen(false);
+  };
+
+  const handleSectionSelect = (selectedSection: string) => {
+    setSection(selectedSection);
+    setIsSectionOpen(false);
   };
 
   const getPriorityColor = (p: Task["priority"]) => {
@@ -57,7 +67,7 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
           placeholder="Digite sua tarefa e pressione Enter..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 pr-28"
+          className="w-full bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 pr-36"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -157,6 +167,32 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
                 locale={ptBR}
                 initialFocus
               />
+            </PopoverContent>
+          </Popover>
+
+          <Popover open={isSectionOpen} onOpenChange={setIsSectionOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-8 w-8 text-gray-400"
+              >
+                <CalendarIcon className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-2">
+              <div className="flex flex-col gap-1">
+                {sections.map((sec) => (
+                  <Button
+                    key={sec.value}
+                    variant="ghost"
+                    className={`justify-start ${section === sec.value ? 'text-purple-400' : ''}`}
+                    onClick={() => handleSectionSelect(sec.value)}
+                  >
+                    {sec.label}
+                  </Button>
+                ))}
+              </div>
             </PopoverContent>
           </Popover>
         </div>
