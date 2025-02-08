@@ -169,7 +169,11 @@ const Index = () => {
         completed: false
       };
 
-      const updatedSubtasks = [...task.subtasks, newSubtask] as Json;
+      const updatedSubtasks = [...task.subtasks, newSubtask].map(st => ({
+        id: st.id,
+        title: st.title,
+        completed: st.completed
+      })) as unknown as Json;
 
       const { error } = await supabase
         .from('tasks')
@@ -197,7 +201,11 @@ const Index = () => {
 
       const updatedSubtasks = task.subtasks.map(st =>
         st.id === subtaskId ? { ...st, completed: !st.completed } : st
-      ) as Json;
+      ).map(st => ({
+        id: st.id,
+        title: st.title,
+        completed: st.completed
+      })) as unknown as Json;
 
       const { error } = await supabase
         .from('tasks')
