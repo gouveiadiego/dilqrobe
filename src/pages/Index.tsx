@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
@@ -30,6 +29,7 @@ import { SettingsTab } from "@/components/SettingsTab";
 import { BudgetTab } from "@/components/BudgetTab";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Database } from "@/integrations/supabase/types";
+import { format, startOfWeek, startOfMonth, isThisWeek, isThisMonth, parseISO } from "date-fns";
 
 type TaskResponse = Database['public']['Tables']['tasks']['Row'];
 type Json = Database['public']['Tables']['tasks']['Insert']['subtasks'];
@@ -46,7 +46,6 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'habits' | 'challenges' | 'profile' | 'settings' | 'budget'>('tasks');
   const [sectionFilter, setSectionFilter] = useState<string>("all");
 
-  // Fetch categories
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -64,7 +63,6 @@ const Index = () => {
     }
   });
 
-  // Add category mutation
   const addCategoryMutation = useMutation({
     mutationFn: async (name: string) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -92,7 +90,6 @@ const Index = () => {
     }
   });
 
-  // Fetch tasks
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
@@ -124,7 +121,6 @@ const Index = () => {
     }
   });
 
-  // Add task mutation
   const addTaskMutation = useMutation({
     mutationFn: async (newTask: Omit<Task, "id" | "completed" | "user_id" | "subtasks">) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -157,7 +153,6 @@ const Index = () => {
     }
   });
 
-  // Add subtask mutation
   const addSubtaskMutation = useMutation({
     mutationFn: async ({ taskId, title }: { taskId: string; title: string }) => {
       const task = tasks.find(t => t.id === taskId);
@@ -193,7 +188,6 @@ const Index = () => {
     }
   });
 
-  // Toggle subtask mutation
   const toggleSubtaskMutation = useMutation({
     mutationFn: async ({ taskId, subtaskId }: { taskId: string; subtaskId: string }) => {
       const task = tasks.find(t => t.id === taskId);
@@ -222,7 +216,6 @@ const Index = () => {
     }
   });
 
-  // Toggle task mutation
   const toggleTaskMutation = useMutation({
     mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
       const { error } = await supabase
@@ -240,7 +233,6 @@ const Index = () => {
     }
   });
 
-  // Delete task mutation
   const deleteTaskMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -339,6 +331,32 @@ const Index = () => {
     { value: "friday", label: "Sexta-feira" },
     { value: "weekend", label: "Fim de semana" },
   ];
+
+  const groupTasksByPeriod = (tasks: Task[]) => {
+    const completedTasks = tasks.filter(task => task.completed);
+    
+    const thisWeekTasks = completedTasks.filter(task => 
+      isThisWeek(parseISO(task.created_at || ''), { locale: ptBR })
+    );
+
+    const thisMonthTasks = completedTasks.filter(task => 
+      isThisMonth(parseISO(task.created_at || ''), { locale: ptBR }) && 
+      !isThisWeek(parseISO(task.created_at || ''), { locale: ptBR })
+    );
+
+    const olderTasks = completedTasks.filter(task => 
+      !isThisMonth(parseISO(task.created_at || ''), { locale: ptBR })
+    );
+
+    return {
+      thisWeek: thisWeekTasks,
+      thisMonth: thisMonthTasks,
+      older: olderTasks
+    };
+  };
+
+  const activeTasks = filteredTasks.filter(task => !task.completed);
+  const groupedCompletedTasks = groupTasksByPeriod(filteredTasks);
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -571,26 +589,88 @@ const Index = () => {
                 <AddTask onAdd={addTask} categories={categories} sections={sections} />
               </div>
 
-              <div className="space-y-4">
-                {isLoading ? (
-                  <div className="text-center py-12 text-gray-500">
-                    Carregando tarefas...
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Tarefas Ativas</h3>
+                  {isLoading ? (
+                    <div className="text-center py-12 text-gray-500">
+                      Carregando tarefas...
+                    </div>
+                  ) : activeTasks.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      Nenhuma tarefa ativa encontrada
+                    </div>
+                  ) : (
+                    activeTasks.map((task) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        onToggle={toggleTask}
+                        onDelete={deleteTask}
+                        onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
+                        onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                      />
+                    ))
+                  )}
+                </div>
+
+                {(groupedCompletedTasks.thisWeek.length > 0 || 
+                  groupedCompletedTasks.thisMonth.length > 0 || 
+                  groupedCompletedTasks.older.length > 0) && (
+                  <div className="space-y-6 pt-8 border-t border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Tarefas Concluídas</h3>
+                    
+                    {/* Esta Semana */}
+                    {groupedCompletedTasks.thisWeek.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-500">Esta Semana</h4>
+                        {groupedCompletedTasks.thisWeek.map((task) => (
+                          <TaskItem
+                            key={task.id}
+                            task={task}
+                            onToggle={toggleTask}
+                            onDelete={deleteTask}
+                            onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
+                            onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Este Mês */}
+                    {groupedCompletedTasks.thisMonth.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-500">Este Mês</h4>
+                        {groupedCompletedTasks.thisMonth.map((task) => (
+                          <TaskItem
+                            key={task.id}
+                            task={task}
+                            onToggle={toggleTask}
+                            onDelete={deleteTask}
+                            onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
+                            onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Mais Antigas */}
+                    {groupedCompletedTasks.older.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-500">Mais Antigas</h4>
+                        {groupedCompletedTasks.older.map((task) => (
+                          <TaskItem
+                            key={task.id}
+                            task={task}
+                            onToggle={toggleTask}
+                            onDelete={deleteTask}
+                            onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
+                            onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ) : filteredTasks.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    Nenhuma tarefa encontrada
-                  </div>
-                ) : (
-                  filteredTasks.map((task) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      onToggle={toggleTask}
-                      onDelete={deleteTask}
-                      onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
-                      onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
-                    />
-                  ))
                 )}
               </div>
             </div>
@@ -608,6 +688,8 @@ const Index = () => {
             <ProfileTab />
           ) : activeTab === 'settings' ? (
             <SettingsTab />
+          ) : activeTab === 'dashboard' ? (
+            <DashboardTab />
           ) : null}
         </div>
       </main>
