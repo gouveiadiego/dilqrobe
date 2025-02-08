@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { useState } from "react";
@@ -8,7 +9,7 @@ import { Calendar } from "./ui/calendar";
 import { ptBR } from "date-fns/locale";
 
 interface AddTaskProps {
-  onAdd: (task: Omit<Task, "id" | "completed">) => void;
+  onAdd: (task: Omit<Task, "id" | "completed" | "user_id">) => void;
   categories: string[];
 }
 
@@ -25,7 +26,7 @@ export function AddTask({ onAdd, categories }: AddTaskProps) {
     onAdd({
       title: title.trim(),
       priority,
-      dueDate: date ? date.toISOString() : null,
+      due_date: date ? date.toISOString() : null,
       category,
     });
 

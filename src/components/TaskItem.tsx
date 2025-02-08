@@ -1,3 +1,4 @@
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Task } from "@/types/task";
@@ -61,9 +62,9 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
               {task.category}
             </span>
           )}
-          {task.dueDate && (
+          {task.due_date && (
             <span className="text-xs text-gray-400">
-              Vence em {new Date(task.dueDate).toLocaleDateString()}
+              Vence em {new Date(task.due_date).toLocaleDateString()}
             </span>
           )}
         </div>

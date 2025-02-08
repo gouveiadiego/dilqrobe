@@ -191,8 +191,8 @@ const Index = () => {
     })
     .filter((task) => {
       if (!dateFilter) return true;
-      if (!task.dueDate) return false;
-      const taskDate = new Date(task.dueDate);
+      if (!task.due_date) return false;
+      const taskDate = new Date(task.due_date);
       return (
         taskDate.getFullYear() === dateFilter.getFullYear() &&
         taskDate.getMonth() === dateFilter.getMonth() &&
