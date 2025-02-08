@@ -18,7 +18,7 @@ import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
-import { Task } from "@/types/task";
+import { Task, SubTask } from "@/types/task";
 import { FinanceTab } from "@/components/FinanceTab";
 import { JournalsTab } from "@/components/JournalsTab";
 import { HabitsTab } from "@/components/HabitsTab";
@@ -105,7 +105,10 @@ const Index = () => {
         ...task,
         completed: task.completed || false,
         due_date: task.due_date || null,
-        category: task.category || null
+        category: task.category || null,
+        priority: (task.priority as Task['priority']) || 'medium',
+        section: task.section || 'inbox',
+        subtasks: (Array.isArray(task.subtasks) ? task.subtasks : []) as SubTask[]
       })) as Task[];
     }
   });
@@ -125,7 +128,7 @@ const Index = () => {
           category: newTask.category,
           section: newTask.section,
           user_id: user.id,
-          subtasks: []
+          subtasks: [] as SubTask[]
         }])
         .select()
         .single();
@@ -149,7 +152,7 @@ const Index = () => {
       const task = tasks.find(t => t.id === taskId);
       if (!task) throw new Error('Task not found');
 
-      const newSubtask = {
+      const newSubtask: SubTask = {
         id: crypto.randomUUID(),
         title,
         completed: false
