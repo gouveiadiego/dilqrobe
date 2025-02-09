@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
@@ -725,6 +726,12 @@ const Index = () => {
                     )}
                   </div>
                 )}
+
+                {/* Kanban Calendar Section */}
+                <div className="pt-8 border-t border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Calendário de Tarefas</h3>
+                  <KanbanCalendar tasks={tasks} onTaskDrop={handleTaskDrop} />
+                </div>
               </div>
             </div>
           ) : activeTab === 'finance' ? (
