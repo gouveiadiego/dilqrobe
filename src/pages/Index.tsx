@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
@@ -271,6 +270,24 @@ const Index = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Data da tarefa atualizada com sucesso');
+    }
+  });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Task> }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) {
+        toast.error('Erro ao atualizar tarefa');
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Tarefa atualizada com sucesso');
     }
   });
 
@@ -636,6 +653,8 @@ const Index = () => {
                         onDelete={deleteTask}
                         onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
                         onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                        onUpdateTask={(taskId, updates) => updateTaskMutation.mutate({ id: taskId, updates })}
+                        categories={categories}
                       />
                     ))
                   )}
@@ -666,6 +685,8 @@ const Index = () => {
                                 onDelete={deleteTask}
                                 onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
                                 onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                                onUpdateTask={(taskId, updates) => updateTaskMutation.mutate({ id: taskId, updates })}
+                                categories={categories}
                               />
                             ))}
                           </div>
@@ -692,6 +713,8 @@ const Index = () => {
                                 onDelete={deleteTask}
                                 onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
                                 onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                                onUpdateTask={(taskId, updates) => updateTaskMutation.mutate({ id: taskId, updates })}
+                                categories={categories}
                               />
                             ))}
                           </div>
@@ -718,6 +741,8 @@ const Index = () => {
                                 onDelete={deleteTask}
                                 onAddSubtask={(taskId, title) => addSubtaskMutation.mutate({ taskId, title })}
                                 onToggleSubtask={(taskId, subtaskId) => toggleSubtaskMutation.mutate({ taskId, subtaskId })}
+                                onUpdateTask={(taskId, updates) => updateTaskMutation.mutate({ id: taskId, updates })}
+                                categories={categories}
                               />
                             ))}
                           </div>
