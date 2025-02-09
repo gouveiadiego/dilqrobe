@@ -145,7 +145,8 @@ export function KanbanCalendar({ tasks, onTaskDrop }: KanbanCalendarProps) {
         })}
       </div>
 
-      <style jsx>{`
+      <style>
+        {`
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
         }
@@ -153,7 +154,9 @@ export function KanbanCalendar({ tasks, onTaskDrop }: KanbanCalendarProps) {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 }
+

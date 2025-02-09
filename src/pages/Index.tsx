@@ -273,8 +273,8 @@ const Index = () => {
     }
   });
 
-  const handleTaskDrop = (taskId: string, date: Date) => {
-    updateTaskDueDateMutation.mutate({ taskId, date });
+  const handleTaskDrop = (taskId: string, dueDate: Date) => {
+    updateTaskDueDateMutation.mutate({ taskId, dueDate });
   };
 
   useEffect(() => {
