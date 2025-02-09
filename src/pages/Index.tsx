@@ -30,6 +30,7 @@ import { BudgetTab } from "@/components/BudgetTab";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Database } from "@/integrations/supabase/types";
 import { format, startOfWeek, startOfMonth, isThisWeek, isThisMonth, parseISO } from "date-fns";
+import { KanbanCalendar } from "@/components/KanbanCalendar";
 
 type TaskResponse = Database['public']['Tables']['tasks']['Row'];
 type Json = Database['public']['Tables']['tasks']['Insert']['subtasks'];
@@ -253,6 +254,28 @@ const Index = () => {
       toast.success('Tarefa removida com sucesso');
     }
   });
+
+  const updateTaskDueDateMutation = useMutation({
+    mutationFn: async ({ taskId, dueDate }: { taskId: string; dueDate: Date }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ due_date: dueDate.toISOString() })
+        .eq('id', taskId);
+
+      if (error) {
+        toast.error('Erro ao atualizar data da tarefa');
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast.success('Data da tarefa atualizada com sucesso');
+    }
+  });
+
+  const handleTaskDrop = (taskId: string, date: Date) => {
+    updateTaskDueDateMutation.mutate({ taskId, date });
+  };
 
   useEffect(() => {
     localStorage.setItem("categories", JSON.stringify(categories));
@@ -482,6 +505,8 @@ const Index = () => {
                     - Tarefas dos últimos 10 dias
                   </span>
                 </h2>
+                
+                <KanbanCalendar tasks={tasks} onTaskDrop={handleTaskDrop} />
                 
                 <div className="flex gap-4 flex-wrap">
                   <div className="relative flex-1 min-w-[200px]">
