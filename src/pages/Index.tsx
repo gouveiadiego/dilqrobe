@@ -274,7 +274,7 @@ const Index = () => {
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Task> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: TaskUpdate }) => {
       const { error } = await supabase
         .from('tasks')
         .update(updates)

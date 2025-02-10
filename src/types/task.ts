@@ -23,3 +23,7 @@ export interface Task {
   section: string;
 }
 
+// Type for database operations to ensure compatibility with Supabase
+export type TaskUpdate = Omit<Partial<Task>, 'subtasks'> & {
+  subtasks?: Json;
+};

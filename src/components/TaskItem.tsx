@@ -1,7 +1,6 @@
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { SubTask, Task } from "@/types/task";
+import { SubTask, Task, TaskUpdate } from "@/types/task";
 import { Trash2, Tag, Plus, ChevronDown, ChevronUp, Bell, Pencil, Check, X } from "lucide-react";
 import { useState } from "react";
 import { Input } from "./ui/input";
@@ -18,7 +17,7 @@ interface TaskItemProps {
   onDelete: (id: string) => void;
   onAddSubtask?: (taskId: string, subtaskTitle: string) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
-  onUpdateTask?: (taskId: string, updates: Partial<Task>) => void;
+  onUpdateTask?: (taskId: string, updates: TaskUpdate) => void;
   categories: { id: string; name: string; }[];
 }
 
@@ -61,12 +60,13 @@ export function TaskItem({
   const handleSaveEdit = () => {
     if (!onUpdateTask) return;
     
-    onUpdateTask(task.id, {
+    const updates: TaskUpdate = {
       title: editTitle,
       due_date: editDate?.toISOString() || null,
       category: editCategory === "none" ? null : editCategory
-    });
+    };
     
+    onUpdateTask(task.id, updates);
     setIsEditing(false);
   };
 
