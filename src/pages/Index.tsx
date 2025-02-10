@@ -148,4 +148,35 @@ const Index = () => {
                   categories={categories} 
                   onAddCategory={addCategory} 
                 />
-                <AddTask on
+                <AddTask onAddTask={addTask} categories={categories} sections={sections} />
+                
+                <TaskList
+                  tasks={filteredTasks}
+                  onToggleTask={toggleTask}
+                  onDeleteTask={deleteTask}
+                  onUpdateTask={updateTask}
+                  categories={categories}
+                  sections={sections}
+                />
+              </div>
+            </div>
+          ) : activeTab === 'finance' ? (
+            <FinanceTab />
+          ) : activeTab === 'journals' ? (
+            <JournalsTab />
+          ) : activeTab === 'challenges' ? (
+            <ChallengesTab />
+          ) : activeTab === 'profile' ? (
+            <ProfileTab />
+          ) : activeTab === 'settings' ? (
+            <SettingsTab />
+          ) : activeTab === 'budget' ? (
+            <BudgetTab />
+          ) : null}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default Index;
