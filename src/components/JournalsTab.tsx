@@ -1,9 +1,12 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarDays, Pencil, BookHeart, Brain, Sparkles, Target } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 const journalPrompts = [
   "Como você está se sentindo hoje?",
@@ -17,21 +20,109 @@ const journalPrompts = [
 export function JournalsTab() {
   const [journalEntry, setJournalEntry] = useState("");
   const [currentPrompt, setCurrentPrompt] = useState(journalPrompts[0]);
+  const [entries, setEntries] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    consecutiveDays: 0,
+    totalEntries: 0,
+    averageMood: "Calculando..."
+  });
+
+  useEffect(() => {
+    fetchJournalEntries();
+    calculateStats();
+  }, []);
+
+  const fetchJournalEntries = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setEntries(data || []);
+    } catch (error) {
+      console.error('Error fetching journal entries:', error);
+      toast.error("Erro ao carregar as entradas do diário");
+    }
+  };
+
+  const calculateStats = async () => {
+    try {
+      const { data: journalData, error } = await supabase
+        .from('journal_entries')
+        .select('created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Calculate consecutive days
+      let consecutiveDays = 0;
+      if (journalData && journalData.length > 0) {
+        const dates = journalData.map(entry => 
+          format(new Date(entry.created_at), 'yyyy-MM-dd')
+        );
+        
+        const uniqueDates = [...new Set(dates)];
+        const today = format(new Date(), 'yyyy-MM-dd');
+        
+        if (uniqueDates[0] === today) {
+          consecutiveDays = 1;
+          let currentDate = new Date();
+          for (let i = 1; i < uniqueDates.length; i++) {
+            currentDate.setDate(currentDate.getDate() - 1);
+            const dateToCheck = format(currentDate, 'yyyy-MM-dd');
+            if (uniqueDates.includes(dateToCheck)) {
+              consecutiveDays++;
+            } else {
+              break;
+            }
+          }
+        }
+      }
+
+      setStats({
+        consecutiveDays,
+        totalEntries: journalData?.length || 0,
+        averageMood: "Positivo" // This could be enhanced with sentiment analysis
+      });
+
+    } catch (error) {
+      console.error('Error calculating stats:', error);
+    }
+  };
 
   const handleNewPrompt = () => {
     const newPrompt = journalPrompts[Math.floor(Math.random() * journalPrompts.length)];
     setCurrentPrompt(newPrompt);
   };
 
-  const handleSaveEntry = () => {
+  const handleSaveEntry = async () => {
     if (!journalEntry.trim()) {
       toast.error("Por favor, escreva algo antes de salvar.");
       return;
     }
     
-    // TODO: Implement actual saving logic
-    toast.success("Entrada salva com sucesso!");
-    setJournalEntry("");
+    try {
+      const { error } = await supabase
+        .from('journal_entries')
+        .insert([
+          {
+            content: journalEntry,
+            prompt: currentPrompt
+          }
+        ]);
+
+      if (error) throw error;
+
+      toast.success("Entrada salva com sucesso!");
+      setJournalEntry("");
+      fetchJournalEntries();
+      calculateStats();
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+      toast.error("Erro ao salvar a entrada");
+    }
   };
 
   return (
@@ -52,7 +143,7 @@ export function JournalsTab() {
             <CalendarDays className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">7 dias</div>
+            <div className="text-2xl font-bold">{stats.consecutiveDays} dias</div>
             <p className="text-xs text-muted-foreground">
               Continue mantendo seu hábito!
             </p>
@@ -64,7 +155,7 @@ export function JournalsTab() {
             <BookHeart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">32 entradas</div>
+            <div className="text-2xl font-bold">{stats.totalEntries} entradas</div>
             <p className="text-xs text-muted-foreground">
               Suas memórias estão crescendo
             </p>
@@ -76,7 +167,7 @@ export function JournalsTab() {
             <Brain className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Positivo</div>
+            <div className="text-2xl font-bold">{stats.averageMood}</div>
             <p className="text-xs text-muted-foreground">
               Baseado nas suas últimas entradas
             </p>
@@ -115,6 +206,30 @@ export function JournalsTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Previous Entries */}
+      <div className="space-y-4">
+        <h3 className="text-xl font-bold">Entradas Anteriores</h3>
+        {entries.map((entry) => (
+          <Card key={entry.id}>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-sm font-medium">
+                  {format(new Date(entry.created_at), "dd/MM/yyyy HH:mm")}
+                </CardTitle>
+                {entry.prompt && (
+                  <CardDescription className="text-xs">
+                    Prompt: {entry.prompt}
+                  </CardDescription>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap">{entry.content}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Benefits Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
