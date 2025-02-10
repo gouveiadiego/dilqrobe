@@ -1,8 +1,8 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Task } from "@/types/task";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { cn } from "@/lib/utils";
 
 interface KanbanCalendarProps {
