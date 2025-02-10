@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AddTask } from "@/components/AddTask";
 import { TaskItem } from "@/components/TaskItem";
@@ -18,7 +19,7 @@ import { CategoryManager } from "@/components/CategoryManager";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ptBR } from "date-fns/locale";
-import { Task, SubTask } from "@/types/task";
+import { Task, SubTask, TaskUpdate } from "@/types/task";
 import { FinanceTab } from "@/components/FinanceTab";
 import { JournalsTab } from "@/components/JournalsTab";
 import { HabitsTab } from "@/components/HabitsTab";
