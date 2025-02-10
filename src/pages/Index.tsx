@@ -166,7 +166,14 @@ const Index = () => {
                   onDeleteTask={deleteTask}
                   onUpdateTask={handleUpdateTask}
                   categories={categories}
-                  sections={sections}
+                  showThisWeek={showThisWeek}
+                  setShowThisWeek={setShowThisWeek}
+                  showThisMonth={showThisMonth}
+                  setShowThisMonth={setShowThisMonth}
+                  showOlder={showOlder}
+                  setShowOlder={setShowOlder}
+                  onAddSubtask={() => {}}
+                  onToggleSubtask={() => {}}
                 />
               </div>
             </div>
