@@ -22,6 +22,8 @@ import { Sidebar } from "@/components/Sidebar";
 import { useTasks } from "@/hooks/useTasks";
 import { useCategories } from "@/hooks/useCategories";
 
+type TabType = 'dashboard' | 'tasks' | 'finance' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget';
+
 const Index = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -30,7 +32,7 @@ const Index = () => {
   const [priorityFilter, setPriorityFilter] = useState<Task["priority"] | "all">("all");
   const [dateFilter, setDateFilter] = useState<Date | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'tasks' | 'finance' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget'>('tasks');
+  const [activeTab, setActiveTab] = useState<TabType>('tasks');
   const [sectionFilter, setSectionFilter] = useState<string>("all");
   const [showThisWeek, setShowThisWeek] = useState(false);
   const [showThisMonth, setShowThisMonth] = useState(false);
@@ -97,12 +99,20 @@ const Index = () => {
       return task.section === sectionFilter;
     });
 
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+  };
+
+  const handleUpdateTask = (taskId: string, updates: any) => {
+    updateTask({ id: taskId, updates });
+  };
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <Sidebar 
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           onLogout={handleLogout}
         />
       </aside>
@@ -148,13 +158,13 @@ const Index = () => {
                   categories={categories} 
                   onAddCategory={addCategory} 
                 />
-                <AddTask onAddTask={addTask} categories={categories} sections={sections} />
+                <AddTask onAdd={addTask} categories={categories} sections={sections} />
                 
                 <TaskList
                   tasks={filteredTasks}
                   onToggleTask={toggleTask}
                   onDeleteTask={deleteTask}
-                  onUpdateTask={updateTask}
+                  onUpdateTask={handleUpdateTask}
                   categories={categories}
                   sections={sections}
                 />
