@@ -36,7 +36,7 @@ export function TaskItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDate, setEditDate] = useState<Date | null>(task.due_date ? new Date(task.due_date) : null);
-  const [editCategory, setEditCategory] = useState(task.category || "");
+  const [editCategory, setEditCategory] = useState(task.category || "none");
   
   const priorityClass = {
     high: "text-red-400 bg-red-400/10 border-red-400/20",
@@ -64,7 +64,7 @@ export function TaskItem({
     onUpdateTask(task.id, {
       title: editTitle,
       due_date: editDate?.toISOString() || null,
-      category: editCategory || null
+      category: editCategory === "none" ? null : editCategory
     });
     
     setIsEditing(false);
@@ -73,7 +73,7 @@ export function TaskItem({
   const handleCancelEdit = () => {
     setEditTitle(task.title);
     setEditDate(task.due_date ? new Date(task.due_date) : null);
-    setEditCategory(task.category || "");
+    setEditCategory(task.category || "none");
     setIsEditing(false);
   };
 
@@ -144,7 +144,7 @@ export function TaskItem({
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sem categoria</SelectItem>
+                    <SelectItem value="none">Sem categoria</SelectItem>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.name}>
                         {cat.name}
