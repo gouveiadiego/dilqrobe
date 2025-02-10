@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -104,14 +103,21 @@ export function JournalsTab() {
     }
     
     try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) throw userError;
+      if (!user) {
+        toast.error("Usuário não encontrado");
+        return;
+      }
+
       const { error } = await supabase
         .from('journal_entries')
-        .insert([
-          {
-            content: journalEntry,
-            prompt: currentPrompt
-          }
-        ]);
+        .insert({
+          content: journalEntry,
+          prompt: currentPrompt,
+          user_id: user.id
+        });
 
       if (error) throw error;
 
@@ -127,7 +133,6 @@ export function JournalsTab() {
 
   return (
     <div className="space-y-8">
-      {/* Header Section */}
       <div>
         <h2 className="text-2xl font-bold mb-2">Diário Pessoal</h2>
         <p className="text-muted-foreground">
@@ -135,7 +140,6 @@ export function JournalsTab() {
         </p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -175,7 +179,6 @@ export function JournalsTab() {
         </Card>
       </div>
 
-      {/* Writing Section */}
       <Card className="relative">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -207,7 +210,6 @@ export function JournalsTab() {
         </CardContent>
       </Card>
 
-      {/* Previous Entries */}
       <div className="space-y-4">
         <h3 className="text-xl font-bold">Entradas Anteriores</h3>
         {entries.map((entry) => (
@@ -231,7 +233,6 @@ export function JournalsTab() {
         ))}
       </div>
 
-      {/* Benefits Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
