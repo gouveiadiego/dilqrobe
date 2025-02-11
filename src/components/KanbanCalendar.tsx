@@ -86,24 +86,29 @@ export function KanbanCalendar({ tasks, onTaskDrop }: KanbanCalendarProps) {
                 {dayTasks.map((task) => (
                   <div
                     key={task.id}
-                    draggable
-                    onDragStart={() => handleDragStart(task.id)}
+                    draggable={!task.completed}
+                    onDragStart={() => !task.completed && handleDragStart(task.id)}
                     className={cn(
-                      "p-2 rounded-lg border cursor-move transition-all text-xs",
-                      "hover:shadow-md hover:border-purple-200",
-                      task.completed ? "bg-gray-50 border-gray-200" : "bg-white border-gray-100",
+                      "p-2 rounded-lg border transition-all text-xs",
+                      task.completed ? "bg-gray-50 border-gray-200 opacity-50" : "bg-white border-gray-100 hover:shadow-md hover:border-purple-200 cursor-move",
                       {
-                        "border-red-200 bg-red-50": task.priority === "high",
-                        "border-yellow-200 bg-yellow-50": task.priority === "medium",
-                        "border-green-200 bg-green-50": task.priority === "low"
+                        "border-red-200 bg-red-50": !task.completed && task.priority === "high",
+                        "border-yellow-200 bg-yellow-50": !task.completed && task.priority === "medium",
+                        "border-green-200 bg-green-50": !task.completed && task.priority === "low"
                       }
                     )}
                   >
-                    <div className="font-medium text-gray-900 line-clamp-2">
+                    <div className={cn(
+                      "font-medium text-gray-900 line-clamp-2",
+                      task.completed && "line-through"
+                    )}>
                       {task.title}
                     </div>
                     {task.category && (
-                      <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                      <span className={cn(
+                        "inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full",
+                        task.completed ? "bg-gray-100 text-gray-600" : "bg-purple-100 text-purple-700"
+                      )}>
                         {task.category}
                       </span>
                     )}
