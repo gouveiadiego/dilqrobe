@@ -25,7 +25,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           return;
         }
 
-        // Only attempt to refresh if we have a current session
+        // Only verify user if we have a session
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (userError || !user) {
@@ -39,7 +39,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         setSession(currentSession);
       } catch (error) {
         console.error("Error in session check:", error);
-        // Clear the session if there's an error
         await supabase.auth.signOut();
         setSession(null);
       } finally {
@@ -52,23 +51,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log("Auth state changed:", event);
+    } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
+      console.log("Auth state changed:", _event);
       
-      if (event === 'SIGNED_OUT') {
-        console.log('User signed out');
+      if (_event === 'SIGNED_OUT') {
         setSession(null);
         toast.info("Você foi desconectado");
-      } else if (event === 'SIGNED_IN') {
-        console.log('User signed in');
+      } else if (_event === 'SIGNED_IN' && currentSession) {
         setSession(currentSession);
         toast.success("Login realizado com sucesso");
-      } else if (event === 'TOKEN_REFRESHED') {
-        console.log('Token was refreshed successfully');
-        setSession(currentSession);
-      } else if (event === 'USER_UPDATED') {
-        console.log('User was updated');
-        setSession(currentSession);
       }
       
       setLoading(false);
@@ -84,7 +75,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!session) {
-    console.log("No session found, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
