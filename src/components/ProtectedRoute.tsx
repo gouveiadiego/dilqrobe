@@ -17,35 +17,29 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error("Error getting session:", error);
+        if (!currentSession) {
+          setSession(null);
+          setLoading(false);
+          return;
+        }
+
+        // Verify if the session is still valid
+        const { error: sessionError } = await supabase.auth.refreshSession();
+        
+        if (sessionError) {
+          console.error("Session refresh error:", sessionError);
           await supabase.auth.signOut();
           setSession(null);
           toast.error("Sessão expirada. Por favor, faça login novamente.");
           return;
         }
 
-        if (!currentSession) {
-          setSession(null);
-          return;
-        }
-
-        // Verify the session is still valid
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError || !user) {
-          console.error("Error getting user:", userError);
-          await supabase.auth.signOut();
-          setSession(null);
-          toast.error("Sessão inválida. Por favor, faça login novamente.");
-          return;
-        }
-
         setSession(currentSession);
       } catch (error) {
         console.error("Error in session check:", error);
+        await supabase.auth.signOut();
         setSession(null);
       } finally {
         setLoading(false);
