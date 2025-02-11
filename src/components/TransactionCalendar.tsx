@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
-import { ptBR } from "date-fns/locale/pt-BR";
+import { pt } from "date-fns/locale";
 import {
   Popover,
   PopoverContent,
@@ -67,7 +67,7 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
         mode="single"
         selected={selectedDate}
         onSelect={handleDateSelect}
-        locale={ptBR}
+        locale={pt}
         className="rounded-md"
         components={{
           DayContent: ({ date }) => (
