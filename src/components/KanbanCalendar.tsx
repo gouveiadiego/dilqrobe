@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Task } from "@/types/task";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from "date-fns";
-import { ptBR } from "date-fns/locale/pt-BR";
+import { pt } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 interface KanbanCalendarProps {
@@ -49,7 +49,7 @@ export function KanbanCalendar({ tasks, onTaskDrop }: KanbanCalendarProps) {
     <div className="w-full mt-8">
       <div className="mb-4">
         <h3 className="text-lg font-semibold">
-          {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+          {format(currentMonth, "MMMM yyyy", { locale: pt })}
         </h3>
       </div>
 
@@ -74,10 +74,10 @@ export function KanbanCalendar({ tasks, onTaskDrop }: KanbanCalendarProps) {
               )}>
                 <div className="flex flex-col">
                   <span className="text-gray-600">
-                    {format(day, "d", { locale: ptBR })}
+                    {format(day, "d", { locale: pt })}
                   </span>
                   <span className="text-gray-400 text-[10px]">
-                    {format(day, "EEEE", { locale: ptBR })}
+                    {format(day, "EEEE", { locale: pt })}
                   </span>
                 </div>
               </div>
