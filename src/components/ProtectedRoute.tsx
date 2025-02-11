@@ -17,15 +17,33 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
         if (error) {
           console.error("Error getting session:", error);
           await supabase.auth.signOut();
           setSession(null);
           toast.error("Sessão expirada. Por favor, faça login novamente.");
-        } else {
-          setSession(session);
+          return;
         }
+
+        if (!currentSession) {
+          setSession(null);
+          return;
+        }
+
+        // Verify the session is still valid
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+          console.error("Error getting user:", userError);
+          await supabase.auth.signOut();
+          setSession(null);
+          toast.error("Sessão inválida. Por favor, faça login novamente.");
+          return;
+        }
+
+        setSession(currentSession);
       } catch (error) {
         console.error("Error in session check:", error);
         setSession(null);
@@ -39,19 +57,25 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log("Auth state changed:", _event);
+    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("Auth state changed:", event);
       
-      if (_event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT') {
         console.log('User signed out');
+        setSession(null);
         toast.info("Você foi desconectado");
-      } else if (_event === 'TOKEN_REFRESHED') {
+      } else if (event === 'SIGNED_IN') {
+        console.log('User signed in');
+        setSession(currentSession);
+        toast.success("Login realizado com sucesso");
+      } else if (event === 'TOKEN_REFRESHED') {
         console.log('Token was refreshed successfully');
-      } else if (_event === 'USER_UPDATED') {
+        setSession(currentSession);
+      } else if (event === 'USER_UPDATED') {
         console.log('User was updated');
+        setSession(currentSession);
       }
       
-      setSession(session);
       setLoading(false);
     });
 
