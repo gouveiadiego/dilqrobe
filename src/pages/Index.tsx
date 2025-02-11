@@ -175,6 +175,11 @@ const Index = () => {
                   onAddSubtask={() => {}}
                   onToggleSubtask={() => {}}
                 />
+
+                <KanbanCalendar
+                  tasks={tasks}
+                  onTaskDrop={handleTaskDrop}
+                />
               </div>
             </div>
           ) : activeTab === 'finance' ? (
@@ -197,3 +202,4 @@ const Index = () => {
 };
 
 export default Index;
+
