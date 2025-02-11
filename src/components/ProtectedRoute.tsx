@@ -25,20 +25,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           return;
         }
 
-        // Verify if the session is still valid
-        const { error: sessionError } = await supabase.auth.refreshSession();
+        // Only attempt to refresh if we have a current session
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (sessionError) {
-          console.error("Session refresh error:", sessionError);
+        if (userError || !user) {
+          console.error("Error getting user:", userError);
           await supabase.auth.signOut();
           setSession(null);
-          toast.error("Sessão expirada. Por favor, faça login novamente.");
+          toast.error("Sessão inválida. Por favor, faça login novamente.");
           return;
         }
 
         setSession(currentSession);
       } catch (error) {
         console.error("Error in session check:", error);
+        // Clear the session if there's an error
         await supabase.auth.signOut();
         setSession(null);
       } finally {
