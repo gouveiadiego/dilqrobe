@@ -26,6 +26,7 @@ interface Service {
   status: string;
   amount: number;
   is_paid: boolean;
+  user_id: string;
 }
 
 interface NewService {
@@ -37,11 +38,12 @@ interface NewService {
   status: string;
   amount: number;
   is_paid: boolean;
+  user_id: string;
 }
 
 export function ServicesTab() {
   const queryClient = useQueryClient();
-  const [newService, setNewService] = useState<NewService>({
+  const [newService, setNewService] = useState<Omit<NewService, 'user_id'>>({
     start_date: "",
     client_name: "",
     company_name: "",
@@ -55,6 +57,9 @@ export function ServicesTab() {
   const { data: services, isLoading } = useQuery({
     queryKey: ["services"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       const { data, error } = await supabase
         .from("services")
         .select("*")
@@ -66,8 +71,14 @@ export function ServicesTab() {
   });
 
   const addServiceMutation = useMutation({
-    mutationFn: async (service: NewService) => {
-      const { error } = await supabase.from("services").insert([service]);
+    mutationFn: async (serviceData: Omit<NewService, 'user_id'>) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { error } = await supabase
+        .from("services")
+        .insert([{ ...serviceData, user_id: user.id }]);
+      
       if (error) throw error;
     },
     onSuccess: () => {
