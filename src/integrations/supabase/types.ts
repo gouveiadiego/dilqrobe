@@ -372,6 +372,51 @@ export type Database = {
           },
         ]
       }
+      services: {
+        Row: {
+          amount: number
+          client_name: string
+          company_name: string
+          created_at: string | null
+          id: string
+          is_paid: boolean | null
+          service_description: string
+          stage: string
+          start_date: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          client_name: string
+          company_name: string
+          created_at?: string | null
+          id?: string
+          is_paid?: boolean | null
+          service_description: string
+          stage: string
+          start_date: string
+          status: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          client_name?: string
+          company_name?: string
+          created_at?: string | null
+          id?: string
+          is_paid?: boolean | null
+          service_description?: string
+          stage?: string
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           category: string | null

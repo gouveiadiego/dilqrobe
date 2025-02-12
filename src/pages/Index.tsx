@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AddTask } from "@/components/AddTask";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,8 +20,9 @@ import { TaskList } from "@/components/TaskList";
 import { Sidebar } from "@/components/Sidebar";
 import { useTasks } from "@/hooks/useTasks";
 import { useCategories } from "@/hooks/useCategories";
+import { ServicesTab } from "@/components/ServicesTab";
 
-type TabType = 'dashboard' | 'tasks' | 'finance' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget';
+type TabType = 'dashboard' | 'tasks' | 'finance' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -194,6 +194,8 @@ const Index = () => {
             <SettingsTab />
           ) : activeTab === 'budget' ? (
             <BudgetTab />
+          ) : activeTab === 'services' ? (
+            <ServicesTab />
           ) : null}
         </div>
       </main>
@@ -202,4 +204,3 @@ const Index = () => {
 };
 
 export default Index;
-

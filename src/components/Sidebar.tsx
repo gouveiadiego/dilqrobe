@@ -9,7 +9,8 @@ import {
   Trophy,
   User,
   Settings,
-  LogOut
+  LogOut,
+  Briefcase,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -58,6 +59,14 @@ export function Sidebar({ activeTab, setActiveTab, onLogout }: SidebarProps) {
             >
               <Wallet size={20} />
               Financeiro
+            </Button>
+            <Button 
+              variant={activeTab === 'services' ? "secondary" : "ghost"} 
+              className="w-full justify-start gap-3"
+              onClick={() => setActiveTab('services')}
+            >
+              <Briefcase size={20} />
+              Serviços
             </Button>
             <Button 
               variant={activeTab === 'budget' ? "secondary" : "ghost"}
