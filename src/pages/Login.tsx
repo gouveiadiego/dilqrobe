@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,17 +17,6 @@ export const Login = () => {
     password: "",
     name: "",
   });
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        navigate("/");
-      }
-    };
-    
-    checkSession();
-  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +49,7 @@ export const Login = () => {
 
         toast.success("Conta criada com sucesso! Verifique seu email.");
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
@@ -74,7 +64,9 @@ export const Login = () => {
           return;
         }
 
-        navigate("/");
+        if (data?.session) {
+          navigate("/", { replace: true });
+        }
       }
     } catch (error: any) {
       console.error("Auth error:", error);
