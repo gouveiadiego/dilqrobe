@@ -1,9 +1,8 @@
 
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
-import { toast } from "sonner";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,58 +11,36 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    let mounted = true;
-
-    const getSession = async () => {
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        if (mounted) {
-          if (!currentSession) {
-            setSession(null);
-          } else {
-            setSession(currentSession);
-          }
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("Session error:", error);
-        if (mounted) {
-          setSession(null);
-          setLoading(false);
-        }
-      }
-    };
-
-    getSession();
-
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      if (mounted) {
-        setSession(currentSession);
-        setLoading(false);
-        
-        if (_event === 'SIGNED_OUT') {
-          navigate('/login', { replace: true });
-        }
-      }
+      setSession(currentSession);
+      setLoading(false);
     });
 
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setLoading(false);
+    });
+
+    // Cleanup subscription
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
+  // Show loading state
   if (loading) {
     return <div>Loading...</div>;
   }
 
+  // Redirect to login if no session
   if (!session) {
     return <Navigate to="/login" replace />;
   }
 
+  // Render protected content
   return <>{children}</>;
 }
