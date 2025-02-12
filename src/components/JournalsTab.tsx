@@ -6,6 +6,14 @@ import { CalendarDays, Pencil, BookHeart, Brain, Sparkles, Target } from "lucide
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const journalPrompts = [
   "Como você está se sentindo hoje?",
@@ -20,6 +28,7 @@ export function JournalsTab() {
   const [journalEntry, setJournalEntry] = useState("");
   const [currentPrompt, setCurrentPrompt] = useState(journalPrompts[0]);
   const [entries, setEntries] = useState<any[]>([]);
+  const [editingEntry, setEditingEntry] = useState<any>(null);
   const [stats, setStats] = useState({
     consecutiveDays: 0,
     totalEntries: 0,
@@ -55,7 +64,6 @@ export function JournalsTab() {
 
       if (error) throw error;
 
-      // Calculate consecutive days
       let consecutiveDays = 0;
       if (journalData && journalData.length > 0) {
         const dates = journalData.map(entry => 
@@ -129,6 +137,31 @@ export function JournalsTab() {
       console.error('Error saving journal entry:', error);
       toast.error("Erro ao salvar a entrada");
     }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEntry) return;
+    
+    try {
+      const { error } = await supabase
+        .from('journal_entries')
+        .update({ content: editingEntry.content })
+        .eq('id', editingEntry.id);
+
+      if (error) throw error;
+
+      toast.success("Entrada atualizada com sucesso!");
+      fetchJournalEntries();
+      setEditingEntry(null);
+    } catch (error) {
+      console.error('Error updating journal entry:', error);
+      toast.error("Erro ao atualizar a entrada");
+    }
+  };
+
+  const truncateText = (text: string, maxLength: number = 150) => {
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength) + "...";
   };
 
   return (
@@ -213,23 +246,83 @@ export function JournalsTab() {
       <div className="space-y-4">
         <h3 className="text-xl font-bold">Entradas Anteriores</h3>
         {entries.map((entry) => (
-          <Card key={entry.id}>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-sm font-medium">
-                  {format(new Date(entry.created_at), "dd/MM/yyyy HH:mm")}
-                </CardTitle>
-                {entry.prompt && (
-                  <CardDescription className="text-xs">
-                    Prompt: {entry.prompt}
-                  </CardDescription>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap">{entry.content}</p>
-            </CardContent>
-          </Card>
+          <Dialog key={entry.id}>
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-sm font-medium">
+                    {format(new Date(entry.created_at), "dd/MM/yyyy HH:mm")}
+                  </CardTitle>
+                  {entry.prompt && (
+                    <CardDescription className="text-xs">
+                      Prompt: {entry.prompt}
+                    </CardDescription>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-start gap-4">
+                  <p className="whitespace-pre-wrap line-clamp-3">{entry.content}</p>
+                  <div className="flex gap-2 shrink-0">
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => setEditingEntry(entry)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  Entrada do dia {format(new Date(entry.created_at), "dd/MM/yyyy")}
+                </DialogTitle>
+                <DialogDescription>
+                  {entry.prompt && `Prompt: ${entry.prompt}`}
+                </DialogDescription>
+              </DialogHeader>
+              {editingEntry?.id === entry.id ? (
+                <div className="space-y-4">
+                  <Textarea
+                    value={editingEntry.content}
+                    onChange={(e) => setEditingEntry({
+                      ...editingEntry,
+                      content: e.target.value
+                    })}
+                    className="min-h-[200px]"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setEditingEntry(null)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleSaveEdit}>
+                      Salvar Alterações
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="whitespace-pre-wrap">{entry.content}</p>
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={() => setEditingEntry(entry)}
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         ))}
       </div>
 
