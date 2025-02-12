@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Service {
   id: string;
@@ -41,8 +42,11 @@ interface NewService {
   user_id: string;
 }
 
+const COLORS = ['#10b981', '#ef4444'];
+
 export function ServicesTab() {
   const queryClient = useQueryClient();
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "unpaid">("all");
   const [newService, setNewService] = useState<Omit<NewService, 'user_id'>>({
     start_date: "",
     client_name: "",
@@ -69,6 +73,32 @@ export function ServicesTab() {
       return data;
     },
   });
+
+  const filteredServices = useMemo(() => {
+    if (!services) return [];
+    return services.filter(service => {
+      if (paymentFilter === "paid") return service.is_paid;
+      if (paymentFilter === "unpaid") return !service.is_paid;
+      return true;
+    });
+  }, [services, paymentFilter]);
+
+  const paymentSummary = useMemo(() => {
+    if (!services) return [];
+    
+    const paidAmount = services
+      .filter(service => service.is_paid)
+      .reduce((sum, service) => sum + service.amount, 0);
+    
+    const unpaidAmount = services
+      .filter(service => !service.is_paid)
+      .reduce((sum, service) => sum + service.amount, 0);
+
+    return [
+      { name: 'Recebido', value: paidAmount },
+      { name: 'A Receber', value: unpaidAmount }
+    ];
+  }, [services]);
 
   const addServiceMutation = useMutation({
     mutationFn: async (serviceData: Omit<NewService, 'user_id'>) => {
@@ -241,8 +271,88 @@ export function ServicesTab() {
         </form>
       </div>
 
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo Financeiro</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={paymentSummary}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) => `${name}: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {paymentSummary.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number) => 
+                    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+                  }
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Totais</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-500">Total Recebido</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(paymentSummary[0]?.value || 0)}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-500">Total a Receber</p>
+                <p className="text-2xl font-bold text-rose-600">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(paymentSummary[1]?.value || 0)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="bg-white p-6 rounded-lg shadow-sm border overflow-x-auto">
-        <h2 className="text-2xl font-bold mb-6">Lista de Serviços</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Lista de Serviços</h2>
+          <div className="flex gap-2">
+            <Button
+              variant={paymentFilter === "all" ? "default" : "outline"}
+              onClick={() => setPaymentFilter("all")}
+            >
+              Todos
+            </Button>
+            <Button
+              variant={paymentFilter === "paid" ? "default" : "outline"}
+              className={paymentFilter === "paid" ? "bg-emerald-500 hover:bg-emerald-600" : ""}
+              onClick={() => setPaymentFilter("paid")}
+            >
+              Pagos
+            </Button>
+            <Button
+              variant={paymentFilter === "unpaid" ? "default" : "outline"}
+              className={paymentFilter === "unpaid" ? "bg-rose-500 hover:bg-rose-600" : ""}
+              onClick={() => setPaymentFilter("unpaid")}
+            >
+              Não Pagos
+            </Button>
+          </div>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -257,7 +367,7 @@ export function ServicesTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {services?.map((service) => (
+            {filteredServices.map((service) => (
               <TableRow key={service.id}>
                 <TableCell>{new Date(service.start_date).toLocaleDateString()}</TableCell>
                 <TableCell>{service.client_name}</TableCell>
