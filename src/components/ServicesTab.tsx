@@ -16,23 +16,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileDown, Filter } from "lucide-react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface Service {
   id: string;
@@ -64,15 +47,16 @@ const COLORS = ['#10b981', '#ef4444'];
 export function ServicesTab() {
   const queryClient = useQueryClient();
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "unpaid">("all");
-  const [filters, setFilters] = useState({
-    startDate: "",
-    client: "",
-    company: "",
-    service: "",
+  const [newService, setNewService] = useState<Omit<NewService, 'user_id'>>({
+    start_date: "",
+    client_name: "",
+    company_name: "",
+    service_description: "",
     stage: "",
     status: "",
+    amount: 0,
+    is_paid: false,
   });
-  const [selectedClientForExport, setSelectedClientForExport] = useState<string>("");
 
   const { data: services, isLoading } = useQuery({
     queryKey: ["services"],
@@ -92,75 +76,82 @@ export function ServicesTab() {
 
   const filteredServices = useMemo(() => {
     if (!services) return [];
-    
     return services.filter(service => {
-      const matchesPaymentFilter = 
-        paymentFilter === "all" ? true :
-        paymentFilter === "paid" ? service.is_paid :
-        !service.is_paid;
-
-      const matchesTextFilters =
-        (!filters.startDate || service.start_date.includes(filters.startDate)) &&
-        (!filters.client || service.client_name.toLowerCase().includes(filters.client.toLowerCase())) &&
-        (!filters.company || service.company_name.toLowerCase().includes(filters.company.toLowerCase())) &&
-        (!filters.service || service.service_description.toLowerCase().includes(filters.service.toLowerCase())) &&
-        (!filters.stage || service.stage.toLowerCase().includes(filters.stage.toLowerCase())) &&
-        (!filters.status || service.status.toLowerCase().includes(filters.status.toLowerCase()));
-
-      return matchesPaymentFilter && matchesTextFilters;
+      if (paymentFilter === "paid") return service.is_paid;
+      if (paymentFilter === "unpaid") return !service.is_paid;
+      return true;
     });
-  }, [services, paymentFilter, filters]);
+  }, [services, paymentFilter]);
 
-  const generatePDF = (clientName: string) => {
-    const clientServices = services?.filter(s => s.client_name === clientName) || [];
-    if (clientServices.length === 0) {
-      toast.error("Nenhum serviço encontrado para este cliente");
-      return;
-    }
-
-    const doc = new jsPDF();
+  const paymentSummary = useMemo(() => {
+    if (!services) return [];
     
-    // Adiciona cabeçalho
-    doc.setFontSize(20);
-    doc.text("Relatório de Serviços", 105, 15, { align: "center" });
-    doc.setFontSize(16);
-    doc.text(`Cliente: ${clientName}`, 105, 25, { align: "center" });
+    const paidAmount = services
+      .filter(service => service.is_paid)
+      .reduce((sum, service) => sum + service.amount, 0);
     
-    // Adiciona resumo financeiro
-    const totalAmount = clientServices.reduce((sum, s) => sum + s.amount, 0);
-    const paidAmount = clientServices.filter(s => s.is_paid).reduce((sum, s) => sum + s.amount, 0);
-    const unpaidAmount = totalAmount - paidAmount;
-    
-    doc.setFontSize(12);
-    doc.text("Resumo Financeiro:", 14, 40);
-    doc.text(`Total em Serviços: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalAmount)}`, 14, 48);
-    doc.text(`Total Pago: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(paidAmount)}`, 14, 56);
-    doc.text(`Total a Receber: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(unpaidAmount)}`, 14, 64);
+    const unpaidAmount = services
+      .filter(service => !service.is_paid)
+      .reduce((sum, service) => sum + service.amount, 0);
 
-    // Adiciona tabela de serviços
-    autoTable(doc, {
-      startY: 75,
-      head: [["Data", "Serviço", "Etapa", "Situação", "Valor", "Status"]],
-      body: clientServices.map(service => [
-        new Date(service.start_date).toLocaleDateString(),
-        service.service_description,
-        service.stage,
-        service.status,
-        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(service.amount),
-        service.is_paid ? "Pago" : "Pendente"
-      ]),
-      styles: { fontSize: 10, cellPadding: 2 },
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-    });
+    return [
+      { name: 'Recebido', value: paidAmount },
+      { name: 'A Receber', value: unpaidAmount }
+    ];
+  }, [services]);
 
-    doc.save(`relatorio-${clientName.toLowerCase().replace(/\s+/g, '-')}.pdf`);
-    toast.success("Relatório gerado com sucesso!");
-  };
+  const addServiceMutation = useMutation({
+    mutationFn: async (serviceData: Omit<NewService, 'user_id'>) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { error } = await supabase
+        .from("services")
+        .insert([{ ...serviceData, user_id: user.id }]);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      setNewService({
+        start_date: "",
+        client_name: "",
+        company_name: "",
+        service_description: "",
+        stage: "",
+        status: "",
+        amount: 0,
+        is_paid: false,
+      });
+      toast.success("Serviço adicionado com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Error adding service:", error);
+      toast.error("Erro ao adicionar serviço");
+    },
+  });
+
+  const updateServiceMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Service> }) => {
+      const { error } = await supabase
+        .from("services")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      toast.success("Serviço atualizado com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Error updating service:", error);
+      toast.error("Erro ao atualizar serviço");
+    },
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Add service mutation logic here
+    addServiceMutation.mutate(newService);
   };
 
   if (isLoading) {
@@ -169,51 +160,176 @@ export function ServicesTab() {
 
   return (
     <div className="space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h2 className="text-2xl font-bold mb-6">Novo Serviço</h2>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="start_date">Data de Início</Label>
+            <Input
+              type="date"
+              id="start_date"
+              value={newService.start_date}
+              onChange={(e) =>
+                setNewService({ ...newService, start_date: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="client_name">Cliente</Label>
+            <Input
+              type="text"
+              id="client_name"
+              value={newService.client_name}
+              onChange={(e) =>
+                setNewService({ ...newService, client_name: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="company_name">Empresa</Label>
+            <Input
+              type="text"
+              id="company_name"
+              value={newService.company_name}
+              onChange={(e) =>
+                setNewService({ ...newService, company_name: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="service_description">Serviço</Label>
+            <Input
+              type="text"
+              id="service_description"
+              value={newService.service_description}
+              onChange={(e) =>
+                setNewService({ ...newService, service_description: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="stage">Etapa</Label>
+            <Input
+              type="text"
+              id="stage"
+              value={newService.stage}
+              onChange={(e) =>
+                setNewService({ ...newService, stage: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="status">Situação</Label>
+            <Input
+              type="text"
+              id="status"
+              value={newService.status}
+              onChange={(e) =>
+                setNewService({ ...newService, status: e.target.value })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="amount">Valor</Label>
+            <Input
+              type="number"
+              id="amount"
+              value={newService.amount}
+              onChange={(e) =>
+                setNewService({ ...newService, amount: Number(e.target.value) })
+              }
+              required
+            />
+          </div>
+
+          <div className="flex items-center space-x-2 pt-8">
+            <Switch
+              id="is_paid"
+              checked={newService.is_paid}
+              onCheckedChange={(checked) =>
+                setNewService({ ...newService, is_paid: checked })
+              }
+            />
+            <Label htmlFor="is_paid">Pago</Label>
+          </div>
+
+          <div className="md:col-span-2 lg:col-span-4 flex justify-end">
+            <Button type="submit">Adicionar Serviço</Button>
+          </div>
+        </form>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo Financeiro</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={paymentSummary}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) => `${name}: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {paymentSummary.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number) => 
+                    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+                  }
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Totais</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-500">Total Recebido</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(paymentSummary[0]?.value || 0)}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-500">Total a Receber</p>
+                <p className="text-2xl font-bold text-rose-600">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(paymentSummary[1]?.value || 0)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="bg-white p-6 rounded-lg shadow-sm border overflow-x-auto">
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold">Lista de Serviços</h2>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <FileDown className="mr-2 h-4 w-4" />
-                  Exportar Relatório
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Exportar Relatório de Cliente</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Selecione o Cliente</Label>
-                    <Select
-                      value={selectedClientForExport}
-                      onValueChange={setSelectedClientForExport}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um cliente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from(new Set(services?.map(s => s.client_name) || [])).map(client => (
-                          <SelectItem key={client} value={client}>
-                            {client}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button 
-                    className="w-full"
-                    onClick={() => generatePDF(selectedClientForExport)}
-                    disabled={!selectedClientForExport}
-                  >
-                    Gerar PDF
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+          <h2 className="text-2xl font-bold">Lista de Serviços</h2>
           <div className="flex gap-2">
             <Button
               variant={paymentFilter === "all" ? "default" : "outline"}
@@ -237,40 +353,6 @@ export function ServicesTab() {
             </Button>
           </div>
         </div>
-
-        <div className="grid grid-cols-6 gap-4 mb-4">
-          <Input
-            placeholder="Filtrar Data"
-            value={filters.startDate}
-            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-          />
-          <Input
-            placeholder="Filtrar Cliente"
-            value={filters.client}
-            onChange={(e) => setFilters({ ...filters, client: e.target.value })}
-          />
-          <Input
-            placeholder="Filtrar Empresa"
-            value={filters.company}
-            onChange={(e) => setFilters({ ...filters, company: e.target.value })}
-          />
-          <Input
-            placeholder="Filtrar Serviço"
-            value={filters.service}
-            onChange={(e) => setFilters({ ...filters, service: e.target.value })}
-          />
-          <Input
-            placeholder="Filtrar Etapa"
-            value={filters.stage}
-            onChange={(e) => setFilters({ ...filters, stage: e.target.value })}
-          />
-          <Input
-            placeholder="Filtrar Situação"
-            value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          />
-        </div>
-
         <Table>
           <TableHeader>
             <TableRow>
@@ -303,7 +385,10 @@ export function ServicesTab() {
                   <Switch
                     checked={service.is_paid}
                     onCheckedChange={(checked) =>
-                      // Update service mutation logic here
+                      updateServiceMutation.mutate({
+                        id: service.id,
+                        updates: { is_paid: checked },
+                      })
                     }
                   />
                 </TableCell>
