@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +17,16 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Pencil, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 interface Service {
   id: string;
@@ -47,6 +58,15 @@ const COLORS = ['#10b981', '#ef4444'];
 export function ServicesTab() {
   const queryClient = useQueryClient();
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "unpaid">("all");
+  const [filters, setFilters] = useState({
+    startDate: "",
+    client: "",
+    company: "",
+    service: "",
+    stage: "",
+    status: "",
+  });
+  const [editingService, setEditingService] = useState<Service | null>(null);
   const [newService, setNewService] = useState<Omit<NewService, 'user_id'>>({
     start_date: "",
     client_name: "",
@@ -77,11 +97,22 @@ export function ServicesTab() {
   const filteredServices = useMemo(() => {
     if (!services) return [];
     return services.filter(service => {
-      if (paymentFilter === "paid") return service.is_paid;
-      if (paymentFilter === "unpaid") return !service.is_paid;
-      return true;
+      const matchesPaymentFilter = 
+        paymentFilter === "all" ? true :
+        paymentFilter === "paid" ? service.is_paid :
+        !service.is_paid;
+
+      const matchesTextFilters =
+        (!filters.startDate || service.start_date.includes(filters.startDate)) &&
+        (!filters.client || service.client_name.toLowerCase().includes(filters.client.toLowerCase())) &&
+        (!filters.company || service.company_name.toLowerCase().includes(filters.company.toLowerCase())) &&
+        (!filters.service || service.service_description.toLowerCase().includes(filters.service.toLowerCase())) &&
+        (!filters.stage || service.stage.toLowerCase().includes(filters.stage.toLowerCase())) &&
+        (!filters.status || service.status.toLowerCase().includes(filters.status.toLowerCase()));
+
+      return matchesPaymentFilter && matchesTextFilters;
     });
-  }, [services, paymentFilter]);
+  }, [services, paymentFilter, filters]);
 
   const paymentSummary = useMemo(() => {
     if (!services) return [];
@@ -141,6 +172,7 @@ export function ServicesTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["services"] });
+      setEditingService(null);
       toast.success("Serviço atualizado com sucesso!");
     },
     onError: (error) => {
@@ -149,9 +181,35 @@ export function ServicesTab() {
     },
   });
 
+  const deleteServiceMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("services")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      toast.success("Serviço excluído com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Error deleting service:", error);
+      toast.error("Erro ao excluir serviço");
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     addServiceMutation.mutate(newService);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingService) return;
+    updateServiceMutation.mutate({
+      id: editingService.id,
+      updates: editingService,
+    });
   };
 
   if (isLoading) {
@@ -353,6 +411,40 @@ export function ServicesTab() {
             </Button>
           </div>
         </div>
+
+        <div className="grid grid-cols-6 gap-4 mb-4">
+          <Input
+            placeholder="Filtrar Data"
+            value={filters.startDate}
+            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+          />
+          <Input
+            placeholder="Filtrar Cliente"
+            value={filters.client}
+            onChange={(e) => setFilters({ ...filters, client: e.target.value })}
+          />
+          <Input
+            placeholder="Filtrar Empresa"
+            value={filters.company}
+            onChange={(e) => setFilters({ ...filters, company: e.target.value })}
+          />
+          <Input
+            placeholder="Filtrar Serviço"
+            value={filters.service}
+            onChange={(e) => setFilters({ ...filters, service: e.target.value })}
+          />
+          <Input
+            placeholder="Filtrar Etapa"
+            value={filters.stage}
+            onChange={(e) => setFilters({ ...filters, stage: e.target.value })}
+          />
+          <Input
+            placeholder="Filtrar Situação"
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+          />
+        </div>
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -364,6 +456,7 @@ export function ServicesTab() {
               <TableHead>Situação</TableHead>
               <TableHead>Valor</TableHead>
               <TableHead>Pago</TableHead>
+              <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -391,6 +484,168 @@ export function ServicesTab() {
                       })
                     }
                   />
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setEditingService(service)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Editar Serviço</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-date">Data</Label>
+                            <Input
+                              id="edit-date"
+                              type="date"
+                              value={editingService?.start_date || ""}
+                              onChange={(e) =>
+                                setEditingService(prev =>
+                                  prev ? { ...prev, start_date: e.target.value } : null
+                                )
+                              }
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-client">Cliente</Label>
+                            <Input
+                              id="edit-client"
+                              value={editingService?.client_name || ""}
+                              onChange={(e) =>
+                                setEditingService(prev =>
+                                  prev ? { ...prev, client_name: e.target.value } : null
+                                )
+                              }
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-company">Empresa</Label>
+                            <Input
+                              id="edit-company"
+                              value={editingService?.company_name || ""}
+                              onChange={(e) =>
+                                setEditingService(prev =>
+                                  prev ? { ...prev, company_name: e.target.value } : null
+                                )
+                              }
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-service">Serviço</Label>
+                            <Input
+                              id="edit-service"
+                              value={editingService?.service_description || ""}
+                              onChange={(e) =>
+                                setEditingService(prev =>
+                                  prev ? { ...prev, service_description: e.target.value } : null
+                                )
+                              }
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-stage">Etapa</Label>
+                            <Input
+                              id="edit-stage"
+                              value={editingService?.stage || ""}
+                              onChange={(e) =>
+                                setEditingService(prev =>
+                                  prev ? { ...prev, stage: e.target.value } : null
+                                )
+                              }
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-status">Situação</Label>
+                            <Input
+                              id="edit-status"
+                              value={editingService?.status || ""}
+                              onChange={(e) =>
+                                setEditingService(prev =>
+                                  prev ? { ...prev, status: e.target.value } : null
+                                )
+                              }
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-amount">Valor</Label>
+                            <Input
+                              id="edit-amount"
+                              type="number"
+                              value={editingService?.amount || 0}
+                              onChange={(e) =>
+                                setEditingService(prev =>
+                                  prev ? { ...prev, amount: Number(e.target.value) } : null
+                                )
+                              }
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="edit-paid"
+                              checked={editingService?.is_paid || false}
+                              onCheckedChange={(checked) =>
+                                setEditingService(prev =>
+                                  prev ? { ...prev, is_paid: checked } : null
+                                )
+                              }
+                            />
+                            <Label htmlFor="edit-paid">Pago</Label>
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancelar</Button>
+                          </DialogClose>
+                          <Button onClick={handleSaveEdit}>Salvar</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="text-red-500 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Confirmar Exclusão</DialogTitle>
+                        </DialogHeader>
+                        <p>Tem certeza que deseja excluir este serviço?</p>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancelar</Button>
+                          </DialogClose>
+                          <Button
+                            variant="destructive"
+                            onClick={() => deleteServiceMutation.mutate(service.id)}
+                          >
+                            Excluir
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
