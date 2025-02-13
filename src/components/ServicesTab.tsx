@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,14 +27,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Service {
@@ -102,8 +96,8 @@ export function ServicesTab() {
       const { data, error } = await supabase
         .from("services")
         .select("*")
-        .gte("reference_month", monthStart.toISOString())
-        .lte("reference_month", monthEnd.toISOString())
+        .gte("reference_month", monthStart.toISOString().split('T')[0])
+        .lte("reference_month", monthEnd.toISOString().split('T')[0])
         .order("start_date", { ascending: false });
 
       if (error) throw error;
@@ -158,6 +152,7 @@ export function ServicesTab() {
         .insert([{ 
           ...serviceData, 
           user_id: user.id,
+          start_date: serviceData.start_date,
           reference_month: format(currentMonth, "yyyy-MM-dd")
         }]);
       
@@ -188,7 +183,11 @@ export function ServicesTab() {
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Service> }) => {
       const { error } = await supabase
         .from("services")
-        .update(updates)
+        .update({
+          ...updates,
+          start_date: updates.start_date,
+          reference_month: updates.reference_month
+        })
         .eq("id", id);
       if (error) throw error;
     },
@@ -238,6 +237,15 @@ export function ServicesTab() {
     setCurrentMonth(prev => 
       direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1)
     );
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(parseISO(dateString), "dd/MM/yyyy");
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
   };
 
   if (isLoading) {
@@ -530,7 +538,7 @@ export function ServicesTab() {
                 key={service.id}
                 className={service.is_paid ? "bg-emerald-50" : ""}
               >
-                <TableCell>{new Date(service.start_date).toLocaleDateString()}</TableCell>
+                <TableCell>{formatDate(service.start_date)}</TableCell>
                 <TableCell>{service.client_name}</TableCell>
                 <TableCell>{service.company_name}</TableCell>
                 <TableCell>{service.service_description}</TableCell>
@@ -575,7 +583,7 @@ export function ServicesTab() {
                             <Input
                               id="edit-date"
                               type="date"
-                              value={editingService?.start_date || ""}
+                              value={editingService?.start_date.split('T')[0] || ""}
                               onChange={(e) =>
                                 setEditingService(prev =>
                                   prev ? { ...prev, start_date: e.target.value } : null
@@ -589,7 +597,7 @@ export function ServicesTab() {
                             <Input
                               id="edit-reference-month"
                               type="date"
-                              value={editingService?.reference_month || ""}
+                              value={editingService?.reference_month.split('T')[0] || ""}
                               onChange={(e) =>
                                 setEditingService(prev =>
                                   prev ? { ...prev, reference_month: e.target.value } : null
