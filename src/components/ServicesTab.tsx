@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +16,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Calendar } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +26,15 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface Service {
   id: string;
@@ -39,6 +47,7 @@ interface Service {
   amount: number;
   is_paid: boolean;
   user_id: string;
+  reference_month: string;
 }
 
 interface NewService {
@@ -51,6 +60,7 @@ interface NewService {
   amount: number;
   is_paid: boolean;
   user_id: string;
+  reference_month: string;
 }
 
 const COLORS = ['#10b981', '#ef4444'];
@@ -58,6 +68,7 @@ const COLORS = ['#10b981', '#ef4444'];
 export function ServicesTab() {
   const queryClient = useQueryClient();
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "unpaid">("all");
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [filters, setFilters] = useState({
     startDate: "",
     client: "",
@@ -76,17 +87,23 @@ export function ServicesTab() {
     status: "",
     amount: 0,
     is_paid: false,
+    reference_month: format(new Date(), "yyyy-MM-dd"),
   });
 
   const { data: services, isLoading } = useQuery({
-    queryKey: ["services"],
+    queryKey: ["services", format(currentMonth, "yyyy-MM")],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      const monthStart = startOfMonth(currentMonth);
+      const monthEnd = endOfMonth(currentMonth);
+
       const { data, error } = await supabase
         .from("services")
         .select("*")
+        .gte("reference_month", monthStart.toISOString())
+        .lte("reference_month", monthEnd.toISOString())
         .order("start_date", { ascending: false });
 
       if (error) throw error;
@@ -138,7 +155,11 @@ export function ServicesTab() {
 
       const { error } = await supabase
         .from("services")
-        .insert([{ ...serviceData, user_id: user.id }]);
+        .insert([{ 
+          ...serviceData, 
+          user_id: user.id,
+          reference_month: format(currentMonth, "yyyy-MM-dd")
+        }]);
       
       if (error) throw error;
     },
@@ -153,6 +174,7 @@ export function ServicesTab() {
         status: "",
         amount: 0,
         is_paid: false,
+        reference_month: format(new Date(), "yyyy-MM-dd"),
       });
       toast.success("Serviço adicionado com sucesso!");
     },
@@ -210,6 +232,12 @@ export function ServicesTab() {
       id: editingService.id,
       updates: editingService,
     });
+  };
+
+  const handleMonthChange = (direction: 'prev' | 'next') => {
+    setCurrentMonth(prev => 
+      direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1)
+    );
   };
 
   if (isLoading) {
@@ -312,6 +340,19 @@ export function ServicesTab() {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="reference_month">Mês de Referência</Label>
+            <Input
+              type="date"
+              id="reference_month"
+              value={newService.reference_month}
+              onChange={(e) =>
+                setNewService({ ...newService, reference_month: e.target.value })
+              }
+              required
+            />
+          </div>
+
           <div className="flex items-center space-x-2 pt-8">
             <Switch
               id="is_paid"
@@ -387,7 +428,31 @@ export function ServicesTab() {
 
       <div className="bg-white p-6 rounded-lg shadow-sm border overflow-x-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Lista de Serviços</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-bold">Lista de Serviços</h2>
+            <div className="flex items-center gap-2 ml-4">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleMonthChange('prev')}
+              >
+                ←
+              </Button>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                <span className="font-medium">
+                  {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleMonthChange('next')}
+              >
+                →
+              </Button>
+            </div>
+          </div>
           <div className="flex gap-2">
             <Button
               variant={paymentFilter === "all" ? "default" : "outline"}
@@ -461,7 +526,10 @@ export function ServicesTab() {
           </TableHeader>
           <TableBody>
             {filteredServices.map((service) => (
-              <TableRow key={service.id}>
+              <TableRow 
+                key={service.id}
+                className={service.is_paid ? "bg-emerald-50" : ""}
+              >
                 <TableCell>{new Date(service.start_date).toLocaleDateString()}</TableCell>
                 <TableCell>{service.client_name}</TableCell>
                 <TableCell>{service.company_name}</TableCell>
@@ -511,6 +579,20 @@ export function ServicesTab() {
                               onChange={(e) =>
                                 setEditingService(prev =>
                                   prev ? { ...prev, start_date: e.target.value } : null
+                                )
+                              }
+                              className="col-span-3"
+                            />
+                          </div>
+                          <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-reference-month">Mês de Referência</Label>
+                            <Input
+                              id="edit-reference-month"
+                              type="date"
+                              value={editingService?.reference_month || ""}
+                              onChange={(e) =>
+                                setEditingService(prev =>
+                                  prev ? { ...prev, reference_month: e.target.value } : null
                                 )
                               }
                               className="col-span-3"

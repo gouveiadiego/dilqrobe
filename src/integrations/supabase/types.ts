@@ -380,6 +380,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_paid: boolean | null
+          reference_month: string
           service_description: string
           stage: string
           start_date: string
@@ -394,6 +395,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_paid?: boolean | null
+          reference_month: string
           service_description: string
           stage: string
           start_date: string
@@ -408,6 +410,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_paid?: boolean | null
+          reference_month?: string
           service_description?: string
           stage?: string
           start_date?: string
