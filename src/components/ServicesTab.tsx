@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +16,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash2, Calendar } from "lucide-react";
+import { Pencil, Trash2, Calendar, FileDown, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,8 +26,11 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Service {
   id: string;
@@ -83,6 +85,8 @@ export function ServicesTab() {
     is_paid: false,
     reference_month: format(new Date(), "yyyy-MM-dd"),
   });
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const { data: services, isLoading } = useQuery({
     queryKey: ["services", format(currentMonth, "yyyy-MM")],
@@ -246,6 +250,43 @@ export function ServicesTab() {
       console.error("Error formatting date:", error);
       return dateString;
     }
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    
+    const selectedData = filteredServices
+      .filter(service => selectedServices.includes(service.id))
+      .map(service => [
+        formatDate(service.start_date),
+        service.client_name,
+        service.company_name,
+        service.service_description,
+        service.stage,
+        service.status,
+        new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(service.amount),
+        service.is_paid ? "Sim" : "Não"
+      ]);
+
+    doc.text("Relatório de Serviços", 14, 15);
+    doc.text(`Período: ${format(currentMonth, "MMMM yyyy", { locale: ptBR })}`, 14, 25);
+
+    autoTable(doc, {
+      head: [["Data", "Cliente", "Empresa", "Serviço", "Etapa", "Situação", "Valor", "Pago"]],
+      body: selectedData,
+      startY: 30,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+    });
+
+    doc.save(`servicos-${format(currentMonth, "yyyy-MM")}.pdf`);
+    setShowExportDialog(false);
+    setSelectedServices([]);
+    toast.success("PDF exportado com sucesso!");
   };
 
   if (isLoading) {
@@ -462,6 +503,57 @@ export function ServicesTab() {
             </div>
           </div>
           <div className="flex gap-2">
+            <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <FileDown className="h-4 w-4" />
+                  Exportar PDF
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Selecionar Serviços para Exportar</DialogTitle>
+                </DialogHeader>
+                <div className="py-4">
+                  <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto">
+                    {filteredServices.map(service => (
+                      <div key={service.id} className="flex items-center gap-2 p-2 hover:bg-gray-50">
+                        <Checkbox
+                          checked={selectedServices.includes(service.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedServices(prev => [...prev, service.id]);
+                            } else {
+                              setSelectedServices(prev => prev.filter(id => id !== service.id));
+                            }
+                          }}
+                        />
+                        <span>{service.client_name} - {service.service_description}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowExportDialog(false);
+                      setSelectedServices([]);
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleExportPDF}
+                    disabled={selectedServices.length === 0}
+                    className="gap-2"
+                  >
+                    <FileDown className="h-4 w-4" />
+                    Exportar Selecionados
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <Button
               variant={paymentFilter === "all" ? "default" : "outline"}
               onClick={() => setPaymentFilter("all")}
@@ -536,7 +628,7 @@ export function ServicesTab() {
             {filteredServices.map((service) => (
               <TableRow 
                 key={service.id}
-                className={service.is_paid ? "bg-emerald-50" : ""}
+                className={service.is_paid ? "bg-emerald-200" : ""}
               >
                 <TableCell>{formatDate(service.start_date)}</TableCell>
                 <TableCell>{service.client_name}</TableCell>
