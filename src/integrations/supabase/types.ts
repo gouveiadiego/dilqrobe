@@ -144,6 +144,42 @@ export type Database = {
           },
         ]
       }
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          document: string | null
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          document?: string | null
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          document?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string
@@ -375,6 +411,7 @@ export type Database = {
       services: {
         Row: {
           amount: number
+          client_id: string | null
           client_name: string
           company_name: string
           created_at: string | null
@@ -390,6 +427,7 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          client_id?: string | null
           client_name: string
           company_name: string
           created_at?: string | null
@@ -405,6 +443,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          client_id?: string | null
           client_name?: string
           company_name?: string
           created_at?: string | null
@@ -418,7 +457,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "services_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {

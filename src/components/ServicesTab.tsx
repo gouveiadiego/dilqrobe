@@ -31,6 +31,7 @@ import { format, startOfMonth, endOfMonth, addMonths, subMonths, parseISO } from
 import { ptBR } from "date-fns/locale";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useClients } from "@/hooks/useClients";
 
 interface Service {
   id: string;
@@ -57,6 +58,7 @@ interface NewService {
   is_paid: boolean;
   user_id: string;
   reference_month: string;
+  client_id: string;
 }
 
 const COLORS = ['#10b981', '#ef4444'];
@@ -84,6 +86,7 @@ export function ServicesTab() {
     amount: 0,
     is_paid: false,
     reference_month: format(new Date(), "yyyy-MM-dd"),
+    client_id: "",
   });
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -108,6 +111,8 @@ export function ServicesTab() {
       return data;
     },
   });
+
+  const { clients } = useClients();
 
   const filteredServices = useMemo(() => {
     if (!services) return [];
@@ -174,6 +179,7 @@ export function ServicesTab() {
         amount: 0,
         is_paid: false,
         reference_month: format(new Date(), "yyyy-MM-dd"),
+        client_id: "",
       });
       toast.success("Serviço adicionado com sucesso!");
     },
@@ -298,6 +304,31 @@ export function ServicesTab() {
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <h2 className="text-2xl font-bold mb-6">Novo Serviço</h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="client_id">Cliente</Label>
+            <select
+              id="client_id"
+              className="w-full px-3 py-2 border rounded-md"
+              value={newService.client_id}
+              onChange={(e) => {
+                const client = clients.find(c => c.id === e.target.value);
+                setNewService({
+                  ...newService,
+                  client_id: e.target.value,
+                  client_name: client ? client.name : ""
+                });
+              }}
+              required
+            >
+              <option value="">Selecione um cliente</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="start_date">Data de Início</Label>
             <Input
