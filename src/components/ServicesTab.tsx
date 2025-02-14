@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
 import { ClientManager } from "./ClientManager";
 import { Link2 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,28 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface Service {
+  id: string;
+  start_date: string;
+  client_name: string;
+  company_name: string;
+  service_description: string;
+  stage: string;
+  status: string;
+  amount: number;
+  is_paid: boolean;
+  reference_month: string;
+  client_id: string;
+}
 
 interface NewService {
   start_date: string;
@@ -36,6 +59,7 @@ export function ServicesTab() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
   const { clients } = useClients();
+  const [services, setServices] = useState<Service[]>([]);
   const [newService, setNewService] = useState<Omit<NewService, 'user_id'>>({
     start_date: format(new Date(), "yyyy-MM-dd"),
     client_name: "",
@@ -48,6 +72,29 @@ export function ServicesTab() {
     reference_month: format(new Date(), "yyyy-MM-dd"),
     client_id: "",
   });
+
+  const fetchServices = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setServices(data || []);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      toast.error("Erro ao carregar serviços");
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +125,7 @@ export function ServicesTab() {
         reference_month: format(new Date(), "yyyy-MM-dd"),
         client_id: "",
       });
+      fetchServices(); // Reload services after creating a new one
     } catch (error) {
       console.error("Error creating service:", error);
       toast.error("Erro ao criar serviço");
@@ -85,10 +133,7 @@ export function ServicesTab() {
   };
 
   const handleSharePortalLink = async (clientId: string) => {
-    // Aqui você pode implementar a lógica para enviar o link por email
     const portalUrl = `${window.location.origin}/client-portal?client=${clientId}`;
-    
-    // Por enquanto, vamos apenas copiar o link para a área de transferência
     await navigator.clipboard.writeText(portalUrl);
     toast.success("Link copiado para a área de transferência!");
     setShowShareDialog(false);
@@ -246,6 +291,82 @@ export function ServicesTab() {
       </div>
 
       <ClientManager />
+
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h2 className="text-2xl font-bold mb-6">Serviços</h2>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Empresa</TableHead>
+              <TableHead>Serviço</TableHead>
+              <TableHead>Etapa</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Pagamento</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {services.map((service) => (
+              <TableRow key={service.id}>
+                <TableCell>
+                  {format(new Date(service.start_date), "dd/MM/yyyy")}
+                </TableCell>
+                <TableCell>{service.client_name}</TableCell>
+                <TableCell>{service.company_name}</TableCell>
+                <TableCell>{service.service_description}</TableCell>
+                <TableCell>{service.stage}</TableCell>
+                <TableCell>{service.status}</TableCell>
+                <TableCell>{formatCurrency(service.amount)}</TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 rounded text-sm ${
+                    service.is_paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {service.is_paid ? 'Pago' : 'Pendente'}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setSelectedClientId(service.client_id)}
+                      >
+                        <Link2 className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Compartilhar Portal do Cliente</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <p className="mb-4">
+                          Compartilhe este link com seu cliente para que ele possa acompanhar os serviços:
+                        </p>
+                        <Input
+                          value={`${window.location.origin}/client-portal?client=${service.client_id}`}
+                          readOnly
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <DialogClose asChild>
+                          <Button variant="outline">Fechar</Button>
+                        </DialogClose>
+                        <Button onClick={() => handleSharePortalLink(service.client_id)}>
+                          Copiar Link
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
