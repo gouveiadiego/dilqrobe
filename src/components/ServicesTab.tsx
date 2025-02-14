@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
 import { ClientManager } from "./ClientManager";
-import { Link2, Search } from "lucide-react";
+import { Link2, Search, Pencil, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import {
   Dialog,
@@ -17,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -26,6 +26,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Service {
   id: string;
@@ -76,6 +83,9 @@ export function ServicesTab() {
   const [filterMonth, setFilterMonth] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterText, setFilterText] = useState("");
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
 
   const fetchServices = async () => {
     try {
@@ -157,6 +167,54 @@ export function ServicesTab() {
     } catch (error) {
       console.error("Error updating payment status:", error);
       toast.error("Erro ao atualizar status de pagamento");
+    }
+  };
+
+  const handleEdit = (service: Service) => {
+    setEditingService(service);
+  };
+
+  const handleDelete = async () => {
+    if (!serviceToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', serviceToDelete);
+
+      if (error) throw error;
+
+      toast.success("Serviço excluído com sucesso!");
+      setShowDeleteDialog(false);
+      setServiceToDelete(null);
+      fetchServices();
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      toast.error("Erro ao excluir serviço");
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingService) return;
+
+    try {
+      const { error } = await supabase
+        .from('services')
+        .update({
+          ...editingService,
+        })
+        .eq('id', editingService.id);
+
+      if (error) throw error;
+
+      toast.success("Serviço atualizado com sucesso!");
+      setEditingService(null);
+      fetchServices();
+    } catch (error) {
+      console.error("Error updating service:", error);
+      toast.error("Erro ao atualizar serviço");
     }
   };
 
@@ -418,6 +476,7 @@ export function ServicesTab() {
               <TableHead>Status</TableHead>
               <TableHead>Valor</TableHead>
               <TableHead>Pagamento</TableHead>
+              <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -433,23 +492,196 @@ export function ServicesTab() {
                 <TableCell>{service.status}</TableCell>
                 <TableCell>{formatCurrency(service.amount)}</TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    className={`px-2 py-1 rounded text-sm ${
-                      service.is_paid
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                        : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                    }`}
-                    onClick={() => togglePaymentStatus(service.id, service.is_paid)}
+                  <Select
+                    value={service.is_paid ? "paid" : "pending"}
+                    onValueChange={(value) => 
+                      togglePaymentStatus(service.id, value === "paid")
+                    }
                   >
-                    {service.is_paid ? 'Pago' : 'Pendente'}
-                  </Button>
+                    <SelectTrigger className="w-[110px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="paid">Pago</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(service)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setServiceToDelete(service.id);
+                        setShowDeleteDialog(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingService} onOpenChange={() => setEditingService(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Serviço</DialogTitle>
+          </DialogHeader>
+          {editingService && (
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-start_date">Data</Label>
+                  <Input
+                    id="edit-start_date"
+                    type="date"
+                    value={format(new Date(editingService.start_date), "yyyy-MM-dd")}
+                    onChange={(e) =>
+                      setEditingService({
+                        ...editingService,
+                        start_date: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-client_name">Cliente</Label>
+                  <Input
+                    id="edit-client_name"
+                    value={editingService.client_name}
+                    onChange={(e) =>
+                      setEditingService({
+                        ...editingService,
+                        client_name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-company_name">Empresa</Label>
+                  <Input
+                    id="edit-company_name"
+                    value={editingService.company_name}
+                    onChange={(e) =>
+                      setEditingService({
+                        ...editingService,
+                        company_name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-service_description">Serviço</Label>
+                  <Input
+                    id="edit-service_description"
+                    value={editingService.service_description}
+                    onChange={(e) =>
+                      setEditingService({
+                        ...editingService,
+                        service_description: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-stage">Etapa</Label>
+                  <Input
+                    id="edit-stage"
+                    value={editingService.stage}
+                    onChange={(e) =>
+                      setEditingService({
+                        ...editingService,
+                        stage: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Input
+                    id="edit-status"
+                    value={editingService.status}
+                    onChange={(e) =>
+                      setEditingService({
+                        ...editingService,
+                        status: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-amount">Valor</Label>
+                  <Input
+                    id="edit-amount"
+                    type="number"
+                    value={editingService.amount}
+                    onChange={(e) =>
+                      setEditingService({
+                        ...editingService,
+                        amount: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Status de Pagamento</Label>
+                  <Select
+                    value={editingService.is_paid ? "paid" : "pending"}
+                    onValueChange={(value) =>
+                      setEditingService({
+                        ...editingService,
+                        is_paid: value === "paid",
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="paid">Pago</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit">Salvar Alterações</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+          </DialogHeader>
+          <p>Tem certeza que deseja excluir este serviço?</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
