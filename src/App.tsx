@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import ClientPortal from "./pages/ClientPortal";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/client-portal" element={<ClientPortal />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
