@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +75,7 @@ export function ServicesTab() {
   const [filterClient, setFilterClient] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [filterText, setFilterText] = useState("");
 
   const fetchServices = async () => {
     try {
@@ -159,13 +161,21 @@ export function ServicesTab() {
   };
 
   const filteredServices = services.filter(service => {
+    const searchText = filterText.toLowerCase();
+    const matchesFilter = !filterText || 
+      service.client_name.toLowerCase().includes(searchText) ||
+      service.company_name.toLowerCase().includes(searchText) ||
+      service.service_description.toLowerCase().includes(searchText) ||
+      service.stage.toLowerCase().includes(searchText) ||
+      service.status.toLowerCase().includes(searchText);
+    
     const matchesClient = !filterClient || service.client_name.toLowerCase().includes(filterClient.toLowerCase());
     const matchesMonth = !filterMonth || format(new Date(service.start_date), "yyyy-MM") === filterMonth;
     const matchesStatus = !filterStatus || 
       (filterStatus === 'paid' && service.is_paid) || 
       (filterStatus === 'pending' && !service.is_paid);
     
-    return matchesClient && matchesMonth && matchesStatus;
+    return matchesFilter && matchesClient && matchesMonth && matchesStatus;
   });
 
   const groupedServices = services.reduce((acc, service) => {
@@ -374,9 +384,9 @@ export function ServicesTab() {
         <div className="flex gap-4 mb-4">
           <div className="flex-1">
             <Input
-              placeholder="Filtrar por cliente..."
-              value={filterClient}
-              onChange={(e) => setFilterClient(e.target.value)}
+              placeholder="Buscar em todas as colunas..."
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
               className="max-w-sm"
             />
           </div>

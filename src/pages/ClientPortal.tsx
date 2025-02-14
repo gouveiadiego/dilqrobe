@@ -1,9 +1,8 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -25,30 +24,19 @@ interface ClientService {
 }
 
 export default function ClientPortal() {
-  const navigate = useNavigate();
   const [services, setServices] = useState<ClientService[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/login');
-      }
-    };
-
-    checkSession();
-  }, [navigate]);
+  const [searchParams] = useSearchParams();
+  const clientId = searchParams.get('client');
 
   useEffect(() => {
     const fetchServices = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!clientId) return;
 
       const { data, error } = await supabase
         .from('services')
         .select('*')
-        .eq('client_id', user.id)
+        .eq('client_id', clientId)
         .order('start_date', { ascending: false });
 
       if (error) {
@@ -61,7 +49,7 @@ export default function ClientPortal() {
     };
 
     fetchServices();
-  }, []);
+  }, [clientId]);
 
   if (loading) {
     return <div>Carregando...</div>;
