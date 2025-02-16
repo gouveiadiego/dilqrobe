@@ -65,6 +65,11 @@ export const Login = () => {
         }
 
         if (data?.session) {
+          // Store the session in localStorage
+          localStorage.setItem('supabase.auth.token', data.session.access_token);
+          localStorage.setItem('supabase.auth.refreshToken', data.session.refresh_token);
+          
+          // Navigate to home page
           navigate("/", { replace: true });
         }
       }
