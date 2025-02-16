@@ -6,24 +6,8 @@ import { CalendarDays, Pencil, BookHeart, Brain, Sparkles, Target } from "lucide
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
-const journalPrompts = [
-  "Como você está se sentindo hoje?",
-  "O que te fez sorrir hoje?",
-  "Qual foi seu maior aprendizado hoje?",
-  "Do que você é grato hoje?",
-  "Que objetivo você quer alcançar esta semana?",
-  "Como você pode tornar amanhã melhor que hoje?"
-];
-
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+const journalPrompts = ["Como você está se sentindo hoje?", "O que te fez sorrir hoje?", "Qual foi seu maior aprendizado hoje?", "Do que você é grato hoje?", "Que objetivo você quer alcançar esta semana?", "Como você pode tornar amanhã melhor que hoje?"];
 export function JournalsTab() {
   const [journalEntry, setJournalEntry] = useState("");
   const [currentPrompt, setCurrentPrompt] = useState(journalPrompts[0]);
@@ -34,19 +18,18 @@ export function JournalsTab() {
     totalEntries: 0,
     averageMood: "Calculando..."
   });
-
   useEffect(() => {
     fetchJournalEntries();
     calculateStats();
   }, []);
-
   const fetchJournalEntries = async () => {
     try {
-      const { data, error } = await supabase
-        .from('journal_entries')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
+      const {
+        data,
+        error
+      } = await supabase.from('journal_entries').select('*').order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
       setEntries(data || []);
     } catch (error) {
@@ -54,25 +37,20 @@ export function JournalsTab() {
       toast.error("Erro ao carregar as entradas do diário");
     }
   };
-
   const calculateStats = async () => {
     try {
-      const { data: journalData, error } = await supabase
-        .from('journal_entries')
-        .select('created_at')
-        .order('created_at', { ascending: false });
-
+      const {
+        data: journalData,
+        error
+      } = await supabase.from('journal_entries').select('created_at').order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
-
       let consecutiveDays = 0;
       if (journalData && journalData.length > 0) {
-        const dates = journalData.map(entry => 
-          format(new Date(entry.created_at), 'yyyy-MM-dd')
-        );
-        
+        const dates = journalData.map(entry => format(new Date(entry.created_at), 'yyyy-MM-dd'));
         const uniqueDates = [...new Set(dates)];
         const today = format(new Date(), 'yyyy-MM-dd');
-        
         if (uniqueDates[0] === today) {
           consecutiveDays = 1;
           let currentDate = new Date();
@@ -87,48 +65,44 @@ export function JournalsTab() {
           }
         }
       }
-
       setStats({
         consecutiveDays,
         totalEntries: journalData?.length || 0,
         averageMood: "Positivo" // This could be enhanced with sentiment analysis
       });
-
     } catch (error) {
       console.error('Error calculating stats:', error);
     }
   };
-
   const handleNewPrompt = () => {
     const newPrompt = journalPrompts[Math.floor(Math.random() * journalPrompts.length)];
     setCurrentPrompt(newPrompt);
   };
-
   const handleSaveEntry = async () => {
     if (!journalEntry.trim()) {
       toast.error("Por favor, escreva algo antes de salvar.");
       return;
     }
-    
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+      const {
+        data: {
+          user
+        },
+        error: userError
+      } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) {
         toast.error("Usuário não encontrado");
         return;
       }
-
-      const { error } = await supabase
-        .from('journal_entries')
-        .insert({
-          content: journalEntry,
-          prompt: currentPrompt,
-          user_id: user.id
-        });
-
+      const {
+        error
+      } = await supabase.from('journal_entries').insert({
+        content: journalEntry,
+        prompt: currentPrompt,
+        user_id: user.id
+      });
       if (error) throw error;
-
       toast.success("Entrada salva com sucesso!");
       setJournalEntry("");
       fetchJournalEntries();
@@ -138,18 +112,15 @@ export function JournalsTab() {
       toast.error("Erro ao salvar a entrada");
     }
   };
-
   const handleSaveEdit = async () => {
     if (!editingEntry) return;
-    
     try {
-      const { error } = await supabase
-        .from('journal_entries')
-        .update({ content: editingEntry.content })
-        .eq('id', editingEntry.id);
-
+      const {
+        error
+      } = await supabase.from('journal_entries').update({
+        content: editingEntry.content
+      }).eq('id', editingEntry.id);
       if (error) throw error;
-
       toast.success("Entrada atualizada com sucesso!");
       fetchJournalEntries();
       setEditingEntry(null);
@@ -158,14 +129,11 @@ export function JournalsTab() {
       toast.error("Erro ao atualizar a entrada");
     }
   };
-
   const truncateText = (text: string, maxLength: number = 150) => {
     if (text.length <= maxLength) return text;
     return text.slice(0, maxLength) + "...";
   };
-
-  return (
-    <div className="space-y-8">
+  return <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold mb-2">Diário Pessoal</h2>
         <p className="text-muted-foreground">
@@ -225,12 +193,7 @@ export function JournalsTab() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Textarea
-            placeholder="Comece a escrever aqui..."
-            className="min-h-[200px] resize-none"
-            value={journalEntry}
-            onChange={(e) => setJournalEntry(e.target.value)}
-          />
+          <Textarea placeholder="Comece a escrever aqui..." className="min-h-[200px] resize-none" value={journalEntry} onChange={e => setJournalEntry(e.target.value)} />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setJournalEntry("")}>
               Limpar
@@ -245,19 +208,14 @@ export function JournalsTab() {
 
       <div className="space-y-4">
         <h3 className="text-xl font-bold">Entradas Anteriores</h3>
-        {entries.map((entry) => (
-          <Dialog key={entry.id}>
+        {entries.map(entry => <Dialog key={entry.id}>
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-sm font-medium">
                     {format(new Date(entry.created_at), "dd/MM/yyyy HH:mm")}
                   </CardTitle>
-                  {entry.prompt && (
-                    <CardDescription className="text-xs">
-                      Prompt: {entry.prompt}
-                    </CardDescription>
-                  )}
+                  {entry.prompt}
                 </div>
               </CardHeader>
               <CardContent>
@@ -265,11 +223,7 @@ export function JournalsTab() {
                   <p className="whitespace-pre-wrap line-clamp-3">{entry.content}</p>
                   <div className="flex gap-2 shrink-0">
                     <DialogTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => setEditingEntry(entry)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => setEditingEntry(entry)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                     </DialogTrigger>
@@ -286,44 +240,30 @@ export function JournalsTab() {
                   {entry.prompt && `Prompt: ${entry.prompt}`}
                 </DialogDescription>
               </DialogHeader>
-              {editingEntry?.id === entry.id ? (
-                <div className="space-y-4">
-                  <Textarea
-                    value={editingEntry.content}
-                    onChange={(e) => setEditingEntry({
-                      ...editingEntry,
-                      content: e.target.value
-                    })}
-                    className="min-h-[200px]"
-                  />
+              {editingEntry?.id === entry.id ? <div className="space-y-4">
+                  <Textarea value={editingEntry.content} onChange={e => setEditingEntry({
+              ...editingEntry,
+              content: e.target.value
+            })} className="min-h-[200px]" />
                   <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setEditingEntry(null)}
-                    >
+                    <Button variant="outline" onClick={() => setEditingEntry(null)}>
                       Cancelar
                     </Button>
                     <Button onClick={handleSaveEdit}>
                       Salvar Alterações
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
+                </div> : <div className="space-y-4">
                   <p className="whitespace-pre-wrap">{entry.content}</p>
                   <div className="flex justify-end">
-                    <Button 
-                      onClick={() => setEditingEntry(entry)}
-                    >
+                    <Button onClick={() => setEditingEntry(entry)}>
                       <Pencil className="mr-2 h-4 w-4" />
                       Editar
                     </Button>
                   </div>
-                </div>
-              )}
+                </div>}
             </DialogContent>
-          </Dialog>
-        ))}
+          </Dialog>)}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -358,6 +298,5 @@ export function JournalsTab() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 }
