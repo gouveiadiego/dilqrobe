@@ -57,7 +57,7 @@ interface NewService {
   stage: string;
   status: string;
   amount: number;
-  is_paid: boolean;
+  payment_status: string;
   reference_month: string;
   client_id: string;
   user_id: string;
@@ -87,7 +87,7 @@ export function ServicesTab() {
     stage: "",
     status: "",
     amount: 0,
-    is_paid: false,
+    payment_status: "pending",
     reference_month: format(new Date(), "yyyy-MM-dd"),
     client_id: "",
   });
@@ -192,7 +192,6 @@ export function ServicesTab() {
       const serviceData = {
         ...newService,
         user_id: user.id,
-        payment_status: 'pending'
       };
 
       const { error } = await supabase
@@ -210,6 +209,7 @@ export function ServicesTab() {
         stage: "",
         status: "",
         amount: 0,
+        payment_status: "pending",
         reference_month: format(new Date(), "yyyy-MM-dd"),
         client_id: "",
       });
@@ -451,18 +451,21 @@ export function ServicesTab() {
             />
           </div>
 
-         <div className="space-y-2">
-            <Label htmlFor="is_paid">Status do Pagamento</Label>
-            <select
-              id="is_paid"
-              className="w-full px-3 py-2 border rounded-md"
-              value={newService.is_paid ? "true" : "false"}
-              onChange={(e) => setNewService({ ...newService, is_paid: e.target.value === "true" })}
-              required
+          <div className="space-y-2">
+            <Label>Status do Pagamento</Label>
+            <Select
+              value={newService.payment_status}
+              onValueChange={(value) => setNewService({ ...newService, payment_status: value })}
             >
-              <option value="false">Pendente</option>
-              <option value="true">Pago</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="paid">Pago</SelectItem>
+                <SelectItem value="canceled">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="lg:col-span-4">
@@ -618,7 +621,6 @@ export function ServicesTab() {
         </Table>
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={!!editingService} onOpenChange={() => setEditingService(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -750,7 +752,6 @@ export function ServicesTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
