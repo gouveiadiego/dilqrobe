@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AddTask } from "@/components/AddTask";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,6 +108,86 @@ const Index = () => {
     updateTask({ id: taskId, updates });
   };
 
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <DashboardTab />;
+      case 'tasks':
+        return (
+          <div className="space-y-6 bg-white rounded-lg">
+            <div className="mb-8 space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Execução
+                <span className="text-sm font-normal text-gray-500 ml-2">
+                  - Tarefas dos últimos 10 dias
+                </span>
+              </h2>
+              
+              <TaskFilters
+                search={search}
+                setSearch={setSearch}
+                filter={filter}
+                setFilter={setFilter}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                priorityFilter={priorityFilter}
+                setPriorityFilter={setPriorityFilter}
+                dateFilter={dateFilter}
+                setDateFilter={setDateFilter}
+                sectionFilter={sectionFilter}
+                setSectionFilter={setSectionFilter}
+                categories={categories}
+                sections={sections}
+              />
+
+              <CategoryManager 
+                categories={categories} 
+                onAddCategory={addCategory} 
+              />
+              <AddTask onAdd={addTask} categories={categories} sections={sections} />
+              
+              <TaskList
+                tasks={filteredTasks}
+                onToggleTask={toggleTask}
+                onDeleteTask={deleteTask}
+                onUpdateTask={handleUpdateTask}
+                categories={categories}
+                showThisWeek={showThisWeek}
+                setShowThisWeek={setShowThisWeek}
+                showThisMonth={showThisMonth}
+                setShowThisMonth={setShowThisMonth}
+                showOlder={showOlder}
+                setShowOlder={setShowOlder}
+                onAddSubtask={() => {}}
+                onToggleSubtask={() => {}}
+              />
+
+              <KanbanCalendar
+                tasks={tasks}
+                onTaskDrop={handleTaskDrop}
+              />
+            </div>
+          </div>
+        );
+      case 'finance':
+        return <FinanceTab />;
+      case 'journals':
+        return <JournalsTab />;
+      case 'challenges':
+        return <ChallengesTab />;
+      case 'profile':
+        return <ProfileTab />;
+      case 'settings':
+        return <SettingsTab />;
+      case 'budget':
+        return <BudgetTab />;
+      case 'services':
+        return <ServicesTab />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -125,78 +206,7 @@ const Index = () => {
             </Button>
           </div>
 
-          {activeTab === 'dashboard' ? (
-            <DashboardTab />
-          ) : activeTab === 'tasks' ? (
-            <div className="space-y-6 bg-white rounded-lg">
-              <div className="mb-8 space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Execução
-                  <span className="text-sm font-normal text-gray-500 ml-2">
-                    - Tarefas dos últimos 10 dias
-                  </span>
-                </h2>
-                
-                <TaskFilters
-                  search={search}
-                  setSearch={setSearch}
-                  filter={filter}
-                  setFilter={setFilter}
-                  categoryFilter={categoryFilter}
-                  setCategoryFilter={setCategoryFilter}
-                  priorityFilter={priorityFilter}
-                  setPriorityFilter={setPriorityFilter}
-                  dateFilter={dateFilter}
-                  setDateFilter={setDateFilter}
-                  sectionFilter={sectionFilter}
-                  setSectionFilter={setSectionFilter}
-                  categories={categories}
-                  sections={sections}
-                />
-
-                <CategoryManager 
-                  categories={categories} 
-                  onAddCategory={addCategory} 
-                />
-                <AddTask onAdd={addTask} categories={categories} sections={sections} />
-                
-                <TaskList
-                  tasks={filteredTasks}
-                  onToggleTask={toggleTask}
-                  onDeleteTask={deleteTask}
-                  onUpdateTask={handleUpdateTask}
-                  categories={categories}
-                  showThisWeek={showThisWeek}
-                  setShowThisWeek={setShowThisWeek}
-                  showThisMonth={showThisMonth}
-                  setShowThisMonth={setShowThisMonth}
-                  showOlder={showOlder}
-                  setShowOlder={setShowOlder}
-                  onAddSubtask={() => {}}
-                  onToggleSubtask={() => {}}
-                />
-
-                <KanbanCalendar
-                  tasks={tasks}
-                  onTaskDrop={handleTaskDrop}
-                />
-              </div>
-            </div>
-          ) : activeTab === 'finance' ? (
-            <FinanceTab />
-          ) : activeTab === 'journals' ? (
-            <JournalsTab />
-          ) : activeTab === 'challenges' ? (
-            <ChallengesTab />
-          ) : activeTab === 'profile' ? (
-            <ProfileTab />
-          ) : activeTab === 'settings' ? (
-            <SettingsTab />
-          ) : activeTab === 'budget' ? (
-            <BudgetTab />
-          ) : activeTab === 'services' ? (
-            <ServicesTab />
-          ) : null}
+          {renderActiveTab()}
         </div>
       </main>
     </div>
