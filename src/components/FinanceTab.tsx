@@ -15,7 +15,7 @@ import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendar } from "./TransactionCalendar";
 import { FinancialSummary } from "./FinancialSummary";
 import { formatCurrency } from "@/lib/utils";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 interface Transaction {
   id: string;
@@ -332,14 +332,9 @@ export const FinanceTab = () => {
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        toast({
-                          title: "Tem certeza?",
-                          description: "Deseja realmente excluir esta transação?",
-                          action: {
-                            label: "Excluir",
-                            onClick: () => handleDeleteTransaction(transaction.id),
-                          },
-                        });
+                        if (confirm('Deseja realmente excluir esta transação?')) {
+                          handleDeleteTransaction(transaction.id);
+                        }
                       }}
                       className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
