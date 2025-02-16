@@ -43,9 +43,10 @@ interface Service {
   stage: string;
   status: string;
   amount: number;
-  is_paid: boolean;
+  payment_status: string;
   reference_month: string;
   client_id: string;
+  user_id: string;
 }
 
 interface NewService {
@@ -122,60 +123,23 @@ export function ServicesTab() {
     fetchServices();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("Usuário não autenticado");
-        return;
-      }
-
-      const { error } = await supabase
-        .from('services')
-        .insert([{ ...newService, user_id: user.id }]);
-
-      if (error) throw error;
-
-      toast.success("Serviço criado com sucesso!");
-      setNewService({
-        start_date: format(new Date(), "yyyy-MM-dd"),
-        client_name: "",
-        company_name: "",
-        service_description: "",
-        stage: "",
-        status: "",
-        amount: 0,
-        is_paid: false,
-        reference_month: format(new Date(), "yyyy-MM-dd"),
-        client_id: "",
-      });
-      fetchServices(); // Reload services after creating a new one
-    } catch (error) {
-      console.error("Error creating service:", error);
-      toast.error("Erro ao criar serviço");
-    }
-  };
-
-  const handleSharePortalLink = async (clientId: string) => {
-    const portalUrl = `${window.location.origin}/client-portal?client=${clientId}`;
-    await navigator.clipboard.writeText(portalUrl);
-    toast.success("Link copiado para a área de transferência!");
-    setShowShareDialog(false);
-  };
-
   const calculateStats = (services: Service[]): ServiceStats => {
     return services.reduce((acc: ServiceStats, service) => {
       acc.total++;
       acc.totalAmount += service.amount;
       
-      if (service.is_paid) {
-        acc.paid++;
-        acc.paidAmount += service.amount;
-      } else {
-        acc.pending++;
-        acc.pendingAmount += service.amount;
+      switch (service.payment_status) {
+        case 'paid':
+          acc.paid++;
+          acc.paidAmount += service.amount;
+          break;
+        case 'canceled':
+          acc.canceled++;
+          acc.canceledAmount += service.amount;
+          break;
+        default:
+          acc.pending++;
+          acc.pendingAmount += service.amount;
       }
       
       return acc;
@@ -215,11 +179,60 @@ export function ServicesTab() {
     );
   };
 
-  const togglePaymentStatus = async (serviceId: string, currentStatus: boolean) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+
+      const serviceData = {
+        ...newService,
+        user_id: user.id,
+        payment_status: 'pending'
+      };
+
       const { error } = await supabase
         .from('services')
-        .update({ is_paid: !currentStatus })
+        .insert([serviceData]);
+
+      if (error) throw error;
+
+      toast.success("Serviço criado com sucesso!");
+      setNewService({
+        start_date: format(new Date(), "yyyy-MM-dd"),
+        client_name: "",
+        company_name: "",
+        service_description: "",
+        stage: "",
+        status: "",
+        amount: 0,
+        reference_month: format(new Date(), "yyyy-MM-dd"),
+        client_id: "",
+      });
+      fetchServices();
+    } catch (error) {
+      console.error("Error creating service:", error);
+      toast.error("Erro ao criar serviço");
+    }
+  };
+
+  const handleSharePortalLink = async (clientId: string) => {
+    const portalUrl = `${window.location.origin}/client-portal?client=${clientId}`;
+    await navigator.clipboard.writeText(portalUrl);
+    toast.success("Link copiado para a área de transferência!");
+    setShowShareDialog(false);
+  };
+
+  const togglePaymentStatus = async (serviceId: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
+      const { error } = await supabase
+        .from('services')
+        .update({ payment_status: newStatus })
         .eq('id', serviceId);
 
       if (error) throw error;
@@ -292,8 +305,8 @@ export function ServicesTab() {
     const matchesClient = !filterClient || service.client_name.toLowerCase().includes(filterClient.toLowerCase());
     const matchesMonth = !filterMonth || format(new Date(service.start_date), "yyyy-MM") === filterMonth;
     const matchesStatus = !filterStatus || 
-      (filterStatus === 'paid' && service.is_paid) || 
-      (filterStatus === 'pending' && !service.is_paid);
+      (filterStatus === 'paid' && service.payment_status === 'paid') || 
+      (filterStatus === 'pending' && service.payment_status === 'pending');
     
     return matchesFilter && matchesClient && matchesMonth && matchesStatus;
   });
@@ -438,7 +451,7 @@ export function ServicesTab() {
             />
           </div>
 
-          <div className="space-y-2">
+         <div className="space-y-2">
             <Label htmlFor="is_paid">Status do Pagamento</Label>
             <select
               id="is_paid"
@@ -553,22 +566,31 @@ export function ServicesTab() {
                 <TableCell>{service.stage}</TableCell>
                 <TableCell>{service.status}</TableCell>
                 <TableCell>{formatCurrency(service.amount)}</TableCell>
-                <TableCell>
-                  <Select
-                    value={service.is_paid ? "paid" : "pending"}
-                    onValueChange={(value) => 
-                      togglePaymentStatus(service.id, value === "paid")
-                    }
+              <TableCell>
+                <Select
+                  value={service.payment_status}
+                  onValueChange={(value) => 
+                    togglePaymentStatus(service.id, value)
+                  }
+                >
+                  <SelectTrigger 
+                    className={`w-[110px] ${
+                      service.payment_status === 'paid' 
+                        ? 'text-green-600' 
+                        : service.payment_status === 'canceled'
+                        ? 'text-yellow-600'
+                        : 'text-orange-600'
+                    }`}
                   >
-                    <SelectTrigger className="w-[110px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="paid">Pago</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="paid">Pago</SelectItem>
+                    <SelectItem value="canceled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button
@@ -698,14 +720,14 @@ export function ServicesTab() {
                     }
                   />
                 </div>
-                <div>
+               <div>
                   <Label>Status de Pagamento</Label>
                   <Select
-                    value={editingService.is_paid ? "paid" : "pending"}
+                    value={editingService.payment_status}
                     onValueChange={(value) =>
                       setEditingService({
                         ...editingService,
-                        is_paid: value === "paid",
+                        payment_status: value,
                       })
                     }
                   >
@@ -715,6 +737,7 @@ export function ServicesTab() {
                     <SelectContent>
                       <SelectItem value="pending">Pendente</SelectItem>
                       <SelectItem value="paid">Pago</SelectItem>
+                      <SelectItem value="canceled">Cancelado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

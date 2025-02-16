@@ -20,7 +20,7 @@ interface ClientService {
   stage: string;
   status: string;
   amount: number;
-  is_paid: boolean;
+  payment_status: string;
 }
 
 export default function ClientPortal() {
@@ -89,9 +89,17 @@ export default function ClientPortal() {
                 </TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded text-sm ${
-                    service.is_paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    service.payment_status === 'paid' 
+                      ? 'bg-green-100 text-green-800' 
+                      : service.payment_status === 'canceled'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-orange-100 text-orange-800'
                   }`}>
-                    {service.is_paid ? 'Pago' : 'Pendente'}
+                    {service.payment_status === 'paid' 
+                      ? 'Pago' 
+                      : service.payment_status === 'canceled'
+                      ? 'Cancelado'
+                      : 'Pendente'}
                   </span>
                 </TableCell>
               </TableRow>
