@@ -416,7 +416,7 @@ export type Database = {
           company_name: string
           created_at: string | null
           id: string
-          is_paid: boolean | null
+          payment_status: string | null
           reference_month: string
           service_description: string
           stage: string
@@ -432,7 +432,7 @@ export type Database = {
           company_name: string
           created_at?: string | null
           id?: string
-          is_paid?: boolean | null
+          payment_status?: string | null
           reference_month: string
           service_description: string
           stage: string
@@ -448,7 +448,7 @@ export type Database = {
           company_name?: string
           created_at?: string | null
           id?: string
-          is_paid?: boolean | null
+          payment_status?: string | null
           reference_month?: string
           service_description?: string
           stage?: string

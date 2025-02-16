@@ -62,6 +62,17 @@ interface NewService {
   user_id: string;
 }
 
+interface ServiceStats {
+  total: number;
+  pending: number;
+  paid: number;
+  canceled: number;
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  canceledAmount: number;
+}
+
 export function ServicesTab() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
@@ -86,6 +97,7 @@ export function ServicesTab() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
+  const [showStatsCard, setShowStatsCard] = useState(true);
 
   const fetchServices = async () => {
     try {
@@ -151,6 +163,56 @@ export function ServicesTab() {
     await navigator.clipboard.writeText(portalUrl);
     toast.success("Link copiado para a área de transferência!");
     setShowShareDialog(false);
+  };
+
+  const calculateStats = (services: Service[]): ServiceStats => {
+    return services.reduce((acc: ServiceStats, service) => {
+      acc.total++;
+      acc.totalAmount += service.amount;
+      
+      if (service.is_paid) {
+        acc.paid++;
+        acc.paidAmount += service.amount;
+      } else {
+        acc.pending++;
+        acc.pendingAmount += service.amount;
+      }
+      
+      return acc;
+    }, {
+      total: 0,
+      pending: 0,
+      paid: 0,
+      canceled: 0,
+      totalAmount: 0,
+      paidAmount: 0,
+      pendingAmount: 0,
+      canceledAmount: 0
+    });
+  };
+
+  const renderDashboard = () => {
+    const stats = calculateStats(services);
+    
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow-sm border">
+          <h3 className="text-sm font-medium text-gray-500">Total de Serviços</h3>
+          <p className="text-2xl font-bold">{stats.total}</p>
+          <p className="text-sm text-gray-500">{formatCurrency(stats.totalAmount)}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border">
+          <h3 className="text-sm font-medium text-gray-500">Pagos</h3>
+          <p className="text-2xl font-bold text-green-600">{stats.paid}</p>
+          <p className="text-sm text-gray-500">{formatCurrency(stats.paidAmount)}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border">
+          <h3 className="text-sm font-medium text-gray-500">Pendentes</h3>
+          <p className="text-2xl font-bold text-orange-600">{stats.pending}</p>
+          <p className="text-sm text-gray-500">{formatCurrency(stats.pendingAmount)}</p>
+        </div>
+      </div>
+    );
   };
 
   const togglePaymentStatus = async (serviceId: string, currentStatus: boolean) => {
