@@ -9,22 +9,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import ClientPortal from "./pages/ClientPortal";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 function App() {
-  // Determine the basename based on the environment
-  const basename = import.meta.env.BASE_URL;
-
   return (
     <QueryClientProvider client={queryClient}>
-      <Router basename={basename}>
+      <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route
