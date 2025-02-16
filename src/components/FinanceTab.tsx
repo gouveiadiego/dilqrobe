@@ -9,12 +9,13 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronLeft, ChevronRight, Maximize, Plus } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Maximize, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendar } from "./TransactionCalendar";
 import { FinancialSummary } from "./FinancialSummary";
 import { formatCurrency } from "@/lib/utils";
+import { toast } from "react-toastify";
 
 interface Transaction {
   id: string;
@@ -39,7 +40,7 @@ export const FinanceTab = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [currentDate]); // Refetch when month changes
+  }, [currentDate]);
 
   const fetchTransactions = async () => {
     try {
@@ -71,7 +72,6 @@ export const FinanceTab = () => {
   const filterTransactions = () => {
     let filtered = [...transactions];
 
-    // Apply category filter
     if (selectedFilter !== "all") {
       filtered = filtered.filter(transaction => {
         switch (selectedFilter) {
@@ -93,7 +93,6 @@ export const FinanceTab = () => {
       });
     }
 
-    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(transaction =>
         transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -138,6 +137,40 @@ export const FinanceTab = () => {
     // Implement fullscreen toggle in a future update
   };
 
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success("Transação excluída com sucesso");
+      fetchTransactions();
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error("Erro ao excluir transação");
+    }
+  };
+
+  const togglePaymentStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({ is_paid: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success("Status de pagamento atualizado");
+      fetchTransactions();
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast.error("Erro ao atualizar status de pagamento");
+    }
+  };
+
   const formatMonth = (date: Date) => {
     return new Intl.DateTimeFormat('pt-BR', {
       month: 'short',
@@ -152,7 +185,6 @@ export const FinanceTab = () => {
 
   return (
     <div className="space-y-6">
-      {/* Date Navigation */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Button 
@@ -183,7 +215,6 @@ export const FinanceTab = () => {
         </div>
       </div>
 
-      {/* Category Filters */}
       <div className="flex space-x-2 overflow-x-auto pb-2">
         <Button
           variant={selectedFilter === "recebimentos" ? "default" : "outline"}
@@ -257,10 +288,8 @@ export const FinanceTab = () => {
         </div>
       )}
 
-      {/* Financial Summary Section */}
       <FinancialSummary transactions={filteredTransactions} />
 
-      {/* Transactions List Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
         <Table>
           <TableHeader>
@@ -272,6 +301,7 @@ export const FinanceTab = () => {
               <TableHead>Valor</TableHead>
               <TableHead>Forma de Pagamento</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -284,19 +314,44 @@ export const FinanceTab = () => {
                 <TableCell>{formatCurrency(transaction.amount)}</TableCell>
                 <TableCell>{transaction.payment_type}</TableCell>
                 <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    transaction.is_paid 
-                      ? 'bg-green-500/20 text-green-500' 
-                      : 'bg-yellow-500/20 text-yellow-500'
-                  }`}>
+                  <Button
+                    variant="ghost"
+                    onClick={() => togglePaymentStatus(transaction.id, transaction.is_paid)}
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      transaction.is_paid 
+                        ? 'bg-green-500/20 text-green-700 hover:bg-green-500/30' 
+                        : 'bg-yellow-500/20 text-yellow-700 hover:bg-yellow-500/30'
+                    }`}
+                  >
                     {transaction.is_paid ? 'Pago' : 'Pendente'}
-                  </span>
+                  </Button>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        toast({
+                          title: "Tem certeza?",
+                          description: "Deseja realmente excluir esta transação?",
+                          action: {
+                            label: "Excluir",
+                            onClick: () => handleDeleteTransaction(transaction.id),
+                          },
+                        });
+                      }}
+                      className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
             {filteredTransactions.length === 0 && !loading && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-gray-400 py-8">
+                <TableCell colSpan={8} className="text-center text-gray-400 py-8">
                   Nenhuma transação encontrada
                 </TableCell>
               </TableRow>
@@ -305,7 +360,6 @@ export const FinanceTab = () => {
         </Table>
       </div>
 
-      {/* Calendar Section */}
       <div className="bg-white border border-gray-200 rounded-lg">
         <TransactionCalendar 
           transactions={filteredTransactions}
