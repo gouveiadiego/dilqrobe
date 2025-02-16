@@ -13,7 +13,13 @@ const queryClient = new QueryClient({
   },
 });
 
-const root = createRoot(document.getElementById("root")!);
+// Ensure the root element exists
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  throw new Error("Root element not found");
+}
+
+const root = createRoot(rootElement);
 
 root.render(
   <QueryClientProvider client={queryClient}>
