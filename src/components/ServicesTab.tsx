@@ -33,6 +33,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 
 interface Service {
   id: string;
@@ -73,6 +86,133 @@ interface ServiceStats {
   pendingAmount: number;
   canceledAmount: number;
 }
+
+const calculateStats = (services: Service[]): ServiceStats => {
+  return services.reduce((acc: ServiceStats, service) => {
+    acc.total++;
+    acc.totalAmount += service.amount;
+    
+    switch (service.payment_status) {
+      case 'paid':
+        acc.paid++;
+        acc.paidAmount += service.amount;
+        break;
+      case 'canceled':
+        acc.canceled++;
+        acc.canceledAmount += service.amount;
+        break;
+      default:
+        acc.pending++;
+        acc.pendingAmount += service.amount;
+    }
+    
+    return acc;
+  }, {
+    total: 0,
+    pending: 0,
+    paid: 0,
+    canceled: 0,
+    totalAmount: 0,
+    paidAmount: 0,
+    pendingAmount: 0,
+    canceledAmount: 0
+  });
+};
+
+const renderDashboard = () => {
+  const stats = calculateStats(services);
+  
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="bg-white p-4 rounded-lg shadow-sm border">
+        <h3 className="text-sm font-medium text-gray-500">Total de Serviços</h3>
+        <p className="text-2xl font-bold">{stats.total}</p>
+        <p className="text-sm text-gray-500">{formatCurrency(stats.totalAmount)}</p>
+      </div>
+      <div className="bg-white p-4 rounded-lg shadow-sm border">
+        <h3 className="text-sm font-medium text-gray-500">Pagos</h3>
+        <p className="text-2xl font-bold text-green-600">{stats.paid}</p>
+        <p className="text-sm text-gray-500">{formatCurrency(stats.paidAmount)}</p>
+      </div>
+      <div className="bg-white p-4 rounded-lg shadow-sm border">
+        <h3 className="text-sm font-medium text-gray-500">Pendentes</h3>
+        <p className="text-2xl font-bold text-orange-600">{stats.pending}</p>
+        <p className="text-sm text-gray-500">{formatCurrency(stats.pendingAmount)}</p>
+      </div>
+      <div className="bg-white p-4 rounded-lg shadow-sm border">
+        <h3 className="text-sm font-medium text-gray-500">Cancelados</h3>
+        <p className="text-2xl font-bold text-red-600">{stats.canceled}</p>
+        <p className="text-sm text-gray-500">{formatCurrency(stats.canceledAmount)}</p>
+      </div>
+
+      <div className="col-span-full">
+        <div className="bg-white p-4 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-medium mb-4">Distribuição de Status</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={[
+                    { name: 'Pagos', value: stats.paid, color: '#22c55e' },
+                    { name: 'Pendentes', value: stats.pending, color: '#f97316' },
+                    { name: 'Cancelados', value: stats.canceled, color: '#ef4444' },
+                  ]}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {[
+                    { name: 'Pagos', color: '#22c55e' },
+                    { name: 'Pendentes', color: '#f97316' },
+                    { name: 'Cancelados', color: '#ef4444' },
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="col-span-full">
+        <div className="bg-white p-4 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-medium mb-4">Valores por Status</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { name: 'Pagos', value: stats.paidAmount },
+                  { name: 'Pendentes', value: stats.pendingAmount },
+                  { name: 'Cancelados', value: stats.canceledAmount },
+                ]}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <Bar dataKey="value">
+                  {[
+                    { name: 'Pagos', color: '#22c55e' },
+                    { name: 'Pendentes', color: '#f97316' },
+                    { name: 'Cancelados', color: '#ef4444' },
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export function ServicesTab() {
   const [showShareDialog, setShowShareDialog] = useState(false);
@@ -122,62 +262,6 @@ export function ServicesTab() {
   useEffect(() => {
     fetchServices();
   }, []);
-
-  const calculateStats = (services: Service[]): ServiceStats => {
-    return services.reduce((acc: ServiceStats, service) => {
-      acc.total++;
-      acc.totalAmount += service.amount;
-      
-      switch (service.payment_status) {
-        case 'paid':
-          acc.paid++;
-          acc.paidAmount += service.amount;
-          break;
-        case 'canceled':
-          acc.canceled++;
-          acc.canceledAmount += service.amount;
-          break;
-        default:
-          acc.pending++;
-          acc.pendingAmount += service.amount;
-      }
-      
-      return acc;
-    }, {
-      total: 0,
-      pending: 0,
-      paid: 0,
-      canceled: 0,
-      totalAmount: 0,
-      paidAmount: 0,
-      pendingAmount: 0,
-      canceledAmount: 0
-    });
-  };
-
-  const renderDashboard = () => {
-    const stats = calculateStats(services);
-    
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Total de Serviços</h3>
-          <p className="text-2xl font-bold">{stats.total}</p>
-          <p className="text-sm text-gray-500">{formatCurrency(stats.totalAmount)}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Pagos</h3>
-          <p className="text-2xl font-bold text-green-600">{stats.paid}</p>
-          <p className="text-sm text-gray-500">{formatCurrency(stats.paidAmount)}</p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Pendentes</h3>
-          <p className="text-2xl font-bold text-orange-600">{stats.pending}</p>
-          <p className="text-sm text-gray-500">{formatCurrency(stats.pendingAmount)}</p>
-        </div>
-      </div>
-    );
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -478,6 +562,8 @@ export function ServicesTab() {
 
       <ClientManager />
 
+      {showStatsCard && renderDashboard()}
+
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Serviços</h2>
@@ -570,30 +656,43 @@ export function ServicesTab() {
                 <TableCell>{service.status}</TableCell>
                 <TableCell>{formatCurrency(service.amount)}</TableCell>
               <TableCell>
-                <Select
-                  value={service.payment_status}
-                  onValueChange={(value) => 
-                    togglePaymentStatus(service.id, value)
-                  }
-                >
-                  <SelectTrigger 
-                    className={`w-[110px] ${
-                      service.payment_status === 'paid' 
-                        ? 'text-green-600' 
-                        : service.payment_status === 'canceled'
-                        ? 'text-yellow-600'
-                        : 'text-orange-600'
-                    }`}
+                  <Select
+                    value={service.payment_status}
+                    onValueChange={async (value) => {
+                      try {
+                        const { error } = await supabase
+                          .from('services')
+                          .update({ payment_status: value })
+                          .eq('id', service.id);
+
+                        if (error) throw error;
+
+                        await fetchServices();
+                        toast.success("Status de pagamento atualizado");
+                      } catch (error) {
+                        console.error('Error updating payment status:', error);
+                        toast.error("Erro ao atualizar status");
+                      }
+                    }}
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pendente</SelectItem>
-                    <SelectItem value="paid">Pago</SelectItem>
-                    <SelectItem value="canceled">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableCell>
+                    <SelectTrigger 
+                      className={`w-[110px] ${
+                        service.payment_status === 'paid' 
+                          ? 'text-green-600' 
+                          : service.payment_status === 'canceled'
+                          ? 'text-red-600'
+                          : 'text-orange-600'
+                      }`}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="paid">Pago</SelectItem>
+                      <SelectItem value="canceled">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button
