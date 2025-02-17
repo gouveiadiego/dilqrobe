@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -10,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronLeft, ChevronRight, Maximize, Plus, Trash2 } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Maximize, Plus, Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendar } from "./TransactionCalendar";
@@ -27,10 +26,6 @@ interface Transaction {
   amount: number;
   payment_type: string;
   is_paid: boolean;
-  recurring?: boolean;
-  recurring_day?: number | null;
-  user_id?: string;
-  parent_transaction_id?: string | null;
 }
 
 export const FinanceTab = () => {
@@ -41,6 +36,7 @@ export const FinanceTab = () => {
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showNewTransactionForm, setShowNewTransactionForm] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
   useEffect(() => {
@@ -186,6 +182,11 @@ export const FinanceTab = () => {
     }
   };
 
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setShowNewTransactionForm(true);
+  };
+
   const formatMonth = (date: Date) => {
     return new Intl.DateTimeFormat('pt-BR', {
       month: 'short',
@@ -287,7 +288,10 @@ export const FinanceTab = () => {
         </div>
         <Button 
           className="bg-black hover:bg-black/90 text-white"
-          onClick={() => setShowNewTransactionForm(!showNewTransactionForm)}
+          onClick={() => {
+            setEditingTransaction(null);
+            setShowNewTransactionForm(!showNewTransactionForm);
+          }}
         >
           <Plus className="h-4 w-4 mr-2" />
           Nova Transação
@@ -299,6 +303,7 @@ export const FinanceTab = () => {
           <NewTransactionForm 
             selectedFilter={selectedFilter}
             onTransactionCreated={handleTransactionCreated}
+            editingTransaction={editingTransaction}
           />
         </div>
       )}
@@ -311,7 +316,7 @@ export const FinanceTab = () => {
             <TableRow>
               <TableHead>Data</TableHead>
               <TableHead>Descrição</TableHead>
-              <TableHead>Recebido de</TableHead>
+              <TableHead>Recebido de/Pago para</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Valor</TableHead>
               <TableHead>Forma de Pagamento</TableHead>
@@ -343,6 +348,14 @@ export const FinanceTab = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEditTransaction(transaction)}
+                      className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"

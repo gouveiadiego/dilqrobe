@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,12 +7,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface Transaction {
+  id: string;
+  date: string;
+  description: string;
+  received_from: string;
+  category: string;
+  amount: number;
+  payment_type: string;
+  is_paid: boolean;
+}
+
 interface NewTransactionFormProps {
   selectedFilter: string;
   onTransactionCreated: () => void;
+  editingTransaction?: Transaction | null;
 }
 
-export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: NewTransactionFormProps) => {
+export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editingTransaction }: NewTransactionFormProps) => {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     description: '',
@@ -25,6 +36,22 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
     recurring_day: '',
     installments: '12',
   });
+
+  useEffect(() => {
+    if (editingTransaction) {
+      setFormData({
+        date: editingTransaction.date,
+        description: editingTransaction.description,
+        received_from: editingTransaction.received_from,
+        amount: Math.abs(editingTransaction.amount).toString(),
+        payment_type: editingTransaction.payment_type,
+        is_paid: editingTransaction.is_paid,
+        recurring: false,
+        recurring_day: '',
+        installments: '12',
+      });
+    }
+  }, [editingTransaction]);
 
   const createRecurringTransactions = async (parentId: string, transactionData: any) => {
     try {
@@ -119,19 +146,29 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         user_id: user.id
       };
 
-      const { data: newTransaction, error } = await supabase
-        .from("transactions")
-        .insert([transactionData])
-        .select('id')
-        .single();
+      if (editingTransaction) {
+        const { error } = await supabase
+          .from("transactions")
+          .update(transactionData)
+          .eq('id', editingTransaction.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Transação atualizada com sucesso.");
+      } else {
+        const { data: newTransaction, error } = await supabase
+          .from("transactions")
+          .insert([transactionData])
+          .select('id')
+          .single();
 
-      if (formData.recurring && newTransaction?.id) {
-        await createRecurringTransactions(newTransaction.id, transactionData);
+        if (error) throw error;
+
+        if (formData.recurring && newTransaction?.id) {
+          await createRecurringTransactions(newTransaction.id, transactionData);
+        }
+
+        toast.success("Transação criada com sucesso.");
       }
-
-      toast.success("Transação criada com sucesso.");
       
       setFormData({
         date: new Date().toISOString().split('T')[0],
@@ -147,13 +184,20 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
 
       onTransactionCreated();
     } catch (error) {
-      console.error("Error creating transaction:", error);
-      toast.error("Não foi possível criar a transação.");
+      console.error("Error creating/updating transaction:", error);
+      toast.error(editingTransaction 
+        ? "Não foi possível atualizar a transação."
+        : "Não foi possível criar a transação."
+      );
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <h2 className="text-lg font-semibold mb-4">
+        {editingTransaction ? "Editar Transação" : "Nova Transação"}
+      </h2>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="date">Data</Label>
@@ -264,7 +308,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
 
       <div className="pt-4">
         <Button type="submit" className="w-full bg-black hover:bg-black/90 text-white">
-          Salvar
+          {editingTransaction ? "Atualizar" : "Salvar"}
         </Button>
       </div>
     </form>
