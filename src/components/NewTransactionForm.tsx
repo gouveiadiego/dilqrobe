@@ -58,9 +58,14 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
       }
 
       if (transactions.length > 0) {
-        await supabase
+        const { error } = await supabase
           .from("transactions")
           .insert(transactions);
+          
+        if (error) {
+          console.error("Error creating recurring transactions:", error);
+          throw error;
+        }
       }
     } catch (error) {
       console.error("Error creating recurring transactions:", error);
@@ -116,17 +121,17 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         user_id: user.id
       };
 
-      // First, create the main transaction
-      const { data: mainTransaction, error: mainError } = await supabase
+      // Create the main transaction
+      const { data, error } = await supabase
         .from("transactions")
         .insert([transactionData])
-        .select('id')
+        .select('id, date')
         .single();
 
-      if (mainError) throw mainError;
+      if (error) throw error;
 
-      if (formData.recurring && mainTransaction) {
-        await createRecurringTransactions(mainTransaction.id, transactionData);
+      if (formData.recurring && data) {
+        await createRecurringTransactions(data.id, transactionData);
       }
 
       toast.success("Transação criada com sucesso.");
