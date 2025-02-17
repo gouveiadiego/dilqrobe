@@ -27,6 +27,10 @@ interface Transaction {
   amount: number;
   payment_type: string;
   is_paid: boolean;
+  recurring?: boolean;
+  recurring_day?: number | null;
+  user_id?: string;
+  parent_transaction_id?: string | null;
 }
 
 export const FinanceTab = () => {
@@ -51,7 +55,16 @@ export const FinanceTab = () => {
 
       const { data, error } = await supabase
         .from("transactions")
-        .select('id, date, description, received_from, category, amount, payment_type, is_paid')
+        .select(`
+          id,
+          date,
+          description,
+          received_from,
+          category,
+          amount,
+          payment_type,
+          is_paid
+        `)
         .gte("date", startOfMonth.toISOString())
         .lte("date", endOfMonth.toISOString())
         .order("date", { ascending: false });
@@ -61,6 +74,7 @@ export const FinanceTab = () => {
       setTransactions(data || []);
     } catch (error) {
       console.error("Error fetching transactions:", error);
+      toast.error("Erro ao carregar transações");
     } finally {
       setLoading(false);
     }
