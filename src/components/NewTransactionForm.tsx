@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,12 +43,16 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         : -Math.abs(Number(formData.amount));
 
       const transactionData = {
-        ...formData,
+        date: formData.date,
+        description: formData.description,
+        received_from: formData.received_from,
         amount,
         category,
-        user_id: user.id,
+        payment_type: formData.payment_type,
+        is_paid: formData.is_paid,
+        recurring: formData.recurring,
         recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
-        installments: formData.recurring && !formData.recurring_infinite ? Number(formData.installments) : null
+        user_id: user.id
       };
 
       const { error } = await supabase
@@ -172,9 +175,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
                 setFormData(prev => ({ 
                   ...prev, 
                   recurring: checked as boolean,
-                  recurring_day: checked ? prev.recurring_day : '',
-                  installments: checked ? prev.installments : '',
-                  recurring_infinite: checked ? prev.recurring_infinite : false
+                  recurring_day: checked ? prev.recurring_day : ''
                 }))
               }
             />
@@ -183,51 +184,18 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         </div>
 
         {formData.recurring && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="recurring_day">Dia do mês para recorrência</Label>
-              <Input
-                id="recurring_day"
-                type="number"
-                min="1"
-                max="31"
-                value={formData.recurring_day}
-                onChange={(e) => setFormData(prev => ({ ...prev, recurring_day: e.target.value }))}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 mb-2">
-                <Checkbox
-                  id="recurring_infinite"
-                  checked={formData.recurring_infinite}
-                  onCheckedChange={(checked) => 
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      recurring_infinite: checked as boolean,
-                      installments: checked ? '' : prev.installments
-                    }))
-                  }
-                />
-                <Label htmlFor="recurring_infinite">Recorrência por tempo indeterminado</Label>
-              </div>
-
-              {!formData.recurring_infinite && (
-                <div className="space-y-2">
-                  <Label htmlFor="installments">Número de parcelas</Label>
-                  <Input
-                    id="installments"
-                    type="number"
-                    min="2"
-                    value={formData.installments}
-                    onChange={(e) => setFormData(prev => ({ ...prev, installments: e.target.value }))}
-                    required
-                  />
-                </div>
-              )}
-            </div>
-          </>
+          <div className="space-y-2">
+            <Label htmlFor="recurring_day">Dia do mês para recorrência</Label>
+            <Input
+              id="recurring_day"
+              type="number"
+              min="1"
+              max="31"
+              value={formData.recurring_day}
+              onChange={(e) => setFormData(prev => ({ ...prev, recurring_day: e.target.value }))}
+              required
+            />
+          </div>
         )}
       </div>
 
