@@ -60,7 +60,8 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
       if (transactions.length > 0) {
         const { error } = await supabase
           .from("transactions")
-          .insert(transactions);
+          .insert(transactions)
+          .select('id');
 
         if (error) throw error;
       }
@@ -119,7 +120,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
           recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
           user_id: user.id
         }])
-        .select()
+        .select('*')
         .single();
 
       if (error) throw error;
