@@ -119,7 +119,7 @@ const calculateStats = (services: Service[]): ServiceStats => {
   });
 };
 
-const renderDashboard = () => {
+const renderDashboard = (services: Service[]) => {
   const stats = calculateStats(services);
   
   return (
@@ -562,7 +562,7 @@ export function ServicesTab() {
 
       <ClientManager />
 
-      {showStatsCard && renderDashboard()}
+      {showStatsCard && renderDashboard(services)}
 
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <div className="flex justify-between items-center mb-6">
