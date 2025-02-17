@@ -21,9 +21,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { useTasks } from "@/hooks/useTasks";
 import { useCategories } from "@/hooks/useCategories";
 import { ServicesTab } from "@/components/ServicesTab";
-
 type TabType = 'dashboard' | 'tasks' | 'finance' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services';
-
 const Index = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -37,10 +35,18 @@ const Index = () => {
   const [showThisWeek, setShowThisWeek] = useState(false);
   const [showThisMonth, setShowThisMonth] = useState(false);
   const [showOlder, setShowOlder] = useState(false);
-
-  const { tasks, isLoading, addTask, toggleTask, deleteTask, updateTask } = useTasks();
-  const { categories, addCategory } = useCategories();
-
+  const {
+    tasks,
+    isLoading,
+    addTask,
+    toggleTask,
+    deleteTask,
+    updateTask
+  } = useTasks();
+  const {
+    categories,
+    addCategory
+  } = useCategories();
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -51,70 +57,70 @@ const Index = () => {
       toast.error("Erro ao fazer logout");
     }
   };
-
   const handleTaskDrop = (taskId: string, dueDate: Date) => {
-    updateTask({ id: taskId, updates: { due_date: dueDate.toISOString() } });
-  };
-
-  const sections = [
-    { value: "all", label: "Todas as seções" },
-    { value: "inbox", label: "Caixa de entrada" },
-    { value: "monday", label: "Segunda-feira" },
-    { value: "tuesday", label: "Terça-feira" },
-    { value: "wednesday", label: "Quarta-feira" },
-    { value: "thursday", label: "Quinta-feira" },
-    { value: "friday", label: "Sexta-feira" },
-    { value: "weekend", label: "Fim de semana" },
-  ];
-
-  const filteredTasks = tasks
-    .filter((task) => {
-      if (filter === "active") return !task.completed;
-      if (filter === "completed") return task.completed;
-      return true;
-    })
-    .filter((task) =>
-      task.title.toLowerCase().includes(search.toLowerCase())
-    )
-    .filter((task) => {
-      if (categoryFilter === "all") return true;
-      return task.category === categoryFilter;
-    })
-    .filter((task) => {
-      if (priorityFilter === "all") return true;
-      return task.priority === priorityFilter;
-    })
-    .filter((task) => {
-      if (!dateFilter) return true;
-      if (!task.due_date) return false;
-      const taskDate = new Date(task.due_date);
-      return (
-        taskDate.getFullYear() === dateFilter.getFullYear() &&
-        taskDate.getMonth() === dateFilter.getMonth() &&
-        taskDate.getDate() === dateFilter.getDate()
-      );
-    })
-    .filter((task) => {
-      if (sectionFilter === "all") return true;
-      return task.section === sectionFilter;
+    updateTask({
+      id: taskId,
+      updates: {
+        due_date: dueDate.toISOString()
+      }
     });
-
+  };
+  const sections = [{
+    value: "all",
+    label: "Todas as seções"
+  }, {
+    value: "inbox",
+    label: "Caixa de entrada"
+  }, {
+    value: "monday",
+    label: "Segunda-feira"
+  }, {
+    value: "tuesday",
+    label: "Terça-feira"
+  }, {
+    value: "wednesday",
+    label: "Quarta-feira"
+  }, {
+    value: "thursday",
+    label: "Quinta-feira"
+  }, {
+    value: "friday",
+    label: "Sexta-feira"
+  }, {
+    value: "weekend",
+    label: "Fim de semana"
+  }];
+  const filteredTasks = tasks.filter(task => {
+    if (filter === "active") return !task.completed;
+    if (filter === "completed") return task.completed;
+    return true;
+  }).filter(task => task.title.toLowerCase().includes(search.toLowerCase())).filter(task => {
+    if (categoryFilter === "all") return true;
+    return task.category === categoryFilter;
+  }).filter(task => {
+    if (priorityFilter === "all") return true;
+    return task.priority === priorityFilter;
+  }).filter(task => {
+    if (!dateFilter) return true;
+    if (!task.due_date) return false;
+    const taskDate = new Date(task.due_date);
+    return taskDate.getFullYear() === dateFilter.getFullYear() && taskDate.getMonth() === dateFilter.getMonth() && taskDate.getDate() === dateFilter.getDate();
+  }).filter(task => {
+    if (sectionFilter === "all") return true;
+    return task.section === sectionFilter;
+  });
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
   };
-
   const handleUpdateTask = (taskId: string, updates: any) => {
-    updateTask({ id: taskId, updates });
+    updateTask({
+      id: taskId,
+      updates
+    });
   };
-
-  return (
-    <div className="min-h-screen bg-white text-gray-900">
+  return <div className="min-h-screen bg-white text-gray-900">
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <Sidebar 
-          activeTab={activeTab}
-          setActiveTab={handleTabChange}
-          onLogout={handleLogout}
-        />
+        <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} onLogout={handleLogout} />
       </aside>
 
       <main className={`transition-all duration-200 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
@@ -125,82 +131,25 @@ const Index = () => {
             </Button>
           </div>
 
-          {activeTab === 'dashboard' ? (
-            <DashboardTab />
-          ) : activeTab === 'tasks' ? (
-            <div className="space-y-6 bg-white rounded-lg">
+          {activeTab === 'dashboard' ? <DashboardTab /> : activeTab === 'tasks' ? <div className="space-y-6 bg-white rounded-lg">
               <div className="mb-8 space-y-6">
                 <h2 className="text-2xl font-bold text-gray-900">
                   Execução
-                  <span className="text-sm font-normal text-gray-500 ml-2">
-                    - Tarefas dos últimos 10 dias
-                  </span>
+                  
                 </h2>
                 
-                <TaskFilters
-                  search={search}
-                  setSearch={setSearch}
-                  filter={filter}
-                  setFilter={setFilter}
-                  categoryFilter={categoryFilter}
-                  setCategoryFilter={setCategoryFilter}
-                  priorityFilter={priorityFilter}
-                  setPriorityFilter={setPriorityFilter}
-                  dateFilter={dateFilter}
-                  setDateFilter={setDateFilter}
-                  sectionFilter={sectionFilter}
-                  setSectionFilter={setSectionFilter}
-                  categories={categories}
-                  sections={sections}
-                />
+                <TaskFilters search={search} setSearch={setSearch} filter={filter} setFilter={setFilter} categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} priorityFilter={priorityFilter} setPriorityFilter={setPriorityFilter} dateFilter={dateFilter} setDateFilter={setDateFilter} sectionFilter={sectionFilter} setSectionFilter={setSectionFilter} categories={categories} sections={sections} />
 
-                <CategoryManager 
-                  categories={categories} 
-                  onAddCategory={addCategory} 
-                />
+                <CategoryManager categories={categories} onAddCategory={addCategory} />
                 <AddTask onAdd={addTask} categories={categories} sections={sections} />
                 
-                <TaskList
-                  tasks={filteredTasks}
-                  onToggleTask={toggleTask}
-                  onDeleteTask={deleteTask}
-                  onUpdateTask={handleUpdateTask}
-                  categories={categories}
-                  showThisWeek={showThisWeek}
-                  setShowThisWeek={setShowThisWeek}
-                  showThisMonth={showThisMonth}
-                  setShowThisMonth={setShowThisMonth}
-                  showOlder={showOlder}
-                  setShowOlder={setShowOlder}
-                  onAddSubtask={() => {}}
-                  onToggleSubtask={() => {}}
-                />
+                <TaskList tasks={filteredTasks} onToggleTask={toggleTask} onDeleteTask={deleteTask} onUpdateTask={handleUpdateTask} categories={categories} showThisWeek={showThisWeek} setShowThisWeek={setShowThisWeek} showThisMonth={showThisMonth} setShowThisMonth={setShowThisMonth} showOlder={showOlder} setShowOlder={setShowOlder} onAddSubtask={() => {}} onToggleSubtask={() => {}} />
 
-                <KanbanCalendar
-                  tasks={tasks}
-                  onTaskDrop={handleTaskDrop}
-                />
+                <KanbanCalendar tasks={tasks} onTaskDrop={handleTaskDrop} />
               </div>
-            </div>
-          ) : activeTab === 'finance' ? (
-            <FinanceTab />
-          ) : activeTab === 'journals' ? (
-            <JournalsTab />
-          ) : activeTab === 'challenges' ? (
-            <ChallengesTab />
-          ) : activeTab === 'profile' ? (
-            <ProfileTab />
-          ) : activeTab === 'settings' ? (
-            <SettingsTab />
-          ) : activeTab === 'budget' ? (
-            <BudgetTab />
-          ) : activeTab === 'services' ? (
-            <ServicesTab />
-          ) : null}
+            </div> : activeTab === 'finance' ? <FinanceTab /> : activeTab === 'journals' ? <JournalsTab /> : activeTab === 'challenges' ? <ChallengesTab /> : activeTab === 'profile' ? <ProfileTab /> : activeTab === 'settings' ? <SettingsTab /> : activeTab === 'budget' ? <BudgetTab /> : activeTab === 'services' ? <ServicesTab /> : null}
         </div>
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
