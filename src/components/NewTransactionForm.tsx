@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,9 +23,47 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
     is_paid: true,
     recurring: false,
     recurring_day: '',
-    installments: '',
-    recurring_infinite: false
+    installments: '12', // Definindo 12 meses como padrão
   });
+
+  const createRecurringTransactions = async (originalTransaction: any, userId: string) => {
+    try {
+      const startDate = new Date(originalTransaction.date);
+      const transactions = [];
+      const numberOfMonths = parseInt(formData.installments) || 12;
+
+      // Criar transações para os próximos meses
+      for (let i = 1; i < numberOfMonths; i++) {
+        const nextDate = new Date(startDate);
+        nextDate.setMonth(startDate.getMonth() + i);
+        
+        // Ajusta o dia para o recurring_day especificado
+        if (originalTransaction.recurring_day) {
+          nextDate.setDate(originalTransaction.recurring_day);
+        }
+
+        transactions.push({
+          ...originalTransaction,
+          date: nextDate.toISOString().split('T')[0],
+          parent_transaction_id: originalTransaction.id,
+          next_due_date: i < numberOfMonths - 1 
+            ? new Date(nextDate).toISOString().split('T')[0]
+            : null
+        });
+      }
+
+      if (transactions.length > 0) {
+        const { error } = await supabase
+          .from("transactions")
+          .insert(transactions);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error("Error creating recurring transactions:", error);
+      toast.error("Erro ao criar transações recorrentes");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,14 +91,24 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         is_paid: formData.is_paid,
         recurring: formData.recurring,
         recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
-        user_id: user.id
+        user_id: user.id,
+        next_due_date: formData.recurring 
+          ? new Date(formData.date).toISOString().split('T')[0]
+          : null
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("transactions")
-        .insert([transactionData]);
+        .insert([transactionData])
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Se for recorrente, criar as próximas transações
+      if (formData.recurring && data) {
+        await createRecurringTransactions(data, user.id);
+      }
 
       toast.success("Transação criada com sucesso.");
       
@@ -72,8 +121,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         is_paid: true,
         recurring: false,
         recurring_day: '',
-        installments: '',
-        recurring_infinite: false
+        installments: '12',
       });
 
       onTransactionCreated();
@@ -184,18 +232,32 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         </div>
 
         {formData.recurring && (
-          <div className="space-y-2">
-            <Label htmlFor="recurring_day">Dia do mês para recorrência</Label>
-            <Input
-              id="recurring_day"
-              type="number"
-              min="1"
-              max="31"
-              value={formData.recurring_day}
-              onChange={(e) => setFormData(prev => ({ ...prev, recurring_day: e.target.value }))}
-              required
-            />
-          </div>
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="recurring_day">Dia do mês para recorrência</Label>
+              <Input
+                id="recurring_day"
+                type="number"
+                min="1"
+                max="31"
+                value={formData.recurring_day}
+                onChange={(e) => setFormData(prev => ({ ...prev, recurring_day: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="installments">Número de meses</Label>
+              <Input
+                id="installments"
+                type="number"
+                min="2"
+                max="60"
+                value={formData.installments}
+                onChange={(e) => setFormData(prev => ({ ...prev, installments: e.target.value }))}
+                required
+              />
+            </div>
+          </>
         )}
       </div>
 
