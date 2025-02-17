@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +22,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
     is_paid: true,
     recurring: false,
     recurring_day: '',
-    installments: '12', // Definindo 12 meses como padrão
+    installments: '12',
   });
 
   const createRecurringTransactions = async (originalTransaction: any, userId: string) => {
@@ -32,12 +31,10 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
       const transactions = [];
       const numberOfMonths = parseInt(formData.installments) || 12;
 
-      // Criar transações para os próximos meses
       for (let i = 1; i < numberOfMonths; i++) {
         const nextDate = new Date(startDate);
         nextDate.setMonth(startDate.getMonth() + i);
         
-        // Ajusta o dia para o recurring_day especificado
         if (originalTransaction.recurring_day) {
           nextDate.setDate(originalTransaction.recurring_day);
         }
@@ -81,31 +78,25 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         ? Math.abs(Number(formData.amount))
         : -Math.abs(Number(formData.amount));
 
-      const transactionData = {
-        date: formData.date,
-        description: formData.description,
-        received_from: formData.received_from,
-        amount,
-        category,
-        payment_type: formData.payment_type,
-        is_paid: formData.is_paid,
-        recurring: formData.recurring,
-        recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
-        user_id: user.id,
-        next_due_date: formData.recurring 
-          ? new Date(formData.date).toISOString().split('T')[0]
-          : null
-      };
-
       const { data, error } = await supabase
         .from("transactions")
-        .insert([transactionData])
+        .insert([{
+          date: formData.date,
+          description: formData.description,
+          received_from: formData.received_from,
+          amount,
+          category,
+          payment_type: formData.payment_type,
+          is_paid: formData.is_paid,
+          recurring: formData.recurring,
+          recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
+          user_id: user.id
+        }])
         .select()
         .single();
 
       if (error) throw error;
 
-      // Se for recorrente, criar as próximas transações
       if (formData.recurring && data) {
         await createRecurringTransactions(data, user.id);
       }
