@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -50,7 +51,7 @@ export const FinanceTab = () => {
 
       const { data, error } = await supabase
         .from("transactions")
-        .select("*")
+        .select('id, date, description, received_from, category, amount, payment_type, is_paid')
         .gte("date", startOfMonth.toISOString())
         .lte("date", endOfMonth.toISOString())
         .order("date", { ascending: false });
