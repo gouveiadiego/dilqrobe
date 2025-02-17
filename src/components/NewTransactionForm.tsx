@@ -70,6 +70,25 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
     }
   };
 
+  const getTransactionDefaults = () => {
+    switch (selectedFilter) {
+      case "recebimentos":
+        return { category: "income" };
+      case "despesas-fixas":
+        return { category: "fixed" };
+      case "despesas-variaveis":
+        return { category: "variable" };
+      case "pessoas":
+        return { category: "people" };
+      case "impostos":
+        return { category: "taxes" };
+      case "transferencias":
+        return { category: "transfer" };
+      default:
+        return { category: "income" };
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -127,25 +146,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
     } catch (error) {
       console.error("Error creating transaction:", error);
       toast.error("Não foi possível criar a transação.");
-    }
-  };
-
-  const getTransactionDefaults = () => {
-    switch (selectedFilter) {
-      case "recebimentos":
-        return { category: "income" };
-      case "despesas-fixas":
-        return { category: "fixed" };
-      case "despesas-variaveis":
-        return { category: "variable" };
-      case "pessoas":
-        return { category: "people" };
-      case "impostos":
-        return { category: "taxes" };
-      case "transferencias":
-        return { category: "transfer" };
-      default:
-        return { category: "income" };
     }
   };
 
