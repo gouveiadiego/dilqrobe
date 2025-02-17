@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,11 +26,11 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
     installments: '12',
   });
 
-  const createRecurringTransactions = async (originalTransaction: any, userId: string) => {
+  const createRecurringTransactions = async (originalTransaction: any) => {
     try {
       const startDate = new Date(originalTransaction.date);
-      const transactions = [];
       const numberOfMonths = parseInt(formData.installments) || 12;
+      const transactions = [];
 
       for (let i = 1; i < numberOfMonths; i++) {
         const nextDate = new Date(startDate);
@@ -39,14 +40,21 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
           nextDate.setDate(originalTransaction.recurring_day);
         }
 
-        transactions.push({
-          ...originalTransaction,
+        const recurrentTransaction = {
           date: nextDate.toISOString().split('T')[0],
-          parent_transaction_id: originalTransaction.id,
-          next_due_date: i < numberOfMonths - 1 
-            ? new Date(nextDate).toISOString().split('T')[0]
-            : null
-        });
+          description: originalTransaction.description,
+          received_from: originalTransaction.received_from,
+          amount: originalTransaction.amount,
+          category: originalTransaction.category,
+          payment_type: originalTransaction.payment_type,
+          is_paid: originalTransaction.is_paid,
+          recurring: originalTransaction.recurring,
+          recurring_day: originalTransaction.recurring_day,
+          user_id: originalTransaction.user_id,
+          parent_transaction_id: originalTransaction.id
+        };
+
+        transactions.push(recurrentTransaction);
       }
 
       if (transactions.length > 0) {
@@ -98,7 +106,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
       if (error) throw error;
 
       if (formData.recurring && data) {
-        await createRecurringTransactions(data, user.id);
+        await createRecurringTransactions(data);
       }
 
       toast.success("Transação criada com sucesso.");
