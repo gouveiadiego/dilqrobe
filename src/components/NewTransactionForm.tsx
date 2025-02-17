@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,15 +50,15 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
           is_paid: transactionData.is_paid,
           recurring: true,
           recurring_day: transactionData.recurring_day,
-          user_id: transactionData.user_id,
-          parent_transaction_id: parentId
+          user_id: transactionData.user_id
         });
       }
 
       if (transactions.length > 0) {
         const { error } = await supabase
           .from("transactions")
-          .insert(transactions);
+          .insert(transactions)
+          .select('id');
 
         if (error) {
           console.error("Error creating recurring transactions:", error);
@@ -118,7 +119,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         user_id: user.id
       };
 
-      // Create the main transaction without selecting parent_transaction_id
       const { data: newTransaction, error } = await supabase
         .from("transactions")
         .insert([transactionData])
@@ -201,7 +201,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
           <Select
             value={formData.payment_type}
             onValueChange={(value) => setFormData(prev => ({ ...prev, payment_type: value }))}
-            required
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione a forma de pagamento" />
