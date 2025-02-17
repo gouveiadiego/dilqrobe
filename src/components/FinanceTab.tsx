@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -76,6 +77,52 @@ export const FinanceTab = () => {
     }
   };
 
+  const handleTransactionCreated = () => {
+    console.log("Transaction created/updated, refreshing list...");
+    fetchTransactions();
+    setShowNewTransactionForm(false);
+    setEditingTransaction(null);
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setShowNewTransactionForm(true);
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success("Transação excluída com sucesso");
+      fetchTransactions();
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error("Erro ao excluir transação");
+    }
+  };
+
+  const togglePaymentStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({ is_paid: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success("Status de pagamento atualizado");
+      fetchTransactions();
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast.error("Erro ao atualizar status de pagamento");
+    }
+  };
+
   useEffect(() => {
     filterTransactions();
   }, [transactions, selectedFilter, searchQuery]);
@@ -114,17 +161,11 @@ export const FinanceTab = () => {
     setFilteredTransactions(filtered);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  const handleTransactionCreated = () => {
-    console.log("Transaction created, refreshing list...");
-    fetchTransactions();
-    setShowNewTransactionForm(false);
+  const formatMonth = (date: Date) => {
+    return new Date(date).toLocaleDateString('pt-BR', {
+      month: 'short',
+      year: 'numeric'
+    }).replace('.', '').toUpperCase();
   };
 
   const handlePreviousMonth = () => {
@@ -145,58 +186,6 @@ export const FinanceTab = () => {
 
   const handleFullscreen = () => {
     console.log("Toggle fullscreen view");
-    // Implement fullscreen toggle in a future update
-  };
-
-  const handleDeleteTransaction = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('transactions')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast.success("Transação excluída com sucesso");
-      fetchTransactions();
-    } catch (error) {
-      console.error('Error deleting transaction:', error);
-      toast.error("Erro ao excluir transação");
-    }
-  };
-
-  const togglePaymentStatus = async (id: string, currentStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('transactions')
-        .update({ is_paid: !currentStatus })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast.success("Status de pagamento atualizado");
-      fetchTransactions();
-    } catch (error) {
-      console.error('Error updating payment status:', error);
-      toast.error("Erro ao atualizar status de pagamento");
-    }
-  };
-
-  const handleEditTransaction = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
-    setShowNewTransactionForm(true);
-  };
-
-  const formatMonth = (date: Date) => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      month: 'short',
-      year: 'numeric'
-    }).format(date).replace('.', '').toUpperCase();
-  };
-
-  const handleCalendarDateSelect = (date: Date) => {
-    setCurrentDate(date);
-    // You could also add specific filtering for the selected date if needed
   };
 
   return (
@@ -386,7 +375,7 @@ export const FinanceTab = () => {
       <div className="bg-white border border-gray-200 rounded-lg">
         <TransactionCalendar 
           transactions={filteredTransactions}
-          onDateSelect={handleCalendarDateSelect}
+          onDateSelect={() => {}}
         />
       </div>
     </div>
