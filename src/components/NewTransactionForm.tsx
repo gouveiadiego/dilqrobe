@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,9 +26,9 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
     installments: '12',
   });
 
-  const createRecurringTransactions = async (originalTransaction: any) => {
+  const createRecurringTransactions = async (parentId: string, transactionData: any) => {
     try {
-      const startDate = new Date(originalTransaction.date);
+      const startDate = new Date(transactionData.date);
       const numberOfMonths = parseInt(formData.installments) || 12;
       const transactions = [];
 
@@ -35,22 +36,22 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         const nextDate = new Date(startDate);
         nextDate.setMonth(startDate.getMonth() + i);
         
-        if (originalTransaction.recurring_day) {
-          nextDate.setDate(originalTransaction.recurring_day);
+        if (transactionData.recurring_day) {
+          nextDate.setDate(transactionData.recurring_day);
         }
 
         transactions.push({
           date: nextDate.toISOString().split('T')[0],
-          description: originalTransaction.description,
-          received_from: originalTransaction.received_from,
-          amount: originalTransaction.amount,
-          category: originalTransaction.category,
-          payment_type: originalTransaction.payment_type,
-          is_paid: originalTransaction.is_paid,
-          recurring: originalTransaction.recurring,
-          recurring_day: originalTransaction.recurring_day,
-          user_id: originalTransaction.user_id,
-          parent_transaction_id: originalTransaction.id
+          description: transactionData.description,
+          received_from: transactionData.received_from,
+          amount: transactionData.amount,
+          category: transactionData.category,
+          payment_type: transactionData.payment_type,
+          is_paid: transactionData.is_paid,
+          recurring: transactionData.recurring,
+          recurring_day: transactionData.recurring_day,
+          user_id: transactionData.user_id,
+          parent_transaction_id: parentId
         });
       }
 
@@ -118,13 +119,13 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
       const { data, error } = await supabase
         .from("transactions")
         .insert([transactionData])
-        .select('id, date, description, received_from, amount, category, payment_type, is_paid, recurring, recurring_day, user_id')
+        .select()
         .single();
 
       if (error) throw error;
 
       if (formData.recurring && data) {
-        await createRecurringTransactions(data);
+        await createRecurringTransactions(data.id, transactionData);
       }
 
       toast.success("Transação criada com sucesso.");
