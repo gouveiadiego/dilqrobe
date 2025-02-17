@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProfileTextarea } from "./ProfileTextarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload } from "lucide-react";
+import { Upload, Building } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +26,7 @@ export function ProfileTab() {
   const [fullName, setFullName] = useState("");
   const [about, setAbout] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,7 +45,7 @@ export function ProfileTab() {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, full_name, about, avatar_url')
+        .select('username, full_name, about, avatar_url, company_logo')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -59,6 +61,7 @@ export function ProfileTab() {
         setFullName(data.full_name || '');
         setAbout(data.about || '');
         setAvatarUrl(data.avatar_url);
+        setCompanyLogo(data.company_logo);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -82,7 +85,8 @@ export function ProfileTab() {
         username,
         full_name: fullName,
         about,
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
+        company_logo: companyLogo
       };
 
       console.log('Updating profile with:', updates);
@@ -92,10 +96,10 @@ export function ProfileTab() {
         .upsert(updates);
 
       if (error) throw error;
-      toast.success('Profile updated successfully');
+      toast.success('Perfil atualizado com sucesso');
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Error updating profile');
+      toast.error('Erro ao atualizar perfil');
     } finally {
       setLoading(false);
     }
@@ -107,12 +111,12 @@ export function ProfileTab() {
       const file = event.target.files?.[0];
       
       if (!file) {
-        throw new Error('No file selected');
+        throw new Error('Nenhum arquivo selecionado');
       }
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        throw new Error('No user found');
+        throw new Error('Usuário não encontrado');
       }
 
       const fileExt = file.name.split('.').pop();
@@ -131,10 +135,49 @@ export function ProfileTab() {
         .getPublicUrl(filePath);
 
       setAvatarUrl(publicUrl);
-      toast.success('Avatar uploaded successfully');
+      toast.success('Foto de perfil atualizada com sucesso');
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      toast.error('Error uploading avatar');
+      toast.error('Erro ao fazer upload da foto de perfil');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function uploadCompanyLogo(event: React.ChangeEvent<HTMLInputElement>) {
+    try {
+      setLoading(true);
+      const file = event.target.files?.[0];
+      
+      if (!file) {
+        throw new Error('Nenhum arquivo selecionado');
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${session.user.id}/${crypto.randomUUID()}.${fileExt}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('company-logos')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('company-logos')
+        .getPublicUrl(filePath);
+
+      setCompanyLogo(publicUrl);
+      toast.success('Logo da empresa atualizada com sucesso');
+    } catch (error) {
+      console.error('Error uploading company logo:', error);
+      toast.error('Erro ao fazer upload da logo da empresa');
     } finally {
       setLoading(false);
     }
@@ -173,14 +216,13 @@ export function ProfileTab() {
       }
 
       console.log('Account deleted successfully:', data);
-      toast.success('Account deleted successfully');
+      toast.success('Conta excluída com sucesso');
       
-      // Sign out after successful deletion
       await supabase.auth.signOut();
       navigate('/login');
     } catch (error: any) {
       console.error('Error deleting account:', error);
-      toast.error(error.message || 'Error deleting account');
+      toast.error(error.message || 'Erro ao excluir conta');
     } finally {
       setLoading(false);
     }
@@ -191,34 +233,65 @@ export function ProfileTab() {
       <div>
         <h2 className="text-2xl font-bold mb-2">Perfil</h2>
         <p className="text-muted-foreground">
-          Gerencie suas informações pessoais
+          Gerencie suas informações pessoais e da empresa
         </p>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex flex-col items-center space-y-4">
-          <Avatar className="h-24 w-24">
-            <AvatarImage src={avatarUrl || ''} alt={fullName} />
-            <AvatarFallback>{fullName?.charAt(0) || '?'}</AvatarFallback>
-          </Avatar>
-          <div className="flex items-center space-x-2">
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={uploadAvatar}
-              className="hidden"
-              id="avatar-upload"
-              disabled={loading}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => document.getElementById('avatar-upload')?.click()}
-              disabled={loading}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload foto
-            </Button>
+      <div className="space-y-8">
+        <div className="flex items-center space-x-8">
+          <div className="flex flex-col items-center space-y-4">
+            <Avatar className="h-24 w-24">
+              <AvatarImage src={avatarUrl || ''} alt={fullName} />
+              <AvatarFallback>{fullName?.charAt(0) || '?'}</AvatarFallback>
+            </Avatar>
+            <div className="flex items-center space-x-2">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={uploadAvatar}
+                className="hidden"
+                id="avatar-upload"
+                disabled={loading}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById('avatar-upload')?.click()}
+                disabled={loading}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Foto de perfil
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center space-y-4">
+            <div className="h-24 w-24 border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+              {companyLogo ? (
+                <img src={companyLogo} alt="Logo da empresa" className="h-full w-full object-contain" />
+              ) : (
+                <Building className="h-12 w-12 text-gray-400" />
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={uploadCompanyLogo}
+                className="hidden"
+                id="company-logo-upload"
+                disabled={loading}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById('company-logo-upload')?.click()}
+                disabled={loading}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Logo da empresa
+              </Button>
+            </div>
           </div>
         </div>
 
