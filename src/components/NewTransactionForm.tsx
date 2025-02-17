@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,7 +39,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
           nextDate.setDate(originalTransaction.recurring_day);
         }
 
-        const recurrentTransaction = {
+        transactions.push({
           date: nextDate.toISOString().split('T')[0],
           description: originalTransaction.description,
           received_from: originalTransaction.received_from,
@@ -52,16 +51,13 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
           recurring_day: originalTransaction.recurring_day,
           user_id: originalTransaction.user_id,
           parent_transaction_id: originalTransaction.id
-        };
-
-        transactions.push(recurrentTransaction);
+        });
       }
 
       if (transactions.length > 0) {
         const { error } = await supabase
           .from("transactions")
-          .insert(transactions)
-          .select('id');
+          .insert(transactions);
 
         if (error) throw error;
       }
@@ -106,21 +102,23 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         ? Math.abs(Number(formData.amount))
         : -Math.abs(Number(formData.amount));
 
+      const transactionData = {
+        date: formData.date,
+        description: formData.description,
+        received_from: formData.received_from,
+        amount,
+        category,
+        payment_type: formData.payment_type,
+        is_paid: formData.is_paid,
+        recurring: formData.recurring,
+        recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
+        user_id: user.id
+      };
+
       const { data, error } = await supabase
         .from("transactions")
-        .insert([{
-          date: formData.date,
-          description: formData.description,
-          received_from: formData.received_from,
-          amount,
-          category,
-          payment_type: formData.payment_type,
-          is_paid: formData.is_paid,
-          recurring: formData.recurring,
-          recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
-          user_id: user.id
-        }])
-        .select('*')
+        .insert([transactionData])
+        .select('id, date, description, received_from, amount, category, payment_type, is_paid, recurring, recurring_day, user_id')
         .single();
 
       if (error) throw error;
