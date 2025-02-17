@@ -40,7 +40,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
           nextDate.setDate(transactionData.recurring_day);
         }
 
-        transactions.push({
+        const recurrentTransaction = {
           date: nextDate.toISOString().split('T')[0],
           description: transactionData.description,
           received_from: transactionData.received_from,
@@ -48,19 +48,19 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
           category: transactionData.category,
           payment_type: transactionData.payment_type,
           is_paid: transactionData.is_paid,
-          recurring: transactionData.recurring,
+          recurring: true,
           recurring_day: transactionData.recurring_day,
           user_id: transactionData.user_id,
           parent_transaction_id: parentId
-        });
+        };
+
+        transactions.push(recurrentTransaction);
       }
 
       if (transactions.length > 0) {
-        const { error } = await supabase
+        await supabase
           .from("transactions")
           .insert(transactions);
-
-        if (error) throw error;
       }
     } catch (error) {
       console.error("Error creating recurring transactions:", error);
@@ -116,16 +116,17 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated }: New
         user_id: user.id
       };
 
-      const { data, error } = await supabase
+      // First, create the main transaction
+      const { data: mainTransaction, error: mainError } = await supabase
         .from("transactions")
         .insert([transactionData])
-        .select()
+        .select('id')
         .single();
 
-      if (error) throw error;
+      if (mainError) throw mainError;
 
-      if (formData.recurring && data) {
-        await createRecurringTransactions(data.id, transactionData);
+      if (formData.recurring && mainTransaction) {
+        await createRecurringTransactions(mainTransaction.id, transactionData);
       }
 
       toast.success("Transação criada com sucesso.");
