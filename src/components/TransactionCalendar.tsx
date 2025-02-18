@@ -76,64 +76,85 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
         selected={selectedDate}
         onSelect={handleDateSelect}
         locale={pt}
-        className="rounded-md"
+        className="rounded-md mx-auto"
         components={{
-          DayContent: ({ date }) => (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full h-full p-0 hover:bg-transparent relative"
-                >
-                  <div className="flex flex-col items-center w-full">
-                    <span>{date.getDate()}</span>
-                    {getDayContent(date)}
-                  </div>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="start">
-                <div className="p-4">
-                  <h3 className="font-medium mb-2">
-                    {date.toLocaleDateString('pt-BR', { 
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric'
-                    })}
-                  </h3>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {getTransactionsForDate(date).map((transaction) => (
-                      <div
-                        key={transaction.id}
-                        className="flex items-center justify-between p-2 rounded bg-gray-50 hover:bg-gray-100"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {transaction.description}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {transaction.received_from}
-                          </p>
-                        </div>
-                        <span className={`text-sm font-medium ml-4 ${
-                          transaction.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
-                        }`}>
-                          {formatCurrency(transaction.amount)}
-                        </span>
+          DayContent: ({ date }) => {
+            const dayTransactions = getTransactionsForDate(date);
+            
+            return (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={`w-full h-full p-0 hover:bg-transparent relative ${
+                      dayTransactions.length > 0 ? 'font-medium' : ''
+                    }`}
+                  >
+                    <div className="flex flex-col items-center w-full">
+                      <span>{date.getDate()}</span>
+                      {getDayContent(date)}
+                    </div>
+                  </Button>
+                </PopoverTrigger>
+                {dayTransactions.length > 0 && (
+                  <PopoverContent 
+                    className="w-80 p-0" 
+                    align="center"
+                    sideOffset={5}
+                  >
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-medium">
+                          {date.toLocaleDateString('pt-BR', { 
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </h3>
                       </div>
-                    ))}
-                    {getTransactionsForDate(date).length === 0 && (
-                      <p className="text-center py-2 text-gray-500 text-sm">
-                        Nenhuma transação neste dia
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          ),
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        {dayTransactions.map((transaction) => (
+                          <div
+                            key={transaction.id}
+                            className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="flex-1 min-w-0 mr-4">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {transaction.description}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate mt-0.5">
+                                {transaction.received_from}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  transaction.is_paid 
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                  {transaction.is_paid ? 'Pago' : 'Pendente'}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {transaction.payment_type}
+                                </span>
+                              </div>
+                            </div>
+                            <span className={`text-sm font-medium whitespace-nowrap ${
+                              transaction.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
+                            }`}>
+                              {formatCurrency(transaction.amount)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                )}
+              </Popover>
+            );
+          },
         }}
       />
-      <div className="flex gap-4 mt-4 text-xs">
+      <div className="flex gap-4 mt-4 text-xs justify-center">
         <div className="flex items-center gap-2">
           <div className="w-3 h-1 bg-emerald-500 rounded-full" />
           <span>Recebimentos</span>
