@@ -48,8 +48,16 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
     const dayTransactions = getTransactionsForDate(date);
     if (dayTransactions.length === 0) return null;
 
-    const hasIncome = dayTransactions.some(t => t.amount > 0);
-    const hasExpense = dayTransactions.some(t => t.amount < 0);
+    const totalIncome = dayTransactions
+      .filter(t => t.amount > 0)
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalExpense = dayTransactions
+      .filter(t => t.amount < 0)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+    const hasIncome = totalIncome > 0;
+    const hasExpense = totalExpense > 0;
     const hasTransfer = dayTransactions.some(t => t.category === 'transfer');
 
     return (
@@ -62,7 +70,7 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
+    <div className="p-4">
       <Calendar
         mode="single"
         selected={selectedDate}
@@ -83,41 +91,42 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
                   </div>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[500px] p-4" align="start">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium">
+              <PopoverContent className="w-80 p-0" align="start">
+                <div className="p-4">
+                  <h3 className="font-medium mb-2">
                     {date.toLocaleDateString('pt-BR', { 
                       day: '2-digit',
                       month: '2-digit',
                       year: 'numeric'
                     })}
                   </h3>
-                  <Button variant="ghost" size="icon" className="h-auto p-1.5">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-sm font-medium mb-2">Transações</div>
-                  {getTransactionsForDate(date).map((transaction) => (
-                    <div
-                      key={transaction.id}
-                      className="grid grid-cols-[2fr,1fr,1fr,auto] gap-4 items-center py-2 border-b border-gray-700 last:border-0"
-                    >
-                      <span className="text-sm">{transaction.description}</span>
-                      <span className="text-sm">{transaction.category}</span>
-                      <span className="text-sm">{transaction.received_from}</span>
-                      <span className={`text-sm font-medium ${
-                        transaction.amount > 0 ? 'text-emerald-500' : 'text-rose-500'
-                      }`}>
-                        {formatCurrency(transaction.amount)}
-                      </span>
-                    </div>
-                  ))}
-                  {getTransactionsForDate(date).length === 0 && (
-                    <div className="text-center py-4 text-gray-400 text-sm">
-                      Nenhuma transação para este dia
-                    </div>
-                  )}
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {getTransactionsForDate(date).map((transaction) => (
+                      <div
+                        key={transaction.id}
+                        className="flex items-center justify-between p-2 rounded bg-gray-50 hover:bg-gray-100"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {transaction.description}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {transaction.received_from}
+                          </p>
+                        </div>
+                        <span className={`text-sm font-medium ml-4 ${
+                          transaction.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
+                        }`}>
+                          {formatCurrency(transaction.amount)}
+                        </span>
+                      </div>
+                    ))}
+                    {getTransactionsForDate(date).length === 0 && (
+                      <p className="text-center py-2 text-gray-500 text-sm">
+                        Nenhuma transação neste dia
+                      </p>
+                    )}
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>

@@ -9,6 +9,7 @@ import { TransactionCalendar } from "./TransactionCalendar";
 import { FinancialSummary } from "./FinancialSummary";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+
 interface Transaction {
   id: string;
   date: string;
@@ -19,6 +20,7 @@ interface Transaction {
   payment_type: string;
   is_paid: boolean;
 }
+
 export const FinanceTab = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
@@ -29,9 +31,11 @@ export const FinanceTab = () => {
   const [showNewTransactionForm, setShowNewTransactionForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+
   useEffect(() => {
     fetchTransactions();
   }, [currentDate]);
+
   const fetchTransactions = async () => {
     try {
       console.log("Fetching transactions for:", formatMonth(currentDate));
@@ -62,16 +66,19 @@ export const FinanceTab = () => {
       setLoading(false);
     }
   };
+
   const handleTransactionCreated = () => {
     console.log("Transaction created/updated, refreshing list...");
     fetchTransactions();
     setShowNewTransactionForm(false);
     setEditingTransaction(null);
   };
+
   const handleEditTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
     setShowNewTransactionForm(true);
   };
+
   const handleDeleteTransaction = async (id: string) => {
     try {
       const {
@@ -85,6 +92,7 @@ export const FinanceTab = () => {
       toast.error("Erro ao excluir transação");
     }
   };
+
   const togglePaymentStatus = async (id: string, currentStatus: boolean) => {
     try {
       const {
@@ -100,9 +108,11 @@ export const FinanceTab = () => {
       toast.error("Erro ao atualizar status de pagamento");
     }
   };
+
   useEffect(() => {
     filterTransactions();
   }, [transactions, selectedFilter, searchQuery]);
+
   const filterTransactions = () => {
     let filtered = [...transactions];
     if (selectedFilter !== "all") {
@@ -130,12 +140,14 @@ export const FinanceTab = () => {
     }
     setFilteredTransactions(filtered);
   };
+
   const formatMonth = (date: Date) => {
     return new Date(date).toLocaleDateString('pt-BR', {
       month: 'short',
       year: 'numeric'
     }).replace('.', '').toUpperCase();
   };
+
   const handlePreviousMonth = () => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
@@ -143,6 +155,7 @@ export const FinanceTab = () => {
       return newDate;
     });
   };
+
   const handleNextMonth = () => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
@@ -150,9 +163,11 @@ export const FinanceTab = () => {
       return newDate;
     });
   };
+
   const handleFullscreen = () => {
     console.log("Toggle fullscreen view");
   };
+
   return <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -192,79 +207,102 @@ export const FinanceTab = () => {
         </Button>
       </div>
 
-      <div className="flex justify-between items-center">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input placeholder="Pesquisar transações..." className="pl-9 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-6">
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input 
+                placeholder="Pesquisar transações..." 
+                className="pl-9 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500" 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)} 
+              />
+            </div>
+            <Button 
+              className="bg-black hover:bg-black/90 text-white" 
+              onClick={() => {
+                setEditingTransaction(null);
+                setShowNewTransactionForm(!showNewTransactionForm);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Transação
+            </Button>
+          </div>
+
+          {showNewTransactionForm && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <NewTransactionForm 
+                selectedFilter={selectedFilter} 
+                onTransactionCreated={handleTransactionCreated} 
+                editingTransaction={editingTransaction} 
+              />
+            </div>
+          )}
+
+          <FinancialSummary transactions={filteredTransactions} />
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Recebido de/Pago para</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Forma de Pagamento</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTransactions.map(transaction => <TableRow key={transaction.id}>
+                    <TableCell>{new Date(transaction.date).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{transaction.description}</TableCell>
+                    <TableCell>{transaction.received_from}</TableCell>
+                    <TableCell>{transaction.category}</TableCell>
+                    <TableCell>{formatCurrency(transaction.amount)}</TableCell>
+                    <TableCell>{transaction.payment_type}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" onClick={() => togglePaymentStatus(transaction.id, transaction.is_paid)} className={`px-2 py-1 rounded-full text-xs ${transaction.is_paid ? 'bg-green-500/20 text-green-700 hover:bg-green-500/30' : 'bg-yellow-500/20 text-yellow-700 hover:bg-yellow-500/30'}`}>
+                        {transaction.is_paid ? 'Pago' : 'Pendente'}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditTransaction(transaction)} className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          if (confirm('Deseja realmente excluir esta transação?')) {
+                            handleDeleteTransaction(transaction.id);
+                          }
+                        }} className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>)}
+                {filteredTransactions.length === 0 && !loading && <TableRow>
+                    <TableCell colSpan={8} className="text-center text-gray-400 py-8">
+                      Nenhuma transação encontrada
+                    </TableCell>
+                  </TableRow>}
+              </TableBody>
+            </Table>
+          </div>
         </div>
-        <Button className="bg-black hover:bg-black/90 text-white" onClick={() => {
-        setEditingTransaction(null);
-        setShowNewTransactionForm(!showNewTransactionForm);
-      }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Transação
-        </Button>
-      </div>
 
-      {showNewTransactionForm && <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <NewTransactionForm selectedFilter={selectedFilter} onTransactionCreated={handleTransactionCreated} editingTransaction={editingTransaction} />
-        </div>}
-
-      <FinancialSummary transactions={filteredTransactions} />
-
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Recebido de/Pago para</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Forma de Pagamento</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTransactions.map(transaction => <TableRow key={transaction.id}>
-                <TableCell>{new Date(transaction.date).toLocaleDateString('pt-BR')}</TableCell>
-                <TableCell>{transaction.description}</TableCell>
-                <TableCell>{transaction.received_from}</TableCell>
-                <TableCell>{transaction.category}</TableCell>
-                <TableCell>{formatCurrency(transaction.amount)}</TableCell>
-                <TableCell>{transaction.payment_type}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" onClick={() => togglePaymentStatus(transaction.id, transaction.is_paid)} className={`px-2 py-1 rounded-full text-xs ${transaction.is_paid ? 'bg-green-500/20 text-green-700 hover:bg-green-500/30' : 'bg-yellow-500/20 text-yellow-700 hover:bg-yellow-500/30'}`}>
-                    {transaction.is_paid ? 'Pago' : 'Pendente'}
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleEditTransaction(transaction)} className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => {
-                  if (confirm('Deseja realmente excluir esta transação?')) {
-                    handleDeleteTransaction(transaction.id);
-                  }
-                }} className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>)}
-            {filteredTransactions.length === 0 && !loading && <TableRow>
-                <TableCell colSpan={8} className="text-center text-gray-400 py-8">
-                  Nenhuma transação encontrada
-                </TableCell>
-              </TableRow>}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-lg">
-        <TransactionCalendar transactions={filteredTransactions} onDateSelect={() => {}} />
+        <div className="lg:sticky lg:top-6 h-fit">
+          <div className="bg-white border border-gray-200 rounded-lg">
+            <TransactionCalendar 
+              transactions={filteredTransactions} 
+              onDateSelect={() => {}} 
+            />
+          </div>
+        </div>
       </div>
     </div>;
 };
