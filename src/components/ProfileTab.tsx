@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,12 +65,11 @@ export function ProfileTab() {
       console.log('Profile data:', data);
 
       if (data) {
-        const profile = data as Profile;
-        setUsername(profile.username || '');
-        setFullName(profile.full_name || '');
-        setAbout(profile.about || '');
-        setAvatarUrl(profile.avatar_url);
-        setCompanyLogo(profile.company_logo);
+        setUsername(data.username || '');
+        setFullName(data.full_name || '');
+        setAbout(data.about || '');
+        setAvatarUrl(data.avatar_url);
+        setCompanyLogo(data.company_logo);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
