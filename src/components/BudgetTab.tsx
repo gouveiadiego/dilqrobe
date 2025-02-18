@@ -68,6 +68,7 @@ export function BudgetTab() {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [clientData, setClientData] = useState({
     name: '',
     document: '',
@@ -97,6 +98,7 @@ export function BudgetTab() {
 
   useEffect(() => {
     fetchBudgets();
+    fetchCompanyLogo();
   }, []);
 
   const fetchBudgets = async () => {
@@ -120,6 +122,30 @@ export function BudgetTab() {
         description: "Não foi possível carregar a lista de orçamentos.",
         duration: 5000,
       });
+    }
+  };
+
+  const fetchCompanyLogo = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('company_logo')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCompanyLogo(data.company_logo);
+        setCompanyData(prev => ({
+          ...prev,
+          logo: data.company_logo || ''
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching company logo:', error);
     }
   };
 
@@ -351,7 +377,7 @@ export function BudgetTab() {
             body { font-family: Arial, sans-serif; padding: 20px; }
             .header { text-align: center; margin-bottom: 30px; }
             .company-info { margin-bottom: 20px; }
-            .company-logo { max-width: 200px; max-height: 100px; }
+            .company-logo { max-width: 200px; max-height: 100px; margin-bottom: 20px; }
             .section { margin-bottom: 20px; }
             table { width: 100%; border-collapse: collapse; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -360,7 +386,7 @@ export function BudgetTab() {
         </head>
         <body>
           <div class="header">
-            ${budget.company_logo ? `<img src="${budget.company_logo}" class="company-logo" alt="Logo da empresa"/>` : ''}
+            ${companyLogo ? `<img src="${companyLogo}" class="company-logo" alt="Logo da empresa"/>` : ''}
             <h1>Orçamento</h1>
             <p>Data: ${new Date(budget.created_at).toLocaleDateString('pt-BR')}</p>
           </div>

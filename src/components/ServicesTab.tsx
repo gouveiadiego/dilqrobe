@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+
 interface Service {
   id: string;
   start_date: string;
@@ -27,6 +28,7 @@ interface Service {
   client_id: string;
   user_id: string;
 }
+
 interface NewService {
   start_date: string;
   client_name: string;
@@ -40,6 +42,7 @@ interface NewService {
   client_id: string;
   user_id: string;
 }
+
 interface ServiceStats {
   total: number;
   pending: number;
@@ -50,6 +53,7 @@ interface ServiceStats {
   pendingAmount: number;
   canceledAmount: number;
 }
+
 const calculateStats = (services: Service[]): ServiceStats => {
   return services.reduce((acc: ServiceStats, service) => {
     acc.total++;
@@ -79,6 +83,7 @@ const calculateStats = (services: Service[]): ServiceStats => {
     canceledAmount: 0
   });
 };
+
 const renderDashboard = (services: Service[]) => {
   const stats = calculateStats(services);
   return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -145,12 +150,12 @@ const renderDashboard = (services: Service[]) => {
       </div>
     </div>;
 };
+
 export function ServicesTab() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
-  const {
-    clients
-  } = useClients();
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const { clients } = useClients();
   const [services, setServices] = useState<Service[]>([]);
   const [newService, setNewService] = useState<Omit<NewService, 'user_id'>>({
     start_date: format(new Date(), "yyyy-MM-dd"),
@@ -172,6 +177,7 @@ export function ServicesTab() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
   const [showStatsCard, setShowStatsCard] = useState(true);
+
   const fetchServices = async () => {
     try {
       const {
@@ -193,9 +199,32 @@ export function ServicesTab() {
       toast.error("Erro ao carregar serviços");
     }
   };
+
+  const fetchCompanyLogo = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('company_logo')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCompanyLogo(data.company_logo);
+      }
+    } catch (error) {
+      console.error('Error fetching company logo:', error);
+    }
+  };
+
   useEffect(() => {
     fetchServices();
+    fetchCompanyLogo();
   }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -235,12 +264,14 @@ export function ServicesTab() {
       toast.error("Erro ao criar serviço");
     }
   };
+
   const handleSharePortalLink = async (clientId: string) => {
-    const portalUrl = `${window.location.origin}/client-portal?client=${clientId}`;
+    const portalUrl = `${window.location.origin}/client-portal?client=${clientId}${companyLogo ? `&logo=${encodeURIComponent(companyLogo)}` : ''}`;
     await navigator.clipboard.writeText(portalUrl);
     toast.success("Link copiado para a área de transferência!");
     setShowShareDialog(false);
   };
+
   const togglePaymentStatus = async (serviceId: string, currentStatus: string) => {
     try {
       const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
@@ -257,9 +288,11 @@ export function ServicesTab() {
       toast.error("Erro ao atualizar status de pagamento");
     }
   };
+
   const handleEdit = (service: Service) => {
     setEditingService(service);
   };
+
   const handleDelete = async () => {
     if (!serviceToDelete) return;
     try {
@@ -276,6 +309,7 @@ export function ServicesTab() {
       toast.error("Erro ao excluir serviço");
     }
   };
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingService) return;
@@ -294,6 +328,7 @@ export function ServicesTab() {
       toast.error("Erro ao atualizar serviço");
     }
   };
+
   const filteredServices = services.filter(service => {
     const searchText = filterText.toLowerCase();
     const matchesFilter = !filterText || service.client_name.toLowerCase().includes(searchText) || service.company_name.toLowerCase().includes(searchText) || service.service_description.toLowerCase().includes(searchText) || service.stage.toLowerCase().includes(searchText) || service.status.toLowerCase().includes(searchText);
@@ -302,6 +337,7 @@ export function ServicesTab() {
     const matchesStatus = !filterStatus || filterStatus === 'paid' && service.payment_status === 'paid' || filterStatus === 'pending' && service.payment_status === 'pending';
     return matchesFilter && matchesClient && matchesMonth && matchesStatus;
   });
+
   const groupedServices = services.reduce((acc, service) => {
     if (!acc[service.client_id]) {
       acc[service.client_id] = {
@@ -315,6 +351,7 @@ export function ServicesTab() {
     clientName: string;
     services: Service[];
   }>);
+
   return <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow-sm border">
         <h2 className="text-2xl font-bold mb-6">Novo Serviço</h2>
@@ -346,10 +383,19 @@ export function ServicesTab() {
                     <DialogTitle>Compartilhar Portal do Cliente</DialogTitle>
                   </DialogHeader>
                   <div className="py-4">
+                    {companyLogo && (
+                      <div className="mb-4 flex justify-center">
+                        <img 
+                          src={companyLogo} 
+                          alt="Logo da empresa" 
+                          className="h-16 w-auto object-contain"
+                        />
+                      </div>
+                    )}
                     <p className="mb-4">
                       Compartilhe este link com seu cliente para que ele possa acompanhar os serviços:
                     </p>
-                    <Input value={`${window.location.origin}/client-portal?client=${selectedClientId}`} readOnly />
+                    <Input value={`${window.location.origin}/client-portal?client=${selectedClientId}${companyLogo ? `&logo=${encodeURIComponent(companyLogo)}` : ''}`} readOnly />
                   </div>
                   <div className="flex justify-end gap-2">
                     <DialogClose asChild>
