@@ -29,7 +29,7 @@ export function AddTask({ onAdd, categories, sections }: AddTaskProps) {
     onAdd({
       title: title.trim(),
       priority,
-      due_date: date ? date.toISOString() : new Date().toISOString(), // Define data atual como padrão
+      due_date: date ? date.toISOString() : new Date().toISOString(),
       category,
       section
     });
@@ -53,151 +53,152 @@ export function AddTask({ onAdd, categories, sections }: AddTaskProps) {
 
   const getPriorityColor = (p: Task["priority"]) => {
     switch (p) {
-      case "high": return "text-red-400";
-      case "medium": return "text-yellow-400";
-      case "low": return "text-green-400";
+      case "high": return "text-red-400 hover:text-red-500";
+      case "medium": return "text-yellow-400 hover:text-yellow-500";
+      case "low": return "text-green-400 hover:text-green-500";
       default: return "";
     }
   };
 
   return (
-    <div className="flex gap-2 items-center">
-      <div className="relative flex-1">
-        <Input
-          placeholder="Digite sua tarefa e pressione Enter..."
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 pr-36"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleQuickAdd();
-            }
-          }}
-          autoFocus
-        />
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          <Popover open={isOpen} onOpenChange={setIsOpen}>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className={`h-8 w-8 ${category ? 'text-purple-400' : 'text-gray-400'}`}
-              >
-                <Tag className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-2">
-              <div className="flex flex-col gap-1">
-                {categories.map((cat) => (
+    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 space-y-4">
+      <div className="flex gap-4 items-center">
+        <div className="relative flex-1">
+          <Input
+            placeholder="Digite sua tarefa e pressione Enter..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 pr-36 focus:ring-purple-200"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleQuickAdd();
+              }
+            }}
+            autoFocus
+          />
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className={`h-8 w-8 ${category ? 'text-purple-400 hover:text-purple-500' : 'text-gray-400 hover:text-gray-500'}`}
+                >
+                  <Tag className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-2">
+                <div className="flex flex-col gap-1">
+                  {categories.map((cat) => (
+                    <Button
+                      key={cat.id}
+                      variant="ghost"
+                      className={`justify-start ${category === cat.name ? 'text-purple-400' : ''}`}
+                      onClick={() => handleCategorySelect(cat.name)}
+                    >
+                      <Tag className="h-4 w-4 mr-2" />
+                      {cat.name}
+                    </Button>
+                  ))}
+                  {categories.length === 0 && (
+                    <span className="text-sm text-gray-400 p-2">
+                      Nenhuma categoria criada
+                    </span>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className={`h-8 w-8 ${getPriorityColor(priority)}`}
+                >
+                  <Flag className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-2">
+                <div className="flex flex-col gap-1">
                   <Button
-                    key={cat.id}
                     variant="ghost"
-                    className={`justify-start ${category === cat.name ? 'text-purple-400' : ''}`}
-                    onClick={() => handleCategorySelect(cat.name)}
+                    className="justify-start text-red-400 hover:text-red-500"
+                    onClick={() => setPriority("high")}
                   >
-                    <Tag className="h-4 w-4 mr-2" />
-                    {cat.name}
+                    <Flag className="h-4 w-4 mr-2" />
+                    Alta
                   </Button>
-                ))}
-                {categories.length === 0 && (
-                  <span className="text-sm text-gray-400 p-2">
-                    Nenhuma categoria criada
-                  </span>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className={`h-8 w-8 ${getPriorityColor(priority)}`}
-              >
-                <Flag className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-2">
-              <div className="flex flex-col gap-1">
-                <Button
-                  variant="ghost"
-                  className="justify-start text-red-400"
-                  onClick={() => setPriority("high")}
-                >
-                  <Flag className="h-4 w-4 mr-2" />
-                  Alta
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="justify-start text-yellow-400"
-                  onClick={() => setPriority("medium")}
-                >
-                  <Flag className="h-4 w-4 mr-2" />
-                  Média
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="justify-start text-green-400"
-                  onClick={() => setPriority("low")}
-                >
-                  <Flag className="h-4 w-4 mr-2" />
-                  Baixa
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className={`h-8 w-8 ${date ? 'text-purple-400' : 'text-gray-400'}`}
-              >
-                <CalendarIcon className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                locale={ptBR}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-
-          <Popover open={isSectionOpen} onOpenChange={setIsSectionOpen}>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="h-8 w-8 text-gray-400"
-              >
-                <CalendarIcon className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-2">
-              <div className="flex flex-col gap-1">
-                {sections.map((sec) => (
                   <Button
-                    key={sec.value}
                     variant="ghost"
-                    className={`justify-start ${section === sec.value ? 'text-purple-400' : ''}`}
-                    onClick={() => handleSectionSelect(sec.value)}
+                    className="justify-start text-yellow-400 hover:text-yellow-500"
+                    onClick={() => setPriority("medium")}
                   >
-                    {sec.label}
+                    <Flag className="h-4 w-4 mr-2" />
+                    Média
                   </Button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+                  <Button
+                    variant="ghost"
+                    className="justify-start text-green-400 hover:text-green-500"
+                    onClick={() => setPriority("low")}
+                  >
+                    <Flag className="h-4 w-4 mr-2" />
+                    Baixa
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className={`h-8 w-8 ${date ? 'text-purple-400 hover:text-purple-500' : 'text-gray-400 hover:text-gray-500'}`}
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={setDate}
+                  locale={ptBR}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Popover open={isSectionOpen} onOpenChange={setIsSectionOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className={`h-8 w-8 ${section !== 'inbox' ? 'text-purple-400 hover:text-purple-500' : 'text-gray-400 hover:text-gray-500'}`}
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-2">
+                <div className="flex flex-col gap-1">
+                  {sections.map((sec) => (
+                    <Button
+                      key={sec.value}
+                      variant="ghost"
+                      className={`justify-start ${section === sec.value ? 'text-purple-400' : ''}`}
+                      onClick={() => handleSectionSelect(sec.value)}
+                    >
+                      {sec.label}
+                    </Button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
