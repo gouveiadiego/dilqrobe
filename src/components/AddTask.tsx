@@ -29,7 +29,7 @@ export function AddTask({ onAdd, categories, sections }: AddTaskProps) {
     onAdd({
       title: title.trim(),
       priority,
-      due_date: date ? date.toISOString() : null,
+      due_date: date ? date.toISOString() : new Date().toISOString(), // Define data atual como padrão
       category,
       section
     });
@@ -200,3 +200,4 @@ export function AddTask({ onAdd, categories, sections }: AddTaskProps) {
     </div>
   );
 }
+
