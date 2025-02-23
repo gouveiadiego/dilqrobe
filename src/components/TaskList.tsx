@@ -1,7 +1,8 @@
 
 import { Task } from "@/types/task";
 import { TaskItem } from "@/components/TaskItem";
-import { isThisWeek, isThisMonth, parseISO } from "date-fns";
+import { isThisWeek, isThisMonth, parseISO, isToday, isTomorrow } from "date-fns";
+import { ScrollArea } from "./ui/scroll-area";
 
 interface TaskListProps {
   tasks: Task[];
@@ -58,30 +59,90 @@ export function TaskList({
   };
 
   const activeTasks = tasks.filter(task => !task.completed);
+  const todayTasks = tasks.filter(task => !task.completed && task.due_date && isToday(new Date(task.due_date)));
+  const tomorrowTasks = tasks.filter(task => !task.completed && task.due_date && isTomorrow(new Date(task.due_date)));
   const groupedCompletedTasks = groupTasksByPeriod(tasks);
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Tarefas Ativas</h3>
-        {activeTasks.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            Nenhuma tarefa ativa encontrada
-          </div>
-        ) : (
-          activeTasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              onToggle={onToggleTask}
-              onDelete={onDeleteTask}
-              onAddSubtask={onAddSubtask}
-              onToggleSubtask={onToggleSubtask}
-              onUpdateTask={onUpdateTask}
-              categories={categories}
-            />
-          ))
-        )}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">Tarefas Ativas</h3>
+          <ScrollArea className="h-[400px]">
+            <div className="pr-4 space-y-4">
+              {activeTasks.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  Nenhuma tarefa ativa encontrada
+                </div>
+              ) : (
+                activeTasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={onToggleTask}
+                    onDelete={onDeleteTask}
+                    onAddSubtask={onAddSubtask}
+                    onToggleSubtask={onToggleSubtask}
+                    onUpdateTask={onUpdateTask}
+                    categories={categories}
+                  />
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">Fazer Hoje</h3>
+          <ScrollArea className="h-[400px]">
+            <div className="pr-4 space-y-4">
+              {todayTasks.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  Nenhuma tarefa para hoje
+                </div>
+              ) : (
+                todayTasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={onToggleTask}
+                    onDelete={onDeleteTask}
+                    onAddSubtask={onAddSubtask}
+                    onToggleSubtask={onToggleSubtask}
+                    onUpdateTask={onUpdateTask}
+                    categories={categories}
+                  />
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">Amanhã</h3>
+          <ScrollArea className="h-[400px]">
+            <div className="pr-4 space-y-4">
+              {tomorrowTasks.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  Nenhuma tarefa para amanhã
+                </div>
+              ) : (
+                tomorrowTasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={onToggleTask}
+                    onDelete={onDeleteTask}
+                    onAddSubtask={onAddSubtask}
+                    onToggleSubtask={onToggleSubtask}
+                    onUpdateTask={onUpdateTask}
+                    categories={categories}
+                  />
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
       </div>
 
       {(groupedCompletedTasks.thisWeek.length > 0 || 
