@@ -21,8 +21,9 @@ import { Sidebar } from "@/components/Sidebar";
 import { useTasks } from "@/hooks/useTasks";
 import { useCategories } from "@/hooks/useCategories";
 import { ServicesTab } from "@/components/ServicesTab";
+import { WrittenProjectsTab } from "@/components/WrittenProjectsTab";
 
-type TabType = 'dashboard' | 'tasks' | 'finance' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services';
+type TabType = 'dashboard' | 'tasks' | 'finance' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -216,6 +217,8 @@ const Index = () => {
             <BudgetTab />
           ) : activeTab === 'services' ? (
             <ServicesTab />
+          ) : activeTab === 'projects' ? (
+            <WrittenProjectsTab />
           ) : null}
         </div>
       </main>

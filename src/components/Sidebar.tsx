@@ -69,6 +69,14 @@ export function Sidebar({ activeTab, setActiveTab, onLogout }: SidebarProps) {
               Serviços
             </Button>
             <Button 
+              variant={activeTab === 'projects' ? "secondary" : "ghost"} 
+              className="w-full justify-start gap-3"
+              onClick={() => setActiveTab('projects')}
+            >
+              <FileText size={20} />
+              Written Projects
+            </Button>
+            <Button 
               variant={activeTab === 'budget' ? "secondary" : "ghost"}
               className="w-full justify-start gap-3"
               onClick={() => setActiveTab('budget')}
