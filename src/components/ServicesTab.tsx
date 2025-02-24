@@ -12,7 +12,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from "recharts";
 
 interface Service {
   id: string;
@@ -84,8 +84,27 @@ const calculateStats = (services: Service[]): ServiceStats => {
   });
 };
 
+const calculateDailyRevenue = (services: Service[]) => {
+  const dailyRevenue = services.reduce((acc: { [key: string]: number }, service) => {
+    const date = format(new Date(service.start_date), 'yyyy-MM-dd');
+    if (service.payment_status === 'paid') {
+      acc[date] = (acc[date] || 0) + service.amount;
+    }
+    return acc;
+  }, {});
+
+  return Object.entries(dailyRevenue)
+    .map(([date, amount]) => ({
+      date,
+      amount
+    }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+};
+
 const renderDashboard = (services: Service[]) => {
   const stats = calculateStats(services);
+  const dailyRevenueData = calculateDailyRevenue(services);
+
   return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <div className="bg-white p-4 rounded-lg shadow-sm border">
         <h3 className="text-sm font-medium text-gray-500">Total de Serviços</h3>
@@ -109,7 +128,34 @@ const renderDashboard = (services: Service[]) => {
       </div>
 
       <div className="col-span-full">
-        
+        <div className="bg-white p-4 rounded-lg shadow-sm border">
+          <h3 className="text-lg font-medium mb-4">Faturamento Diário</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={dailyRevenueData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(date) => format(new Date(date), 'dd/MM')}
+                />
+                <YAxis 
+                  tickFormatter={(value) => formatCurrency(value)}
+                />
+                <Tooltip 
+                  formatter={(value) => formatCurrency(Number(value))}
+                  labelFormatter={(label) => format(new Date(label), 'dd/MM/yyyy')}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="amount" 
+                  stroke="#22c55e" 
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       <div className="col-span-full">
@@ -118,30 +164,30 @@ const renderDashboard = (services: Service[]) => {
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={[{
-              name: 'Pagos',
-              value: stats.paidAmount
-            }, {
-              name: 'Pendentes',
-              value: stats.pendingAmount
-            }, {
-              name: 'Cancelados',
-              value: stats.canceledAmount
-            }]}>
+                name: 'Pagos',
+                value: stats.paidAmount
+              }, {
+                name: 'Pendentes',
+                value: stats.pendingAmount
+              }, {
+                name: 'Cancelados',
+                value: stats.canceledAmount
+              }]}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip formatter={value => formatCurrency(Number(value))} />
                 <Bar dataKey="value">
                   {[{
-                  name: 'Pagos',
-                  color: '#22c55e'
-                }, {
-                  name: 'Pendentes',
-                  color: '#f97316'
-                }, {
-                  name: 'Cancelados',
-                  color: '#ef4444'
-                }].map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                    name: 'Pagos',
+                    color: '#22c55e'
+                  }, {
+                    name: 'Pendentes',
+                    color: '#f97316'
+                  }, {
+                    name: 'Cancelados',
+                    color: '#ef4444'
+                  }].map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
