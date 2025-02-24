@@ -206,10 +206,10 @@ export function CompanyManager() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {companies.map((company: Company) => (
-          <div
+          <button
             key={company.id}
-            className="p-4 border rounded-lg space-y-2 cursor-pointer hover:border-purple-500 transition-colors"
             onClick={() => handleCompanyClick(company)}
+            className="p-4 border rounded-lg space-y-2 text-left w-full hover:border-purple-500 transition-colors"
           >
             <h4 className="font-medium">{company.name}</h4>
             {company.description && <p className="text-sm text-gray-600">{company.description}</p>}
@@ -228,7 +228,7 @@ export function CompanyManager() {
                 <strong>Telefone:</strong> {company.contact_phone}
               </p>
             )}
-          </div>
+          </button>
         ))}
       </div>
 
