@@ -49,7 +49,9 @@ const Index = () => {
 
   const {
     categories,
-    addCategory
+    addCategory,
+    updateCategory,
+    deleteCategory
   } = useCategories();
 
   const handleLogout = async () => {
@@ -170,7 +172,12 @@ const Index = () => {
                     />
                   </div>
                   <div>
-                    <CategoryManager categories={categories} onAddCategory={addCategory} />
+                    <CategoryManager 
+                      categories={categories} 
+                      onAddCategory={addCategory}
+                      onUpdateCategory={updateCategory}
+                      onDeleteCategory={deleteCategory}
+                    />
                   </div>
                 </div>
                 
