@@ -24,15 +24,15 @@ export function ProjectTasks() {
     }
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div>Carregando...</div>;
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Project Tasks</h3>
+        <h3 className="text-lg font-medium">Tarefas do Projeto</h3>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
-          Add Task
+          Adicionar Tarefa
         </Button>
       </div>
 
@@ -41,8 +41,13 @@ export function ProjectTasks() {
           <div key={task.id} className="p-4 border rounded-lg">
             <h4 className="font-medium">{task.title}</h4>
             <p className="text-sm text-gray-600">{task.description}</p>
-            <p className="text-sm">Company: {task.project_companies?.name}</p>
-            <p className="text-sm">Status: {task.status}</p>
+            <p className="text-sm">Empresa: {task.project_companies?.name}</p>
+            <p className="text-sm">Status: {
+              task.status === 'pending' ? 'Pendente' :
+              task.status === 'in_progress' ? 'Em Andamento' :
+              task.status === 'completed' ? 'Concluída' :
+              task.status
+            }</p>
           </div>
         ))}
       </div>
