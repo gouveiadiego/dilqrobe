@@ -22,6 +22,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { useCategories } from "@/hooks/useCategories";
 import { ServicesTab } from "@/components/ServicesTab";
 import { WrittenProjectsTab } from "@/components/WrittenProjectsTab";
+import { HabitsTab } from "@/components/HabitsTab";
 
 type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects';
 
