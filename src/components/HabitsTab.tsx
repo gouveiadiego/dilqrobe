@@ -20,6 +20,21 @@ type Habit = {
   schedule_time?: string;
 };
 
+type DBHabit = {
+  id: string;
+  title: string;
+  description?: string;
+  active: boolean;
+  streak: number;
+  best_streak: number;
+  schedule_days: string[];
+  schedule_time?: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  positive_reinforcement?: string[];
+};
+
 export function HabitsTab() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +44,22 @@ export function HabitsTab() {
   useEffect(() => {
     fetchHabits();
   }, []);
+
+  const transformDBHabitToHabit = (dbHabit: DBHabit): Habit => {
+    // For now, we'll set some default values. In a real app, you might want to
+    // calculate these based on habit logs or other data
+    return {
+      id: dbHabit.id,
+      title: dbHabit.title,
+      description: dbHabit.description,
+      frequency: "daily", // Default to daily for now
+      streak: dbHabit.streak,
+      completed: false, // This should be calculated based on today's completion status
+      progress: 0, // This should be calculated based on monthly completion rate
+      schedule_days: dbHabit.schedule_days,
+      schedule_time: dbHabit.schedule_time,
+    };
+  };
 
   const fetchHabits = async () => {
     try {
@@ -45,7 +76,10 @@ export function HabitsTab() {
         .eq("active", true);
 
       if (error) throw error;
-      setHabits(data || []);
+      
+      // Transform the database habits into our component's Habit type
+      const transformedHabits = (data || []).map(transformDBHabitToHabit);
+      setHabits(transformedHabits);
     } catch (error) {
       console.error("Erro ao carregar hábitos:", error);
       toast.error("Erro ao carregar hábitos");
