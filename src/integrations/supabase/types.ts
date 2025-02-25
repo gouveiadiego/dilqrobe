@@ -215,6 +215,89 @@ export type Database = {
           },
         ]
       }
+      habit_logs: {
+        Row: {
+          completed_at: string | null
+          date: string
+          habit_id: string
+          id: string
+          mood: string | null
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          date: string
+          habit_id: string
+          id?: string
+          mood?: string | null
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          date?: string
+          habit_id?: string
+          id?: string
+          mood?: string | null
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_logs_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          active: boolean | null
+          best_streak: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          positive_reinforcement: string[] | null
+          schedule_days: string[]
+          schedule_time: string | null
+          streak: number | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          best_streak?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          positive_reinforcement?: string[] | null
+          schedule_days?: string[]
+          schedule_time?: string | null
+          streak?: number | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean | null
+          best_streak?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          positive_reinforcement?: string[] | null
+          schedule_days?: string[]
+          schedule_time?: string | null
+          streak?: number | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string

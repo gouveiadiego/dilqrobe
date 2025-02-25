@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   Briefcase,
+  BarChart3,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -91,6 +92,14 @@ export function Sidebar({ activeTab, setActiveTab, onLogout }: SidebarProps) {
             >
               <Calendar size={20} />
               Diários
+            </Button>
+            <Button 
+              variant={activeTab === 'habits' ? "secondary" : "ghost"}
+              className="w-full justify-start gap-3"
+              onClick={() => setActiveTab('habits')}
+            >
+              <BarChart3 size={20} />
+              Hábitos
             </Button>
             <Button 
               variant={activeTab === 'challenges' ? "secondary" : "ghost"}

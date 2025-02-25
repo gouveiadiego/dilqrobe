@@ -23,7 +23,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { ServicesTab } from "@/components/ServicesTab";
 import { WrittenProjectsTab } from "@/components/WrittenProjectsTab";
 
-type TabType = 'dashboard' | 'tasks' | 'finance' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects';
+type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -205,6 +205,8 @@ const Index = () => {
             </div>
           ) : activeTab === 'finance' ? (
             <FinanceTab />
+          ) : activeTab === 'habits' ? (
+            <HabitsTab />
           ) : activeTab === 'journals' ? (
             <JournalsTab />
           ) : activeTab === 'challenges' ? (
