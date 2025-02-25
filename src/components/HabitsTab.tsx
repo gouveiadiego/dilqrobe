@@ -1,68 +1,104 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Trophy, Star, ListCheck, ChartLine, Target } from "lucide-react";
+import { Calendar, Trophy, Star, ListCheck, ChartLine, Target, Edit, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { HabitForm } from "./HabitForm";
 
 type Habit = {
   id: string;
-  name: string;
-  description: string;
+  title: string;
+  description?: string;
   frequency: "daily" | "weekly";
   streak: number;
   completed: boolean;
   progress: number;
+  schedule_days: string[];
+  schedule_time?: string;
 };
 
 export function HabitsTab() {
-  const [habits, setHabits] = useState<Habit[]>([
-    {
-      id: "1",
-      name: "Meditar",
-      description: "10 minutos de meditação mindfulness",
-      frequency: "daily",
-      streak: 5,
-      completed: false,
-      progress: 70,
-    },
-    {
-      id: "2",
-      name: "Exercício",
-      description: "30 minutos de atividade física",
-      frequency: "daily",
-      streak: 3,
-      completed: true,
-      progress: 85,
-    },
-    {
-      id: "3",
-      name: "Leitura",
-      description: "Ler 10 páginas",
-      frequency: "daily",
-      streak: 7,
-      completed: false,
-      progress: 90,
-    },
-  ]);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
-  const completeHabit = (id: string) => {
-    setHabits((prev) =>
-      prev.map((habit) =>
-        habit.id === id ? { ...habit, completed: !habit.completed } : habit
-      )
-    );
-    toast.success("Hábito atualizado com sucesso!");
+  useEffect(() => {
+    fetchHabits();
+  }, []);
+
+  const fetchHabits = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("habits")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .eq("active", true);
+
+      if (error) throw error;
+      setHabits(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar hábitos:", error);
+      toast.error("Erro ao carregar hábitos");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleEditHabit = (habit: Habit) => {
+    setSelectedHabit(habit);
+    setShowForm(true);
+  };
+
+  const handleFormSuccess = () => {
+    setShowForm(false);
+    setSelectedHabit(null);
+    fetchHabits();
+  };
+
+  const handleFormCancel = () => {
+    setShowForm(false);
+    setSelectedHabit(null);
+  };
+
+  if (showForm) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <h2 className="text-2xl font-bold mb-6">
+          {selectedHabit ? "Editar Hábito" : "Novo Hábito"}
+        </h2>
+        <HabitForm
+          initialData={selectedHabit || undefined}
+          onSuccess={handleFormSuccess}
+          onCancel={handleFormCancel}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       {/* Header Section */}
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Hábitos</h2>
-        <p className="text-muted-foreground">
-          Acompanhe seus hábitos e construa uma vida melhor, um dia de cada vez.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">Hábitos</h2>
+          <p className="text-muted-foreground">
+            Acompanhe seus hábitos e construa uma vida melhor, um dia de cada vez.
+          </p>
+        </div>
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Hábito
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -112,17 +148,26 @@ export function HabitsTab() {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-lg">{habit.name}</CardTitle>
+                  <CardTitle className="text-lg">{habit.title}</CardTitle>
                   <CardDescription>{habit.description}</CardDescription>
                 </div>
-                <Button
-                  variant={habit.completed ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => completeHabit(habit.id)}
-                >
-                  <ListCheck className="h-4 w-4 mr-1" />
-                  {habit.completed ? "Concluído" : "Marcar"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditHabit(habit)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant={habit.completed ? "default" : "outline"}
+                    size="sm"
+                  >
+                    <ListCheck className="h-4 w-4 mr-1" />
+                    {habit.completed ? "Concluído" : "Marcar"}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
@@ -134,12 +179,16 @@ export function HabitsTab() {
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  <span>{habit.frequency === "daily" ? "Diário" : "Semanal"}</span>
+                  <span>
+                    {habit.schedule_days.map((day) => day.charAt(0).toUpperCase()).join(", ")}
+                  </span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Target className="h-4 w-4" />
-                  <span>Sequência: {habit.streak} dias</span>
-                </div>
+                {habit.schedule_time && (
+                  <div className="flex items-center gap-1">
+                    <Target className="h-4 w-4" />
+                    <span>às {habit.schedule_time}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
