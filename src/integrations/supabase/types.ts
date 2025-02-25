@@ -180,41 +180,6 @@ export type Database = {
         }
         Relationships: []
       }
-      gym_records: {
-        Row: {
-          challenge_id: string
-          created_at: string | null
-          date: string
-          duration: number
-          id: string
-          user_id: string
-        }
-        Insert: {
-          challenge_id: string
-          created_at?: string | null
-          date: string
-          duration: number
-          id?: string
-          user_id: string
-        }
-        Update: {
-          challenge_id?: string
-          created_at?: string | null
-          date?: string
-          duration?: number
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gym_records_challenge_id_fkey"
-            columns: ["challenge_id"]
-            isOneToOne: false
-            referencedRelation: "running_challenges"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       journal_entries: {
         Row: {
           content: string
@@ -443,7 +408,6 @@ export type Database = {
       running_challenges: {
         Row: {
           category: string | null
-          challenge_type: string | null
           completion_criteria: Json | null
           created_at: string | null
           description: string | null
@@ -461,7 +425,6 @@ export type Database = {
         }
         Insert: {
           category?: string | null
-          challenge_type?: string | null
           completion_criteria?: Json | null
           created_at?: string | null
           description?: string | null
@@ -479,7 +442,6 @@ export type Database = {
         }
         Update: {
           category?: string | null
-          challenge_type?: string | null
           completion_criteria?: Json | null
           created_at?: string | null
           description?: string | null

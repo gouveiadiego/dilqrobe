@@ -38,18 +38,17 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
         return;
       }
 
-      // Get the latest running challenge
+      // Get the latest challenge
       const { data: latestChallenge, error: challengeError } = await supabase
         .from('running_challenges')
         .select('id')
-        .eq('challenge_type', 'running')
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
       if (challengeError || !latestChallenge) {
         console.error("Error fetching latest challenge:", challengeError);
-        toast.error("Nenhum desafio de corrida encontrado");
+        toast.error("Nenhum desafio encontrado");
         return;
       }
 
