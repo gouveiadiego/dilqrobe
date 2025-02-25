@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Trophy, Star, ListCheck, ChartLine, Target, Edit, Plus } from "lucide-react";
+import { Calendar, Trophy, Star, ListCheck, ChartLine, Target, Edit, Plus, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { HabitForm } from "./HabitForm";
@@ -18,6 +17,7 @@ type Habit = {
   progress: number;
   schedule_days: string[];
   schedule_time?: string;
+  status: "pending" | "completed" | "missed";
 };
 
 type DBHabit = {
@@ -35,6 +35,14 @@ type DBHabit = {
   positive_reinforcement?: string[];
 };
 
+const motivationalMessages = [
+  "Você está construindo um futuro melhor, um hábito de cada vez! 💪",
+  "Manter a consistência é a chave do sucesso! 🔑",
+  "Pequenas ações diárias levam a grandes mudanças! 🌱",
+  "Você é mais forte do que pensa! Continue assim! ⭐",
+  "Cada hábito completado é uma vitória! Parabéns! 🏆",
+];
+
 export function HabitsTab() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,22 +51,88 @@ export function HabitsTab() {
 
   useEffect(() => {
     fetchHabits();
+    requestNotificationPermission();
+    const interval = setInterval(checkHabitsSchedule, 60000); // Verifica a cada minuto
+    return () => clearInterval(interval);
   }, []);
 
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast.error('Por favor, permita as notificações para receber lembretes dos hábitos');
+      }
+    }
+  };
+
+  const showNotification = (habit: Habit) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+      new Notification(`Hora do hábito: ${habit.title}`, {
+        body: randomMessage,
+        icon: '/favicon.ico'
+      });
+    }
+  };
+
+  const checkHabitsSchedule = () => {
+    const now = new Date();
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    
+    habits.forEach(habit => {
+      if (habit.schedule_time && habit.schedule_days.includes(currentDay) && !habit.completed) {
+        const [habitHour, habitMinute] = habit.schedule_time.split(':').map(Number);
+        const habitDate = new Date();
+        habitDate.setHours(habitHour, habitMinute, 0);
+
+        const timeDiff = habitDate.getTime() - now.getTime();
+        const minutesDiff = Math.abs(Math.floor(timeDiff / 1000 / 60));
+
+        // Notifica 15 minutos antes
+        if (minutesDiff <= 15 && timeDiff > 0) {
+          showNotification(habit);
+          toast.info(`${habit.title} está programado para começar em ${minutesDiff} minutos!`, {
+            action: {
+              label: "Ver hábito",
+              onClick: () => document.getElementById(habit.id)?.scrollIntoView({ behavior: 'smooth' })
+            }
+          });
+        }
+        
+        // Marca como pendente se passou do horário
+        if (timeDiff < 0 && habit.status !== 'pending') {
+          updateHabitStatus(habit.id, 'pending');
+        }
+      }
+    });
+  };
+
   const transformDBHabitToHabit = (dbHabit: DBHabit): Habit => {
-    // For now, we'll set some default values. In a real app, you might want to
-    // calculate these based on habit logs or other data
     return {
       id: dbHabit.id,
       title: dbHabit.title,
       description: dbHabit.description,
-      frequency: "daily", // Default to daily for now
+      frequency: "daily",
       streak: dbHabit.streak,
-      completed: false, // This should be calculated based on today's completion status
-      progress: 0, // This should be calculated based on monthly completion rate
+      completed: false,
+      progress: 0,
       schedule_days: dbHabit.schedule_days,
       schedule_time: dbHabit.schedule_time,
+      status: "pending"
     };
+  };
+
+  const updateHabitStatus = async (habitId: string, status: Habit['status']) => {
+    setHabits(prevHabits =>
+      prevHabits.map(h =>
+        h.id === habitId ? { ...h, status, completed: status === 'completed' } : h
+      )
+    );
+
+    if (status === 'completed') {
+      const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+      toast.success(randomMessage);
+    }
   };
 
   const fetchHabits = async () => {
@@ -77,7 +151,6 @@ export function HabitsTab() {
 
       if (error) throw error;
       
-      // Transform the database habits into our component's Habit type
       const transformedHabits = (data || []).map(transformDBHabitToHabit);
       setHabits(transformedHabits);
     } catch (error) {
@@ -178,7 +251,7 @@ export function HabitsTab() {
       {/* Habits List */}
       <div className="space-y-4">
         {habits.map((habit) => (
-          <Card key={habit.id}>
+          <Card key={habit.id} id={habit.id}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div>
@@ -197,6 +270,7 @@ export function HabitsTab() {
                   <Button
                     variant={habit.completed ? "default" : "outline"}
                     size="sm"
+                    onClick={() => updateHabitStatus(habit.id, habit.completed ? 'pending' : 'completed')}
                   >
                     <ListCheck className="h-4 w-4 mr-1" />
                     {habit.completed ? "Concluído" : "Marcar"}
@@ -219,10 +293,18 @@ export function HabitsTab() {
                 </div>
                 {habit.schedule_time && (
                   <div className="flex items-center gap-1">
-                    <Target className="h-4 w-4" />
+                    <Clock className="h-4 w-4" />
                     <span>às {habit.schedule_time}</span>
                   </div>
                 )}
+                <div className={`px-2 py-1 rounded-full text-xs ${
+                  habit.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  habit.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {habit.status === 'completed' ? 'Concluído' :
+                   habit.status === 'pending' ? 'Pendente' : 'Atrasado'}
+                </div>
               </div>
             </CardContent>
           </Card>
