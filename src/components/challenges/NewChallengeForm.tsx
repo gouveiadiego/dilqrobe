@@ -27,7 +27,8 @@ export function NewChallengeForm({ onSuccess, onClose }: NewChallengeFormProps) 
     description: "",
     category: "",
     difficulty: "médio",
-    visibility: "público"
+    visibility: "público",
+    challengeType: "running"
   });
 
   const handleSubmit = async () => {
@@ -52,7 +53,8 @@ export function NewChallengeForm({ onSuccess, onClose }: NewChallengeFormProps) 
         description: newChallenge.description,
         category: newChallenge.category,
         difficulty: newChallenge.difficulty,
-        visibility: newChallenge.visibility
+        visibility: newChallenge.visibility,
+        challenge_type: newChallenge.challengeType
       });
 
       if (error) throw error;
@@ -67,7 +69,8 @@ export function NewChallengeForm({ onSuccess, onClose }: NewChallengeFormProps) 
         description: "",
         category: "",
         difficulty: "médio",
-        visibility: "público"
+        visibility: "público",
+        challengeType: "running"
       });
     } catch (error) {
       console.error("Error in handleNewChallenge:", error);
@@ -96,13 +99,30 @@ export function NewChallengeForm({ onSuccess, onClose }: NewChallengeFormProps) 
         />
       </div>
       <div>
-        <Label htmlFor="yearlyGoal">Meta Anual (km)</Label>
+        <Label htmlFor="challengeType">Tipo de Desafio</Label>
+        <Select
+          value={newChallenge.challengeType}
+          onValueChange={(value) => setNewChallenge(prev => ({ ...prev, challengeType: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o tipo de desafio" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="running">Corrida</SelectItem>
+            <SelectItem value="gym">Academia</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label htmlFor="yearlyGoal">
+          {newChallenge.challengeType === "running" ? "Meta Anual (km)" : "Meta Anual (dias)"}
+        </Label>
         <Input
           id="yearlyGoal"
           type="number"
           value={newChallenge.yearlyGoal}
           onChange={(e) => setNewChallenge(prev => ({ ...prev, yearlyGoal: e.target.value }))}
-          placeholder="Ex: 2025"
+          placeholder={newChallenge.challengeType === "running" ? "Ex: 2025" : "Ex: 200"}
         />
       </div>
       <div>

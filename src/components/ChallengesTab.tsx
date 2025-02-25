@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Trophy, PersonStanding } from "lucide-react";
@@ -19,18 +18,19 @@ import { WeeklyProgress } from "./challenges/WeeklyProgress";
 import { Achievements } from "./challenges/Achievements";
 import { NewChallengeForm } from "./challenges/NewChallengeForm";
 import { NewRunForm } from "./challenges/NewRunForm";
+import { NewGymSessionForm } from "./challenges/NewGymSessionForm";
 
 export function ChallengesTab() {
   const navigate = useNavigate();
   const [newChallengeOpen, setNewChallengeOpen] = useState(false);
   const [newRunOpen, setNewRunOpen] = useState(false);
+  const [newGymSessionOpen, setNewGymSessionOpen] = useState(false);
   const [currentStats, setCurrentStats] = useState({
     totalDistance: 0,
     percentageComplete: 0,
     currentChallenge: null
   });
 
-  // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -42,7 +42,6 @@ export function ChallengesTab() {
 
     checkAuth();
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         console.log("Auth state changed: no session, redirecting to login");
@@ -55,7 +54,6 @@ export function ChallengesTab() {
     };
   }, [navigate]);
 
-  // Fetch all challenges (agora mostra todos os desafios, não apenas os do usuário)
   const { data: challenges, isLoading, refetch } = useQuery({
     queryKey: ['running-challenges'],
     queryFn: async () => {
@@ -126,20 +124,68 @@ export function ChallengesTab() {
     }
   });
 
-  useEffect(() => {
-    if (challenges?.length > 0 && records) {
-      const latestChallenge = challenges[0];
-      const challengeRecords = records.filter(r => r.challenge_id === latestChallenge.id);
-      const totalDistance = challengeRecords.reduce((acc, curr) => acc + Number(curr.distance), 0);
-      const percentageComplete = (totalDistance / Number(latestChallenge.yearly_goal)) * 100;
+  const { data: gymRecords } = useQuery({
+    queryKey: ['gym-records'],
+    queryFn: async () => {
+      console.log("Fetching gym records...");
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("No session found during gym records fetch");
+        throw new Error("No active session");
+      }
 
-      setCurrentStats({
-        totalDistance,
-        percentageComplete,
-        currentChallenge: latestChallenge
-      });
+      const { data, error } = await supabase
+        .from('gym_records')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching gym records:", error);
+        throw error;
+      }
+
+      console.log("Gym records fetched:", data);
+      return data;
+    },
+    retry: false,
+    meta: {
+      onError: (error: Error) => {
+        console.error("Query error:", error);
+        if (error.message === "No active session") {
+          navigate("/login");
+        }
+      }
     }
-  }, [challenges, records]);
+  });
+
+  useEffect(() => {
+    if (challenges?.length > 0 && (records || gymRecords)) {
+      const latestChallenge = challenges[0];
+      
+      if (latestChallenge.challenge_type === 'running' && records) {
+        const challengeRecords = records.filter(r => r.challenge_id === latestChallenge.id);
+        const totalDistance = challengeRecords.reduce((acc, curr) => acc + Number(curr.distance), 0);
+        const percentageComplete = (totalDistance / Number(latestChallenge.yearly_goal)) * 100;
+
+        setCurrentStats({
+          totalDistance,
+          percentageComplete,
+          currentChallenge: latestChallenge
+        });
+      } else if (latestChallenge.challenge_type === 'gym' && gymRecords) {
+        const challengeRecords = gymRecords.filter(r => r.challenge_id === latestChallenge.id);
+        const totalSessions = challengeRecords.length;
+        const percentageComplete = (totalSessions / Number(latestChallenge.yearly_goal)) * 100;
+
+        setCurrentStats({
+          totalDistance: totalSessions,
+          percentageComplete,
+          currentChallenge: latestChallenge
+        });
+      }
+    }
+  }, [challenges, records, gymRecords]);
 
   const { data: weeklyStats } = useQuery({
     queryKey: ['weekly-stats'],
@@ -208,7 +254,7 @@ export function ChallengesTab() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Desafios de Corrida</h2>
+        <h2 className="text-2xl font-bold mb-2">Desafios de Corrida e Academia</h2>
         <p className="text-muted-foreground">
           Participe de desafios e acompanhe seu progresso
         </p>
@@ -233,7 +279,7 @@ export function ChallengesTab() {
             <DialogHeader>
               <DialogTitle>Criar Novo Desafio</DialogTitle>
               <DialogDescription>
-                Defina as metas do seu novo desafio de corrida
+                Defina as metas do seu novo desafio
               </DialogDescription>
             </DialogHeader>
             <NewChallengeForm 
@@ -260,6 +306,27 @@ export function ChallengesTab() {
             <NewRunForm 
               onSuccess={refetch} 
               onClose={() => setNewRunOpen(false)} 
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={newGymSessionOpen} onOpenChange={setNewGymSessionOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <Trophy className="mr-2 h-4 w-4" />
+              Registrar Treino
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Registrar Novo Treino</DialogTitle>
+              <DialogDescription>
+                Registre os detalhes do seu treino na academia
+              </DialogDescription>
+            </DialogHeader>
+            <NewGymSessionForm 
+              onSuccess={refetch} 
+              onClose={() => setNewGymSessionOpen(false)} 
             />
           </DialogContent>
         </Dialog>
