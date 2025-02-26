@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle } from "lucide-react";
 
 interface Transaction {
   id: string;
@@ -56,9 +56,20 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
         const transactionDate = new Date(transaction.date);
         return !transaction.is_paid && 
                (isToday(transactionDate) || 
-                (isBefore(transactionDate, nextWeek) && isBefore(today, transactionDate)));
+                (isBefore(today, transactionDate) && isBefore(transactionDate, nextWeek)));
       })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  };
+
+  const getOverdueTransactions = () => {
+    const today = new Date();
+    
+    return transactions
+      .filter(transaction => {
+        const transactionDate = new Date(transaction.date);
+        return !transaction.is_paid && isBefore(transactionDate, today);
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
   const getDayContent = (date: Date) => {
@@ -87,9 +98,10 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
   };
 
   const upcomingTransactions = getUpcomingTransactions();
+  const overdueTransactions = getOverdueTransactions();
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[1fr,300px] gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr,300px,300px] gap-6">
       <div className="p-4">
         <Calendar
           mode="single"
@@ -236,6 +248,54 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
           </p>
         )}
       </Card>
+
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle className="w-5 h-5 text-rose-500" />
+          <h3 className="font-medium">Atrasados</h3>
+        </div>
+        {overdueTransactions.length > 0 ? (
+          <ScrollArea className="h-[400px] pr-4">
+            <div className="space-y-3">
+              {overdueTransactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="p-3 rounded-lg bg-rose-50 hover:bg-rose-100 transition-colors"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {transaction.description}
+                      </p>
+                      <p className="text-xs text-rose-600 mt-0.5 font-medium">
+                        Venceu em: {new Date(transaction.date).toLocaleDateString('pt-BR')}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">
+                        {transaction.received_from}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500">
+                          {transaction.payment_type}
+                        </span>
+                      </div>
+                    </div>
+                    <span className={`text-sm font-medium whitespace-nowrap ${
+                      transaction.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
+                    }`}>
+                      {formatCurrency(Math.abs(transaction.amount))}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        ) : (
+          <p className="text-sm text-gray-500 text-center py-4">
+            Nenhum pagamento atrasado
+          </p>
+        )}
+      </Card>
     </div>
   );
 };
+
