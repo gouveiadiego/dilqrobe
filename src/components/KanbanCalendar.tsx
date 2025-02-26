@@ -4,7 +4,6 @@ import { Task } from "@/types/task";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isTomorrow, isAfter } from "date-fns";
 import { pt } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "./ui/scroll-area";
 import { Card } from "./ui/card";
 
 interface KanbanCalendarProps {
@@ -98,7 +97,7 @@ export function KanbanCalendar({
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "min-h-[180px] rounded-lg border", // Aumentei a altura mínima
+                  "rounded-lg border min-h-[100px] h-full",
                   isCurrentDay ? "border-purple-500 shadow-lg shadow-purple-100" : "border-gray-200"
                 )}
                 onDragOver={handleDragOver}
@@ -118,41 +117,39 @@ export function KanbanCalendar({
                   </div>
                 </div>
 
-                <ScrollArea className="h-[140px]"> {/* Aumentei a altura da área de rolagem */}
-                  <div className="p-2 space-y-2"> {/* Aumentei o espaçamento entre as tarefas */}
-                    {dayTasks.map(task => (
-                      <div
-                        key={task.id}
-                        draggable={!task.completed}
-                        onDragStart={() => !task.completed && handleDragStart(task.id)}
-                        className={cn(
-                          "p-2 rounded-lg border transition-all text-xs",
-                          task.completed ? "bg-gray-50 border-gray-200 opacity-50" : "bg-white border-gray-100 hover:shadow-md hover:border-purple-200 cursor-move",
-                          {
-                            "border-red-200 bg-red-50": !task.completed && task.priority === "high",
-                            "border-yellow-200 bg-yellow-50": !task.completed && task.priority === "medium",
-                            "border-green-200 bg-green-50": !task.completed && task.priority === "low"
-                          }
-                        )}
-                      >
-                        <div className={cn(
-                          "font-medium text-gray-900 break-words", // Adicionei break-words para quebrar palavras longas
-                          task.completed && "line-through"
-                        )}>
-                          {task.title}
-                        </div>
-                        {task.category && (
-                          <span className={cn(
-                            "inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full",
-                            task.completed ? "bg-gray-100 text-gray-600" : "bg-purple-100 text-purple-700"
-                          )}>
-                            {task.category}
-                          </span>
-                        )}
+                <div className="p-2 space-y-2">
+                  {dayTasks.map(task => (
+                    <div
+                      key={task.id}
+                      draggable={!task.completed}
+                      onDragStart={() => !task.completed && handleDragStart(task.id)}
+                      className={cn(
+                        "p-2 rounded-lg border transition-all text-xs",
+                        task.completed ? "bg-gray-50 border-gray-200 opacity-50" : "bg-white border-gray-100 hover:shadow-md hover:border-purple-200 cursor-move",
+                        {
+                          "border-red-200 bg-red-50": !task.completed && task.priority === "high",
+                          "border-yellow-200 bg-yellow-50": !task.completed && task.priority === "medium",
+                          "border-green-200 bg-green-50": !task.completed && task.priority === "low"
+                        }
+                      )}
+                    >
+                      <div className={cn(
+                        "font-medium text-gray-900 break-words",
+                        task.completed && "line-through"
+                      )}>
+                        {task.title}
                       </div>
-                    ))}
-                  </div>
-                </ScrollArea>
+                      {task.category && (
+                        <span className={cn(
+                          "inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full",
+                          task.completed ? "bg-gray-100 text-gray-600" : "bg-purple-100 text-purple-700"
+                        )}>
+                          {task.category}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             );
           })}
@@ -161,3 +158,4 @@ export function KanbanCalendar({
     </Card>
   );
 }
+
