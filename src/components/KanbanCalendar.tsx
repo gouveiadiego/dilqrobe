@@ -98,7 +98,7 @@ export function KanbanCalendar({
               <div
                 key={day.toISOString()}
                 className={cn(
-                  "min-h-[100px] rounded-lg border",
+                  "min-h-[180px] rounded-lg border", // Aumentei a altura mínima
                   isCurrentDay ? "border-purple-500 shadow-lg shadow-purple-100" : "border-gray-200"
                 )}
                 onDragOver={handleDragOver}
@@ -118,8 +118,8 @@ export function KanbanCalendar({
                   </div>
                 </div>
 
-                <ScrollArea className="h-[80px]">
-                  <div className="p-1 space-y-1">
+                <ScrollArea className="h-[140px]"> {/* Aumentei a altura da área de rolagem */}
+                  <div className="p-2 space-y-2"> {/* Aumentei o espaçamento entre as tarefas */}
                     {dayTasks.map(task => (
                       <div
                         key={task.id}
@@ -136,7 +136,7 @@ export function KanbanCalendar({
                         )}
                       >
                         <div className={cn(
-                          "font-medium text-gray-900 line-clamp-2",
+                          "font-medium text-gray-900 break-words", // Adicionei break-words para quebrar palavras longas
                           task.completed && "line-through"
                         )}>
                           {task.title}
