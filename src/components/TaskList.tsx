@@ -65,33 +65,8 @@ export function TaskList({
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Tarefas Ativas</h3>
-          <ScrollArea className="h-[400px]">
-            <div className="pr-4 space-y-4">
-              {activeTasks.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  Nenhuma tarefa ativa encontrada
-                </div>
-              ) : (
-                activeTasks.map((task) => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    onToggle={onToggleTask}
-                    onDelete={onDeleteTask}
-                    onAddSubtask={onAddSubtask}
-                    onToggleSubtask={onToggleSubtask}
-                    onUpdateTask={onUpdateTask}
-                    categories={categories}
-                  />
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-
+      {/* Seções do topo: Fazer Hoje e Amanhã */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900">Fazer Hoje</h3>
           <ScrollArea className="h-[400px]">
@@ -145,6 +120,34 @@ export function TaskList({
         </div>
       </div>
 
+      {/* Seção inferior: Tarefas Ativas */}
+      <div className="mt-8 space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Tarefas Ativas</h3>
+        <ScrollArea className="h-[400px]">
+          <div className="pr-4 space-y-4">
+            {activeTasks.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                Nenhuma tarefa ativa encontrada
+              </div>
+            ) : (
+              activeTasks.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  onToggle={onToggleTask}
+                  onDelete={onDeleteTask}
+                  onAddSubtask={onAddSubtask}
+                  onToggleSubtask={onToggleSubtask}
+                  onUpdateTask={onUpdateTask}
+                  categories={categories}
+                />
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Seção de tarefas concluídas */}
       {(groupedCompletedTasks.thisWeek.length > 0 || 
         groupedCompletedTasks.thisMonth.length > 0 || 
         groupedCompletedTasks.older.length > 0) && (
@@ -236,3 +239,4 @@ export function TaskList({
     </div>
   );
 }
+
