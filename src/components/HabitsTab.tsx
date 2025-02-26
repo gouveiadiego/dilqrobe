@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,7 +78,7 @@ export function HabitsTab() {
 
   const checkHabitsSchedule = () => {
     const now = new Date();
-    const currentDay = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
     
     habits.forEach(habit => {
       if (habit.schedule_time && habit.schedule_days.includes(currentDay) && !habit.completed) {
