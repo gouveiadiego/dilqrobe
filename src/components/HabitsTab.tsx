@@ -3,10 +3,26 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Trophy, Star, ListCheck, ChartLine, Target, Edit, Plus, Clock } from "lucide-react";
+import { 
+  Calendar, 
+  Trophy, 
+  Star, 
+  ListCheck, 
+  ChartLine, 
+  Target, 
+  Edit, 
+  Plus, 
+  Clock, 
+  Flame, 
+  Heart, 
+  Medal, 
+  CheckCircle,
+  ThumbsUp
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { HabitForm } from "./HabitForm";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 type Habit = {
   id: string;
@@ -42,6 +58,43 @@ const motivationalMessages = [
   "Pequenas ações diárias levam a grandes mudanças! 🌱",
   "Você é mais forte do que pensa! Continue assim! ⭐",
   "Cada hábito completado é uma vitória! Parabéns! 🏆",
+  "Investir em bons hábitos é investir em si mesmo! 💯",
+  "Seu compromisso com seus hábitos mostra sua dedicação ao crescimento! 🌟",
+  "Progresso constante gera resultados extraordinários! 🚀",
+  "Sua disciplina de hoje traz sua liberdade de amanhã! 🦅",
+  "Celebre cada vitória, não importa o tamanho! 🎉"
+];
+
+const habitQuotes = [
+  {
+    quote: "Somos aquilo que fazemos repetidamente. Excelência, então, não é um ato, mas um hábito.",
+    author: "Aristóteles"
+  },
+  {
+    quote: "Os hábitos são, primeiro, teias de aranha e depois, cabos de aço.",
+    author: "Provérbio Espanhol"
+  },
+  {
+    quote: "Seu sucesso futuro é determinado pelos hábitos que você cultiva hoje.",
+    author: "Robert Kiyosaki"
+  },
+  {
+    quote: "Você não decide seu futuro. Você decide seus hábitos, e são eles que decidem seu futuro.",
+    author: "F.M. Alexander"
+  },
+  {
+    quote: "Não é o que fazemos ocasionalmente que molda nossas vidas, mas o que fazemos consistentemente.",
+    author: "Anthony Robbins"
+  }
+];
+
+const benefitsOfHabits = [
+  "Reduz a ansiedade e o estresse",
+  "Aumenta a autoconfiança e autoestima",
+  "Melhora a saúde física e mental",
+  "Aumenta a produtividade e foco",
+  "Desenvolve a disciplina e autocontrole",
+  "Cria uma sensação de propósito e direção"
 ];
 
 export function HabitsTab() {
@@ -49,13 +102,42 @@ export function HabitsTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("ativos");
+  const [currentQuote, setCurrentQuote] = useState(0);
+  const [totalCompletedHabits, setTotalCompletedHabits] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
 
   useEffect(() => {
     fetchHabits();
     requestNotificationPermission();
     const interval = setInterval(checkHabitsSchedule, 60000); // Verifica a cada minuto
-    return () => clearInterval(interval);
+    
+    // Rotaciona as citações a cada 15 segundos
+    const quoteInterval = setInterval(() => {
+      setCurrentQuote(prev => (prev + 1) % habitQuotes.length);
+    }, 15000);
+    
+    return () => {
+      clearInterval(interval);
+      clearInterval(quoteInterval);
+    };
   }, []);
+
+  useEffect(() => {
+    if (habits.length > 0) {
+      calculateStats();
+    }
+  }, [habits]);
+
+  const calculateStats = () => {
+    // Calcula o número total de hábitos completados
+    const completed = habits.filter(habit => habit.completed).length;
+    setTotalCompletedHabits(completed);
+
+    // Encontra o hábito com a maior sequência
+    const maxStreak = Math.max(...habits.map(habit => habit.streak));
+    setLongestStreak(maxStreak);
+  };
 
   const requestNotificationPermission = async () => {
     if ('Notification' in window) {
@@ -131,8 +213,40 @@ export function HabitsTab() {
     );
 
     if (status === 'completed') {
-      const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
-      toast.success(randomMessage);
+      // Incrementar a sequência no banco de dados
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user?.id) {
+          toast.error("Usuário não autenticado");
+          return;
+        }
+
+        const { data: habitData } = await supabase
+          .from("habits")
+          .select("streak")
+          .eq("id", habitId)
+          .single();
+
+        if (habitData) {
+          await supabase
+            .from("habits")
+            .update({ 
+              streak: habitData.streak + 1,
+              best_streak: Math.max(habitData.streak + 1, habitData.best_streak || 0)
+            })
+            .eq("id", habitId);
+        }
+
+        const randomIndex = Math.floor(Math.random() * motivationalMessages.length);
+        const randomMessage = motivationalMessages[randomIndex];
+        
+        toast.success(randomMessage, {
+          description: "Continue assim! Cada hábito concluído te leva mais perto dos seus objetivos.",
+          icon: <Flame className="h-5 w-5 text-amber-500" />
+        });
+      } catch (error) {
+        console.error("Erro ao atualizar sequência:", error);
+      }
     }
   };
 
@@ -178,6 +292,36 @@ export function HabitsTab() {
     setSelectedHabit(null);
   };
 
+  const getDayLabel = (day: string) => {
+    const days: Record<string, string> = {
+      "sun": "Dom",
+      "mon": "Seg",
+      "tue": "Ter",
+      "wed": "Qua",
+      "thu": "Qui",
+      "fri": "Sex",
+      "sat": "Sáb",
+      "sunday": "Dom",
+      "monday": "Seg",
+      "tuesday": "Ter",
+      "wednesday": "Qua",
+      "thursday": "Qui",
+      "friday": "Sex",
+      "saturday": "Sáb"
+    };
+    return days[day] || day.charAt(0).toUpperCase() + day.slice(1, 3);
+  };
+
+  const formatScheduleDays = (days: string[]) => {
+    return days.map(day => getDayLabel(day)).join(", ");
+  };
+
+  const getCompletionRate = () => {
+    if (habits.length === 0) return 0;
+    const completed = habits.filter(h => h.completed).length;
+    return Math.round((completed / habits.length) * 100);
+  };
+
   if (showForm) {
     return (
       <div className="max-w-2xl mx-auto">
@@ -209,134 +353,275 @@ export function HabitsTab() {
         </Button>
       </div>
 
+      {/* Motivational Quote */}
+      <Card className="border-l-4 border-l-blue-500 bg-blue-50 text-blue-900">
+        <CardContent className="pt-6">
+          <blockquote className="italic text-lg">
+            "{habitQuotes[currentQuote].quote}"
+          </blockquote>
+          <div className="text-right mt-2 font-semibold">— {habitQuotes[currentQuote].author}</div>
+        </CardContent>
+      </Card>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Sequência Atual</CardTitle>
-            <Trophy className="h-4 w-4 text-muted-foreground" />
+            <Trophy className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">7 dias</div>
+            <div className="text-2xl font-bold">{longestStreak} dias</div>
             <p className="text-xs text-muted-foreground">
               Continue mantendo a consistência!
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Taxa de Conclusão</CardTitle>
-            <ChartLine className="h-4 w-4 text-muted-foreground" />
+            <ChartLine className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">85%</div>
-            <p className="text-xs text-muted-foreground">
-              Média dos últimos 30 dias
+            <div className="text-2xl font-bold">{getCompletionRate()}%</div>
+            <div className="mt-2">
+              <Progress value={getCompletionRate()} className="h-2 bg-purple-100" />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Hábitos completados hoje
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-amber-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pontos</CardTitle>
-            <Star className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Hábitos Concluídos</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">520</div>
+            <div className="text-2xl font-bold">{totalCompletedHabits}</div>
             <p className="text-xs text-muted-foreground">
-              Continue acumulando pontos!
+              Cada conclusão te aproxima do sucesso!
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Habits List */}
-      <div className="space-y-4">
-        {habits.map((habit) => (
-          <Card key={habit.id} id={habit.id}>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">{habit.title}</CardTitle>
-                  <CardDescription>{habit.description}</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditHabit(habit)}
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar
-                  </Button>
-                  <Button
-                    variant={habit.completed ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => updateHabitStatus(habit.id, habit.completed ? 'pending' : 'completed')}
-                  >
-                    <ListCheck className="h-4 w-4 mr-1" />
-                    {habit.completed ? "Concluído" : "Marcar"}
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Progresso mensal</span>
-                <span className="font-medium">{habit.progress}%</span>
-              </div>
-              <Progress value={habit.progress} className="h-2" />
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    {habit.schedule_days.map((day) => day.charAt(0).toUpperCase()).join(", ")}
-                  </span>
-                </div>
-                {habit.schedule_time && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>às {habit.schedule_time}</span>
+      {/* Tabs for habit view */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-2 mb-4">
+          <TabsTrigger value="ativos">Hábitos Ativos</TabsTrigger>
+          <TabsTrigger value="dicas">Dicas & Benefícios</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="ativos" className="space-y-4">
+          {/* Habits List */}
+          {habits.length === 0 ? (
+            <Card className="bg-gray-50 border-dashed border-2">
+              <CardContent className="py-8 flex flex-col items-center justify-center">
+                <Target className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhum hábito criado</h3>
+                <p className="text-center text-muted-foreground mb-4">
+                  Comece criando seu primeiro hábito e construa uma rotina melhor.
+                </p>
+                <Button onClick={() => setShowForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Hábito
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            habits.map((habit) => (
+              <Card 
+                key={habit.id} 
+                id={habit.id} 
+                className={`transition-all hover:shadow-md ${
+                  habit.completed ? 'border-l-4 border-l-green-500 bg-green-50' : 
+                  habit.status === 'pending' ? 'border-l-4 border-l-amber-500' : 
+                  'border-l-4 border-l-red-300'
+                }`}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      {habit.completed && <Flame className="h-5 w-5 text-amber-500 mr-2" />}
+                      <div>
+                        <CardTitle className="text-lg">{habit.title}</CardTitle>
+                        <CardDescription>{habit.description}</CardDescription>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditHabit(habit)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant={habit.completed ? "default" : "outline"}
+                        size="sm"
+                        className={habit.completed ? "bg-green-600 hover:bg-green-700" : ""}
+                        onClick={() => updateHabitStatus(habit.id, habit.completed ? 'pending' : 'completed')}
+                      >
+                        {habit.completed ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Concluído
+                          </>
+                        ) : (
+                          <>
+                            <ListCheck className="h-4 w-4 mr-1" />
+                            Marcar
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                )}
-                <div className={`px-2 py-1 rounded-full text-xs ${
-                  habit.status === 'completed' ? 'bg-green-100 text-green-800' :
-                  habit.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {habit.status === 'completed' ? 'Concluído' :
-                   habit.status === 'pending' ? 'Pendente' : 'Atrasado'}
-                </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center">
+                    <Heart className="h-4 w-4 text-red-500 mr-2" />
+                    <span className="text-sm font-medium">Sequência: <span className="text-amber-600">{habit.streak} dias</span></span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Progresso mensal</span>
+                    <span className="font-medium">{habit.progress}%</span>
+                  </div>
+                  <Progress value={habit.progress} className="h-2" />
+                  
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                      <Calendar className="h-4 w-4 text-blue-500" />
+                      <span>{formatScheduleDays(habit.schedule_days)}</span>
+                    </div>
+                    {habit.schedule_time && (
+                      <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                        <Clock className="h-4 w-4 text-purple-500" />
+                        <span>às {habit.schedule_time}</span>
+                      </div>
+                    )}
+                    <div className={`px-2 py-1 rounded-full text-xs ${
+                      habit.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      habit.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {habit.status === 'completed' ? 'Concluído' :
+                      habit.status === 'pending' ? 'Pendente' : 'Atrasado'}
+                    </div>
+                  </div>
+                  
+                  {habit.streak > 0 && (
+                    <div className="flex items-center gap-2 bg-amber-50 p-2 rounded-md mt-2">
+                      <Medal className="h-4 w-4 text-amber-500" />
+                      <span className="text-sm text-amber-700">
+                        {habit.streak >= 7 
+                          ? `Incrível! ${habit.streak} dias consecutivos!` 
+                          : `Sequência atual: ${habit.streak} ${habit.streak === 1 ? 'dia' : 'dias'}`
+                        }
+                      </span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+        
+        <TabsContent value="dicas" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <Star className="h-5 w-5 text-amber-500 mr-2" />
+                Benefícios dos Bons Hábitos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {benefitsOfHabits.map((benefit, index) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <ThumbsUp className="h-4 w-4 text-green-600 mt-1" />
+                    <span className="text-sm">{benefit}</span>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <Target className="h-5 w-5 text-blue-500 mr-2" />
+                Dicas para Sucesso
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="p-3 border border-blue-100 rounded-md bg-blue-50">
+                <h4 className="font-medium text-blue-700 mb-2">Comece Pequeno</h4>
+                <p className="text-sm text-blue-600">
+                  Comece com hábitos pequenos e alcançáveis que você possa realizar em menos de 2 minutos. 
+                  Isso reduz a resistência inicial e aumenta suas chances de consistência.
+                </p>
+              </div>
+              
+              <div className="p-3 border border-green-100 rounded-md bg-green-50">
+                <h4 className="font-medium text-green-700 mb-2">Consistência Acima da Perfeição</h4>
+                <p className="text-sm text-green-600">
+                  É melhor fazer seu hábito de forma imperfeita do que falhar em fazê-lo perfeitamente. 
+                  Consistência por longos períodos é o que gera resultados transformadores.
+                </p>
+              </div>
+              
+              <div className="p-3 border border-amber-100 rounded-md bg-amber-50">
+                <h4 className="font-medium text-amber-700 mb-2">Celebre Vitórias Pequenas</h4>
+                <p className="text-sm text-amber-600">
+                  Não subestime o poder de celebrar suas pequenas vitórias. Cada vez que você completa um hábito, 
+                  seu cérebro libera dopamina, reforçando o comportamento positivo.
+                </p>
+              </div>
+              
+              <div className="p-3 border border-purple-100 rounded-md bg-purple-50">
+                <h4 className="font-medium text-purple-700 mb-2">Ambiente Favorável</h4>
+                <p className="text-sm text-purple-600">
+                  Organize seu ambiente para facilitar seus bons hábitos e dificultar os maus. 
+                  Pequenas mudanças no seu ambiente podem ter um grande impacto nos seus comportamentos diários.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-      {/* Tips Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Dicas para Sucesso</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm">• Comece com hábitos pequenos e alcançáveis</p>
-            <p className="text-sm">• Mantenha a consistência acima da perfeição</p>
-            <p className="text-sm">• Celebre suas pequenas vitórias</p>
-            <p className="text-sm">• Use lembretes visuais para manter o foco</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Próximas Conquistas</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm">🏆 10 dias consecutivos</p>
-            <p className="text-sm">⭐ 1000 pontos acumulados</p>
-            <p className="text-sm">🎯 5 hábitos completados em um dia</p>
-            <p className="text-sm">🌟 30 dias de consistência</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Próximas Conquistas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center">
+            <Trophy className="h-5 w-5 text-amber-500 mr-2" />
+            Próximas Conquistas
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="flex items-center gap-2 p-2 border border-amber-200 rounded-md bg-amber-50">
+              <Medal className="h-4 w-4 text-amber-500" />
+              <span className="text-sm">🏆 10 dias consecutivos</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 border border-purple-200 rounded-md bg-purple-50">
+              <Star className="h-4 w-4 text-purple-500" />
+              <span className="text-sm">⭐ 1000 pontos acumulados</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 border border-green-200 rounded-md bg-green-50">
+              <Target className="h-4 w-4 text-green-500" />
+              <span className="text-sm">🎯 5 hábitos completados em um dia</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 border border-blue-200 rounded-md bg-blue-50">
+              <Flame className="h-4 w-4 text-blue-500" />
+              <span className="text-sm">🌟 30 dias de consistência</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
