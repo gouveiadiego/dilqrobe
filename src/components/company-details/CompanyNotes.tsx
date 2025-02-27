@@ -26,10 +26,14 @@ export function CompanyNotes({ companyId }: CompanyNotesProps) {
   const { data: note, isLoading } = useQuery({
     queryKey: ['company-note', companyId],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
       const { data, error } = await supabase
         .from('project_notes')
         .select('*')
         .eq('company_id', companyId)
+        .eq('user_id', user.id)
         .maybeSingle();
       
       if (error) {

@@ -28,6 +28,9 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
   const { data: checklistItems = [], isLoading } = useQuery({
     queryKey: ['company-checklist', companyId],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
       const { data, error } = await supabase
         .from('project_checklist')
         .select('*')
@@ -39,7 +42,7 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
         throw error;
       }
       
-      return data as ChecklistItem[];
+      return data || [];
     }
   });
 
