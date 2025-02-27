@@ -12,6 +12,7 @@ interface Note {
   company_id: string;
   content: string;
   updated_at: string;
+  user_id: string;
 }
 
 interface CompanyNotesProps {
@@ -47,8 +48,13 @@ export function CompanyNotes({ companyId }: CompanyNotesProps) {
 
   useEffect(() => {
     if (note) {
+      console.log("Nota carregada:", note);
       setContent(note.content);
       setNoteId(note.id);
+    } else {
+      console.log("Nenhuma nota encontrada");
+      setContent("");
+      setNoteId(null);
     }
   }, [note]);
 
@@ -59,6 +65,7 @@ export function CompanyNotes({ companyId }: CompanyNotesProps) {
 
       if (noteId) {
         // Update existing note
+        console.log("Atualizando nota existente:", noteId);
         const { error } = await supabase
           .from('project_notes')
           .update({ content })
@@ -67,6 +74,7 @@ export function CompanyNotes({ companyId }: CompanyNotesProps) {
         if (error) throw error;
       } else {
         // Create new note
+        console.log("Criando nova nota para empresa:", companyId);
         const { data, error } = await supabase
           .from('project_notes')
           .insert([{
