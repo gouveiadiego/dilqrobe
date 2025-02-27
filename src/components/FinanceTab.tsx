@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -266,7 +267,9 @@ export const FinanceTab = () => {
             <TableBody>
               {filteredTransactions.map(transaction => <TableRow key={transaction.id}>
                   <TableCell>{new Date(transaction.date).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell>{transaction.description}</TableCell>
+                  <TableCell className={transaction.amount < 0 ? "text-rose-600 font-medium" : ""}>
+                    {transaction.description}
+                  </TableCell>
                   <TableCell>{transaction.received_from}</TableCell>
                   <TableCell>{transaction.category}</TableCell>
                   <TableCell>{formatCurrency(transaction.amount)}</TableCell>

@@ -12,7 +12,9 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { AlertCircle, AlertTriangle } from "lucide-react";
+import { AlertCircle, AlertTriangle, Check } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Transaction {
   id: string;
@@ -32,6 +34,7 @@ interface TransactionCalendarProps {
 
 export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [localTransactions, setLocalTransactions] = useState<Transaction[]>(transactions);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -40,8 +43,34 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
     }
   };
 
+  const handleTogglePayment = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({ is_paid: !currentStatus })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setLocalTransactions(prev => 
+        prev.map(transaction => 
+          transaction.id === id 
+            ? { ...transaction, is_paid: !currentStatus } 
+            : transaction
+        )
+      );
+      
+      toast.success(`Transação ${!currentStatus ? 'marcada como paga' : 'marcada como pendente'}`);
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast.error("Erro ao atualizar status de pagamento");
+    }
+  };
+
+  // Use local state for filtering transactions
   const getTransactionsForDate = (date: Date) => {
-    return transactions.filter(
+    return localTransactions.filter(
       (transaction) =>
         new Date(transaction.date).toDateString() === date.toDateString()
     );
@@ -51,7 +80,7 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
     const today = new Date();
     const nextWeek = addDays(today, 7);
     
-    return transactions
+    return localTransactions
       .filter(transaction => {
         const transactionDate = new Date(transaction.date);
         return !transaction.is_paid && 
@@ -64,7 +93,7 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
   const getOverdueTransactions = () => {
     const today = new Date();
     
-    return transactions
+    return localTransactions
       .filter(transaction => {
         const transactionDate = new Date(transaction.date);
         return !transaction.is_paid && isBefore(transactionDate, today);
@@ -232,11 +261,22 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
                         </span>
                       </div>
                     </div>
-                    <span className={`text-sm font-medium whitespace-nowrap ${
-                      transaction.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
-                    }`}>
-                      {formatCurrency(Math.abs(transaction.amount))}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`text-sm font-medium whitespace-nowrap ${
+                        transaction.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
+                      }`}>
+                        {formatCurrency(Math.abs(transaction.amount))}
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-1 text-xs"
+                        onClick={() => handleTogglePayment(transaction.id, transaction.is_paid)}
+                      >
+                        <Check className="w-3 h-3" />
+                        Marcar como pago
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -279,11 +319,22 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
                         </span>
                       </div>
                     </div>
-                    <span className={`text-sm font-medium whitespace-nowrap ${
-                      transaction.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
-                    }`}>
-                      {formatCurrency(Math.abs(transaction.amount))}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`text-sm font-medium whitespace-nowrap ${
+                        transaction.amount > 0 ? 'text-emerald-600' : 'text-rose-600'
+                      }`}>
+                        {formatCurrency(Math.abs(transaction.amount))}
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-1 text-xs"
+                        onClick={() => handleTogglePayment(transaction.id, transaction.is_paid)}
+                      >
+                        <Check className="w-3 h-3" />
+                        Marcar como pago
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -298,4 +349,3 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
     </div>
   );
 };
-
