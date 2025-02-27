@@ -43,7 +43,7 @@ type DBHabit = {
   description?: string;
   active: boolean;
   streak: number;
-  best_streak: number;
+  best_streak?: number;
   schedule_days: string[];
   schedule_time?: string;
   created_at: string;
@@ -223,16 +223,20 @@ export function HabitsTab() {
 
         const { data: habitData } = await supabase
           .from("habits")
-          .select("streak")
+          .select("streak, best_streak")
           .eq("id", habitId)
           .single();
 
         if (habitData) {
+          const newStreak = habitData.streak + 1;
+          const currentBestStreak = habitData.best_streak || 0;
+          const newBestStreak = Math.max(newStreak, currentBestStreak);
+          
           await supabase
             .from("habits")
             .update({ 
-              streak: habitData.streak + 1,
-              best_streak: Math.max(habitData.streak + 1, habitData.best_streak || 0)
+              streak: newStreak,
+              best_streak: newBestStreak
             })
             .eq("id", habitId);
         }
