@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,90 +19,10 @@ interface Company {
   contact_phone: string | null;
 }
 
-interface NewTaskDialogProps {
-  companyId: string;
-  companyName: string;
-  onOpenChange: (open: boolean) => void;
-  open: boolean;
-}
-
-function NewTaskDialog({ companyId, companyName, onOpenChange, open }: NewTaskDialogProps) {
-  const queryClient = useQueryClient();
-
-  const addTaskMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não encontrado');
-
-      const newTask = {
-        title: formData.get('title') as string,
-        description: formData.get('description') as string,
-        company_id: companyId,
-        priority: formData.get('priority') as string,
-        status: 'pending',
-      };
-
-      const { error } = await supabase.from('project_tasks').insert([newTask]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-      onOpenChange(false);
-      toast.success('Tarefa adicionada com sucesso');
-    },
-    onError: (error) => {
-      toast.error('Erro ao adicionar tarefa');
-      console.error(error);
-    }
-  });
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    addTaskMutation.mutate(formData);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nova Tarefa para {companyName}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="title">Título da Tarefa</Label>
-            <Input id="title" name="title" required />
-          </div>
-          <div>
-            <Label htmlFor="description">Descrição</Label>
-            <Input id="description" name="description" />
-          </div>
-          <div>
-            <Label htmlFor="priority">Prioridade</Label>
-            <select
-              id="priority"
-              name="priority"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              defaultValue="medium"
-            >
-              <option value="low">Baixa</option>
-              <option value="medium">Média</option>
-              <option value="high">Alta</option>
-            </select>
-          </div>
-          <Button type="submit">Adicionar Tarefa</Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export function CompanyManager() {
   const [open, setOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: companies = [], isLoading } = useQuery({
     queryKey: ['companies'],
@@ -156,8 +77,7 @@ export function CompanyManager() {
   };
 
   const handleCompanyClick = (company: Company) => {
-    setSelectedCompany(company);
-    setNewTaskDialogOpen(true);
+    navigate(`/company/${company.id}`);
   };
 
   if (isLoading) return <div>Carregando...</div>;
@@ -231,15 +151,6 @@ export function CompanyManager() {
           </button>
         ))}
       </div>
-
-      {selectedCompany && (
-        <NewTaskDialog
-          companyId={selectedCompany.id}
-          companyName={selectedCompany.name}
-          open={newTaskDialogOpen}
-          onOpenChange={setNewTaskDialogOpen}
-        />
-      )}
     </div>
   );
 }
