@@ -360,6 +360,7 @@ export type Database = {
       }
       project_checklist: {
         Row: {
+          category: string | null
           company_id: string
           completed: boolean | null
           created_at: string | null
@@ -369,6 +370,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
           company_id: string
           completed?: boolean | null
           created_at?: string | null
@@ -378,6 +380,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
           company_id?: string
           completed?: boolean | null
           created_at?: string | null
