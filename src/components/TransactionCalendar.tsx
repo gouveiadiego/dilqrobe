@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { pt } from "date-fns/locale";
-import { addDays, isBefore, isToday } from "date-fns";
+import { addDays, isBefore, isToday, isEqual, format, parseISO } from "date-fns";
 import {
   Popover,
   PopoverContent,
@@ -42,8 +42,14 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
 
   const getTransactionsForDate = (date: Date) => {
     return transactions.filter(
-      (transaction) =>
-        new Date(transaction.date).toDateString() === date.toDateString()
+      (transaction) => {
+        // Ensure we're comparing dates properly
+        const transactionDate = new Date(transaction.date);
+        return isEqual(
+          new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate()),
+          new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        );
+      }
     );
   };
 
@@ -298,4 +304,3 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
     </div>
   );
 };
-

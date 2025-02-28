@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Task } from "@/types/task";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isTomorrow, isAfter } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isTomorrow, isAfter, isEqual } from "date-fns";
 import { pt } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Card } from "./ui/card";
@@ -43,9 +43,11 @@ export function KanbanCalendar({
     return tasks.filter(task => {
       if (!task.due_date) return false;
       const taskDate = new Date(task.due_date);
-      return taskDate.getDate() === date.getDate() && 
-             taskDate.getMonth() === date.getMonth() && 
-             taskDate.getFullYear() === date.getFullYear();
+      // Compare year, month, and day for more accurate date comparison
+      return isEqual(
+        new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate()),
+        new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      );
     });
   };
 
@@ -158,4 +160,3 @@ export function KanbanCalendar({
     </Card>
   );
 }
-
