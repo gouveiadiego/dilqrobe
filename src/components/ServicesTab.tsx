@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
@@ -85,14 +86,37 @@ const calculateStats = (services: Service[]): ServiceStats => {
 };
 
 const calculateDailyRevenue = (services: Service[]) => {
-  const dailyRevenue = services.reduce((acc: { [key: string]: number }, service) => {
-    const date = format(new Date(service.start_date), 'yyyy-MM-dd');
-    if (service.payment_status === 'paid') {
-      acc[date] = (acc[date] || 0) + service.amount;
-    }
+  // Se não temos serviços, retornamos um array vazio
+  if (services.length === 0) {
+    return [];
+  }
+  
+  // Pegar o mês atual ou o mês do primeiro serviço se existir
+  const currentDate = services.length > 0 
+    ? new Date(services[0].start_date) 
+    : new Date();
+  
+  // Criar intervalo para o mês todo
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  
+  // Gerar todos os dias do mês
+  const allDaysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Inicializar o objeto com todos os dias do mês e valor zero
+  const dailyRevenue = allDaysInMonth.reduce((acc: { [key: string]: number }, day) => {
+    const dateKey = format(day, 'yyyy-MM-dd');
+    acc[dateKey] = 0;
     return acc;
   }, {});
+  
+  // Somar os valores de todos os serviços, independente do status de pagamento
+  services.forEach(service => {
+    const date = format(new Date(service.start_date), 'yyyy-MM-dd');
+    dailyRevenue[date] = (dailyRevenue[date] || 0) + service.amount;
+  });
 
+  // Converter para o formato usado pelo gráfico
   return Object.entries(dailyRevenue)
     .map(([date, amount]) => ({
       date,
@@ -132,7 +156,7 @@ const renderDashboard = (services: Service[]) => {
           <h3 className="text-lg font-medium mb-4">Faturamento Diário</h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dailyRevenueData}>
+              <BarChart data={dailyRevenueData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="date" 
@@ -145,14 +169,12 @@ const renderDashboard = (services: Service[]) => {
                   formatter={(value) => formatCurrency(Number(value))}
                   labelFormatter={(label) => format(new Date(label), 'dd/MM/yyyy')}
                 />
-                <Line 
-                  type="monotone" 
+                <Bar 
                   dataKey="amount" 
-                  stroke="#22c55e" 
-                  strokeWidth={2}
-                  dot={false}
+                  fill="#22c55e"
+                  name="Faturamento"
                 />
-              </LineChart>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
