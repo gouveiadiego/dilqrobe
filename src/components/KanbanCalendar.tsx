@@ -23,6 +23,8 @@ export function KanbanCalendar({
     end: endOfMonth(currentMonth)
   });
 
+  console.log("KanbanCalendar - Month days:", monthDays.map(d => d.toISOString().split('T')[0]));
+
   const handleDragStart = (taskId: string) => {
     setDraggingTaskId(taskId);
   };

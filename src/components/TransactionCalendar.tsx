@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { pt } from "date-fns/locale";
 import { addDays, isBefore, isToday, isEqual, format, parseISO } from "date-fns";
@@ -33,6 +33,15 @@ interface TransactionCalendarProps {
 export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
+  // Debug transactions dates
+  useEffect(() => {
+    console.log("TransactionCalendar - All Transactions:", transactions.map(t => ({
+      id: t.id,
+      date: t.date,
+      jsDate: new Date(t.date).toISOString().split('T')[0]
+    })));
+  }, [transactions]);
+
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
@@ -41,16 +50,28 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
   };
 
   const getTransactionsForDate = (date: Date) => {
-    return transactions.filter(
+    const result = transactions.filter(
       (transaction) => {
         // Ensure we're comparing dates properly
         const transactionDate = new Date(transaction.date);
-        return isEqual(
+        const isSameDate = isEqual(
           new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate()),
           new Date(date.getFullYear(), date.getMonth(), date.getDate())
         );
+        
+        // Debug for a specific date if needed
+        if (date.getDate() === 28 && date.getMonth() === 1) { // February 28
+          console.log("Feb 28 comparison:", {
+            dateToCheck: date.toISOString().split('T')[0],
+            transactionDate: transactionDate.toISOString().split('T')[0],
+            isSameDate
+          });
+        }
+        
+        return isSameDate;
       }
     );
+    return result;
   };
 
   const getUpcomingTransactions = () => {

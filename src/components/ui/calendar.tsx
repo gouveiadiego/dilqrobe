@@ -14,6 +14,17 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
+  // Log month days for debugging
+  React.useEffect(() => {
+    if (props.month) {
+      console.log("Calendar component - Current month:", props.month);
+      const year = props.month.getFullYear();
+      const month = props.month.getMonth();
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      console.log(`Calendar component - Last day of month ${month+1}/${year}:`, lastDay);
+    }
+  }, [props.month]);
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
