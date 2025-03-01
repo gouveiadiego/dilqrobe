@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, removeDuplicateTransactions } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Transaction {
@@ -222,22 +222,25 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         
         const { data: existingTransactions, error: checkError } = await supabase
           .from("transactions")
-          .select("id, description, received_from, payment_type, amount")
+          .select("id, description, received_from, payment_type, amount, date")
           .eq("description", formData.description)
           .eq("received_from", formData.received_from)
           .eq("payment_type", formData.payment_type)
+          .eq("user_id", user.id)
           .gte("date", startOfDay.toISOString())
           .lte("date", endOfDay.toISOString());
           
         if (checkError) throw checkError;
         
-        // Check for amount similarity within 0.01 to catch floating point differences
-        const amountMatch = existingTransactions?.some(t => 
-          Math.abs(t.amount - amount) < 0.01
+        // Check for exact matches (including amount with 0.01 tolerance)
+        const amountToCheck = amount;
+        const exactMatch = existingTransactions?.some(t => 
+          Math.abs(t.amount - amountToCheck) < 0.01 && 
+          t.date.substring(0, 10) === formData.date
         );
         
-        if (existingTransactions && existingTransactions.length > 0 && amountMatch) {
-          toast.warning("Uma transação similar já existe nesta data.");
+        if (existingTransactions && existingTransactions.length > 0 && exactMatch) {
+          toast.warning("Uma transação idêntica já existe nesta data.");
           return;
         }
         
@@ -254,6 +257,9 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         }
 
         toast.success("Transação criada com sucesso.");
+        
+        // Run cleanup to remove any remaining duplicates
+        await removeDuplicateTransactions();
       }
       
       setFormData({
