@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +68,11 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           nextDate.setDate(transactionData.recurring_day);
         }
 
+        // Ensure the date is valid (handle edge cases like Feb 30)
+        if (nextDate.getMonth() !== (startDate.getMonth() + i) % 12) {
+          nextDate.setDate(0); // Last day of previous month
+        }
+
         transactions.push({
           date: nextDate.toISOString().split('T')[0],
           description: transactionData.description,
@@ -74,7 +80,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           amount: transactionData.amount,
           category: transactionData.category,
           payment_type: transactionData.payment_type,
-          is_paid: transactionData.is_paid,
+          is_paid: false, // Always set to pending (false) for future months
           recurring: true,
           recurring_day: transactionData.recurring_day,
           user_id: transactionData.user_id
