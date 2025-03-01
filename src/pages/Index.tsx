@@ -176,7 +176,7 @@ const Index = () => {
                   <div>
                     <CategoryManager 
                       categories={categories} 
-                      onAddCategory={addCategory}
+                      onAddCategory={(params) => addCategory(params.name)}
                       onUpdateCategory={updateCategory}
                       onDeleteCategory={deleteCategory}
                     />

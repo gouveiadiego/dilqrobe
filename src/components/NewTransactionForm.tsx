@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase, removeDuplicateTransactions } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CategorySelector } from "./finance/CategorySelector";
+import { useCategories } from "@/hooks/useCategories";
 
 interface Transaction {
   id: string;
@@ -45,6 +46,8 @@ const getTransactionDefaults = (selectedFilter: string) => {
 };
 
 export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editingTransaction }: NewTransactionFormProps) => {
+  const { categories, addCategory } = useCategories();
+
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     description: '',
@@ -364,6 +367,8 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           value={formData.category}
           onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
           selectedFilter={selectedFilter}
+          categories={categories}
+          onAddCategory={addCategory}
         />
 
         <div className="space-y-2 col-span-full">

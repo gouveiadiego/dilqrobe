@@ -3,6 +3,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+export type CategoryType = "expense" | "income";
+
+export interface Category {
+  id: string;
+  name: string;
+  type?: CategoryType;
+  user_id?: string;
+}
+
 export const useCategories = () => {
   const queryClient = useQueryClient();
 
@@ -24,7 +33,7 @@ export const useCategories = () => {
   });
 
   const addCategoryMutation = useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async ({ name, type }: { name: string; type?: CategoryType }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
@@ -32,6 +41,7 @@ export const useCategories = () => {
         .from('categories')
         .insert([{
           name,
+          type: type || 'expense', // Default to expense if not specified
           user_id: user.id
         }])
         .select()
@@ -51,10 +61,14 @@ export const useCategories = () => {
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+    mutationFn: async ({ id, name, type }: { id: string; name?: string; type?: CategoryType }) => {
+      const updates: { name?: string; type?: CategoryType } = {};
+      if (name) updates.name = name;
+      if (type) updates.type = type;
+
       const { error } = await supabase
         .from('categories')
-        .update({ name })
+        .update(updates)
         .eq('id', id);
 
       if (error) {
@@ -88,9 +102,9 @@ export const useCategories = () => {
 
   return {
     categories,
-    addCategory: (name: string) => {
-      if (!categories.some(cat => cat.name === name)) {
-        addCategoryMutation.mutate(name);
+    addCategory: (params: { name: string; type?: CategoryType }) => {
+      if (!categories.some(cat => cat.name === params.name)) {
+        addCategoryMutation.mutate(params);
       } else {
         toast.error('Esta categoria já existe');
       }
