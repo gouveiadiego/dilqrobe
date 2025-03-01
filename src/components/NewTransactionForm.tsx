@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,8 +72,13 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         recurring_day: '',
         installments: '12',
       });
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        category: getTransactionDefaults(selectedFilter).category
+      }));
     }
-  }, [editingTransaction]);
+  }, [editingTransaction, selectedFilter]);
 
   const createRecurringTransactions = async (parentId: string, transactionData: any) => {
     try {
@@ -83,7 +87,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
       
       console.log(`Preparing to create recurring transactions for ${numberOfMonths} months`);
       
-      // We'll create a set of transaction keys by month to check for duplicates
       const transactionsByMonth: Record<string, any[]> = {};
       
       for (let i = 1; i < numberOfMonths; i++) {
@@ -94,17 +97,14 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           nextDate.setDate(transactionData.recurring_day);
         }
 
-        // Ensure the date is valid (handle edge cases like Feb 30)
         if (nextDate.getMonth() !== (startDate.getMonth() + i) % 12) {
-          nextDate.setDate(0); // Last day of previous month
+          nextDate.setDate(0);
         }
         
-        // Skip dates before Feb 2025
         if (nextDate < new Date(2025, 1, 1)) {
           continue;
         }
         
-        // Group by year-month to check for duplicates
         const monthKey = `${nextDate.getFullYear()}-${nextDate.getMonth() + 1}`;
         
         if (!transactionsByMonth[monthKey]) {
@@ -118,23 +118,20 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           amount: transactionData.amount,
           category: transactionData.category,
           payment_type: transactionData.payment_type,
-          is_paid: false, // Always set to pending (false) for future months
+          is_paid: false,
           recurring: true,
           recurring_day: transactionData.recurring_day,
           user_id: transactionData.user_id
         });
       }
       
-      // Now check each month for existing transactions
       for (const [monthKey, monthTransactions] of Object.entries(transactionsByMonth)) {
         if (!monthTransactions.length) continue;
         
-        // Sample transaction to get the month range
         const sampleDate = new Date(monthTransactions[0].date);
         const startOfMonth = new Date(sampleDate.getFullYear(), sampleDate.getMonth(), 1);
         const endOfMonth = new Date(sampleDate.getFullYear(), sampleDate.getMonth() + 1, 0);
         
-        // Get existing transactions for this month
         const { data: existingTransactions, error: fetchError } = await supabase
           .from("transactions")
           .select("description, received_from, category, payment_type, date, amount")
@@ -146,14 +143,12 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           continue;
         }
         
-        // Create a set of existing transaction keys
         const existingKeys = new Set();
         existingTransactions?.forEach(t => {
           const key = `${t.date}|${t.description}|${t.received_from}|${t.payment_type}|${t.amount}`;
           existingKeys.add(key);
         });
         
-        // Filter out any transactions that already exist
         const uniqueTransactions = monthTransactions.filter(t => {
           const key = `${t.date}|${t.description}|${t.received_from}|${t.payment_type}|${t.amount}`;
           return !existingKeys.has(key);
@@ -161,7 +156,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         
         console.log(`Month ${monthKey}: Found ${monthTransactions.length} transactions, ${uniqueTransactions.length} are unique`);
         
-        // Insert only unique transactions
         if (uniqueTransactions.length > 0) {
           const { error } = await supabase
             .from("transactions")
@@ -191,9 +185,9 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         return;
       }
 
-      // Fix the amount handling logic - for "recebimentos" we want positive values,
-      // for all other categories (expenses) we want negative values
-      const amount = selectedFilter === "recebimentos" 
+      const isIncome = formData.category === "income";
+      
+      const amount = isIncome 
         ? Math.abs(Number(formData.amount))
         : -Math.abs(Number(formData.amount));
 
@@ -219,7 +213,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         if (error) throw error;
         toast.success("Transação atualizada com sucesso.");
       } else {
-        // First check if this transaction already exists for the same date
         const transactionDate = new Date(formData.date);
         const startOfDay = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate());
         const endOfDay = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate(), 23, 59, 59);
@@ -236,7 +229,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           
         if (checkError) throw checkError;
         
-        // Check for exact matches (including amount with 0.01 tolerance)
         const amountToCheck = amount;
         const exactMatch = existingTransactions?.some(t => 
           Math.abs(t.amount - amountToCheck) < 0.01 && 
@@ -262,7 +254,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
 
         toast.success("Transação criada com sucesso.");
         
-        // Run cleanup to remove any remaining duplicates
         await removeDuplicateTransactions();
       }
       
