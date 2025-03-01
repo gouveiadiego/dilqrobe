@@ -2,7 +2,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, isSameDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export interface Transaction {
   id: string;
@@ -29,17 +30,15 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const formatMonth = (date: Date) => {
-    return new Date(date).toLocaleDateString('pt-BR', {
-      month: 'short',
-      year: 'numeric'
-    }).replace('.', '').toUpperCase();
+    return format(date, "MMMM 'de' yyyy", { locale: ptBR })
+      .replace(/^\w/, (c) => c.toUpperCase());
   };
 
   const fetchTransactions = async () => {
     try {
       console.log("Fetching transactions for:", formatMonth(currentDate));
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      const start = startOfMonth(currentDate);
+      const end = endOfMonth(currentDate);
       
       const { data, error } = await supabase
         .from("transactions")
@@ -55,8 +54,8 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
           recurring,
           recurring_day
         `)
-        .gte("date", startOfMonth.toISOString())
-        .lte("date", endOfMonth.toISOString())
+        .gte("date", start.toISOString())
+        .lte("date", end.toISOString())
         .order("date", { ascending: false });
         
       if (error) throw error;
@@ -101,9 +100,13 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
     }
     
     if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(transaction => 
-        transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        transaction.received_from.toLowerCase().includes(searchQuery.toLowerCase())
+        transaction.description.toLowerCase().includes(query) || 
+        transaction.received_from.toLowerCase().includes(query) ||
+        transaction.payment_type.toLowerCase().includes(query) ||
+        new Date(transaction.date).toLocaleDateString('pt-BR').includes(query) ||
+        (transaction.amount.toString().includes(query))
       );
     }
     
@@ -132,20 +135,41 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
   // Get chart data for visualizations
   const chartData = useMemo(() => {
     const data: { date: string; income: number; expenses: number }[] = [];
-    const groupedByDate = transactions.reduce((acc, transaction) => {
-      const date = new Date(transaction.date).toLocaleDateString('pt-BR');
-      if (!acc[date]) {
-        acc[date] = { income: 0, expenses: 0 };
+    
+    // Create all dates in the month for complete chart data
+    const daysInMonth = Array.from(
+      { length: endOfMonth(currentDate).getDate() },
+      (_, i) => {
+        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1);
+        return format(date, 'yyyy-MM-dd');
       }
-      if (transaction.amount > 0) {
-        acc[date].income += transaction.amount;
-      } else {
-        acc[date].expenses += Math.abs(transaction.amount);
-      }
+    );
+    
+    // Initialize with zero values for all days
+    const initialData = daysInMonth.reduce((acc, dateStr) => {
+      const displayDate = new Date(dateStr).toLocaleDateString('pt-BR');
+      acc[displayDate] = { income: 0, expenses: 0 };
       return acc;
     }, {} as Record<string, { income: number; expenses: number }>);
+    
+    // Populate with actual transaction data
+    transactions.forEach(transaction => {
+      const date = new Date(transaction.date);
+      const displayDate = date.toLocaleDateString('pt-BR');
+      
+      if (!initialData[displayDate]) {
+        initialData[displayDate] = { income: 0, expenses: 0 };
+      }
+      
+      if (transaction.amount > 0) {
+        initialData[displayDate].income += transaction.amount;
+      } else {
+        initialData[displayDate].expenses += Math.abs(transaction.amount);
+      }
+    });
 
-    Object.entries(groupedByDate).forEach(([date, values]) => {
+    // Convert to array and sort by date
+    Object.entries(initialData).forEach(([date, values]) => {
       data.push({
         date,
         income: values.income,
@@ -153,8 +177,14 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       });
     });
 
-    return data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [transactions]);
+    return data.sort((a, b) => {
+      const [aDay, aMonth, aYear] = a.date.split('/').map(Number);
+      const [bDay, bMonth, bYear] = b.date.split('/').map(Number);
+      
+      return new Date(aYear, aMonth - 1, aDay).getTime() - 
+             new Date(bYear, bMonth - 1, bDay).getTime();
+    });
+  }, [transactions, currentDate]);
 
   // Handle transaction actions
   const handleDeleteTransaction = async (id: string) => {
@@ -186,6 +216,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
   };
 
   useEffect(() => {
+    setLoading(true);
     fetchTransactions();
   }, [currentDate]);
 
