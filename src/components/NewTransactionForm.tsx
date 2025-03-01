@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,24 +57,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     try {
       const startDate = new Date(transactionData.date);
       const numberOfMonths = parseInt(formData.installments) || 12;
-      
-      // First, fetch existing transactions to avoid duplication
-      const { data: existingTransactions, error: fetchError } = await supabase
-        .from("transactions")
-        .select("date, description, received_from, category, payment_type")
-        .eq("description", transactionData.description)
-        .eq("received_from", transactionData.received_from)
-        .eq("category", transactionData.category)
-        .eq("payment_type", transactionData.payment_type);
-        
-      if (fetchError) throw fetchError;
-      
-      const existingTransactionKeys = new Set();
-      (existingTransactions || []).forEach(t => {
-        const key = `${new Date(t.date).getFullYear()}-${new Date(t.date).getMonth()}`;
-        existingTransactionKeys.add(key);
-      });
-      
       const transactions = [];
 
       for (let i = 1; i < numberOfMonths; i++) {
@@ -86,18 +67,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           nextDate.setDate(transactionData.recurring_day);
         }
 
-        // Ensure the date is valid (handle edge cases like Feb 30)
-        if (nextDate.getMonth() !== (startDate.getMonth() + i) % 12) {
-          nextDate.setDate(0); // Last day of previous month
-        }
-        
-        // Check if we already have a transaction for this month/year
-        const dateKey = `${nextDate.getFullYear()}-${nextDate.getMonth()}`;
-        if (existingTransactionKeys.has(dateKey)) {
-          console.log(`Skipping duplicate transaction for ${nextDate.toLocaleDateString()}`);
-          continue;
-        }
-
         transactions.push({
           date: nextDate.toISOString().split('T')[0],
           description: transactionData.description,
@@ -105,7 +74,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           amount: transactionData.amount,
           category: transactionData.category,
           payment_type: transactionData.payment_type,
-          is_paid: false, // Always set to pending (false) for future months
+          is_paid: transactionData.is_paid,
           recurring: true,
           recurring_day: transactionData.recurring_day,
           user_id: transactionData.user_id
@@ -122,8 +91,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           console.error("Error creating recurring transactions:", error);
           throw error;
         }
-        
-        console.log(`Created ${transactions.length} future recurring transactions`);
       }
     } catch (error) {
       console.error("Error creating recurring transactions:", error);
