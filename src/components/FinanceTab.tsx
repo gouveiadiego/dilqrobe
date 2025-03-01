@@ -2,7 +2,19 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronLeft, ChevronRight, Maximize, Plus, Clock, Filter } from "lucide-react";
+import { 
+  Search, 
+  ChevronLeft, 
+  ChevronRight, 
+  Maximize, 
+  Plus, 
+  Clock, 
+  Filter, 
+  LayoutDashboard, 
+  List, 
+  CalendarDays, 
+  Download
+} from "lucide-react";
 import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendarView } from "./finance/TransactionCalendarView";
 import { FinancialSummaryView } from "./finance/FinancialSummaryView";
@@ -38,12 +50,14 @@ export const FinanceTab = () => {
     chartData,
     handleDeleteTransaction,
     togglePaymentStatus,
-    formatMonth
+    formatMonth,
+    fetchTransactions
   } = useTransactions({ currentDate });
 
   const handleTransactionCreated = () => {
     setShowNewTransactionForm(false);
     setEditingTransaction(null);
+    fetchTransactions();
   };
 
   const handleEditTransaction = (transaction: any) => {
@@ -67,36 +81,79 @@ export const FinanceTab = () => {
     });
   };
 
-  const handleFullscreen = () => {
-    // Esta funcionalidade poderia ser implementada com integração de API de tela cheia
-    console.log("Toggle fullscreen view");
+  const handleExportData = () => {
+    try {
+      // Create CSV content
+      const headers = ['Data', 'Descrição', 'Recebido de/Pago para', 'Valor', 'Tipo de Pagamento', 'Status'];
+      const csvContent = [
+        headers.join(','),
+        ...filteredTransactions.map(t => [
+          new Date(t.date).toLocaleDateString('pt-BR'),
+          `"${t.description.replace(/"/g, '""')}"`,
+          `"${t.received_from.replace(/"/g, '""')}"`,
+          t.amount,
+          t.payment_type,
+          t.is_paid ? 'Pago' : 'Pendente'
+        ].join(','))
+      ].join('\n');
+      
+      // Create a blob and download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      
+      // Set download attributes and trigger download
+      link.setAttribute('href', url);
+      link.setAttribute('download', `transacoes-${formatMonth(currentDate).toLowerCase()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error exporting data:', error);
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={handlePreviousMonth}>
+          <Button variant="ghost" size="icon" onClick={handlePreviousMonth} className="hover:bg-gray-100">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="text-white px-4 py-2 rounded-md bg-slate-950 hover:bg-slate-800">
+          <div className="text-white px-4 py-2 rounded-md bg-slate-950 hover:bg-slate-800 transition-colors">
             {formatMonth(currentDate)}
           </div>
-          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
+          <Button variant="ghost" size="icon" onClick={handleNextMonth} className="hover:bg-gray-100">
             <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="ml-2" onClick={handleFullscreen}>
-            <Maximize className="h-4 w-4" />
           </Button>
         </div>
 
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full md:w-auto">
           <TabsList className="grid grid-cols-3 w-full md:w-[400px]">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="list">Lista</TabsTrigger>
-            <TabsTrigger value="calendar">Calendário</TabsTrigger>
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline">Lista</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              <span className="hidden sm:inline">Calendário</span>
+            </TabsTrigger>
           </TabsList>
         </Tabs>
+        
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="md:ml-2 hidden md:flex"
+          onClick={handleExportData}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Exportar
+        </Button>
       </div>
 
       <div className="flex flex-wrap md:flex-nowrap space-x-0 md:space-x-2 space-y-2 md:space-y-0 overflow-x-auto pb-2">
@@ -136,7 +193,7 @@ export const FinanceTab = () => {
               Mais filtros
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent>
+          <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setSelectedFilter("pessoas")}>
               Pessoas
             </DropdownMenuItem>
@@ -151,30 +208,41 @@ export const FinanceTab = () => {
       </div>
 
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+          <div className="relative flex-1 max-w-sm w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input 
               placeholder="Pesquisar transações..." 
-              className="pl-9 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500" 
+              className="pl-9 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 w-full" 
               value={searchQuery} 
               onChange={e => setSearchQuery(e.target.value)} 
             />
           </div>
-          <Button 
-            className="bg-black hover:bg-black/90 text-white" 
-            onClick={() => {
-              setEditingTransaction(null);
-              setShowNewTransactionForm(!showNewTransactionForm);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Transação
-          </Button>
+          <div className="flex gap-2 w-full md:w-auto">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="flex md:hidden"
+              onClick={handleExportData}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+            <Button 
+              className="bg-black hover:bg-black/90 text-white w-full md:w-auto" 
+              onClick={() => {
+                setEditingTransaction(null);
+                setShowNewTransactionForm(!showNewTransactionForm);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Transação
+            </Button>
+          </div>
         </div>
 
         {showNewTransactionForm && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
             <NewTransactionForm 
               selectedFilter={selectedFilter} 
               onTransactionCreated={handleTransactionCreated} 
@@ -183,18 +251,20 @@ export const FinanceTab = () => {
           </div>
         )}
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <FinancialSummaryView 
-            income={summaries.income}
-            expenses={summaries.expenses}
-            balance={summaries.balance}
-            pending={summaries.pending}
-            chartData={chartData}
-          />
-        </div>
+        {viewMode === "dashboard" && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <FinancialSummaryView 
+              income={summaries.income}
+              expenses={summaries.expenses}
+              balance={summaries.balance}
+              pending={summaries.pending}
+              chartData={chartData}
+            />
+          </div>
+        )}
 
         {viewMode === "calendar" && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
             <TransactionCalendarView 
               transactions={filteredTransactions} 
               onDateSelect={() => {}} 
@@ -203,7 +273,7 @@ export const FinanceTab = () => {
         )}
 
         {(viewMode === "list" || viewMode === "dashboard") && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
             <TransactionsTable 
               transactions={filteredTransactions}
               onDelete={handleDeleteTransaction}
