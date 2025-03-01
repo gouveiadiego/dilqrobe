@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,14 +5,11 @@ import {
   Search, 
   ChevronLeft, 
   ChevronRight, 
-  Maximize, 
   Plus, 
-  Clock, 
-  Filter, 
+  Download,
   LayoutDashboard, 
   List, 
-  CalendarDays, 
-  Download
+  CalendarDays
 } from "lucide-react";
 import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendarView } from "./finance/TransactionCalendarView";
@@ -26,12 +22,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -85,7 +75,6 @@ export const FinanceTab = () => {
 
   const handleDeleteRecurringTransaction = async (id: string, deleteAll: boolean) => {
     try {
-      // Get the transaction to be deleted to find the signature
       const { data: transaction, error: fetchError } = await supabase
         .from('transactions')
         .select('*')
@@ -103,8 +92,6 @@ export const FinanceTab = () => {
         return;
       }
       
-      // If deleteAll is true, delete all transactions with the same signature 
-      // (description, received_from, payment_type, and recurring day)
       if (deleteAll && transaction.recurring) {
         const { data: { user } } = await supabase.auth.getUser();
         
@@ -113,7 +100,6 @@ export const FinanceTab = () => {
           return;
         }
         
-        // Delete all matching recurring transactions (current and future months)
         const { error: deleteError } = await supabase
           .from('transactions')
           .delete()
@@ -132,7 +118,6 @@ export const FinanceTab = () => {
         
         toast.success("Todas as transações recorrentes foram excluídas");
       } else {
-        // Just delete this single transaction
         const { error: deleteError } = await supabase
           .from('transactions')
           .delete()
@@ -147,7 +132,6 @@ export const FinanceTab = () => {
         toast.success("Transação excluída com sucesso");
       }
       
-      // Refresh the transactions list
       fetchTransactions();
     } catch (error) {
       console.error('Error in handleDeleteRecurringTransaction:', error);
@@ -157,7 +141,6 @@ export const FinanceTab = () => {
 
   const handleExportData = () => {
     try {
-      // Create CSV content
       const headers = ['Data', 'Descrição', 'Recebido de/Pago para', 'Valor', 'Tipo de Pagamento', 'Status'];
       const csvContent = [
         headers.join(','),
@@ -171,12 +154,10 @@ export const FinanceTab = () => {
         ].join(','))
       ].join('\n');
       
-      // Create a blob and download link
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       
-      // Set download attributes and trigger download
       link.setAttribute('href', url);
       link.setAttribute('download', `transacoes-${formatMonth(currentDate).toLowerCase()}.csv`);
       document.body.appendChild(link);
@@ -228,57 +209,6 @@ export const FinanceTab = () => {
           <Download className="h-4 w-4 mr-2" />
           Exportar
         </Button>
-      </div>
-
-      <div className="flex flex-wrap md:flex-nowrap space-x-0 md:space-x-2 space-y-2 md:space-y-0 overflow-x-auto pb-2">
-        <Button 
-          variant={selectedFilter === "all" ? "default" : "outline"} 
-          className="min-w-[120px]"
-          onClick={() => setSelectedFilter("all")}
-        >
-          Todos
-        </Button>
-        <Button 
-          variant={selectedFilter === "recebimentos" ? "default" : "outline"} 
-          className={`min-w-[120px] ${selectedFilter === "recebimentos" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`} 
-          onClick={() => setSelectedFilter("recebimentos")}
-        >
-          Recebimentos
-        </Button>
-        <Button 
-          variant={selectedFilter === "despesas-fixas" ? "default" : "outline"} 
-          className={`min-w-[120px] ${selectedFilter === "despesas-fixas" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`} 
-          onClick={() => setSelectedFilter("despesas-fixas")}
-        >
-          Despesas fixas
-        </Button>
-        <Button 
-          variant={selectedFilter === "despesas-variaveis" ? "default" : "outline"} 
-          className={`min-w-[120px] ${selectedFilter === "despesas-variaveis" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`} 
-          onClick={() => setSelectedFilter("despesas-variaveis")}
-        >
-          Despesas variáveis
-        </Button>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Mais filtros
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setSelectedFilter("pessoas")}>
-              Pessoas
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedFilter("impostos")}>
-              Impostos
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSelectedFilter("transferencias")}>
-              Transferências
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       <div className="space-y-6">
