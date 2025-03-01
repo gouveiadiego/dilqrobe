@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -190,6 +191,8 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         return;
       }
 
+      // Fix the amount handling logic - for "recebimentos" we want positive values,
+      // for all other categories (expenses) we want negative values
       const amount = selectedFilter === "recebimentos" 
         ? Math.abs(Number(formData.amount))
         : -Math.abs(Number(formData.amount));
