@@ -25,6 +25,25 @@ interface NewTransactionFormProps {
   editingTransaction?: Transaction | null;
 }
 
+const getTransactionDefaults = (selectedFilter: string) => {
+  switch (selectedFilter) {
+    case "recebimentos":
+      return { category: "income" };
+    case "despesas-fixas":
+      return { category: "fixed" };
+    case "despesas-variaveis":
+      return { category: "variable" };
+    case "pessoas":
+      return { category: "people" };
+    case "impostos":
+      return { category: "taxes" };
+    case "transferencias":
+      return { category: "transfer" };
+    default:
+      return { category: "income" };
+  }
+};
+
 export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editingTransaction }: NewTransactionFormProps) => {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -32,7 +51,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     received_from: '',
     amount: '',
     payment_type: '',
-    category: getTransactionDefaults().category,
+    category: getTransactionDefaults(selectedFilter).category,
     is_paid: false,
     recurring: false,
     recurring_day: '',
@@ -160,25 +179,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     }
   };
 
-  const getTransactionDefaults = () => {
-    switch (selectedFilter) {
-      case "recebimentos":
-        return { category: "income" };
-      case "despesas-fixas":
-        return { category: "fixed" };
-      case "despesas-variaveis":
-        return { category: "variable" };
-      case "pessoas":
-        return { category: "people" };
-      case "impostos":
-        return { category: "taxes" };
-      case "transferencias":
-        return { category: "transfer" };
-      default:
-        return { category: "income" };
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -269,6 +269,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         received_from: '',
         amount: '',
         payment_type: '',
+        category: getTransactionDefaults(selectedFilter).category,
         is_paid: false,
         recurring: false,
         recurring_day: '',
