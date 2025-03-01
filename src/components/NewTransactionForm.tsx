@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +32,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     received_from: '',
     amount: '',
     payment_type: '',
-    category: '',
+    category: getTransactionDefaults().category,
     is_paid: false,
     recurring: false,
     recurring_day: '',
