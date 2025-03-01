@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Check, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { 
   Select, 
   SelectContent, 
@@ -45,7 +45,12 @@ export const CategorySelector = ({
   ];
   
   // Combine default categories with external categories if provided
-  const categories = externalCategories || defaultCategories;
+  const categories = externalCategories?.length ? externalCategories : defaultCategories;
+  
+  // For debugging
+  useEffect(() => {
+    console.log("CategorySelector - Available categories:", categories);
+  }, [categories]);
 
   // Function to get readable category name
   const getCategoryLabel = (categoryValue: string): string => {
@@ -122,7 +127,11 @@ export const CategorySelector = ({
         type: newCategoryType 
       });
       
-      onChange(newCategory.trim());
+      // Don't set the value immediately - wait for the category to be added
+      // and reloaded from the database
+      setTimeout(() => {
+        onChange(newCategory.trim());
+      }, 500);
     } else {
       // Fallback for when onAddCategory not provided
       console.log("No onAddCategory provided, using fallback");

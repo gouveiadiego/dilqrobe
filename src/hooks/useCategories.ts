@@ -18,16 +18,19 @@ export const useCategories = () => {
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
+      console.log("Fetching categories");
       const { data, error } = await supabase
         .from('categories')
         .select('*')
         .order('name');
       
       if (error) {
+        console.error("Error fetching categories:", error);
         toast.error('Erro ao carregar categorias');
         throw error;
       }
       
+      console.log("Fetched categories:", data);
       return data;
     }
   });
@@ -79,6 +82,7 @@ export const useCategories = () => {
         .eq('id', id);
 
       if (error) {
+        console.error("Error updating category:", error);
         toast.error('Erro ao atualizar categoria');
         throw error;
       }
@@ -97,6 +101,7 @@ export const useCategories = () => {
         .eq('id', id);
 
       if (error) {
+        console.error("Error deleting category:", error);
         toast.error('Erro ao excluir categoria');
         throw error;
       }

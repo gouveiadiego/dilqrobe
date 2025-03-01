@@ -47,6 +47,10 @@ const getTransactionDefaults = (selectedFilter: string) => {
 
 export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editingTransaction }: NewTransactionFormProps) => {
   const { categories, addCategory } = useCategories();
+  
+  useEffect(() => {
+    console.log("NewTransactionForm - Available categories:", categories);
+  }, [categories]);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
