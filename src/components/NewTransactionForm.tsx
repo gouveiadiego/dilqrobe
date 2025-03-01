@@ -280,6 +280,17 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     }
   };
 
+  const getPaymentTypeLabel = (paymentType: string): string => {
+    switch (paymentType) {
+      case "pix": return "PIX";
+      case "credit": return "Cartão de Crédito";
+      case "debit": return "Cartão de Débito";
+      case "cash": return "Dinheiro";
+      case "transfer": return "Transferência";
+      default: return paymentType;
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-lg font-semibold mb-4">
@@ -335,7 +346,9 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
             onValueChange={(value) => setFormData(prev => ({ ...prev, payment_type: value }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione a forma de pagamento" />
+              <SelectValue placeholder="Selecione a forma de pagamento">
+                {formData.payment_type ? getPaymentTypeLabel(formData.payment_type) : ""}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="pix">PIX</SelectItem>
