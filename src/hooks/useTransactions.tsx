@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -231,10 +232,20 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       if (!recurringTransactions || recurringTransactions.length === 0) return;
 
       // Check if we already have the recurring transactions for this month
-      const start = startOfMonth(currentDate);
-      const end = endOfMonth(currentDate);
       const currentMonth = currentDate.getMonth();
       const currentYear = currentDate.getFullYear();
+
+      // Construct a unique transaction key using description and received_from
+      const existingTransactionKeys = new Set();
+      
+      for (const t of transactions) {
+        const transactionDate = new Date(t.date);
+        if (transactionDate.getMonth() === currentMonth && 
+            transactionDate.getFullYear() === currentYear) {
+          const key = `${t.description}|${t.received_from}|${t.category}|${t.payment_type}`;
+          existingTransactionKeys.add(key);
+        }
+      }
 
       // Filter transactions that need to be created for the current month
       const transactionsToCreate = recurringTransactions.filter(transaction => {
@@ -242,17 +253,8 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
         if (!transaction.recurring_day) return false;
 
         // Check if this recurring transaction already exists in the current month
-        const exists = transactions.some(t => {
-          const transactionDate = new Date(t.date);
-          return (
-            t.description === transaction.description &&
-            t.received_from === transaction.received_from &&
-            transactionDate.getMonth() === currentMonth &&
-            transactionDate.getFullYear() === currentYear
-          );
-        });
-
-        return !exists;
+        const key = `${transaction.description}|${transaction.received_from}|${transaction.category}|${transaction.payment_type}`;
+        return !existingTransactionKeys.has(key);
       });
 
       if (transactionsToCreate.length === 0) return;
@@ -288,6 +290,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
 
         if (insertError) throw insertError;
         
+        console.log(`Created ${newTransactions.length} recurring transactions for ${formatMonth(currentDate)}`);
         // Refresh transactions after adding recurring ones
         fetchTransactions();
       }
