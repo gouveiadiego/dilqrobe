@@ -30,8 +30,15 @@ export const useCategories = () => {
         throw error;
       }
       
-      console.log("Fetched categories:", data);
-      return data;
+      // Transform the data to ensure type is CategoryType
+      const transformedData = data.map(category => ({
+        ...category,
+        // Ensure type is either "expense" or "income", defaulting to "expense"
+        type: (category.type === "income" ? "income" : "expense") as CategoryType
+      }));
+      
+      console.log("Fetched categories:", transformedData);
+      return transformedData as Category[];
     }
   });
 
@@ -59,7 +66,11 @@ export const useCategories = () => {
         throw error;
       }
 
-      return data;
+      // Transform to ensure type compatibility
+      return {
+        ...data,
+        type: (data.type === "income" ? "income" : "expense") as CategoryType
+      } as Category;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
