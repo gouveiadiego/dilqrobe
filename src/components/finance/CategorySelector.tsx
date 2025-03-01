@@ -112,13 +112,20 @@ export const CategorySelector = ({
     }
 
     if (onAddCategory) {
+      console.log("CategorySelector calling onAddCategory with:", { 
+        name: newCategory.trim(), 
+        type: newCategoryType 
+      });
+      
       onAddCategory({ 
         name: newCategory.trim(), 
         type: newCategoryType 
       });
+      
       onChange(newCategory.trim());
     } else {
       // Fallback for when onAddCategory not provided
+      console.log("No onAddCategory provided, using fallback");
       const updatedCategories = [...categories, { 
         id: newCategory.trim(), 
         name: newCategory.trim(), 

@@ -31,7 +31,15 @@ export function CategoryManager({
 
   const handleAddCategory = () => {
     if (!newCategory.trim()) return;
-    onAddCategory({ name: newCategory.trim(), type: newCategoryType });
+    
+    // Explicitly log what we're sending to onAddCategory
+    console.log("Calling onAddCategory with:", { name: newCategory.trim(), type: newCategoryType });
+    
+    onAddCategory({ 
+      name: newCategory.trim(), 
+      type: newCategoryType 
+    });
+    
     setNewCategory("");
     setNewCategoryType("expense");
     setShowAddForm(false);

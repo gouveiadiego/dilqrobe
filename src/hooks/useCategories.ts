@@ -34,6 +34,9 @@ export const useCategories = () => {
 
   const addCategoryMutation = useMutation({
     mutationFn: async ({ name, type }: { name: string; type?: CategoryType }) => {
+      // Log the parameters to debug
+      console.log("Adding category:", { name, type });
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
@@ -48,6 +51,7 @@ export const useCategories = () => {
         .single();
 
       if (error) {
+        console.error("Error adding category:", error);
         toast.error('Erro ao adicionar categoria');
         throw error;
       }
@@ -57,6 +61,9 @@ export const useCategories = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Categoria adicionada com sucesso');
+    },
+    onError: (error) => {
+      console.error("Mutation error:", error);
     }
   });
 
@@ -103,6 +110,7 @@ export const useCategories = () => {
   return {
     categories,
     addCategory: (params: { name: string; type?: CategoryType }) => {
+      console.log("addCategory called with params:", params);
       if (!categories.some(cat => cat.name === params.name)) {
         addCategoryMutation.mutate(params);
       } else {
