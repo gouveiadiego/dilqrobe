@@ -40,6 +40,15 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       const start = startOfMonth(currentDate);
       const end = endOfMonth(currentDate);
       
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error("No authenticated user found");
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from("transactions")
         .select(`
@@ -54,6 +63,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
           recurring,
           recurring_day
         `)
+        .eq("user_id", user.id)
         .gte("date", start.toISOString())
         .lte("date", end.toISOString())
         .order("date", { ascending: false });
@@ -228,6 +238,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
         .from("transactions")
         .select("*")
         .eq("recurring", true)
+        .eq("user_id", user.id)
         .not("recurring_day", "is", null);
 
       if (fetchError) throw fetchError;
@@ -247,6 +258,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       const { data: existingMonthTransactions, error: monthError } = await supabase
         .from("transactions")
         .select("description, received_from, category, payment_type, date")
+        .eq("user_id", user.id)
         .gte("date", startDate.toISOString())
         .lte("date", endDate.toISOString());
         
@@ -324,6 +336,8 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
 
   useEffect(() => {
     setLoading(true);
+    // Clear existing transactions before fetching new ones
+    setTransactions([]);
     fetchTransactions();
     createRecurringTransactions();
   }, [currentDate]);
