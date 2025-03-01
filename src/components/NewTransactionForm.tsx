@@ -59,25 +59,11 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
       const startDate = new Date(transactionData.date);
       const numberOfMonths = parseInt(formData.installments) || 12;
       
-      // First, fetch existing transactions to avoid duplication
-      const { data: existingTransactions, error: fetchError } = await supabase
-        .from("transactions")
-        .select("date, description, received_from, category, payment_type")
-        .eq("description", transactionData.description)
-        .eq("received_from", transactionData.received_from)
-        .eq("category", transactionData.category)
-        .eq("payment_type", transactionData.payment_type);
-        
-      if (fetchError) throw fetchError;
+      console.log(`Preparing to create recurring transactions for ${numberOfMonths} months`);
       
-      const existingTransactionKeys = new Set();
-      (existingTransactions || []).forEach(t => {
-        const key = `${new Date(t.date).getFullYear()}-${new Date(t.date).getMonth()}`;
-        existingTransactionKeys.add(key);
-      });
+      // We'll create a set of transaction keys by month to check for duplicates
+      const transactionsByMonth: Record<string, any[]> = {};
       
-      const transactions = [];
-
       for (let i = 1; i < numberOfMonths; i++) {
         const nextDate = new Date(startDate);
         nextDate.setMonth(startDate.getMonth() + i);
@@ -91,14 +77,14 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           nextDate.setDate(0); // Last day of previous month
         }
         
-        // Check if we already have a transaction for this month/year
-        const dateKey = `${nextDate.getFullYear()}-${nextDate.getMonth()}`;
-        if (existingTransactionKeys.has(dateKey)) {
-          console.log(`Skipping duplicate transaction for ${nextDate.toLocaleDateString()}`);
-          continue;
+        // Group by year-month to check for duplicates
+        const monthKey = `${nextDate.getFullYear()}-${nextDate.getMonth() + 1}`;
+        
+        if (!transactionsByMonth[monthKey]) {
+          transactionsByMonth[monthKey] = [];
         }
-
-        transactions.push({
+        
+        transactionsByMonth[monthKey].push({
           date: nextDate.toISOString().split('T')[0],
           description: transactionData.description,
           received_from: transactionData.received_from,
@@ -111,19 +97,55 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           user_id: transactionData.user_id
         });
       }
-
-      if (transactions.length > 0) {
-        const { error } = await supabase
+      
+      // Now check each month for existing transactions
+      for (const [monthKey, monthTransactions] of Object.entries(transactionsByMonth)) {
+        if (!monthTransactions.length) continue;
+        
+        // Sample transaction to get the month range
+        const sampleDate = new Date(monthTransactions[0].date);
+        const startOfMonth = new Date(sampleDate.getFullYear(), sampleDate.getMonth(), 1);
+        const endOfMonth = new Date(sampleDate.getFullYear(), sampleDate.getMonth() + 1, 0);
+        
+        // Get existing transactions for this month
+        const { data: existingTransactions, error: fetchError } = await supabase
           .from("transactions")
-          .insert(transactions)
-          .select('id');
-
-        if (error) {
-          console.error("Error creating recurring transactions:", error);
-          throw error;
+          .select("description, received_from, category, payment_type")
+          .gte("date", startOfMonth.toISOString())
+          .lte("date", endOfMonth.toISOString());
+        
+        if (fetchError) {
+          console.error("Error checking existing transactions:", fetchError);
+          continue;
         }
         
-        console.log(`Created ${transactions.length} future recurring transactions`);
+        // Create a set of existing transaction keys
+        const existingKeys = new Set();
+        existingTransactions?.forEach(t => {
+          const key = `${t.description}|${t.received_from}|${t.category}|${t.payment_type}`;
+          existingKeys.add(key);
+        });
+        
+        // Filter out any transactions that already exist
+        const uniqueTransactions = monthTransactions.filter(t => {
+          const key = `${t.description}|${t.received_from}|${t.category}|${t.payment_type}`;
+          return !existingKeys.has(key);
+        });
+        
+        console.log(`Month ${monthKey}: Found ${monthTransactions.length} transactions, ${uniqueTransactions.length} are unique`);
+        
+        // Insert only unique transactions
+        if (uniqueTransactions.length > 0) {
+          const { error } = await supabase
+            .from("transactions")
+            .insert(uniqueTransactions);
+          
+          if (error) {
+            console.error(`Error creating transactions for month ${monthKey}:`, error);
+          } else {
+            console.log(`Created ${uniqueTransactions.length} transactions for month ${monthKey}`);
+          }
+        }
       }
     } catch (error) {
       console.error("Error creating recurring transactions:", error);
@@ -188,6 +210,27 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         if (error) throw error;
         toast.success("Transação atualizada com sucesso.");
       } else {
+        // First check if this transaction already exists for the same date
+        const transactionDate = new Date(formData.date);
+        const startOfDay = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate());
+        const endOfDay = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate(), 23, 59, 59);
+        
+        const { data: existingTransactions, error: checkError } = await supabase
+          .from("transactions")
+          .select("id")
+          .eq("description", formData.description)
+          .eq("received_from", formData.received_from)
+          .eq("payment_type", formData.payment_type)
+          .gte("date", startOfDay.toISOString())
+          .lte("date", endOfDay.toISOString());
+          
+        if (checkError) throw checkError;
+        
+        if (existingTransactions && existingTransactions.length > 0) {
+          toast.warning("Uma transação similar já existe nesta data.");
+          return;
+        }
+        
         const { data: newTransaction, error } = await supabase
           .from("transactions")
           .insert([transactionData])

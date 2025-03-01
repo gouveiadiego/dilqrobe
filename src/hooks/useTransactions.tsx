@@ -221,6 +221,8 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      console.log("Checking for recurring transactions to create for:", formatMonth(currentDate));
+
       // Get recurring transactions from previous months
       const { data: recurringTransactions, error: fetchError } = await supabase
         .from("transactions")
@@ -229,35 +231,55 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
         .not("recurring_day", "is", null);
 
       if (fetchError) throw fetchError;
-      if (!recurringTransactions || recurringTransactions.length === 0) return;
+      if (!recurringTransactions || recurringTransactions.length === 0) {
+        console.log("No recurring transactions found");
+        return;
+      }
 
-      // Check if we already have the recurring transactions for this month
+      // Check if we already have transactions for this month
       const currentMonth = currentDate.getMonth();
       const currentYear = currentDate.getFullYear();
-
-      // Construct a unique transaction key using description and received_from
-      const existingTransactionKeys = new Set();
       
-      for (const t of transactions) {
-        const transactionDate = new Date(t.date);
-        if (transactionDate.getMonth() === currentMonth && 
-            transactionDate.getFullYear() === currentYear) {
-          const key = `${t.description}|${t.received_from}|${t.category}|${t.payment_type}`;
-          existingTransactionKeys.add(key);
-        }
-      }
+      // Fetch all transactions for the current month to check for duplicates
+      const startDate = new Date(currentYear, currentMonth, 1);
+      const endDate = new Date(currentYear, currentMonth + 1, 0);
+      
+      const { data: existingMonthTransactions, error: monthError } = await supabase
+        .from("transactions")
+        .select("description, received_from, category, payment_type, date")
+        .gte("date", startDate.toISOString())
+        .lte("date", endDate.toISOString());
+        
+      if (monthError) throw monthError;
+      
+      // Create a set of transaction keys that already exist in this month
+      const existingKeys = new Set();
+      
+      existingMonthTransactions?.forEach(transaction => {
+        const key = `${transaction.description}|${transaction.received_from}|${transaction.category}|${transaction.payment_type}`;
+        existingKeys.add(key);
+      });
+
+      console.log(`Found ${existingKeys.size} existing transactions for this month`);
 
       // Filter transactions that need to be created for the current month
       const transactionsToCreate = recurringTransactions.filter(transaction => {
         // Skip if the recurring day is not set
         if (!transaction.recurring_day) return false;
 
-        // Check if this recurring transaction already exists in the current month
+        // Create a unique identifier for this transaction
         const key = `${transaction.description}|${transaction.received_from}|${transaction.category}|${transaction.payment_type}`;
-        return !existingTransactionKeys.has(key);
+        
+        // Only create if this transaction doesn't already exist in the current month
+        return !existingKeys.has(key);
       });
 
-      if (transactionsToCreate.length === 0) return;
+      if (transactionsToCreate.length === 0) {
+        console.log("No new recurring transactions needed for this month");
+        return;
+      }
+
+      console.log(`Creating ${transactionsToCreate.length} recurring transactions for this month`);
 
       // Create the recurring transactions for this month
       const newTransactions = transactionsToCreate.map(transaction => {
