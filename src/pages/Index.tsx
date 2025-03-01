@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AddTask } from "@/components/AddTask";
 import { supabase } from "@/integrations/supabase/client";
@@ -176,7 +177,7 @@ const Index = () => {
                   <div>
                     <CategoryManager 
                       categories={categories} 
-                      onAddCategory={(params) => addCategory(params.name)}
+                      onAddCategory={addCategory}
                       onUpdateCategory={updateCategory}
                       onDeleteCategory={deleteCategory}
                     />
