@@ -25,6 +25,19 @@ export const CategorySelector = ({ value, onChange, selectedFilter }: CategorySe
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategory, setNewCategory] = useState("");
 
+  // Function to get readable category name
+  const getCategoryLabel = (categoryValue: string): string => {
+    switch (categoryValue) {
+      case "income": return "Recebimento";
+      case "fixed": return "Despesa Fixa";
+      case "variable": return "Despesa Variável";
+      case "people": return "Pessoas";
+      case "taxes": return "Impostos";
+      case "transfer": return "Transferência";
+      default: return categoryValue;
+    }
+  };
+
   const getDefaultCategory = () => {
     switch (selectedFilter) {
       case "recebimentos":
@@ -76,18 +89,14 @@ export const CategorySelector = ({ value, onChange, selectedFilter }: CategorySe
             onValueChange={onChange}
           >
             <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Selecione uma categoria" />
+              <SelectValue placeholder="Selecione uma categoria">
+                {getCategoryLabel(value)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {categories.map((category) => (
                 <SelectItem key={category} value={category}>
-                  {category === "income" && "Recebimento"}
-                  {category === "fixed" && "Despesa Fixa"}
-                  {category === "variable" && "Despesa Variável"}
-                  {category === "people" && "Pessoas"}
-                  {category === "taxes" && "Impostos"}
-                  {category === "transfer" && "Transferência"}
-                  {!["income", "fixed", "variable", "people", "taxes", "transfer"].includes(category) && category}
+                  {getCategoryLabel(category)}
                 </SelectItem>
               ))}
             </SelectContent>
