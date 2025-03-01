@@ -23,6 +23,7 @@ interface TransactionsTableProps {
   onToggleStatus: (id: string, current: boolean) => Promise<void>;
   onEdit: (transaction: Transaction) => void;
   loading: boolean;
+  onDeleteRecurring?: (id: string, deleteAll: boolean) => Promise<void>;
 }
 
 export const TransactionsTable = ({
@@ -30,10 +31,13 @@ export const TransactionsTable = ({
   onDelete,
   onToggleStatus,
   onEdit,
-  loading
+  loading,
+  onDeleteRecurring
 }: TransactionsTableProps) => {
   const [openDialog, setOpenDialog] = useState(false);
+  const [openRecurringDialog, setOpenRecurringDialog] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
+  const [selectedRecurringTransaction, setSelectedRecurringTransaction] = useState<Transaction | null>(null);
 
   const handleDelete = () => {
     if (selectedTransactionId) {
@@ -43,9 +47,23 @@ export const TransactionsTable = ({
     setOpenDialog(false);
   };
 
-  const confirmDelete = (id: string) => {
-    setSelectedTransactionId(id);
-    setOpenDialog(true);
+  const handleDeleteRecurring = (deleteAll: boolean) => {
+    if (selectedRecurringTransaction && onDeleteRecurring) {
+      onDeleteRecurring(selectedRecurringTransaction.id, deleteAll);
+      setSelectedRecurringTransaction(null);
+    }
+    setOpenRecurringDialog(false);
+  };
+
+  const confirmDelete = (transaction: Transaction) => {
+    // If it's a recurring transaction and we have the handler for recurring deletion
+    if (transaction.recurring && onDeleteRecurring) {
+      setSelectedRecurringTransaction(transaction);
+      setOpenRecurringDialog(true);
+    } else {
+      setSelectedTransactionId(transaction.id);
+      setOpenDialog(true);
+    }
   };
 
   return (
@@ -67,7 +85,14 @@ export const TransactionsTable = ({
           {transactions.map(transaction => (
             <TableRow key={transaction.id}>
               <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
-              <TableCell>{transaction.description}</TableCell>
+              <TableCell>
+                {transaction.description}
+                {transaction.recurring && (
+                  <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    Recorrente
+                  </span>
+                )}
+              </TableCell>
               <TableCell>{transaction.received_from}</TableCell>
               <TableCell>
                 <CategoryBadge category={transaction.category} />
@@ -102,7 +127,7 @@ export const TransactionsTable = ({
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    onClick={() => confirmDelete(transaction.id)}
+                    onClick={() => confirmDelete(transaction)}
                     className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -121,6 +146,7 @@ export const TransactionsTable = ({
         </TableBody>
       </Table>
 
+      {/* Standard delete dialog */}
       <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -133,6 +159,33 @@ export const TransactionsTable = ({
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Recurring transaction delete dialog */}
+      <AlertDialog open={openRecurringDialog} onOpenChange={setOpenRecurringDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir transação recorrente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta é uma transação recorrente. Deseja excluir apenas esta ocorrência ou todas as ocorrências futuras?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="sm:mt-0">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => handleDeleteRecurring(false)} 
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Apenas esta ocorrência
+            </AlertDialogAction>
+            <AlertDialogAction 
+              onClick={() => handleDeleteRecurring(true)} 
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Todas as ocorrências
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

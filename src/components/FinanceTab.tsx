@@ -32,6 +32,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const FinanceTab = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -79,6 +81,78 @@ export const FinanceTab = () => {
       newDate.setMonth(prev.getMonth() + 1);
       return newDate;
     });
+  };
+
+  const handleDeleteRecurringTransaction = async (id: string, deleteAll: boolean) => {
+    try {
+      // Get the transaction to be deleted to find the signature
+      const { data: transaction, error: fetchError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching transaction:', fetchError);
+        toast.error("Erro ao buscar detalhes da transação");
+        return;
+      }
+      
+      if (!transaction) {
+        toast.error("Transação não encontrada");
+        return;
+      }
+      
+      // If deleteAll is true, delete all transactions with the same signature 
+      // (description, received_from, payment_type, and recurring day)
+      if (deleteAll && transaction.recurring) {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          toast.error("Usuário não autenticado");
+          return;
+        }
+        
+        // Delete all matching recurring transactions (current and future months)
+        const { error: deleteError } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('description', transaction.description)
+          .eq('received_from', transaction.received_from)
+          .eq('payment_type', transaction.payment_type)
+          .eq('recurring', true)
+          .eq('recurring_day', transaction.recurring_day);
+          
+        if (deleteError) {
+          console.error('Error deleting recurring transactions:', deleteError);
+          toast.error("Erro ao excluir todas as transações recorrentes");
+          return;
+        }
+        
+        toast.success("Todas as transações recorrentes foram excluídas");
+      } else {
+        // Just delete this single transaction
+        const { error: deleteError } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('id', id);
+          
+        if (deleteError) {
+          console.error('Error deleting transaction:', deleteError);
+          toast.error("Erro ao excluir transação");
+          return;
+        }
+        
+        toast.success("Transação excluída com sucesso");
+      }
+      
+      // Refresh the transactions list
+      fetchTransactions();
+    } catch (error) {
+      console.error('Error in handleDeleteRecurringTransaction:', error);
+      toast.error("Erro ao processar a exclusão da transação");
+    }
   };
 
   const handleExportData = () => {
@@ -279,6 +353,7 @@ export const FinanceTab = () => {
               onDelete={handleDeleteTransaction}
               onToggleStatus={togglePaymentStatus}
               onEdit={handleEditTransaction}
+              onDeleteRecurring={handleDeleteRecurringTransaction}
               loading={loading}
             />
           </div>
