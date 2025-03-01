@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase, removeDuplicateTransactions } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CategorySelector } from "./finance/CategorySelector";
 
 interface Transaction {
   id: string;
@@ -32,6 +33,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     received_from: '',
     amount: '',
     payment_type: '',
+    category: '',
     is_paid: false,
     recurring: false,
     recurring_day: '',
@@ -46,6 +48,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         received_from: editingTransaction.received_from,
         amount: Math.abs(editingTransaction.amount).toString(),
         payment_type: editingTransaction.payment_type,
+        category: editingTransaction.category,
         is_paid: editingTransaction.is_paid,
         recurring: false,
         recurring_day: '',
@@ -188,7 +191,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         return;
       }
 
-      const { category } = getTransactionDefaults();
       const amount = selectedFilter === "recebimentos" 
         ? Math.abs(Number(formData.amount))
         : -Math.abs(Number(formData.amount));
@@ -198,7 +200,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         description: formData.description,
         received_from: formData.received_from,
         amount,
-        category,
+        category: formData.category,
         payment_type: formData.payment_type,
         is_paid: formData.is_paid,
         recurring: formData.recurring,
@@ -350,6 +352,12 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
             </SelectContent>
           </Select>
         </div>
+        
+        <CategorySelector 
+          value={formData.category}
+          onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+          selectedFilter={selectedFilter}
+        />
 
         <div className="space-y-2 col-span-full">
           <div className="flex items-center space-x-2">
