@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -60,6 +59,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
         return;
       }
       
+      // We'll fetch all transactions for the month
       const { data, error } = await supabase
         .from("transactions")
         .select(`
@@ -89,13 +89,35 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
         return transactionDate >= MINIMUM_ALLOWED_DATE;
       }) || [];
       
-      setTransactions(filteredData);
+      // Remove potential duplicates based on description, date, amount, and payment_type
+      const uniqueTransactions = removeDuplicateTransactions(filteredData);
+      console.log(`Removed ${filteredData.length - uniqueTransactions.length} duplicate transactions`);
+      
+      setTransactions(uniqueTransactions);
     } catch (error) {
       console.error("Error fetching transactions:", error);
       toast.error("Erro ao carregar transações");
     } finally {
       setLoading(false);
     }
+  };
+
+  // New function to remove duplicate transactions
+  const removeDuplicateTransactions = (transactions: Transaction[]): Transaction[] => {
+    const seen = new Map();
+    return transactions.filter(transaction => {
+      // Create a unique key for each transaction
+      const key = `${transaction.date}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
+      
+      // If we've seen this key before, filter it out
+      if (seen.has(key)) {
+        return false;
+      }
+      
+      // Otherwise, mark this key as seen and keep the transaction
+      seen.set(key, true);
+      return true;
+    });
   };
 
   // Filter transactions based on selected filter and search query
@@ -281,7 +303,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       
       const { data: existingMonthTransactions, error: monthError } = await supabase
         .from("transactions")
-        .select("description, received_from, category, payment_type, date")
+        .select("description, received_from, category, payment_type, date, amount")
         .eq("user_id", user.id)
         .gte("date", startDate.toISOString())
         .lte("date", endDate.toISOString());
@@ -292,7 +314,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       const existingKeys = new Set();
       
       existingMonthTransactions?.forEach(transaction => {
-        const key = `${transaction.description}|${transaction.received_from}|${transaction.category}|${transaction.payment_type}`;
+        const key = `${transaction.date}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
         existingKeys.add(key);
       });
 
@@ -303,8 +325,19 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
         // Skip if the recurring day is not set
         if (!transaction.recurring_day) return false;
 
+        // Create a new date for this month with the recurring day
+        const newDate = new Date(currentYear, currentMonth, transaction.recurring_day);
+        
+        // Ensure date is valid (handle edge cases like Feb 30)
+        if (newDate.getMonth() !== currentMonth) {
+          newDate.setDate(0); // Last day of previous month
+        }
+        
+        // Format date to ISO for key creation
+        const newDateStr = newDate.toISOString().split('T')[0];
+        
         // Create a unique identifier for this transaction
-        const key = `${transaction.description}|${transaction.received_from}|${transaction.category}|${transaction.payment_type}`;
+        const key = `${newDateStr}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
         
         // Only create if this transaction doesn't already exist in the current month
         return !existingKeys.has(key);

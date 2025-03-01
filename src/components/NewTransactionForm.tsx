@@ -77,6 +77,11 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           nextDate.setDate(0); // Last day of previous month
         }
         
+        // Skip dates before Feb 2025
+        if (nextDate < new Date(2025, 1, 1)) {
+          continue;
+        }
+        
         // Group by year-month to check for duplicates
         const monthKey = `${nextDate.getFullYear()}-${nextDate.getMonth() + 1}`;
         
@@ -110,7 +115,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         // Get existing transactions for this month
         const { data: existingTransactions, error: fetchError } = await supabase
           .from("transactions")
-          .select("description, received_from, category, payment_type")
+          .select("description, received_from, category, payment_type, date, amount")
           .gte("date", startOfMonth.toISOString())
           .lte("date", endOfMonth.toISOString());
         
@@ -122,13 +127,13 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         // Create a set of existing transaction keys
         const existingKeys = new Set();
         existingTransactions?.forEach(t => {
-          const key = `${t.description}|${t.received_from}|${t.category}|${t.payment_type}`;
+          const key = `${t.date}|${t.description}|${t.received_from}|${t.payment_type}|${t.amount}`;
           existingKeys.add(key);
         });
         
         // Filter out any transactions that already exist
         const uniqueTransactions = monthTransactions.filter(t => {
-          const key = `${t.description}|${t.received_from}|${t.category}|${t.payment_type}`;
+          const key = `${t.date}|${t.description}|${t.received_from}|${t.payment_type}|${t.amount}`;
           return !existingKeys.has(key);
         });
         
@@ -217,7 +222,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         
         const { data: existingTransactions, error: checkError } = await supabase
           .from("transactions")
-          .select("id")
+          .select("id, description, received_from, payment_type, amount")
           .eq("description", formData.description)
           .eq("received_from", formData.received_from)
           .eq("payment_type", formData.payment_type)
@@ -226,7 +231,12 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           
         if (checkError) throw checkError;
         
-        if (existingTransactions && existingTransactions.length > 0) {
+        // Check for amount similarity within 0.01 to catch floating point differences
+        const amountMatch = existingTransactions?.some(t => 
+          Math.abs(t.amount - amount) < 0.01
+        );
+        
+        if (existingTransactions && existingTransactions.length > 0 && amountMatch) {
           toast.warning("Uma transação similar já existe nesta data.");
           return;
         }
