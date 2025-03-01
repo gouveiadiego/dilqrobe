@@ -100,7 +100,7 @@ export const TransactionsTable = ({
               <TableCell className={transaction.amount > 0 ? 'text-emerald-600' : 'text-rose-600'}>
                 {formatCurrency(transaction.amount)}
               </TableCell>
-              <TableCell>{transaction.payment_type}</TableCell>
+              <TableCell>{getPaymentTypeLabel(transaction.payment_type)}</TableCell>
               <TableCell>
                 <Button 
                   variant="ghost" 
@@ -194,6 +194,18 @@ export const TransactionsTable = ({
   );
 };
 
+// Helper function to translate payment types
+const getPaymentTypeLabel = (paymentType: string): string => {
+  switch (paymentType) {
+    case "pix": return "PIX";
+    case "credit": return "Cartão de Crédito";
+    case "debit": return "Cartão de Débito";
+    case "cash": return "Dinheiro";
+    case "transfer": return "Transferência";
+    default: return paymentType;
+  }
+};
+
 // Helper component for category badges
 const CategoryBadge = ({ category }: { category: string }) => {
   const colors: Record<string, { bg: string, text: string }> = {
@@ -202,18 +214,27 @@ const CategoryBadge = ({ category }: { category: string }) => {
     'people': { bg: 'bg-green-100', text: 'text-green-800' },
     'taxes': { bg: 'bg-red-100', text: 'text-red-800' },
     'transfer': { bg: 'bg-amber-100', text: 'text-amber-800' },
+    'income': { bg: 'bg-emerald-100', text: 'text-emerald-800' },
   };
 
   const style = colors[category] || { bg: 'bg-gray-100', text: 'text-gray-800' };
 
   return (
     <span className={`px-2 py-1 rounded-full text-xs ${style.bg} ${style.text}`}>
-      {category === 'fixed' && 'Fixo'}
-      {category === 'variable' && 'Variável'}
-      {category === 'people' && 'Pessoas'}
-      {category === 'taxes' && 'Impostos'}
-      {category === 'transfer' && 'Transferência'}
-      {!['fixed', 'variable', 'people', 'taxes', 'transfer'].includes(category) && category}
+      {getCategoryLabel(category)}
     </span>
   );
+};
+
+// Helper function to translate category names
+const getCategoryLabel = (categoryValue: string): string => {
+  switch (categoryValue) {
+    case "income": return "Recebimento";
+    case "fixed": return "Despesa Fixa";
+    case "variable": return "Despesa Variável";
+    case "people": return "Pessoas";
+    case "taxes": return "Impostos";
+    case "transfer": return "Transferência";
+    default: return categoryValue;
+  }
 };
