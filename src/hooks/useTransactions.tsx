@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, isSameDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, isSameDay, isAfter, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export interface Transaction {
@@ -22,6 +22,9 @@ interface UseTransactionsProps {
   currentDate: Date;
 }
 
+// Define minimum date constant - no transactions before Feb 2025
+const MINIMUM_ALLOWED_DATE = new Date(2025, 1, 1); // February 1, 2025
+
 export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
@@ -36,6 +39,14 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
 
   const fetchTransactions = async () => {
     try {
+      // If selected month is before our minimum date, don't fetch any transactions
+      if (currentDate < MINIMUM_ALLOWED_DATE) {
+        console.log("Skipping fetch for dates before Feb 2025");
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
+      
       console.log("Fetching transactions for:", formatMonth(currentDate));
       const start = startOfMonth(currentDate);
       const end = endOfMonth(currentDate);
@@ -71,7 +82,14 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       if (error) throw error;
       
       console.log("Fetched transactions:", data);
-      setTransactions(data || []);
+      
+      // Filter out any transactions with dates before our minimum date
+      const filteredData = data?.filter(transaction => {
+        const transactionDate = new Date(transaction.date);
+        return transactionDate >= MINIMUM_ALLOWED_DATE;
+      }) || [];
+      
+      setTransactions(filteredData);
     } catch (error) {
       console.error("Error fetching transactions:", error);
       toast.error("Erro ao carregar transações");
@@ -227,6 +245,12 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
 
   const createRecurringTransactions = async () => {
     try {
+      // If selected month is before our minimum date, don't create recurring transactions
+      if (currentDate < MINIMUM_ALLOWED_DATE) {
+        console.log("Skipping recurring transaction creation for dates before Feb 2025");
+        return;
+      }
+      
       // Get user id
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -338,6 +362,13 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
     setLoading(true);
     // Clear existing transactions before fetching new ones
     setTransactions([]);
+    
+    // Don't fetch data for dates before Feb 2025
+    if (currentDate < MINIMUM_ALLOWED_DATE) {
+      setLoading(false);
+      return;
+    }
+    
     fetchTransactions();
     createRecurringTransactions();
   }, [currentDate]);
