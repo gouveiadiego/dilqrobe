@@ -1,151 +1,54 @@
-import { useState, useEffect } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronLeft, ChevronRight, Maximize, Plus, Trash2, Pencil } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Search, ChevronLeft, ChevronRight, Maximize, Plus, Clock, Filter } from "lucide-react";
 import { NewTransactionForm } from "./NewTransactionForm";
-import { TransactionCalendar } from "./TransactionCalendar";
-import { FinancialSummary } from "./FinancialSummary";
-import { formatCurrency } from "@/lib/utils";
-import { toast } from "sonner";
-
-interface Transaction {
-  id: string;
-  date: string;
-  description: string;
-  received_from: string;
-  category: string;
-  amount: number;
-  payment_type: string;
-  is_paid: boolean;
-}
+import { TransactionCalendarView } from "./finance/TransactionCalendarView";
+import { FinancialSummaryView } from "./finance/FinancialSummaryView";
+import { TransactionsTable } from "./finance/TransactionsTable";
+import { useTransactions } from "@/hooks/useTransactions";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const FinanceTab = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedFilter, setSelectedFilter] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
   const [showNewTransactionForm, setShowNewTransactionForm] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar" | "dashboard">("dashboard");
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [currentDate]);
-
-  const fetchTransactions = async () => {
-    try {
-      console.log("Fetching transactions for:", formatMonth(currentDate));
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      const {
-        data,
-        error
-      } = await supabase.from("transactions").select(`
-          id,
-          date,
-          description,
-          received_from,
-          category,
-          amount,
-          payment_type,
-          is_paid
-        `).gte("date", startOfMonth.toISOString()).lte("date", endOfMonth.toISOString()).order("date", {
-        ascending: false
-      });
-      if (error) throw error;
-      console.log("Fetched transactions:", data);
-      setTransactions(data || []);
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-      toast.error("Erro ao carregar transações");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    filteredTransactions,
+    loading,
+    selectedFilter,
+    setSelectedFilter,
+    searchQuery,
+    setSearchQuery,
+    summaries,
+    chartData,
+    handleDeleteTransaction,
+    togglePaymentStatus,
+    formatMonth
+  } = useTransactions({ currentDate });
 
   const handleTransactionCreated = () => {
-    console.log("Transaction created/updated, refreshing list...");
-    fetchTransactions();
     setShowNewTransactionForm(false);
     setEditingTransaction(null);
   };
 
-  const handleEditTransaction = (transaction: Transaction) => {
+  const handleEditTransaction = (transaction: any) => {
     setEditingTransaction(transaction);
     setShowNewTransactionForm(true);
-  };
-
-  const handleDeleteTransaction = async (id: string) => {
-    try {
-      const {
-        error
-      } = await supabase.from('transactions').delete().eq('id', id);
-      if (error) throw error;
-      toast.success("Transação excluída com sucesso");
-      fetchTransactions();
-    } catch (error) {
-      console.error('Error deleting transaction:', error);
-      toast.error("Erro ao excluir transação");
-    }
-  };
-
-  const togglePaymentStatus = async (id: string, currentStatus: boolean) => {
-    try {
-      const {
-        error
-      } = await supabase.from('transactions').update({
-        is_paid: !currentStatus
-      }).eq('id', id);
-      if (error) throw error;
-      toast.success("Status de pagamento atualizado");
-      fetchTransactions();
-    } catch (error) {
-      console.error('Error updating payment status:', error);
-      toast.error("Erro ao atualizar status de pagamento");
-    }
-  };
-
-  useEffect(() => {
-    filterTransactions();
-  }, [transactions, selectedFilter, searchQuery]);
-
-  const filterTransactions = () => {
-    let filtered = [...transactions];
-    if (selectedFilter !== "all") {
-      filtered = filtered.filter(transaction => {
-        switch (selectedFilter) {
-          case "recebimentos":
-            return transaction.amount > 0;
-          case "despesas-fixas":
-            return transaction.amount < 0 && transaction.category === "fixed";
-          case "despesas-variaveis":
-            return transaction.amount < 0 && transaction.category === "variable";
-          case "pessoas":
-            return transaction.category === "people";
-          case "impostos":
-            return transaction.category === "taxes";
-          case "transferencias":
-            return transaction.category === "transfer";
-          default:
-            return true;
-        }
-      });
-    }
-    if (searchQuery) {
-      filtered = filtered.filter(transaction => transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) || transaction.received_from.toLowerCase().includes(searchQuery.toLowerCase()));
-    }
-    setFilteredTransactions(filtered);
-  };
-
-  const formatMonth = (date: Date) => {
-    return new Date(date).toLocaleDateString('pt-BR', {
-      month: 'short',
-      year: 'numeric'
-    }).replace('.', '').toUpperCase();
   };
 
   const handlePreviousMonth = () => {
@@ -165,11 +68,13 @@ export const FinanceTab = () => {
   };
 
   const handleFullscreen = () => {
+    // Esta funcionalidade poderia ser implementada com integração de API de tela cheia
     console.log("Toggle fullscreen view");
   };
 
-  return <div className="space-y-6">
-      <div className="flex items-center justify-between">
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="icon" onClick={handlePreviousMonth}>
             <ChevronLeft className="h-4 w-4" />
@@ -184,27 +89,65 @@ export const FinanceTab = () => {
             <Maximize className="h-4 w-4" />
           </Button>
         </div>
+
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full md:w-auto">
+          <TabsList className="grid grid-cols-3 w-full md:w-[400px]">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="list">Lista</TabsTrigger>
+            <TabsTrigger value="calendar">Calendário</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      <div className="flex space-x-2 overflow-x-auto pb-2">
-        <Button variant={selectedFilter === "recebimentos" ? "default" : "outline"} className={`${selectedFilter === "recebimentos" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`} onClick={() => setSelectedFilter("recebimentos")}>
+      <div className="flex flex-wrap md:flex-nowrap space-x-0 md:space-x-2 space-y-2 md:space-y-0 overflow-x-auto pb-2">
+        <Button 
+          variant={selectedFilter === "all" ? "default" : "outline"} 
+          className="min-w-[120px]"
+          onClick={() => setSelectedFilter("all")}
+        >
+          Todos
+        </Button>
+        <Button 
+          variant={selectedFilter === "recebimentos" ? "default" : "outline"} 
+          className={`min-w-[120px] ${selectedFilter === "recebimentos" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"}`} 
+          onClick={() => setSelectedFilter("recebimentos")}
+        >
           Recebimentos
         </Button>
-        <Button variant={selectedFilter === "despesas-fixas" ? "default" : "outline"} className={`${selectedFilter === "despesas-fixas" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`} onClick={() => setSelectedFilter("despesas-fixas")}>
+        <Button 
+          variant={selectedFilter === "despesas-fixas" ? "default" : "outline"} 
+          className={`min-w-[120px] ${selectedFilter === "despesas-fixas" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`} 
+          onClick={() => setSelectedFilter("despesas-fixas")}
+        >
           Despesas fixas
         </Button>
-        <Button variant={selectedFilter === "despesas-variaveis" ? "default" : "outline"} className={`${selectedFilter === "despesas-variaveis" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`} onClick={() => setSelectedFilter("despesas-variaveis")}>
+        <Button 
+          variant={selectedFilter === "despesas-variaveis" ? "default" : "outline"} 
+          className={`min-w-[120px] ${selectedFilter === "despesas-variaveis" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`} 
+          onClick={() => setSelectedFilter("despesas-variaveis")}
+        >
           Despesas variáveis
         </Button>
-        <Button variant={selectedFilter === "pessoas" ? "default" : "outline"} className={`${selectedFilter === "pessoas" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`} onClick={() => setSelectedFilter("pessoas")}>
-          Pessoas
-        </Button>
-        <Button variant={selectedFilter === "impostos" ? "default" : "outline"} className={`${selectedFilter === "impostos" ? "bg-rose-500 hover:bg-rose-600 text-white" : "text-rose-600 border-rose-200 hover:bg-rose-50"}`} onClick={() => setSelectedFilter("impostos")}>
-          Impostos
-        </Button>
-        <Button variant={selectedFilter === "transferencias" ? "default" : "outline"} className={`${selectedFilter === "transferencias" ? "bg-blue-500 hover:bg-blue-600 text-white" : "text-blue-600 border-blue-200 hover:bg-blue-50"}`} onClick={() => setSelectedFilter("transferencias")}>
-          Transferências
-        </Button>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2">
+              <Filter className="h-4 w-4" />
+              Mais filtros
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => setSelectedFilter("pessoas")}>
+              Pessoas
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedFilter("impostos")}>
+              Impostos
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedFilter("transferencias")}>
+              Transferências
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="space-y-6">
@@ -240,65 +183,37 @@ export const FinanceTab = () => {
           </div>
         )}
 
-        <FinancialSummary transactions={filteredTransactions} />
-
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <TransactionCalendar 
-            transactions={filteredTransactions} 
-            onDateSelect={() => {}} 
+          <FinancialSummaryView 
+            income={summaries.income}
+            expenses={summaries.expenses}
+            balance={summaries.balance}
+            pending={summaries.pending}
+            chartData={chartData}
           />
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Recebido de/Pago para</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Forma de Pagamento</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTransactions.map(transaction => <TableRow key={transaction.id}>
-                  <TableCell>{new Date(transaction.date).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell>{transaction.description}</TableCell>
-                  <TableCell>{transaction.received_from}</TableCell>
-                  <TableCell>{transaction.category}</TableCell>
-                  <TableCell>{formatCurrency(transaction.amount)}</TableCell>
-                  <TableCell>{transaction.payment_type}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" onClick={() => togglePaymentStatus(transaction.id, transaction.is_paid)} className={`px-2 py-1 rounded-full text-xs ${transaction.is_paid ? 'bg-green-500/20 text-green-700 hover:bg-green-500/30' : 'bg-yellow-500/20 text-yellow-700 hover:bg-yellow-500/30'}`}>
-                      {transaction.is_paid ? 'Pago' : 'Pendente'}
-                    </Button>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditTransaction(transaction)} className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => {
-                        if (confirm('Deseja realmente excluir esta transação?')) {
-                          handleDeleteTransaction(transaction.id);
-                        }
-                      }} className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>)}
-              {filteredTransactions.length === 0 && !loading && <TableRow>
-                  <TableCell colSpan={8} className="text-center text-gray-400 py-8">
-                    Nenhuma transação encontrada
-                  </TableCell>
-                </TableRow>}
-            </TableBody>
-          </Table>
-        </div>
+        {viewMode === "calendar" && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <TransactionCalendarView 
+              transactions={filteredTransactions} 
+              onDateSelect={() => {}} 
+            />
+          </div>
+        )}
+
+        {(viewMode === "list" || viewMode === "dashboard") && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <TransactionsTable 
+              transactions={filteredTransactions}
+              onDelete={handleDeleteTransaction}
+              onToggleStatus={togglePaymentStatus}
+              onEdit={handleEditTransaction}
+              loading={loading}
+            />
+          </div>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 };

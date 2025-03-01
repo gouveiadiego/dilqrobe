@@ -1,8 +1,8 @@
 
 import { useState } from "react";
 import { Calendar } from "@/components/ui/calendar";
+import { addDays, isBefore, isToday, isEqual, format, parseISO, isValid } from "date-fns";
 import { pt } from "date-fns/locale";
-import { addDays, isBefore, isToday, format, isValid } from "date-fns";
 import {
   Popover,
   PopoverContent,
@@ -13,24 +13,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { AlertCircle, AlertTriangle } from "lucide-react";
+import { Transaction } from "@/hooks/useTransactions";
 
-interface Transaction {
-  id: string;
-  date: string;
-  description: string;
-  received_from: string;
-  category: string;
-  amount: number;
-  payment_type: string;
-  is_paid: boolean;
-}
-
-interface TransactionCalendarProps {
+interface TransactionCalendarViewProps {
   transactions: Transaction[];
   onDateSelect: (date: Date) => void;
 }
 
-export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionCalendarProps) => {
+export const TransactionCalendarView = ({ 
+  transactions, 
+  onDateSelect 
+}: TransactionCalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -58,7 +51,7 @@ export const TransactionCalendar = ({ transactions, onDateSelect }: TransactionC
       const transactionDateString = format(transactionDate, 'yyyy-MM-dd');
       const sameDate = dateString === transactionDateString;
       
-      // Debug specific dates
+      // Debug when needed
       if (format(date, 'dd/MM/yyyy') === '28/02/2025') {
         console.log(`Feb 28 comparison: Checking ${transactionDateString} against ${dateString}, match: ${sameDate}`);
       }
