@@ -17,7 +17,13 @@ import {
   Heart, 
   Medal, 
   CheckCircle,
-  ThumbsUp
+  ThumbsUp,
+  Sparkles,
+  Gem,
+  BookHeart,
+  Brain,
+  Lightbulb,
+  ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -328,8 +334,8 @@ export function HabitsTab() {
 
   if (showForm) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold mb-6">
+      <div className="max-w-2xl mx-auto bg-gradient-to-br from-violet-50 to-blue-50 p-6 rounded-2xl shadow-lg animate-fade-in">
+        <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
           {selectedHabit ? "Editar Hábito" : "Novo Hábito"}
         </h2>
         <HabitForm
@@ -342,68 +348,81 @@ export function HabitsTab() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fade-in">
       {/* Header Section */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Hábitos</h2>
-          <p className="text-muted-foreground">
+      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-purple-gradient to-purple-gradient rounded-2xl shadow-soft transition-all duration-300 hover:shadow-md">
+        <div className="text-white">
+          <h2 className="text-2xl font-bold mb-2 flex items-center">
+            <Sparkles className="h-6 w-6 mr-2 text-amber-300 animate-pulse-subtle" />
+            Hábitos
+          </h2>
+          <p className="text-blue-100">
             Acompanhe seus hábitos e construa uma vida melhor, um dia de cada vez.
           </p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
+        <Button 
+          onClick={() => setShowForm(true)}
+          className="bg-white text-purple-600 hover:bg-blue-50 hover:shadow-lg transition-all duration-300"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Novo Hábito
         </Button>
       </div>
 
       {/* Motivational Quote */}
-      <Card className="border-l-4 border-l-blue-500 bg-blue-50 text-blue-900">
-        <CardContent className="pt-6">
-          <blockquote className="italic text-lg">
+      <Card className="overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 border-none shadow-lg animate-float transition-all duration-300 hover:shadow-xl">
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-400 to-purple-600"></div>
+        <CardContent className="pt-6 relative">
+          <Gem className="absolute top-4 right-4 h-6 w-6 text-indigo-400 opacity-50" />
+          <blockquote className="italic text-lg text-indigo-900 font-light">
             "{habitQuotes[currentQuote].quote}"
           </blockquote>
-          <div className="text-right mt-2 font-semibold">— {habitQuotes[currentQuote].author}</div>
+          <div className="text-right mt-2 font-semibold text-purple-800">— {habitQuotes[currentQuote].author}</div>
         </CardContent>
       </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-none bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sequência Atual</CardTitle>
-            <Trophy className="h-4 w-4 text-amber-500" />
+            <CardTitle className="text-sm font-medium text-amber-900">Sequência Atual</CardTitle>
+            <Trophy className="h-5 w-5 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{longestStreak} dias</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-3xl font-bold text-amber-700">{longestStreak} dias</div>
+            <p className="text-xs text-amber-700/70 mt-1">
               Continue mantendo a consistência!
             </p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-purple-500">
+        
+        <Card className="border-none bg-gradient-to-br from-violet-50 to-purple-50 overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-1 h-full bg-violet-500"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Conclusão</CardTitle>
-            <ChartLine className="h-4 w-4 text-purple-500" />
+            <CardTitle className="text-sm font-medium text-violet-900">Taxa de Conclusão</CardTitle>
+            <ChartLine className="h-5 w-5 text-violet-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{getCompletionRate()}%</div>
+            <div className="text-3xl font-bold text-violet-700">{getCompletionRate()}%</div>
             <div className="mt-2">
-              <Progress value={getCompletionRate()} className="h-2 bg-purple-100" />
+              <Progress value={getCompletionRate()} className="h-2 bg-violet-100" indicatorClassName="bg-gradient-to-r from-violet-400 to-purple-600" />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-violet-700/70 mt-2">
               Hábitos completados hoje
             </p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-amber-500">
+        
+        <Card className="border-none bg-gradient-to-br from-teal-50 to-green-50 overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+          <div className="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hábitos Concluídos</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium text-green-900">Hábitos Concluídos</CardTitle>
+            <CheckCircle className="h-5 w-5 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalCompletedHabits}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-3xl font-bold text-green-700">{totalCompletedHabits}</div>
+            <p className="text-xs text-green-700/70 mt-1">
               Cada conclusão te aproxima do sucesso!
             </p>
           </CardContent>
@@ -412,22 +431,31 @@ export function HabitsTab() {
 
       {/* Tabs for habit view */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 mb-4">
-          <TabsTrigger value="ativos">Hábitos Ativos</TabsTrigger>
-          <TabsTrigger value="dicas">Dicas & Benefícios</TabsTrigger>
+        <TabsList className="grid grid-cols-2 mb-4 p-1 bg-gradient-to-r from-blue-100/50 to-purple-100/50 backdrop-blur-xl rounded-xl">
+          <TabsTrigger value="ativos" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-white data-[state=active]:to-white data-[state=active]:text-purple-700">
+            <ListCheck className="mr-2 h-4 w-4" />
+            Hábitos Ativos
+          </TabsTrigger>
+          <TabsTrigger value="dicas" className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-white data-[state=active]:to-white data-[state=active]:text-purple-700">
+            <Lightbulb className="mr-2 h-4 w-4" />
+            Dicas & Benefícios
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="ativos" className="space-y-4">
           {/* Habits List */}
           {habits.length === 0 ? (
-            <Card className="bg-gray-50 border-dashed border-2">
+            <Card className="bg-gradient-to-br from-slate-50 to-blue-50 border-dashed border-2 border-blue-200">
               <CardContent className="py-8 flex flex-col items-center justify-center">
-                <Target className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Nenhum hábito criado</h3>
-                <p className="text-center text-muted-foreground mb-4">
-                  Comece criando seu primeiro hábito e construa uma rotina melhor.
+                <Target className="h-16 w-16 text-blue-300 mb-4" />
+                <h3 className="text-xl font-medium mb-2 text-blue-800">Nenhum hábito criado</h3>
+                <p className="text-center text-blue-600 mb-4 max-w-md">
+                  Comece criando seu primeiro hábito e construa uma rotina melhor para alcançar seus objetivos.
                 </p>
-                <Button onClick={() => setShowForm(true)}>
+                <Button 
+                  onClick={() => setShowForm(true)}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Criar Hábito
                 </Button>
@@ -438,19 +466,40 @@ export function HabitsTab() {
               <Card 
                 key={habit.id} 
                 id={habit.id} 
-                className={`transition-all hover:shadow-md ${
-                  habit.completed ? 'border-l-4 border-l-green-500 bg-green-50' : 
-                  habit.status === 'pending' ? 'border-l-4 border-l-amber-500' : 
-                  'border-l-4 border-l-red-300'
+                className={`transition-all duration-300 hover:shadow-xl border-none overflow-hidden ${
+                  habit.completed ? 'bg-gradient-to-br from-green-50 to-emerald-50' : 
+                  habit.status === 'pending' ? 'bg-gradient-to-br from-amber-50 to-yellow-50' : 
+                  'bg-gradient-to-br from-rose-50 to-red-50'
                 }`}
               >
+                <div className={`absolute top-0 left-0 w-1 h-full ${
+                  habit.completed ? 'bg-gradient-to-b from-green-400 to-emerald-600' : 
+                  habit.status === 'pending' ? 'bg-gradient-to-b from-amber-400 to-yellow-600' : 
+                  'bg-gradient-to-b from-rose-400 to-red-600'
+                }`}></div>
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      {habit.completed && <Flame className="h-5 w-5 text-amber-500 mr-2" />}
+                      {habit.completed ? (
+                        <div className="bg-gradient-to-br from-amber-400 to-yellow-300 p-1.5 rounded-full mr-3 shadow-inner-light animate-pulse-subtle">
+                          <Flame className="h-5 w-5 text-white" />
+                        </div>
+                      ) : (
+                        <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-1.5 rounded-full mr-3">
+                          <Target className="h-5 w-5 text-indigo-500" />
+                        </div>
+                      )}
                       <div>
-                        <CardTitle className="text-lg">{habit.title}</CardTitle>
-                        <CardDescription>{habit.description}</CardDescription>
+                        <CardTitle className={`text-lg ${
+                          habit.completed ? 'text-green-800' : 
+                          habit.status === 'pending' ? 'text-amber-800' : 
+                          'text-rose-800'
+                        }`}>{habit.title}</CardTitle>
+                        <CardDescription className={
+                          habit.completed ? 'text-green-700/70' : 
+                          habit.status === 'pending' ? 'text-amber-700/70' : 
+                          'text-rose-700/70'
+                        }>{habit.description}</CardDescription>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -458,6 +507,7 @@ export function HabitsTab() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleEditHabit(habit)}
+                        className="border-none bg-white/50 backdrop-blur-sm hover:bg-white/80 transition-all duration-300"
                       >
                         <Edit className="h-4 w-4 mr-1" />
                         Editar
@@ -465,7 +515,9 @@ export function HabitsTab() {
                       <Button
                         variant={habit.completed ? "default" : "outline"}
                         size="sm"
-                        className={habit.completed ? "bg-green-600 hover:bg-green-700" : ""}
+                        className={habit.completed 
+                          ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-none shadow-md" 
+                          : "border-none bg-white/50 backdrop-blur-sm hover:bg-white/80 text-indigo-700 hover:text-indigo-800"}
                         onClick={() => updateHabitStatus(habit.id, habit.completed ? 'pending' : 'completed')}
                       >
                         {habit.completed ? (
@@ -485,31 +537,39 @@ export function HabitsTab() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center">
-                    <Heart className="h-4 w-4 text-red-500 mr-2" />
-                    <span className="text-sm font-medium">Sequência: <span className="text-amber-600">{habit.streak} dias</span></span>
+                    <div className="bg-red-100 p-1 rounded-full mr-2">
+                      <Heart className="h-3 w-3 text-red-500" />
+                    </div>
+                    <span className="text-sm font-medium">Sequência: <span className={`${
+                      habit.streak > 5 ? 'text-amber-600 font-bold' : 'text-gray-700'
+                    }`}>{habit.streak} dias</span></span>
                   </div>
                   
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Progresso mensal</span>
                     <span className="font-medium">{habit.progress}%</span>
                   </div>
-                  <Progress value={habit.progress} className="h-2" />
+                  <Progress 
+                    value={habit.progress} 
+                    className="h-2 bg-gray-100" 
+                    indicatorClassName="bg-gradient-to-r from-blue-400 to-indigo-600"
+                  />
                   
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
-                      <Calendar className="h-4 w-4 text-blue-500" />
-                      <span>{formatScheduleDays(habit.schedule_days)}</span>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground pt-1">
+                    <div className="flex items-center gap-1 bg-white/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
+                      <Calendar className="h-3 w-3 text-blue-500" />
+                      <span className="text-xs">{formatScheduleDays(habit.schedule_days)}</span>
                     </div>
                     {habit.schedule_time && (
-                      <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
-                        <Clock className="h-4 w-4 text-purple-500" />
-                        <span>às {habit.schedule_time}</span>
+                      <div className="flex items-center gap-1 bg-white/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
+                        <Clock className="h-3 w-3 text-purple-500" />
+                        <span className="text-xs">às {habit.schedule_time}</span>
                       </div>
                     )}
-                    <div className={`px-2 py-1 rounded-full text-xs ${
-                      habit.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      habit.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
+                    <div className={`px-2 py-1 rounded-full text-xs shadow-sm ${
+                      habit.status === 'completed' ? 'bg-green-100/80 text-green-800 backdrop-blur-sm' :
+                      habit.status === 'pending' ? 'bg-amber-100/80 text-amber-800 backdrop-blur-sm' :
+                      'bg-rose-100/80 text-rose-800 backdrop-blur-sm'
                     }`}>
                       {habit.status === 'completed' ? 'Concluído' :
                       habit.status === 'pending' ? 'Pendente' : 'Atrasado'}
@@ -517,9 +577,19 @@ export function HabitsTab() {
                   </div>
                   
                   {habit.streak > 0 && (
-                    <div className="flex items-center gap-2 bg-amber-50 p-2 rounded-md mt-2">
-                      <Medal className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm text-amber-700">
+                    <div className={`flex items-center gap-2 p-2 rounded-md mt-2 ${
+                      habit.streak >= 7 
+                        ? 'bg-gradient-to-r from-amber-100/70 to-yellow-100/70 backdrop-blur-sm border border-amber-200/50' 
+                        : 'bg-blue-50/70 backdrop-blur-sm border border-blue-100/50'
+                    }`}>
+                      {habit.streak >= 7 ? (
+                        <Medal className="h-4 w-4 text-amber-500" />
+                      ) : (
+                        <Star className="h-4 w-4 text-blue-500" />
+                      )}
+                      <span className={`text-sm ${
+                        habit.streak >= 7 ? 'text-amber-700' : 'text-blue-700'
+                      }`}>
                         {habit.streak >= 7 
                           ? `Incrível! ${habit.streak} dias consecutivos!` 
                           : `Sequência atual: ${habit.streak} ${habit.streak === 1 ? 'dia' : 'dias'}`
@@ -534,60 +604,82 @@ export function HabitsTab() {
         </TabsContent>
         
         <TabsContent value="dicas" className="space-y-4">
-          <Card>
+          <Card className="bg-gradient-to-br from-violet-50 to-indigo-50 border-none shadow-md overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-violet-400 to-indigo-600"></div>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <Star className="h-5 w-5 text-amber-500 mr-2" />
+              <CardTitle className="text-lg flex items-center text-indigo-900">
+                <Sparkles className="h-5 w-5 text-indigo-500 mr-2" />
                 Benefícios dos Bons Hábitos
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {benefitsOfHabits.map((benefit, index) => (
-                  <div key={index} className="flex items-start gap-2">
+                  <div key={index} className="flex items-start gap-2 bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md hover:bg-white/80">
                     <ThumbsUp className="h-4 w-4 text-green-600 mt-1" />
-                    <span className="text-sm">{benefit}</span>
+                    <span className="text-sm text-slate-700">{benefit}</span>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-gradient-to-br from-sky-50 to-blue-50 border-none shadow-md overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-sky-400 to-blue-600"></div>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <Target className="h-5 w-5 text-blue-500 mr-2" />
+              <CardTitle className="text-lg flex items-center text-blue-900">
+                <Brain className="h-5 w-5 text-blue-500 mr-2" />
                 Dicas para Sucesso
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="p-3 border border-blue-100 rounded-md bg-blue-50">
-                <h4 className="font-medium text-blue-700 mb-2">Comece Pequeno</h4>
-                <p className="text-sm text-blue-600">
+            <CardContent className="space-y-3">
+              <div className="p-3 rounded-md bg-gradient-to-br from-blue-100/50 to-blue-50/50 backdrop-blur-sm border border-blue-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
+                <h4 className="font-medium text-blue-800 mb-2 flex items-center">
+                  <div className="bg-blue-100 p-1 rounded-full mr-2">
+                    <ArrowRight className="h-3 w-3 text-blue-700" />
+                  </div>
+                  Comece Pequeno
+                </h4>
+                <p className="text-sm text-blue-700 pl-6">
                   Comece com hábitos pequenos e alcançáveis que você possa realizar em menos de 2 minutos. 
                   Isso reduz a resistência inicial e aumenta suas chances de consistência.
                 </p>
               </div>
               
-              <div className="p-3 border border-green-100 rounded-md bg-green-50">
-                <h4 className="font-medium text-green-700 mb-2">Consistência Acima da Perfeição</h4>
-                <p className="text-sm text-green-600">
+              <div className="p-3 rounded-md bg-gradient-to-br from-green-100/50 to-green-50/50 backdrop-blur-sm border border-green-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
+                <h4 className="font-medium text-green-800 mb-2 flex items-center">
+                  <div className="bg-green-100 p-1 rounded-full mr-2">
+                    <ArrowRight className="h-3 w-3 text-green-700" />
+                  </div>
+                  Consistência Acima da Perfeição
+                </h4>
+                <p className="text-sm text-green-700 pl-6">
                   É melhor fazer seu hábito de forma imperfeita do que falhar em fazê-lo perfeitamente. 
                   Consistência por longos períodos é o que gera resultados transformadores.
                 </p>
               </div>
               
-              <div className="p-3 border border-amber-100 rounded-md bg-amber-50">
-                <h4 className="font-medium text-amber-700 mb-2">Celebre Vitórias Pequenas</h4>
-                <p className="text-sm text-amber-600">
+              <div className="p-3 rounded-md bg-gradient-to-br from-amber-100/50 to-amber-50/50 backdrop-blur-sm border border-amber-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
+                <h4 className="font-medium text-amber-800 mb-2 flex items-center">
+                  <div className="bg-amber-100 p-1 rounded-full mr-2">
+                    <ArrowRight className="h-3 w-3 text-amber-700" />
+                  </div>
+                  Celebre Vitórias Pequenas
+                </h4>
+                <p className="text-sm text-amber-700 pl-6">
                   Não subestime o poder de celebrar suas pequenas vitórias. Cada vez que você completa um hábito, 
                   seu cérebro libera dopamina, reforçando o comportamento positivo.
                 </p>
               </div>
               
-              <div className="p-3 border border-purple-100 rounded-md bg-purple-50">
-                <h4 className="font-medium text-purple-700 mb-2">Ambiente Favorável</h4>
-                <p className="text-sm text-purple-600">
+              <div className="p-3 rounded-md bg-gradient-to-br from-purple-100/50 to-purple-50/50 backdrop-blur-sm border border-purple-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
+                <h4 className="font-medium text-purple-800 mb-2 flex items-center">
+                  <div className="bg-purple-100 p-1 rounded-full mr-2">
+                    <ArrowRight className="h-3 w-3 text-purple-700" />
+                  </div>
+                  Ambiente Favorável
+                </h4>
+                <p className="text-sm text-purple-700 pl-6">
                   Organize seu ambiente para facilitar seus bons hábitos e dificultar os maus. 
                   Pequenas mudanças no seu ambiente podem ter um grande impacto nos seus comportamentos diários.
                 </p>
@@ -598,30 +690,39 @@ export function HabitsTab() {
       </Tabs>
 
       {/* Próximas Conquistas */}
-      <Card>
+      <Card className="bg-gradient-to-br from-indigo-50 to-violet-50 border-none shadow-md overflow-hidden">
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-400 to-violet-600"></div>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center">
-            <Trophy className="h-5 w-5 text-amber-500 mr-2" />
+          <CardTitle className="text-lg flex items-center text-violet-900">
+            <BookHeart className="h-5 w-5 text-violet-500 mr-2" />
             Próximas Conquistas
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="flex items-center gap-2 p-2 border border-amber-200 rounded-md bg-amber-50">
-              <Medal className="h-4 w-4 text-amber-500" />
-              <span className="text-sm">🏆 10 dias consecutivos</span>
+            <div className="flex items-center gap-2 p-3 rounded-md bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
+              <div className="bg-amber-100 p-1.5 rounded-full">
+                <Medal className="h-4 w-4 text-amber-600" />
+              </div>
+              <span className="text-sm text-amber-800">10 dias consecutivos</span>
             </div>
-            <div className="flex items-center gap-2 p-2 border border-purple-200 rounded-md bg-purple-50">
-              <Star className="h-4 w-4 text-purple-500" />
-              <span className="text-sm">⭐ 1000 pontos acumulados</span>
+            <div className="flex items-center gap-2 p-3 rounded-md bg-gradient-to-r from-purple-50 to-fuchsia-50 border border-purple-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
+              <div className="bg-purple-100 p-1.5 rounded-full">
+                <Star className="h-4 w-4 text-purple-600" />
+              </div>
+              <span className="text-sm text-purple-800">1000 pontos acumulados</span>
             </div>
-            <div className="flex items-center gap-2 p-2 border border-green-200 rounded-md bg-green-50">
-              <Target className="h-4 w-4 text-green-500" />
-              <span className="text-sm">🎯 5 hábitos completados em um dia</span>
+            <div className="flex items-center gap-2 p-3 rounded-md bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
+              <div className="bg-green-100 p-1.5 rounded-full">
+                <Target className="h-4 w-4 text-green-600" />
+              </div>
+              <span className="text-sm text-green-800">5 hábitos completados em um dia</span>
             </div>
-            <div className="flex items-center gap-2 p-2 border border-blue-200 rounded-md bg-blue-50">
-              <Flame className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">🌟 30 dias de consistência</span>
+            <div className="flex items-center gap-2 p-3 rounded-md bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
+              <div className="bg-blue-100 p-1.5 rounded-full">
+                <Flame className="h-4 w-4 text-blue-600" />
+              </div>
+              <span className="text-sm text-blue-800">30 dias de consistência</span>
             </div>
           </div>
         </CardContent>
