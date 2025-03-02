@@ -54,6 +54,8 @@ export const CategorySelector = ({
 
   // Function to get readable category name
   const getCategoryLabel = (categoryValue: string): string => {
+    if (!categoryValue) return "Selecione uma categoria";
+    
     switch (categoryValue) {
       case "income": return "Recebimento";
       case "fixed": return "Despesa Fixa";
@@ -147,6 +149,13 @@ export const CategorySelector = ({
     setShowAddCategory(false);
   };
 
+  // Ensure we always have a valid selection
+  useEffect(() => {
+    if (!value && filteredCategories.length > 0) {
+      onChange(filteredCategories[0].name);
+    }
+  }, [value, filteredCategories]);
+
   return (
     <div className="space-y-2">
       <Label htmlFor="category">Categoria</Label>
@@ -154,7 +163,7 @@ export const CategorySelector = ({
       {!showAddCategory ? (
         <div className="flex items-center gap-2">
           <Select
-            value={value}
+            value={value || (filteredCategories.length > 0 ? filteredCategories[0].name : "income")}
             onValueChange={onChange}
           >
             <SelectTrigger className="flex-1">
@@ -164,7 +173,7 @@ export const CategorySelector = ({
             </SelectTrigger>
             <SelectContent>
               {filteredCategories.map((category) => (
-                <SelectItem key={category.id} value={category.name}>
+                <SelectItem key={category.id} value={category.name || "category-fallback"}>
                   {getCategoryLabel(category.name)}
                 </SelectItem>
               ))}

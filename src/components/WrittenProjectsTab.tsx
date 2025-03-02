@@ -12,7 +12,12 @@ export function WrittenProjectsTab() {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Projetos Escritos</h2>
 
-      <Tabs value={activeTab} defaultValue="companies" onValueChange={setActiveTab} className="w-full">
+      <Tabs 
+        value={activeTab} 
+        defaultValue="companies" 
+        onValueChange={setActiveTab} 
+        className="w-full"
+      >
         <TabsList className="mb-4">
           <TabsTrigger value="companies">Empresas</TabsTrigger>
           <TabsTrigger value="tasks">Tarefas</TabsTrigger>
