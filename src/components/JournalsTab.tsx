@@ -17,7 +17,7 @@ import {
   LightbulbIcon,
   Star
 } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -149,9 +149,9 @@ export function JournalsTab() {
       if (error) throw error;
       
       toast.success("Entrada atualizada com sucesso!");
-      await fetchJournalEntries();
-      setEditingEntry(null);
       setDialogOpen(false);
+      setEditingEntry(null);
+      await fetchJournalEntries();
     } catch (error) {
       console.error('Error updating journal entry:', error);
       toast.error("Erro ao atualizar a entrada");
@@ -324,31 +324,27 @@ export function JournalsTab() {
         
         <div className="grid grid-cols-1 gap-4">
           {entries.map(entry => (
-            <Dialog 
-              key={entry.id} 
-              open={dialogOpen && editingEntry?.id === entry.id} 
-              onOpenChange={(open) => {
-                setDialogOpen(open);
-                if (!open) setEditingEntry(null);
-              }}
-            >
-              <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-md group backdrop-blur-sm border border-gray-100/60">
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 to-white/80 z-0 group-hover:from-purple-50/50 group-hover:to-indigo-50/30 transition-all duration-500"></div>
-                <CardHeader className="relative z-10 pb-2">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-sm font-medium flex items-center gap-1.5">
-                      <CalendarDays className="h-3.5 w-3.5 text-dilq-indigo" />
-                      {format(new Date(entry.created_at), "dd/MM/yyyy HH:mm")}
-                    </CardTitle>
-                    <div className="text-sm text-muted-foreground italic bg-white/80 px-2 py-0.5 rounded-full text-xs border border-gray-100/80 shadow-sm">
-                      {entry.prompt}
-                    </div>
+            <Card key={entry.id} className="relative overflow-hidden transition-all duration-300 hover:shadow-md group backdrop-blur-sm border border-gray-100/60">
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 to-white/80 z-0 group-hover:from-purple-50/50 group-hover:to-indigo-50/30 transition-all duration-500"></div>
+              <CardHeader className="relative z-10 pb-2">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-sm font-medium flex items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5 text-dilq-indigo" />
+                    {format(new Date(entry.created_at), "dd/MM/yyyy HH:mm")}
+                  </CardTitle>
+                  <div className="text-sm text-muted-foreground italic bg-white/80 px-2 py-0.5 rounded-full text-xs border border-gray-100/80 shadow-sm">
+                    {entry.prompt}
                   </div>
-                </CardHeader>
-                <CardContent className="relative z-10 pt-1">
-                  <div className="flex justify-between items-start gap-4">
-                    <p className="whitespace-pre-wrap line-clamp-3 text-gray-700">{entry.content}</p>
-                    <div className="flex gap-1 shrink-0">
+                </div>
+              </CardHeader>
+              <CardContent className="relative z-10 pt-1">
+                <div className="flex justify-between items-start gap-4">
+                  <p className="whitespace-pre-wrap line-clamp-3 text-gray-700">{entry.content}</p>
+                  <div className="flex gap-1 shrink-0">
+                    <Dialog open={dialogOpen && editingEntry?.id === entry.id} onOpenChange={(open) => {
+                        setDialogOpen(open);
+                        if (!open) setEditingEntry(null);
+                      }}>
                       <DialogTrigger asChild>
                         <Button 
                           variant="ghost" 
@@ -363,81 +359,82 @@ export function JournalsTab() {
                         </Button>
                       </DialogTrigger>
                       
-                      <AlertDialog open={openDeleteAlertId === entry.id} onOpenChange={(open) => setOpenDeleteAlertId(open ? entry.id : null)}>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full h-8 w-8 bg-white hover:bg-red-50 text-red-500 border border-red-100/30"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="backdrop-blur-md bg-white/90 border border-gray-100/70">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir entrada do diário?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. Isso excluirá permanentemente esta entrada do seu diário.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="border-dilq-purple/20 text-dilq-purple hover:bg-dilq-purple/5">
-                              Cancelar
-                            </AlertDialogCancel>
-                            <AlertDialogAction 
-                              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-                              onClick={() => handleDeleteEntry(entry.id)}
+                      <DialogContent className="max-w-2xl backdrop-blur-md bg-white/95 border border-gray-100/70">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <CalendarDays className="h-4 w-4 text-dilq-purple" />
+                            Entrada do dia {format(new Date(entry.created_at), "dd/MM/yyyy")}
+                          </DialogTitle>
+                          <DialogDescription className="flex items-center gap-1.5">
+                            <Target className="h-3.5 w-3.5 text-dilq-indigo" />
+                            {entry.prompt && entry.prompt}
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <Textarea 
+                            value={editingEntry?.id === entry.id ? editingEntry.content : entry.content} 
+                            onChange={e => setEditingEntry({
+                              ...editingEntry,
+                              content: e.target.value
+                            })} 
+                            className="min-h-[200px] focus:ring-1 focus:ring-dilq-purple/40 transition-all border-dilq-purple/10 bg-white" 
+                          />
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="outline" 
+                              onClick={() => {
+                                setEditingEntry(null);
+                                setDialogOpen(false);
+                              }}
+                              className="border-dilq-purple/20 text-dilq-purple hover:bg-dilq-purple/5"
                             >
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <DialogContent className="max-w-2xl backdrop-blur-md bg-white/95 border border-gray-100/70">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-dilq-purple" />
-                    Entrada do dia {format(new Date(entry.created_at), "dd/MM/yyyy")}
-                  </DialogTitle>
-                  <DialogDescription className="flex items-center gap-1.5">
-                    <Target className="h-3.5 w-3.5 text-dilq-indigo" />
-                    {entry.prompt && entry.prompt}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Textarea 
-                    value={editingEntry?.id === entry.id ? editingEntry.content : entry.content} 
-                    onChange={e => setEditingEntry({
-                      ...editingEntry,
-                      content: e.target.value
-                    })} 
-                    className="min-h-[200px] focus:ring-1 focus:ring-dilq-purple/40 transition-all border-dilq-purple/10 bg-white" 
-                  />
-                  <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setEditingEntry(null);
-                        setDialogOpen(false);
-                      }}
-                      className="border-dilq-purple/20 text-dilq-purple hover:bg-dilq-purple/5"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button 
-                      onClick={handleSaveEdit}
-                      className="bg-gradient-to-r from-dilq-indigo to-dilq-purple hover:from-dilq-indigo/90 hover:to-dilq-purple/90 shadow-md"
-                    >
-                      Salvar Alterações
-                    </Button>
+                              Cancelar
+                            </Button>
+                            <Button 
+                              onClick={handleSaveEdit}
+                              className="bg-gradient-to-r from-dilq-indigo to-dilq-purple hover:from-dilq-indigo/90 hover:to-dilq-purple/90 shadow-md"
+                            >
+                              Salvar Alterações
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    <AlertDialog open={openDeleteAlertId === entry.id} onOpenChange={(open) => setOpenDeleteAlertId(open ? entry.id : null)}>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="rounded-full h-8 w-8 bg-white hover:bg-red-50 text-red-500 border border-red-100/30"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="backdrop-blur-md bg-white/90 border border-gray-100/70">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir entrada do diário?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. Isso excluirá permanentemente esta entrada do seu diário.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="border-dilq-purple/20 text-dilq-purple hover:bg-dilq-purple/5">
+                            Cancelar
+                          </AlertDialogCancel>
+                          <AlertDialogAction 
+                            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                            onClick={() => handleDeleteEntry(entry.id)}
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
-              </DialogContent>
-            </Dialog>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>
