@@ -151,7 +151,13 @@ export function JournalsTab() {
       toast.success("Entrada atualizada com sucesso!");
       setDialogOpen(false);
       setEditingEntry(null);
-      await fetchJournalEntries();
+      
+      // Update the entry in the local state to refresh the UI
+      setEntries(entries.map(entry => 
+        entry.id === editingEntry.id 
+          ? { ...entry, content: editingEntry.content } 
+          : entry
+      ));
     } catch (error) {
       console.error('Error updating journal entry:', error);
       toast.error("Erro ao atualizar a entrada");
@@ -169,8 +175,12 @@ export function JournalsTab() {
       
       toast.success("Entrada excluída com sucesso!");
       setOpenDeleteAlertId(null);
-      await fetchJournalEntries();
-      await calculateStats();
+      
+      // Remove the deleted entry from the local state immediately
+      setEntries(entries.filter(entry => entry.id !== entryId));
+      
+      // Update stats after deletion
+      calculateStats();
     } catch (error) {
       console.error('Error deleting journal entry:', error);
       toast.error("Erro ao excluir a entrada");
