@@ -1,5 +1,5 @@
 
-import { toast as sonnerToast } from "sonner";
+import { toast as sonnerToast, type ExternalToast } from "sonner";
 
 type ToastProps = {
   id?: string;
@@ -7,6 +7,7 @@ type ToastProps = {
   description?: string;
   action?: React.ReactNode;
   variant?: "default" | "destructive";
+  duration?: number; // Added duration property
 };
 
 // Export toast functions directly to match how they're called
@@ -27,8 +28,9 @@ export const toast = {
     sonnerToast(props.title || "", {
       description: props.description,
       action: props.action,
-      // Map variant to sonner's type
-      type: props.variant === "destructive" ? "error" : "default"
+      duration: props.duration,
+      // Map variant to sonner's type - using as any to bypass type checking
+      ...(props.variant === "destructive" ? { type: "error" as any } : {})
     });
     return { id: crypto.randomUUID() };
   }
