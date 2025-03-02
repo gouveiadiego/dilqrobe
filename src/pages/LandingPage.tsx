@@ -250,7 +250,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Hero Section - UPDATED WITH NEW IMAGE */}
       <div className="container mx-auto px-4 py-24 md:py-32">
         <div className="flex flex-col lg:flex-row items-center gap-12">
           <div className="lg:w-1/2 space-y-8">
@@ -285,10 +285,11 @@ export default function LandingPage() {
           
           <div className="lg:w-1/2">
             <div className="relative rounded-2xl shadow-2xl overflow-hidden border-8 border-white transform hover:scale-105 transition-transform duration-500 bg-gray-50">
+              {/* UPDATED IMAGE */}
               <img
-                src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png"
-                alt="DILQ ORBE"
-                className="w-full object-contain p-8"
+                src="/lovable-uploads/0622b97a-a347-445f-a248-3a837fa10ba7.png"
+                alt="DILQ ORBE - Vida Alinhada"
+                className="w-full object-contain"
               />
               <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-sky-200 rounded-full opacity-20"></div>
               <div className="absolute -top-10 -left-10 w-48 h-48 bg-blue-200 rounded-full opacity-20"></div>
