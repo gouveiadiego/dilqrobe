@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -770,9 +771,280 @@ export function ServicesTab() {
                         <DialogTitle>Compartilhar Serviços por Cliente</DialogTitle>
                       </DialogHeader>
                       <div className="py-4 space-y-4">
-                        {Object.entries(groupedServices).map(([clientId, {
-                          clientName,
-                          services
-                        }]) => (
+                        {Object.entries(groupedServices).map(([clientId, { clientName, services }]) => (
                           <div key={clientId} className="glass-card p-4 transition-all duration-300 hover:translate-y-[-2px]">
                             <div className="flex justify-between items-center mb-2">
+                              <h3 className="text-lg font-medium">{clientName}</h3>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedClientId(clientId);
+                                  handleSharePortalLink(clientId);
+                                }}
+                                className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:border-indigo-800 dark:hover:bg-indigo-900"
+                              >
+                                <Link2 className="h-4 w-4 mr-1" />
+                                Copiar Link
+                              </Button>
+                            </div>
+                            <p className="text-sm text-gray-500 mb-2">
+                              {services.length} serviços • {formatCurrency(services.reduce((acc, s) => acc + s.amount, 0))}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="outline">Fechar</Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Buscar serviços..."
+                      value={filterText}
+                      onChange={(e) => setFilterText(e.target.value)}
+                      className="pl-9 pr-4 glass-card w-64"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <Select value={filterClient} onValueChange={setFilterClient}>
+                  <SelectTrigger className="glass-card">
+                    <SelectValue placeholder="Filtrar por cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos os clientes</SelectItem>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.name}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={filterMonth} onValueChange={setFilterMonth}>
+                  <SelectTrigger className="glass-card">
+                    <SelectValue placeholder="Filtrar por mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos os meses</SelectItem>
+                    {Array.from(new Set(services.map(service => format(new Date(service.start_date), "yyyy-MM")))).map(month => (
+                      <SelectItem key={month} value={month}>
+                        {format(new Date(month + "-01"), "MMMM yyyy")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="glass-card">
+                    <SelectValue placeholder="Filtrar por status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos os status</SelectItem>
+                    <SelectItem value="paid">Pagos</SelectItem>
+                    <SelectItem value="pending">Pendentes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-gray-50 dark:bg-gray-900">
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Empresa</TableHead>
+                      <TableHead>Serviço</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredServices.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          Nenhum serviço encontrado
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredServices.map(service => (
+                        <TableRow key={service.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-900">
+                          <TableCell className="font-medium">{service.client_name}</TableCell>
+                          <TableCell>{service.company_name}</TableCell>
+                          <TableCell>{service.service_description}</TableCell>
+                          <TableCell>{format(new Date(service.start_date), "dd/MM/yyyy")}</TableCell>
+                          <TableCell>{formatCurrency(service.amount)}</TableCell>
+                          <TableCell>
+                            <div 
+                              className={`py-1 px-2 rounded-full text-xs font-medium inline-flex items-center ${
+                                service.payment_status === 'paid' 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                                  : service.payment_status === 'canceled'
+                                  ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                              }`}
+                              onClick={() => togglePaymentStatus(service.id, service.payment_status)}
+                              role="button"
+                            >
+                              {service.payment_status === 'paid' ? 'Pago' : service.payment_status === 'canceled' ? 'Cancelado' : 'Pendente'}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(service)}>
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => {
+                                setServiceToDelete(service.id);
+                                setShowDeleteDialog(true);
+                              }} className="text-red-500">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      <Dialog open={editingService !== null} onOpenChange={(open) => !open && setEditingService(null)}>
+        <DialogContent className="glass-card">
+          <DialogHeader>
+            <DialogTitle>Editar Serviço</DialogTitle>
+          </DialogHeader>
+          {editingService && (
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-client-name">Cliente</Label>
+                <Input 
+                  id="edit-client-name" 
+                  value={editingService.client_name} 
+                  onChange={e => setEditingService({...editingService, client_name: e.target.value})} 
+                  className="glass-card"
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-company-name">Nome da Empresa</Label>
+                <Input 
+                  id="edit-company-name" 
+                  value={editingService.company_name} 
+                  onChange={e => setEditingService({...editingService, company_name: e.target.value})} 
+                  className="glass-card"
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-service-description">Descrição do Serviço</Label>
+                <Input 
+                  id="edit-service-description" 
+                  value={editingService.service_description} 
+                  onChange={e => setEditingService({...editingService, service_description: e.target.value})} 
+                  className="glass-card"
+                  required 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-stage">Etapa</Label>
+                  <Input 
+                    id="edit-stage" 
+                    value={editingService.stage} 
+                    onChange={e => setEditingService({...editingService, stage: e.target.value})} 
+                    className="glass-card"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Input 
+                    id="edit-status" 
+                    value={editingService.status} 
+                    onChange={e => setEditingService({...editingService, status: e.target.value})} 
+                    className="glass-card"
+                    required 
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-amount">Valor</Label>
+                  <Input 
+                    id="edit-amount" 
+                    type="number" 
+                    value={editingService.amount} 
+                    onChange={e => setEditingService({...editingService, amount: Number(e.target.value)})} 
+                    className="glass-card"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-payment-status">Status do Pagamento</Label>
+                  <Select 
+                    value={editingService.payment_status} 
+                    onValueChange={value => setEditingService({...editingService, payment_status: value})}
+                  >
+                    <SelectTrigger className="glass-card">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="paid">Pago</SelectItem>
+                      <SelectItem value="canceled">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditingService(null)} type="button">
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700">
+                  Salvar Alterações
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="glass-card">
+          <DialogHeader>
+            <DialogTitle>Excluir Serviço</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Tem certeza de que deseja excluir este serviço? Esta ação não pode ser desfeita.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
