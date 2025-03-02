@@ -17,7 +17,7 @@ import {
   LightbulbIcon,
   Star
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -31,6 +31,7 @@ export function JournalsTab() {
   const [entries, setEntries] = useState<any[]>([]);
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [openDeleteAlertId, setOpenDeleteAlertId] = useState<string | null>(null);
   const [stats, setStats] = useState({
     consecutiveDays: 0,
     totalEntries: 0,
@@ -148,7 +149,7 @@ export function JournalsTab() {
       if (error) throw error;
       
       toast.success("Entrada atualizada com sucesso!");
-      fetchJournalEntries();
+      await fetchJournalEntries();
       setEditingEntry(null);
       setDialogOpen(false);
     } catch (error) {
@@ -167,8 +168,9 @@ export function JournalsTab() {
       if (error) throw error;
       
       toast.success("Entrada excluída com sucesso!");
-      fetchJournalEntries();
-      calculateStats();
+      setOpenDeleteAlertId(null);
+      await fetchJournalEntries();
+      await calculateStats();
     } catch (error) {
       console.error('Error deleting journal entry:', error);
       toast.error("Erro ao excluir a entrada");
@@ -322,10 +324,14 @@ export function JournalsTab() {
         
         <div className="grid grid-cols-1 gap-4">
           {entries.map(entry => (
-            <Dialog key={entry.id} open={dialogOpen && editingEntry?.id === entry.id} onOpenChange={(open) => {
-              setDialogOpen(open);
-              if (!open) setEditingEntry(null);
-            }}>
+            <Dialog 
+              key={entry.id} 
+              open={dialogOpen && editingEntry?.id === entry.id} 
+              onOpenChange={(open) => {
+                setDialogOpen(open);
+                if (!open) setEditingEntry(null);
+              }}
+            >
               <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-md group backdrop-blur-sm border border-gray-100/60">
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 to-white/80 z-0 group-hover:from-purple-50/50 group-hover:to-indigo-50/30 transition-all duration-500"></div>
                 <CardHeader className="relative z-10 pb-2">
@@ -357,7 +363,7 @@ export function JournalsTab() {
                         </Button>
                       </DialogTrigger>
                       
-                      <AlertDialog>
+                      <AlertDialog open={openDeleteAlertId === entry.id} onOpenChange={(open) => setOpenDeleteAlertId(open ? entry.id : null)}>
                         <AlertDialogTrigger asChild>
                           <Button 
                             variant="ghost" 
