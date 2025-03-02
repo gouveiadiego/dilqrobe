@@ -1,8 +1,9 @@
-
+<lov-code>
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Calendar, 
   Trophy, 
@@ -23,12 +24,23 @@ import {
   BookHeart,
   Brain,
   Lightbulb,
-  ArrowRight
+  ArrowRight,
+  XCircle,
+  BellRing,
+  Timer,
+  Zap,
+  ArrowUpCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { HabitForm } from "./HabitForm";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type Habit = {
   id: string;
@@ -58,6 +70,7 @@ type DBHabit = {
   positive_reinforcement?: string[];
 };
 
+// Motivational messages for different occasions
 const motivationalMessages = [
   "Você está construindo um futuro melhor, um hábito de cada vez! 💪",
   "Manter a consistência é a chave do sucesso! 🔑",
@@ -69,6 +82,19 @@ const motivationalMessages = [
   "Progresso constante gera resultados extraordinários! 🚀",
   "Sua disciplina de hoje traz sua liberdade de amanhã! 🦅",
   "Celebre cada vitória, não importa o tamanho! 🎉"
+];
+
+// Anti-procrastination messages
+const antiProcrastinationMessages = [
+  "Lembre-se: a melhor hora para começar é agora!",
+  "Não espere para começar, 5 minutos já fazem a diferença.",
+  "Divida em pequenos passos, 2 minutos é o suficiente para iniciar.",
+  "Você só precisa vencer a inércia inicial, depois fica mais fácil.",
+  "Procrastinação é ladrão de tempo e sonhos. Não deixe isso te controlar.",
+  "Foque em dar apenas o primeiro passo, o resto virá naturalmente.",
+  "Visualize-se completando esta tarefa e como você se sentirá depois.",
+  "O que você pode fazer agora, mesmo que seja uma pequena parte?",
+  "A ação vence o medo e a procrastinação."
 ];
 
 const habitQuotes = [
@@ -103,6 +129,30 @@ const benefitsOfHabits = [
   "Cria uma sensação de propósito e direção"
 ];
 
+// Techniques to overcome procrastination
+const procrastinationTechniques = [
+  {
+    name: "Técnica Pomodoro",
+    description: "Trabalhe por 25 minutos, depois descanse 5 minutos. Repita.",
+    icon: <Timer className="h-5 w-5 text-red-500" />
+  },
+  {
+    name: "Regra dos 2 Minutos",
+    description: "Se leva menos de 2 minutos, faça agora mesmo.",
+    icon: <Zap className="h-5 w-5 text-yellow-500" />
+  },
+  {
+    name: "Começo Pequeno",
+    description: "Divida em passos pequenos e comece pelo mais simples.",
+    icon: <ArrowUpCircle className="h-5 w-5 text-green-500" />
+  },
+  {
+    name: "Se-Então",
+    description: "Crie gatilhos: 'Se X acontecer, então farei Y'.",
+    icon: <ArrowRight className="h-5 w-5 text-blue-500" />
+  }
+];
+
 export function HabitsTab() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,6 +162,20 @@ export function HabitsTab() {
   const [currentQuote, setCurrentQuote] = useState(0);
   const [totalCompletedHabits, setTotalCompletedHabits] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
+  const [showFocusMode, setShowFocusMode] = useState(false);
+  const [focusHabit, setFocusHabit] = useState<Habit | null>(null);
+  const [focusTimer, setFocusTimer] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [focusNotes, setFocusNotes] = useState("");
+  const [habitStrengthDialog, setHabitStrengthDialog] = useState(false);
+  const [strengthHabit, setStrengthHabit] = useState<Habit | null>(null);
+  const [strengthReason, setStrengthReason] = useState("");
+
+  // New states for the Why feature
+  const [showWhyDialog, setShowWhyDialog] = useState(false);
+  const [whyHabit, setWhyHabit] = useState<Habit | null>(null);
+  const [whyReasons, setWhyReasons] = useState<string[]>([]);
+  const [newWhyReason, setNewWhyReason] = useState("");
 
   useEffect(() => {
     fetchHabits();
@@ -134,6 +198,40 @@ export function HabitsTab() {
       calculateStats();
     }
   }, [habits]);
+
+  // Timer for focus mode
+  useEffect(() => {
+    let timerId: NodeJS.Timeout;
+    
+    if (isTimerRunning && focusTimer > 0) {
+      timerId = setInterval(() => {
+        setFocusTimer(prevTime => {
+          if (prevTime <= 1) {
+            setIsTimerRunning(false);
+            
+            // When timer completes, show success message and offer to mark habit as completed
+            toast.success("Parabéns! Você concluiu sua sessão de foco!", {
+              description: "Quer marcar este hábito como concluído?",
+              action: {
+                label: "Sim, concluir",
+                onClick: () => {
+                  if (focusHabit) {
+                    updateHabitStatus(focusHabit.id, 'completed');
+                    saveFocusSession();
+                  }
+                }
+              }
+            });
+            
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => clearInterval(timerId);
+  }, [isTimerRunning, focusTimer]);
 
   const calculateStats = () => {
     // Calcula o número total de hábitos completados
@@ -182,8 +280,8 @@ export function HabitsTab() {
           showNotification(habit);
           toast.info(`${habit.title} está programado para começar em ${minutesDiff} minutos!`, {
             action: {
-              label: "Ver hábito",
-              onClick: () => document.getElementById(habit.id)?.scrollIntoView({ behavior: 'smooth' })
+              label: "Iniciar agora",
+              onClick: () => startFocusMode(habit)
             }
           });
         }
@@ -245,6 +343,17 @@ export function HabitsTab() {
               best_streak: newBestStreak
             })
             .eq("id", habitId);
+            
+          // Log the habit completion
+          await supabase
+            .from("habit_logs")
+            .insert({
+              habit_id: habitId,
+              user_id: session.user.id,
+              date: new Date().toISOString().split('T')[0],
+              notes: focusNotes || null,
+              mood: 'good'
+            });
         }
 
         const randomIndex = Math.floor(Math.random() * motivationalMessages.length);
@@ -254,6 +363,16 @@ export function HabitsTab() {
           description: "Continue assim! Cada hábito concluído te leva mais perto dos seus objetivos.",
           icon: <Flame className="h-5 w-5 text-amber-500" />
         });
+        
+        // If reaching a milestone streak, show extra encouragement
+        const habit = habits.find(h => h.id === habitId);
+        if (habit && [3, 7, 14, 21, 30, 60, 90].includes(habit.streak + 1)) {
+          toast.success(`Incrível! Você alcançou ${habit.streak + 1} dias consecutivos!`, {
+            description: "Você está construindo uma consistência incrível!",
+            icon: <Trophy className="h-5 w-5 text-amber-500" />,
+            duration: 5000
+          });
+        }
       } catch (error) {
         console.error("Erro ao atualizar sequência:", error);
       }
@@ -332,6 +451,158 @@ export function HabitsTab() {
     return Math.round((completed / habits.length) * 100);
   };
 
+  // New function to start focus mode
+  const startFocusMode = (habit: Habit) => {
+    setFocusHabit(habit);
+    setFocusTimer(25 * 60); // 25 minutes in seconds (Pomodoro technique)
+    setFocusNotes("");
+    setShowFocusMode(true);
+  };
+
+  // Function to handle timer controls
+  const handleTimerControl = () => {
+    if (isTimerRunning) {
+      setIsTimerRunning(false);
+    } else {
+      setIsTimerRunning(true);
+    }
+  };
+
+  // Function to format timer display
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
+
+  // Save focus session notes
+  const saveFocusSession = async () => {
+    if (!focusHabit || !focusNotes.trim()) return;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      
+      await supabase
+        .from("habit_logs")
+        .upsert({
+          habit_id: focusHabit.id,
+          user_id: session.user.id,
+          date: new Date().toISOString().split('T')[0],
+          notes: focusNotes,
+          mood: 'good'
+        });
+      
+      toast.success("Anotações da sessão salvas com sucesso!");
+      setShowFocusMode(false);
+    } catch (error) {
+      console.error("Erro ao salvar anotações:", error);
+      toast.error("Erro ao salvar anotações da sessão");
+    }
+  };
+
+  // Open the habit strength reinforcement dialog
+  const openHabitStrengthDialog = (habit: Habit) => {
+    setStrengthHabit(habit);
+    setStrengthReason("");
+    setHabitStrengthDialog(true);
+  };
+
+  // Save habit strength reason
+  const saveHabitStrength = async () => {
+    if (!strengthHabit || !strengthReason.trim()) {
+      toast.error("Por favor, escreva um motivo para fortalecer este hábito");
+      return;
+    }
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      
+      // Get current positive_reinforcement array or create empty array
+      const { data } = await supabase
+        .from("habits")
+        .select("positive_reinforcement")
+        .eq("id", strengthHabit.id)
+        .single();
+      
+      const currentReasons = data?.positive_reinforcement || [];
+      
+      // Add new reason to array
+      await supabase
+        .from("habits")
+        .update({
+          positive_reinforcement: [...currentReasons, strengthReason]
+        })
+        .eq("id", strengthHabit.id);
+      
+      toast.success("Motivo adicionado com sucesso!");
+      setHabitStrengthDialog(false);
+      setStrengthReason("");
+    } catch (error) {
+      console.error("Erro ao salvar motivo:", error);
+      toast.error("Erro ao salvar motivo");
+    }
+  };
+
+  // Open the "why" dialog to display and add deeper motivations
+  const openWhyDialog = async (habit: Habit) => {
+    setWhyHabit(habit);
+    setNewWhyReason("");
+    
+    try {
+      const { data } = await supabase
+        .from("habits")
+        .select("positive_reinforcement")
+        .eq("id", habit.id)
+        .single();
+      
+      setWhyReasons(data?.positive_reinforcement || []);
+      setShowWhyDialog(true);
+    } catch (error) {
+      console.error("Erro ao carregar motivações:", error);
+      toast.error("Erro ao carregar motivações");
+    }
+  };
+
+  // Add new reason to the "why" list
+  const addWhyReason = async () => {
+    if (!whyHabit || !newWhyReason.trim()) {
+      toast.error("Por favor, escreva um motivo");
+      return;
+    }
+    
+    try {
+      const updatedReasons = [...whyReasons, newWhyReason];
+      setWhyReasons(updatedReasons);
+      
+      await supabase
+        .from("habits")
+        .update({
+          positive_reinforcement: updatedReasons
+        })
+        .eq("id", whyHabit.id);
+      
+      toast.success("Motivo adicionado com sucesso!");
+      setNewWhyReason("");
+    } catch (error) {
+      console.error("Erro ao adicionar motivo:", error);
+      toast.error("Erro ao adicionar motivo");
+    }
+  };
+
+  // Show a random anti-procrastination message
+  const showAntiProcrastinationMessage = () => {
+    const randomIndex = Math.floor(Math.random() * antiProcrastinationMessages.length);
+    const message = antiProcrastinationMessages[randomIndex];
+    
+    toast.info(message, {
+      description: "Comece agora mesmo, mesmo que seja apenas por 2 minutos!",
+      icon: <Zap className="h-5 w-5 text-amber-500" />,
+      duration: 8000
+    });
+  };
+
   if (showForm) {
     return (
       <div className="max-w-2xl mx-auto bg-gradient-to-br from-violet-50 to-blue-50 p-6 rounded-2xl shadow-lg animate-fade-in">
@@ -368,6 +639,25 @@ export function HabitsTab() {
           Novo Hábito
         </Button>
       </div>
+
+      {/* Anti-Procrastination Banner */}
+      <Card className="overflow-hidden bg-gradient-to-br from-amber-50 to-orange-50 border-none shadow-lg transition-all duration-300 hover:shadow-xl">
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500"></div>
+        <CardContent className="pt-6 pb-6 relative">
+          <Zap className="absolute top-4 right-4 h-6 w-6 text-amber-400 opacity-50" />
+          <h3 className="text-lg font-semibold text-amber-800 mb-2">Vença a Procrastinação Hoje!</h3>
+          <p className="text-amber-700 mb-3">
+            Não espere o momento perfeito. Comece agora mesmo, mesmo que seja por apenas 2 minutos.
+          </p>
+          <Button 
+            onClick={showAntiProcrastinationMessage} 
+            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            Motivação Anti-Procrastinação
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Motivational Quote */}
       <Card className="overflow-hidden bg-gradient-to-br from-indigo-50 to-purple-50 border-none shadow-lg animate-float transition-all duration-300 hover:shadow-xl">
@@ -429,6 +719,33 @@ export function HabitsTab() {
         </Card>
       </div>
 
+      {/* Anti-Procrastination Techniques */}
+      <Card className="border-none bg-gradient-to-br from-blue-50 to-cyan-50 overflow-hidden shadow-md">
+        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+        <CardHeader>
+          <CardTitle className="text-lg text-blue-900 flex items-center">
+            <Brain className="h-5 w-5 mr-2 text-blue-500" />
+            Técnicas Anti-Procrastinação
+          </CardTitle>
+          <CardDescription className="text-blue-700">
+            Métodos comprovados para vencer a procrastinação e agir agora
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {procrastinationTechniques.map((technique, index) => (
+              <div key={index} className="bg-white/70 backdrop-blur-sm rounded-lg shadow-sm p-3 hover:shadow-md transition-all duration-300">
+                <div className="flex items-center gap-2 mb-2">
+                  {technique.icon}
+                  <h4 className="font-medium text-gray-900">{technique.name}</h4>
+                </div>
+                <p className="text-sm text-gray-700">{technique.description}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Tabs for habit view */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-2 mb-4 p-1 bg-gradient-to-r from-blue-100/50 to-purple-100/50 backdrop-blur-xl rounded-xl">
@@ -443,290 +760,19 @@ export function HabitsTab() {
         </TabsList>
         
         <TabsContent value="ativos" className="space-y-4">
-          {/* Habits List */}
-          {habits.length === 0 ? (
-            <Card className="bg-gradient-to-br from-slate-50 to-blue-50 border-dashed border-2 border-blue-200">
-              <CardContent className="py-8 flex flex-col items-center justify-center">
-                <Target className="h-16 w-16 text-blue-300 mb-4" />
-                <h3 className="text-xl font-medium mb-2 text-blue-800">Nenhum hábito criado</h3>
-                <p className="text-center text-blue-600 mb-4 max-w-md">
-                  Comece criando seu primeiro hábito e construa uma rotina melhor para alcançar seus objetivos.
-                </p>
-                <Button 
-                  onClick={() => setShowForm(true)}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Criar Hábito
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            habits.map((habit) => (
-              <Card 
-                key={habit.id} 
-                id={habit.id} 
-                className={`transition-all duration-300 hover:shadow-xl border-none overflow-hidden ${
-                  habit.completed ? 'bg-gradient-to-br from-green-50 to-emerald-50' : 
-                  habit.status === 'pending' ? 'bg-gradient-to-br from-amber-50 to-yellow-50' : 
-                  'bg-gradient-to-br from-rose-50 to-red-50'
-                }`}
-              >
-                <div className={`absolute top-0 left-0 w-1 h-full ${
-                  habit.completed ? 'bg-gradient-to-b from-green-400 to-emerald-600' : 
-                  habit.status === 'pending' ? 'bg-gradient-to-b from-amber-400 to-yellow-600' : 
-                  'bg-gradient-to-b from-rose-400 to-red-600'
-                }`}></div>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      {habit.completed ? (
-                        <div className="bg-gradient-to-br from-amber-400 to-yellow-300 p-1.5 rounded-full mr-3 shadow-inner-light animate-pulse-subtle">
-                          <Flame className="h-5 w-5 text-white" />
-                        </div>
-                      ) : (
-                        <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-1.5 rounded-full mr-3">
-                          <Target className="h-5 w-5 text-indigo-500" />
-                        </div>
-                      )}
-                      <div>
-                        <CardTitle className={`text-lg ${
-                          habit.completed ? 'text-green-800' : 
-                          habit.status === 'pending' ? 'text-amber-800' : 
-                          'text-rose-800'
-                        }`}>{habit.title}</CardTitle>
-                        <CardDescription className={
-                          habit.completed ? 'text-green-700/70' : 
-                          habit.status === 'pending' ? 'text-amber-700/70' : 
-                          'text-rose-700/70'
-                        }>{habit.description}</CardDescription>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditHabit(habit)}
-                        className="border-none bg-white/50 backdrop-blur-sm hover:bg-white/80 transition-all duration-300"
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant={habit.completed ? "default" : "outline"}
-                        size="sm"
-                        className={habit.completed 
-                          ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-none shadow-md" 
-                          : "border-none bg-white/50 backdrop-blur-sm hover:bg-white/80 text-indigo-700 hover:text-indigo-800"}
-                        onClick={() => updateHabitStatus(habit.id, habit.completed ? 'pending' : 'completed')}
-                      >
-                        {habit.completed ? (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Concluído
-                          </>
-                        ) : (
-                          <>
-                            <ListCheck className="h-4 w-4 mr-1" />
-                            Marcar
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center">
-                    <div className="bg-red-100 p-1 rounded-full mr-2">
-                      <Heart className="h-3 w-3 text-red-500" />
-                    </div>
-                    <span className="text-sm font-medium">Sequência: <span className={`${
-                      habit.streak > 5 ? 'text-amber-600 font-bold' : 'text-gray-700'
-                    }`}>{habit.streak} dias</span></span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Progresso mensal</span>
-                    <span className="font-medium">{habit.progress}%</span>
-                  </div>
-                  <Progress 
-                    value={habit.progress} 
-                    className="h-2 bg-gray-100" 
-                    indicatorClassName="bg-gradient-to-r from-blue-400 to-indigo-600"
-                  />
-                  
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground pt-1">
-                    <div className="flex items-center gap-1 bg-white/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
-                      <Calendar className="h-3 w-3 text-blue-500" />
-                      <span className="text-xs">{formatScheduleDays(habit.schedule_days)}</span>
-                    </div>
-                    {habit.schedule_time && (
-                      <div className="flex items-center gap-1 bg-white/70 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
-                        <Clock className="h-3 w-3 text-purple-500" />
-                        <span className="text-xs">às {habit.schedule_time}</span>
-                      </div>
-                    )}
-                    <div className={`px-2 py-1 rounded-full text-xs shadow-sm ${
-                      habit.status === 'completed' ? 'bg-green-100/80 text-green-800 backdrop-blur-sm' :
-                      habit.status === 'pending' ? 'bg-amber-100/80 text-amber-800 backdrop-blur-sm' :
-                      'bg-rose-100/80 text-rose-800 backdrop-blur-sm'
-                    }`}>
-                      {habit.status === 'completed' ? 'Concluído' :
-                      habit.status === 'pending' ? 'Pendente' : 'Atrasado'}
-                    </div>
-                  </div>
-                  
-                  {habit.streak > 0 && (
-                    <div className={`flex items-center gap-2 p-2 rounded-md mt-2 ${
-                      habit.streak >= 7 
-                        ? 'bg-gradient-to-r from-amber-100/70 to-yellow-100/70 backdrop-blur-sm border border-amber-200/50' 
-                        : 'bg-blue-50/70 backdrop-blur-sm border border-blue-100/50'
-                    }`}>
-                      {habit.streak >= 7 ? (
-                        <Medal className="h-4 w-4 text-amber-500" />
-                      ) : (
-                        <Star className="h-4 w-4 text-blue-500" />
-                      )}
-                      <span className={`text-sm ${
-                        habit.streak >= 7 ? 'text-amber-700' : 'text-blue-700'
-                      }`}>
-                        {habit.streak >= 7 
-                          ? `Incrível! ${habit.streak} dias consecutivos!` 
-                          : `Sequência atual: ${habit.streak} ${habit.streak === 1 ? 'dia' : 'dias'}`
-                        }
-                      </span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
-        
-        <TabsContent value="dicas" className="space-y-4">
-          <Card className="bg-gradient-to-br from-violet-50 to-indigo-50 border-none shadow-md overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-violet-400 to-indigo-600"></div>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center text-indigo-900">
-                <Sparkles className="h-5 w-5 text-indigo-500 mr-2" />
-                Benefícios dos Bons Hábitos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {benefitsOfHabits.map((benefit, index) => (
-                  <div key={index} className="flex items-start gap-2 bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md hover:bg-white/80">
-                    <ThumbsUp className="h-4 w-4 text-green-600 mt-1" />
-                    <span className="text-sm text-slate-700">{benefit}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-sky-50 to-blue-50 border-none shadow-md overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-sky-400 to-blue-600"></div>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center text-blue-900">
-                <Brain className="h-5 w-5 text-blue-500 mr-2" />
-                Dicas para Sucesso
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="p-3 rounded-md bg-gradient-to-br from-blue-100/50 to-blue-50/50 backdrop-blur-sm border border-blue-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
-                <h4 className="font-medium text-blue-800 mb-2 flex items-center">
-                  <div className="bg-blue-100 p-1 rounded-full mr-2">
-                    <ArrowRight className="h-3 w-3 text-blue-700" />
-                  </div>
-                  Comece Pequeno
-                </h4>
-                <p className="text-sm text-blue-700 pl-6">
-                  Comece com hábitos pequenos e alcançáveis que você possa realizar em menos de 2 minutos. 
-                  Isso reduz a resistência inicial e aumenta suas chances de consistência.
-                </p>
-              </div>
-              
-              <div className="p-3 rounded-md bg-gradient-to-br from-green-100/50 to-green-50/50 backdrop-blur-sm border border-green-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
-                <h4 className="font-medium text-green-800 mb-2 flex items-center">
-                  <div className="bg-green-100 p-1 rounded-full mr-2">
-                    <ArrowRight className="h-3 w-3 text-green-700" />
-                  </div>
-                  Consistência Acima da Perfeição
-                </h4>
-                <p className="text-sm text-green-700 pl-6">
-                  É melhor fazer seu hábito de forma imperfeita do que falhar em fazê-lo perfeitamente. 
-                  Consistência por longos períodos é o que gera resultados transformadores.
-                </p>
-              </div>
-              
-              <div className="p-3 rounded-md bg-gradient-to-br from-amber-100/50 to-amber-50/50 backdrop-blur-sm border border-amber-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
-                <h4 className="font-medium text-amber-800 mb-2 flex items-center">
-                  <div className="bg-amber-100 p-1 rounded-full mr-2">
-                    <ArrowRight className="h-3 w-3 text-amber-700" />
-                  </div>
-                  Celebre Vitórias Pequenas
-                </h4>
-                <p className="text-sm text-amber-700 pl-6">
-                  Não subestime o poder de celebrar suas pequenas vitórias. Cada vez que você completa um hábito, 
-                  seu cérebro libera dopamina, reforçando o comportamento positivo.
-                </p>
-              </div>
-              
-              <div className="p-3 rounded-md bg-gradient-to-br from-purple-100/50 to-purple-50/50 backdrop-blur-sm border border-purple-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
-                <h4 className="font-medium text-purple-800 mb-2 flex items-center">
-                  <div className="bg-purple-100 p-1 rounded-full mr-2">
-                    <ArrowRight className="h-3 w-3 text-purple-700" />
-                  </div>
-                  Ambiente Favorável
-                </h4>
-                <p className="text-sm text-purple-700 pl-6">
-                  Organize seu ambiente para facilitar seus bons hábitos e dificultar os maus. 
-                  Pequenas mudanças no seu ambiente podem ter um grande impacto nos seus comportamentos diários.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Próximas Conquistas */}
-      <Card className="bg-gradient-to-br from-indigo-50 to-violet-50 border-none shadow-md overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-400 to-violet-600"></div>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center text-violet-900">
-            <BookHeart className="h-5 w-5 text-violet-500 mr-2" />
-            Próximas Conquistas
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="flex items-center gap-2 p-3 rounded-md bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
-              <div className="bg-amber-100 p-1.5 rounded-full">
-                <Medal className="h-4 w-4 text-amber-600" />
-              </div>
-              <span className="text-sm text-amber-800">10 dias consecutivos</span>
-            </div>
-            <div className="flex items-center gap-2 p-3 rounded-md bg-gradient-to-r from-purple-50 to-fuchsia-50 border border-purple-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
-              <div className="bg-purple-100 p-1.5 rounded-full">
-                <Star className="h-4 w-4 text-purple-600" />
-              </div>
-              <span className="text-sm text-purple-800">1000 pontos acumulados</span>
-            </div>
-            <div className="flex items-center gap-2 p-3 rounded-md bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
-              <div className="bg-green-100 p-1.5 rounded-full">
-                <Target className="h-4 w-4 text-green-600" />
-              </div>
-              <span className="text-sm text-green-800">5 hábitos completados em um dia</span>
-            </div>
-            <div className="flex items-center gap-2 p-3 rounded-md bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200/50 shadow-sm transition-all duration-300 hover:shadow-md">
-              <div className="bg-blue-100 p-1.5 rounded-full">
-                <Flame className="h-4 w-4 text-blue-600" />
-              </div>
-              <span className="text-sm text-blue-800">30 dias de consistência</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+          {/* Today's Habits Focus Section */}
+          {habits.length > 0 && (
+            <Card className="border-none bg-gradient-to-br from-blue-50 to-indigo-50 overflow-hidden shadow-md">
+              <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center text-indigo-900">
+                  <Target className="h-5 w-5 mr-2 text-indigo-500" />
+                  Foco de Hoje: {format(new Date(), "EEEE, dd 'de' MMMM", {locale: ptBR})}
+                </CardTitle>
+                <CardDescription className="text-indigo-700">
+                  Escolha um hábito para focar nas próximas horas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {habits
