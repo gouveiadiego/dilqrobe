@@ -13,7 +13,12 @@ import {
   Users,
   Sparkles,
   Brain,
-  ArrowDown
+  ArrowDown,
+  Origami,
+  Bird,
+  CheckSquare,
+  Wallet,
+  FileText
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
