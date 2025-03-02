@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,281 +45,147 @@ interface NewService {
 }
 
 interface ServiceStats {
-  total: number;
-  pending: number;
-  paid: number;
-  canceled: number;
-  totalAmount: number;
-  paidAmount: number;
-  pendingAmount: number;
-  canceledAmount: number;
+  totalServices: number;
+  totalRevenue: number;
+  averageRevenue: number;
+  servicesByStatus: {
+    paid: number;
+    pending: number;
+    canceled: number;
+  };
 }
 
 const calculateStats = (services: Service[]): ServiceStats => {
-  return services.reduce((acc: ServiceStats, service) => {
-    acc.total++;
-    acc.totalAmount += service.amount;
-    switch (service.payment_status) {
-      case 'paid':
+  const totalServices = services.length;
+  const totalRevenue = services.reduce((sum, service) => sum + service.amount, 0);
+  const averageRevenue = totalServices > 0 ? totalRevenue / totalServices : 0;
+  const servicesByStatus = services.reduce(
+    (acc, service) => {
+      if (service.payment_status === "paid") {
         acc.paid++;
-        acc.paidAmount += service.amount;
-        break;
-      case 'canceled':
-        acc.canceled++;
-        acc.canceledAmount += service.amount;
-        break;
-      default:
+      } else if (service.payment_status === "pending") {
         acc.pending++;
-        acc.pendingAmount += service.amount;
-    }
-    return acc;
-  }, {
-    total: 0,
-    pending: 0,
-    paid: 0,
-    canceled: 0,
-    totalAmount: 0,
-    paidAmount: 0,
-    pendingAmount: 0,
-    canceledAmount: 0
-  });
+      } else {
+        acc.canceled++;
+      }
+      return acc;
+    },
+    { paid: 0, pending: 0, canceled: 0 }
+  );
+
+  return {
+    totalServices,
+    totalRevenue,
+    averageRevenue,
+    servicesByStatus,
+  };
 };
 
 const calculateDailyRevenue = (services: Service[]) => {
-  // Se não temos serviços, retornamos um array vazio
-  if (services.length === 0) {
-    return [];
-  }
-  
-  // Pegar o mês atual ou o mês do primeiro serviço se existir
-  const currentDate = services.length > 0 
-    ? new Date(services[0].start_date) 
-    : new Date();
-  
-  // Criar intervalo para o mês todo
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  
-  // Gerar todos os dias do mês
-  const allDaysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-  
-  // Inicializar o objeto com todos os dias do mês e valor zero
-  const dailyRevenue = allDaysInMonth.reduce((acc: { [key: string]: number }, day) => {
-    const dateKey = format(day, 'yyyy-MM-dd');
-    acc[dateKey] = 0;
-    return acc;
-  }, {});
-  
-  // Somar os valores de todos os serviços, independente do status de pagamento
-  services.forEach(service => {
-    const date = format(new Date(service.start_date), 'yyyy-MM-dd');
-    dailyRevenue[date] = (dailyRevenue[date] || 0) + service.amount;
-  });
-
-  // Converter para o formato usado pelo gráfico
-  return Object.entries(dailyRevenue)
-    .map(([date, amount]) => ({
-      date,
-      amount
-    }))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const today = format(new Date(), "yyyy-MM-dd");
+  const dailyServices = services.filter((service) => service.start_date === today);
+  const dailyRevenue = dailyServices.reduce((sum, service) => sum + service.amount, 0);
+  return dailyRevenue;
 };
 
 const renderDashboard = (services: Service[]) => {
   const stats = calculateStats(services);
-  const dailyRevenueData = calculateDailyRevenue(services);
+  const dailyRevenue = calculateDailyRevenue(services);
+
+  const pieChartData = [
+    { name: "Paid", value: stats.servicesByStatus.paid },
+    { name: "Pending", value: stats.servicesByStatus.pending },
+    { name: "Canceled", value: stats.servicesByStatus.canceled },
+  ];
+
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28"];
+
+  const dailyRevenueData = eachDayOfInterval({
+    start: startOfMonth(new Date()),
+    end: endOfMonth(new Date()),
+  }).map((date) => {
+    const formattedDate = format(date, "yyyy-MM-dd");
+    const revenue = services
+      .filter((service) => service.start_date === formattedDate)
+      .reduce((sum, service) => sum + service.amount, 0);
+    return {
+      date: format(date, "dd/MM"),
+      revenue,
+    };
+  });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <div className="glass-card p-5 transition-all duration-300 hover:translate-y-[-5px]">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium text-gray-500">Total de Serviços</h3>
-          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-            <BarChart3 size={16} />
-          </div>
-        </div>
-        <div className="flex items-end gap-2">
-          <p className="text-3xl font-bold text-gradient">{stats.total}</p>
-          <p className="text-sm text-gray-500 mb-1">{formatCurrency(stats.totalAmount)}</p>
-        </div>
-        <div className="w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mt-2 shimmer-effect"></div>
-      </div>
-      
-      <div className="glass-card p-5 transition-all duration-300 hover:translate-y-[-5px]">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium text-gray-500">Pagos</h3>
-          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 text-green-600">
-            <CreditCard size={16} />
-          </div>
-        </div>
-        <div className="flex items-end gap-2">
-          <p className="text-3xl font-bold text-green-600">{stats.paid}</p>
-          <p className="text-sm text-gray-500 mb-1">{formatCurrency(stats.paidAmount)}</p>
-        </div>
-        <div className="w-full h-1 bg-gradient-to-r from-green-400 to-green-600 rounded-full mt-2 shimmer-effect"></div>
-      </div>
-      
-      <div className="glass-card p-5 transition-all duration-300 hover:translate-y-[-5px]">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium text-gray-500">Pendentes</h3>
-          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-100 text-orange-600">
-            <Calendar size={16} />
-          </div>
-        </div>
-        <div className="flex items-end gap-2">
-          <p className="text-3xl font-bold text-orange-600">{stats.pending}</p>
-          <p className="text-sm text-gray-500 mb-1">{formatCurrency(stats.pendingAmount)}</p>
-        </div>
-        <div className="w-full h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full mt-2 shimmer-effect"></div>
-      </div>
-      
-      <div className="glass-card p-5 transition-all duration-300 hover:translate-y-[-5px]">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium text-gray-500">Cancelados</h3>
-          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-red-100 text-red-600">
-            <Trash2 size={16} />
-          </div>
-        </div>
-        <div className="flex items-end gap-2">
-          <p className="text-3xl font-bold text-red-600">{stats.canceled}</p>
-          <p className="text-sm text-gray-500 mb-1">{formatCurrency(stats.canceledAmount)}</p>
-        </div>
-        <div className="w-full h-1 bg-gradient-to-r from-red-400 to-red-600 rounded-full mt-2 shimmer-effect"></div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="stat-card">
+        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+          Receita Total
+        </h3>
+        <p className="stat-value">
+          {formatCurrency(stats.totalRevenue)}
+        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {stats.totalServices} serviços
+        </p>
       </div>
 
-      <div className="col-span-full">
-        <div className="glass-card p-5">
-          <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-indigo-500" />
-            <span>Faturamento Diário</span>
-          </h3>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyRevenueData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#7B68EE" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#7B68EE" stopOpacity={0.2}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                <XAxis 
-                  dataKey="date" 
-                  tickFormatter={(date) => format(new Date(date), 'dd/MM')}
-                  style={{ fontSize: '12px' }}
-                />
-                <YAxis 
-                  tickFormatter={(value) => formatCurrency(value)}
-                  style={{ fontSize: '12px' }}
-                />
-                <Tooltip 
-                  formatter={(value) => formatCurrency(Number(value))}
-                  labelFormatter={(label) => format(new Date(label), 'dd/MM/yyyy')}
-                  contentStyle={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)', 
-                    borderRadius: '8px', 
-                    border: 'none', 
-                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' 
-                  }}
-                />
-                <Bar 
-                  dataKey="amount" 
-                  name="Faturamento"
-                  radius={[4, 4, 0, 0]}
-                  fill="url(#colorRevenue)"
-                  animationDuration={1500}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      <div className="stat-card">
+        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+          Receita Média por Serviço
+        </h3>
+        <p className="stat-value">
+          {formatCurrency(stats.averageRevenue)}
+        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Baseado em todos os serviços
+        </p>
       </div>
 
-      <div className="col-span-full">
-        <div className="glass-card p-5">
-          <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-            <PieChartIcon className="h-5 w-5 text-indigo-500" />
-            <span>Valores por Status</span>
-          </h3>
-          <div className="h-[300px] flex flex-col md:flex-row items-center justify-center">
-            <div className="w-full md:w-2/3 h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={[{
-                  name: 'Pagos',
-                  value: stats.paidAmount
-                }, {
-                  name: 'Pendentes',
-                  value: stats.pendingAmount
-                }, {
-                  name: 'Cancelados',
-                  value: stats.canceledAmount
-                }]}>
-                  <defs>
-                    <linearGradient id="colorPaid" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.6}/>
-                    </linearGradient>
-                    <linearGradient id="colorPending" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#f97316" stopOpacity={0.6}/>
-                    </linearGradient>
-                    <linearGradient id="colorCanceled" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.6}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={true} vertical={false} />
-                  <XAxis type="number" tickFormatter={value => formatCurrency(Number(value))} />
-                  <YAxis type="category" dataKey="name" />
-                  <Tooltip formatter={value => formatCurrency(Number(value))} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]} animationDuration={1500}>
-                    {[{
-                      name: 'Pagos',
-                      fill: 'url(#colorPaid)'
-                    }, {
-                      name: 'Pendentes',
-                      fill: 'url(#colorPending)'
-                    }, {
-                      name: 'Cancelados',
-                      fill: 'url(#colorCanceled)'
-                    }].map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="w-full md:w-1/3 h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={[{
-                      name: 'Pagos',
-                      value: stats.paidAmount
-                    }, {
-                      name: 'Pendentes',
-                      value: stats.pendingAmount
-                    }, {
-                      name: 'Cancelados',
-                      value: stats.canceledAmount
-                    }]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                    animationDuration={1500}
-                  >
-                    <Cell key="paid" fill="#10b981" />
-                    <Cell key="pending" fill="#f97316" />
-                    <Cell key="canceled" fill="#ef4444" />
-                  </Pie>
-                  <Tooltip formatter={value => formatCurrency(Number(value))} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
+      <div className="stat-card">
+        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+          Receita Diária
+        </h3>
+        <p className="stat-value">{formatCurrency(dailyRevenue)}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Receita de hoje
+        </p>
+      </div>
+
+      <div className="lg:col-span-2 chart-container">
+        <h3 className="text-lg font-medium mb-4 p-4">Receita Mensal</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={dailyRevenueData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+            <Legend />
+            <Line type="monotone" dataKey="revenue" stroke="#8884d8" activeDot={{ r: 8 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="chart-container">
+        <h3 className="text-lg font-medium mb-4 p-4">Status de Pagamento</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={pieChartData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
+              label
+            >
+              {pieChartData.map((_entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
@@ -356,71 +221,62 @@ export function ServicesTab() {
 
   const fetchServices = async () => {
     try {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const {
-        data,
-        error
-      } = await supabase.from('services').select('*').eq('user_id', user.id).order('created_at', {
-        ascending: false
-      });
-      if (error) throw error;
-      setServices(data || []);
-    } catch (error) {
-      console.error("Error fetching services:", error);
-      toast.error("Erro ao carregar serviços");
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        setServices(data);
+      }
+    } catch (error: any) {
+      toast.error(`Erro ao buscar serviços: ${error.message}`);
     }
   };
 
-  const fetchCompanyLogo = async () => {
+  const fetchCompanyLogo = async (companyName: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-
       const { data, error } = await supabase
-        .from('profiles')
-        .select('company_logo')
-        .eq('id', session.user.id)
+        .from('companies')
+        .select('logo_url')
+        .eq('name', companyName)
         .single();
 
-      if (error) throw error;
-      if (data) {
-        setCompanyLogo(data.company_logo);
+      if (error) {
+        throw error;
       }
-    } catch (error) {
-      console.error('Error fetching company logo:', error);
+
+      if (data && data.logo_url) {
+        setCompanyLogo(data.logo_url);
+      } else {
+        setCompanyLogo(null);
+      }
+    } catch (error: any) {
+      console.error("Erro ao buscar logo da empresa:", error);
+      setCompanyLogo(null);
     }
   };
 
   useEffect(() => {
     fetchServices();
-    fetchCompanyLogo();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("Usuário não autenticado");
-        return;
+      const { data, error } = await supabase
+        .from('services')
+        .insert([{ ...newService, user_id: supabase.auth.user()?.id }]);
+
+      if (error) {
+        throw error;
       }
-      const serviceData = {
-        ...newService,
-        user_id: user.id
-      };
-      const {
-        error
-      } = await supabase.from('services').insert([serviceData]);
-      if (error) throw error;
+
+      fetchServices();
       toast.success("Serviço criado com sucesso!");
       setNewService({
         start_date: format(new Date(), "yyyy-MM-dd"),
@@ -434,34 +290,51 @@ export function ServicesTab() {
         reference_month: format(new Date(), "yyyy-MM-dd"),
         client_id: ""
       });
-      fetchServices();
-    } catch (error) {
-      console.error("Error creating service:", error);
-      toast.error("Erro ao criar serviço");
+    } catch (error: any) {
+      toast.error(`Erro ao criar serviço: ${error.message}`);
     }
   };
 
   const handleSharePortalLink = async (clientId: string) => {
-    const portalUrl = `${window.location.origin}/client-portal?client=${clientId}${companyLogo ? `&logo=${encodeURIComponent(companyLogo)}` : ''}`;
-    await navigator.clipboard.writeText(portalUrl);
-    toast.success("Link copiado para a área de transferência!");
-    setShowShareDialog(false);
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('share_id')
+        .eq('id', clientId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.share_id) {
+        const portalLink = `${window.location.origin}/client-portal?shareId=${data.share_id}`;
+        navigator.clipboard.writeText(portalLink);
+        toast.success("Link do portal copiado para a área de transferência!");
+      } else {
+        toast.error("Cliente não encontrado ou share_id não definido.");
+      }
+    } catch (error: any) {
+      toast.error(`Erro ao obter link do portal: ${error.message}`);
+    }
   };
 
-  const togglePaymentStatus = async (serviceId: string, currentStatus: string) => {
+  const togglePaymentStatus = async (id: string, currentStatus: string) => {
     try {
       const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
-      const {
-        error
-      } = await supabase.from('services').update({
-        payment_status: newStatus
-      }).eq('id', serviceId);
-      if (error) throw error;
-      await fetchServices();
-      toast.success("Status de pagamento atualizado!");
-    } catch (error) {
-      console.error("Error updating payment status:", error);
-      toast.error("Erro ao atualizar status de pagamento");
+      const { data, error } = await supabase
+        .from('services')
+        .update({ payment_status: newStatus })
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      fetchServices();
+      toast.success(`Status de pagamento alterado para ${newStatus === 'paid' ? 'Pago' : 'Pendente'}!`);
+    } catch (error: any) {
+      toast.error(`Erro ao alterar status de pagamento: ${error.message}`);
     }
   };
 
@@ -470,38 +343,51 @@ export function ServicesTab() {
   };
 
   const handleDelete = async () => {
-    if (!serviceToDelete) return;
     try {
-      const {
-        error
-      } = await supabase.from('services').delete().eq('id', serviceToDelete);
-      if (error) throw error;
-      toast.success("Serviço excluído com sucesso!");
-      setShowDeleteDialog(false);
-      setServiceToDelete(null);
+      if (!serviceToDelete) {
+        toast.error("ID do serviço para deletar não definido.");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', serviceToDelete);
+
+      if (error) {
+        throw error;
+      }
+
       fetchServices();
-    } catch (error) {
-      console.error("Error deleting service:", error);
-      toast.error("Erro ao excluir serviço");
+      toast.success("Serviço deletado com sucesso!");
+      setShowDeleteDialog(false);
+    } catch (error: any) {
+      toast.error(`Erro ao deletar serviço: ${error.message}`);
     }
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingService) return;
     try {
-      const {
-        error
-      } = await supabase.from('services').update({
-        ...editingService
-      }).eq('id', editingService.id);
-      if (error) throw error;
+      if (!editingService) {
+        toast.error("Nenhum serviço selecionado para editar.");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('services')
+        .update(editingService)
+        .eq('id', editingService.id);
+
+      if (error) {
+        throw error;
+      }
+
+      fetchServices();
       toast.success("Serviço atualizado com sucesso!");
       setEditingService(null);
-      fetchServices();
-    } catch (error) {
-      console.error("Error updating service:", error);
-      toast.error("Erro ao atualizar serviço");
+    } catch (error: any) {
+      toast.error(`Erro ao atualizar serviço: ${error.message}`);
     }
   };
 
@@ -568,153 +454,117 @@ export function ServicesTab() {
               </h2>
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="client" className="text-sm font-medium">Cliente</Label>
-                  <div className="flex gap-2">
-                    <select 
-                      id="client" 
-                      className="flex-1 px-3 py-2 border rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200" 
-                      value={newService.client_id} 
-                      onChange={e => {
-                        const client = clients.find(c => c.id === e.target.value);
-                        setNewService({
-                          ...newService,
-                          client_id: e.target.value,
-                          client_name: client ? client.name : ""
-                        });
-                      }} 
-                      required
-                    >
-                      <option value="">Selecione um cliente</option>
-                      {clients.map(client => (
-                        <option key={client.id} value={client.id}>
-                          {client.name}
-                        </option>
-                      ))}
-                    </select>
-                    <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="icon" type="button" disabled={!newService.client_id} onClick={() => setSelectedClientId(newService.client_id)}>
-                          <Link2 className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="glass-card">
-                        <DialogHeader>
-                          <DialogTitle>Compartilhar Portal do Cliente</DialogTitle>
-                        </DialogHeader>
-                        <div className="py-4">
-                          {companyLogo && (
-                            <div className="mb-4 flex justify-center">
-                              <img 
-                                src={companyLogo} 
-                                alt="Logo da empresa" 
-                                className="h-16 w-auto object-contain"
-                              />
-                            </div>
-                          )}
-                          <p className="mb-4">
-                            Compartilhe este link com seu cliente para que ele possa acompanhar os serviços:
-                          </p>
-                          <Input value={`${window.location.origin}/client-portal?client=${selectedClientId}${companyLogo ? `&logo=${encodeURIComponent(companyLogo)}` : ''}`} readOnly className="glass-card" />
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <DialogClose asChild>
-                            <Button variant="outline">Fechar</Button>
-                          </DialogClose>
-                          <Button onClick={() => handleSharePortalLink(selectedClientId)} className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700">
-                            Copiar Link
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="start_date" className="text-sm font-medium">Data de Início</Label>
-                  <Input 
-                    id="start_date" 
-                    type="date" 
-                    value={newService.start_date} 
+                  <Input
+                    type="date"
+                    id="start_date"
+                    value={newService.start_date}
                     onChange={e => setNewService({
                       ...newService,
                       start_date: e.target.value
-                    })} 
+                    })}
                     className="glass-card"
-                    required 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="client_name" className="text-sm font-medium">Nome do Cliente</Label>
+                  <Input
+                    type="text"
+                    id="client_name"
+                    value={newService.client_name}
+                    onChange={e => setNewService({
+                      ...newService,
+                      client_name: e.target.value
+                    })}
+                    className="glass-card"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="company_name" className="text-sm font-medium">Nome da Empresa</Label>
-                  <Input 
-                    id="company_name" 
-                    value={newService.company_name} 
+                  <Input
+                    type="text"
+                    id="company_name"
+                    value={newService.company_name}
                     onChange={e => setNewService({
                       ...newService,
                       company_name: e.target.value
-                    })} 
+                    })}
                     className="glass-card"
-                    required 
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="service_description" className="text-sm font-medium">Descrição do Serviço</Label>
-                  <Input 
-                    id="service_description" 
-                    value={newService.service_description} 
+                  <Input
+                    type="text"
+                    id="service_description"
+                    value={newService.service_description}
                     onChange={e => setNewService({
                       ...newService,
                       service_description: e.target.value
-                    })} 
+                    })}
                     className="glass-card"
-                    required 
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="stage" className="text-sm font-medium">Etapa</Label>
-                  <Input 
-                    id="stage" 
-                    value={newService.stage} 
+                  <Input
+                    type="text"
+                    id="stage"
+                    value={newService.stage}
                     onChange={e => setNewService({
                       ...newService,
                       stage: e.target.value
-                    })} 
+                    })}
                     className="glass-card"
-                    required 
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="status" className="text-sm font-medium">Status</Label>
-                  <Input 
-                    id="status" 
-                    value={newService.status} 
+                  <Input
+                    type="text"
+                    id="status"
+                    value={newService.status}
                     onChange={e => setNewService({
                       ...newService,
                       status: e.target.value
-                    })} 
+                    })}
                     className="glass-card"
-                    required 
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="amount" className="text-sm font-medium">Valor</Label>
-                  <Input 
-                    id="amount" 
-                    type="number" 
-                    value={newService.amount} 
+                  <Input
+                    type="number"
+                    id="amount"
+                    value={newService.amount}
                     onChange={e => setNewService({
                       ...newService,
                       amount: Number(e.target.value)
-                    })} 
+                    })}
                     className="glass-card"
-                    required 
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="reference_month" className="text-sm font-medium">Mês de Referência</Label>
+                  <Input
+                    type="date"
+                    id="reference_month"
+                    value={newService.reference_month}
+                    onChange={e => setNewService({
+                      ...newService,
+                      reference_month: e.target.value
+                    })}
+                    className="glass-card"
+                  />
+                </div>
+                
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Status do Pagamento</Label>
                   <Select 
@@ -771,143 +621,126 @@ export function ServicesTab() {
                         <DialogTitle>Compartilhar Serviços por Cliente</DialogTitle>
                       </DialogHeader>
                       <div className="py-4 space-y-4">
-                        {Object.entries(groupedServices).map(([clientId, { clientName, services }]) => (
+                        {Object.entries(groupedServices).map(([clientId, {
+                          clientName,
+                          services
+                        }]) => (
                           <div key={clientId} className="glass-card p-4 transition-all duration-300 hover:translate-y-[-2px]">
                             <div className="flex justify-between items-center mb-2">
-                              <h3 className="text-lg font-medium">{clientName}</h3>
-                              <Button
+                              <h3 className="font-medium">{clientName}</h3>
+                              <Button 
+                                variant="outline" 
                                 size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedClientId(clientId);
-                                  handleSharePortalLink(clientId);
-                                }}
-                                className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:border-indigo-800 dark:hover:bg-indigo-900"
+                                className="text-xs"
+                                onClick={() => handleSharePortalLink(clientId)}
                               >
-                                <Link2 className="h-4 w-4 mr-1" />
-                                Copiar Link
+                                <Link2 className="h-3 w-3 mr-1" />
+                                Compartilhar
                               </Button>
                             </div>
-                            <p className="text-sm text-gray-500 mb-2">
-                              {services.length} serviços • {formatCurrency(services.reduce((acc, s) => acc + s.amount, 0))}
-                            </p>
+                            <p className="text-sm text-gray-500">{services.length} serviços</p>
                           </div>
                         ))}
                       </div>
-                      <DialogFooter>
-                        <DialogClose asChild>
-                          <Button variant="outline">Fechar</Button>
-                        </DialogClose>
-                      </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                  
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Buscar serviços..."
-                      value={filterText}
-                      onChange={(e) => setFilterText(e.target.value)}
-                      className="pl-9 pr-4 glass-card w-64"
-                    />
-                  </div>
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <Select value={filterClient} onValueChange={setFilterClient}>
-                  <SelectTrigger className="glass-card">
-                    <SelectValue placeholder="Filtrar por cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todos os clientes</SelectItem>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.name}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Select value={filterMonth} onValueChange={setFilterMonth}>
-                  <SelectTrigger className="glass-card">
-                    <SelectValue placeholder="Filtrar por mês" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todos os meses</SelectItem>
-                    {Array.from(new Set(services.map(service => format(new Date(service.start_date), "yyyy-MM")))).map(month => (
-                      <SelectItem key={month} value={month}>
-                        {format(new Date(month + "-01"), "MMMM yyyy")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
+              <div className="flex gap-4 mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input 
+                    placeholder="Buscar serviços..." 
+                    value={filterText} 
+                    onChange={e => setFilterText(e.target.value)} 
+                    className="pl-9 glass-card" 
+                  />
+                </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="glass-card">
-                    <SelectValue placeholder="Filtrar por status" />
+                  <SelectTrigger className="w-[180px] glass-card">
+                    <SelectValue placeholder="Status de pagamento" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os status</SelectItem>
+                    <SelectItem value="">Todos</SelectItem>
                     <SelectItem value="paid">Pagos</SelectItem>
                     <SelectItem value="pending">Pendentes</SelectItem>
+                    <SelectItem value="canceled">Cancelados</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
-              <div className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+              <div className="rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800">
                 <Table>
-                  <TableHeader className="bg-gray-50 dark:bg-gray-900">
+                  <TableHeader className="bg-gray-50 dark:bg-gray-800">
                     <TableRow>
                       <TableHead>Cliente</TableHead>
                       <TableHead>Empresa</TableHead>
                       <TableHead>Serviço</TableHead>
-                      <TableHead>Data</TableHead>
                       <TableHead>Valor</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredServices.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                           Nenhum serviço encontrado
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredServices.map(service => (
-                        <TableRow key={service.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-900">
-                          <TableCell className="font-medium">{service.client_name}</TableCell>
+                        <TableRow key={service.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50">
+                          <TableCell>{service.client_name}</TableCell>
                           <TableCell>{service.company_name}</TableCell>
                           <TableCell>{service.service_description}</TableCell>
-                          <TableCell>{format(new Date(service.start_date), "dd/MM/yyyy")}</TableCell>
                           <TableCell>{formatCurrency(service.amount)}</TableCell>
                           <TableCell>
                             <div 
-                              className={`py-1 px-2 rounded-full text-xs font-medium inline-flex items-center ${
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                 service.payment_status === 'paid' 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                                   : service.payment_status === 'canceled'
                                   ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                                   : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
                               }`}
-                              onClick={() => togglePaymentStatus(service.id, service.payment_status)}
-                              role="button"
                             >
                               {service.payment_status === 'paid' ? 'Pago' : service.payment_status === 'canceled' ? 'Cancelado' : 'Pendente'}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => handleEdit(service)}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0" 
+                                onClick={() => handleEdit(service)}
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" onClick={() => {
-                                setServiceToDelete(service.id);
-                                setShowDeleteDialog(true);
-                              }} className="text-red-500">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-8 w-8 p-0 hover:text-red-600 hover:bg-red-50"
+                                onClick={() => {
+                                  setServiceToDelete(service.id);
+                                  setShowDeleteDialog(true);
+                                }}
+                              >
                                 <Trash2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`h-8 px-2 text-xs ${
+                                  service.payment_status === 'paid'
+                                    ? 'text-orange-600 hover:bg-orange-50 hover:text-orange-700'
+                                    : 'text-green-600 hover:bg-green-50 hover:text-green-700'
+                                }`}
+                                onClick={() => togglePaymentStatus(service.id, service.payment_status)}
+                              >
+                                {service.payment_status === 'paid' ? 'Marcar como Pendente' : 'Marcar como Pago'}
                               </Button>
                             </div>
                           </TableCell>
@@ -922,82 +755,102 @@ export function ServicesTab() {
         </Tabs>
       </div>
       
-      <Dialog open={editingService !== null} onOpenChange={(open) => !open && setEditingService(null)}>
-        <DialogContent className="glass-card">
-          <DialogHeader>
-            <DialogTitle>Editar Serviço</DialogTitle>
-          </DialogHeader>
-          {editingService && (
+      {/* Edit Service Dialog */}
+      {editingService && (
+        <Dialog open={!!editingService} onOpenChange={(open) => !open && setEditingService(null)}>
+          <DialogContent className="glass-card">
+            <DialogHeader>
+              <DialogTitle>Editar Serviço</DialogTitle>
+            </DialogHeader>
             <form onSubmit={handleUpdate} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-client-name">Cliente</Label>
-                <Input 
-                  id="edit-client-name" 
-                  value={editingService.client_name} 
-                  onChange={e => setEditingService({...editingService, client_name: e.target.value})} 
-                  className="glass-card"
-                  required 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-company-name">Nome da Empresa</Label>
-                <Input 
-                  id="edit-company-name" 
-                  value={editingService.company_name} 
-                  onChange={e => setEditingService({...editingService, company_name: e.target.value})} 
-                  className="glass-card"
-                  required 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-service-description">Descrição do Serviço</Label>
-                <Input 
-                  id="edit-service-description" 
-                  value={editingService.service_description} 
-                  onChange={e => setEditingService({...editingService, service_description: e.target.value})} 
-                  className="glass-card"
-                  required 
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-stage">Etapa</Label>
+                  <Label htmlFor="edit_client_name">Cliente</Label>
                   <Input 
-                    id="edit-stage" 
-                    value={editingService.stage} 
-                    onChange={e => setEditingService({...editingService, stage: e.target.value})} 
+                    id="edit_client_name" 
+                    value={editingService.client_name} 
+                    onChange={e => setEditingService({
+                      ...editingService,
+                      client_name: e.target.value
+                    })} 
                     className="glass-card"
-                    required 
                   />
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="edit-status">Status</Label>
+                  <Label htmlFor="edit_company_name">Empresa</Label>
                   <Input 
-                    id="edit-status" 
-                    value={editingService.status} 
-                    onChange={e => setEditingService({...editingService, status: e.target.value})} 
+                    id="edit_company_name" 
+                    value={editingService.company_name} 
+                    onChange={e => setEditingService({
+                      ...editingService,
+                      company_name: e.target.value
+                    })} 
                     className="glass-card"
-                    required 
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+                
                 <div className="space-y-2">
-                  <Label htmlFor="edit-amount">Valor</Label>
+                  <Label htmlFor="edit_service_description">Descrição</Label>
                   <Input 
-                    id="edit-amount" 
+                    id="edit_service_description" 
+                    value={editingService.service_description} 
+                    onChange={e => setEditingService({
+                      ...editingService,
+                      service_description: e.target.value
+                    })} 
+                    className="glass-card"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit_amount">Valor</Label>
+                  <Input 
+                    id="edit_amount" 
                     type="number" 
                     value={editingService.amount} 
-                    onChange={e => setEditingService({...editingService, amount: Number(e.target.value)})} 
+                    onChange={e => setEditingService({
+                      ...editingService,
+                      amount: Number(e.target.value)
+                    })} 
                     className="glass-card"
-                    required 
                   />
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="edit-payment-status">Status do Pagamento</Label>
+                  <Label htmlFor="edit_stage">Etapa</Label>
+                  <Input 
+                    id="edit_stage" 
+                    value={editingService.stage} 
+                    onChange={e => setEditingService({
+                      ...editingService,
+                      stage: e.target.value
+                    })} 
+                    className="glass-card"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit_status">Status</Label>
+                  <Input 
+                    id="edit_status" 
+                    value={editingService.status} 
+                    onChange={e => setEditingService({
+                      ...editingService,
+                      status: e.target.value
+                    })} 
+                    className="glass-card"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Status do Pagamento</Label>
                   <Select 
                     value={editingService.payment_status} 
-                    onValueChange={value => setEditingService({...editingService, payment_status: value})}
+                    onValueChange={value => setEditingService({
+                      ...editingService,
+                      payment_status: value
+                    })}
                   >
                     <SelectTrigger className="glass-card">
                       <SelectValue />
@@ -1010,41 +863,9 @@ export function ServicesTab() {
                   </Select>
                 </div>
               </div>
+              
               <DialogFooter>
-                <Button variant="outline" onClick={() => setEditingService(null)} type="button">
+                <Button type="button" variant="outline" onClick={() => setEditingService(null)}>
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700">
-                  Salvar Alterações
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="glass-card">
-          <DialogHeader>
-            <DialogTitle>Excluir Serviço</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>Tem certeza de que deseja excluir este serviço? Esta ação não pode ser desfeita.</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDelete}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
-            >
-              Excluir
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+                <Button type="submit" className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-
