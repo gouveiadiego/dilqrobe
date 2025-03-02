@@ -1,5 +1,5 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -26,7 +26,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 204 37% 36%; /* Changed to #3c627c */
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -57,7 +57,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Poppins', 'Inter', sans-serif;
   }
 }
 
@@ -92,4 +93,73 @@
   opacity: 0;
   transform: translateY(-10px);
   transition: opacity 300ms, transform 300ms;
+}
+
+/* Futuristic Components */
+.glass-card {
+  @apply relative overflow-hidden bg-white/10 backdrop-blur-lg border border-white/20 
+         shadow-lg rounded-xl transition-all duration-300 hover:shadow-xl;
+}
+
+.glass-card::before {
+  content: '';
+  @apply absolute inset-0 z-[-1] bg-glass-shine opacity-20 transition-opacity duration-300;
+}
+
+.glass-card:hover::before {
+  @apply opacity-30;
+}
+
+.futuristic-card {
+  @apply rounded-xl shadow-lg border border-slate-200/50 bg-white p-6
+         transition-all duration-300 overflow-hidden relative
+         hover:shadow-xl hover:border-dilq-teal/30;
+}
+
+.futuristic-card::after {
+  content: '';
+  @apply absolute -inset-[1px] z-[-1] bg-gradient-to-br from-transparent 
+         via-transparent to-dilq-accent/10 opacity-0 transition-opacity duration-300 
+         rounded-xl pointer-events-none;
+}
+
+.futuristic-card:hover::after {
+  @apply opacity-100;
+}
+
+.gradient-border {
+  @apply relative rounded-xl;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(to right, theme('colors.dilq.teal'), theme('colors.dilq.accent')) border-box;
+  border: 1px solid transparent;
+}
+
+.shimmer-effect {
+  @apply relative overflow-hidden;
+}
+
+.shimmer-effect::before {
+  content: '';
+  @apply absolute top-0 left-0 w-full h-full -translate-x-full
+         bg-gradient-to-r from-transparent via-white/10 to-transparent
+         animate-shimmer;
+}
+
+.progress-bar-glow {
+  @apply rounded-full overflow-hidden relative shadow-inner;
+}
+
+.progress-bar-glow::after {
+  content: '';
+  @apply absolute inset-0 h-full rounded-full
+         bg-gradient-to-r from-transparent via-white/30 to-transparent
+         opacity-0 transition-opacity duration-300;
+}
+
+.progress-bar-glow:hover::after {
+  @apply opacity-100;
+}
+
+.text-gradient {
+  @apply bg-gradient-to-br from-dilq-accent to-dilq-teal bg-clip-text text-transparent;
 }

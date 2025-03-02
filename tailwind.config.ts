@@ -54,8 +54,14 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         dilq: {
-          blue: "#3c627c", // Updated from #0EA5E9 to #3c627c
+          blue: "#3c627c",
           dark: "#222222",
+          accent: "#7B68EE",
+          glow: "#8A2BE2",
+          teal: "#20B2AA",
+          darkblue: "#1A1F2C",
+          lightpurple: "#E5DEFF",
+          vibrant: "#8B5CF6",
         },
       },
       borderRadius: {
@@ -72,10 +78,37 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "pulse-subtle": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.8" },
+        },
+        "float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-5px)" },
+        },
+        "shimmer": {
+          "0%": { backgroundPosition: "-500px 0" },
+          "100%": { backgroundPosition: "500px 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "pulse-subtle": "pulse-subtle 3s ease-in-out infinite",
+        "float": "float 3s ease-in-out infinite",
+        "shimmer": "shimmer 2s infinite linear",
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+        "glass-gradient": "linear-gradient(to right bottom, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1))",
+        "glass-shine": "linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 100%)",
+        "futuristic-gradient": "linear-gradient(90deg, hsla(277, 75%, 84%, 1) 0%, hsla(297, 50%, 51%, 1) 100%)",
+      },
+      boxShadow: {
+        "neon": "0 0 5px theme('colors.dilq.glow'), 0 0 20px theme('colors.dilq.glow')",
+        "glass": "0 4px 30px rgba(0, 0, 0, 0.1)",
+        "inner-light": "inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)",
       },
     },
   },

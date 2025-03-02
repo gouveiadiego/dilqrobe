@@ -1,3 +1,4 @@
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { SubTask, Task, TaskUpdate } from "@/types/task";
@@ -38,9 +39,9 @@ export function TaskItem({
   const [editCategory, setEditCategory] = useState(task.category || "none");
   
   const priorityClass = {
-    high: "text-red-400 bg-red-400/10 border-red-400/20",
-    medium: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
-    low: "text-green-400 bg-green-400/10 border-green-400/20",
+    high: "text-red-500 bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-sm",
+    medium: "text-yellow-600 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 shadow-sm",
+    low: "text-green-600 bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-sm",
   }[task.priority];
 
   const priorityLabel = {
@@ -49,7 +50,7 @@ export function TaskItem({
     low: "Baixa",
   }[task.priority];
 
-  const statusClass = task.completed ? "bg-gray-50" : "bg-white";
+  const completedClass = task.completed ? "opacity-75" : "";
 
   const handleAddSubtask = () => {
     if (!newSubtask.trim() || !onAddSubtask) return;
@@ -97,16 +98,18 @@ export function TaskItem({
   return (
     <div
       className={cn(
-        "group flex flex-col gap-4 p-4 rounded-lg transition-all duration-200 border border-gray-100",
-        statusClass,
-        "hover:shadow-lg hover:shadow-purple-500/5"
+        "futuristic-card group transition-all duration-200",
+        completedClass,
+        "hover:bg-white/80 backdrop-blur-sm"
       )}
     >
       <div className="flex items-center gap-4">
         <Checkbox
           checked={task.completed}
           onCheckedChange={() => onToggle(task.id)}
-          className="h-5 w-5 border-2 border-gray-300 data-[state=checked]:border-purple-500 data-[state=checked]:bg-purple-500"
+          className="h-5 w-5 border-2 border-gray-300 rounded-full
+                   data-[state=checked]:border-dilq-accent data-[state=checked]:bg-dilq-accent
+                   transition-colors duration-300"
         />
         <div className="flex-1 min-w-0">
           {isEditing ? (
@@ -114,14 +117,14 @@ export function TaskItem({
               <Input
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full"
+                className="w-full focus:ring-dilq-accent focus:border-dilq-accent"
                 placeholder="Título da tarefa"
               />
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn(
-                      "w-[180px] justify-start text-left font-normal",
+                      "justify-start text-left font-normal",
                       editDate ? "text-gray-900" : "text-gray-500"
                     )}>
                       <Bell className="mr-2 h-4 w-4" />
@@ -154,7 +157,7 @@ export function TaskItem({
                 </Select>
               </div>
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveEdit}>
+                <Button size="sm" onClick={handleSaveEdit} className="bg-dilq-accent hover:bg-dilq-accent/90">
                   <Check className="h-4 w-4 mr-1" />
                   Salvar
                 </Button>
@@ -169,8 +172,8 @@ export function TaskItem({
               <div className="flex items-center gap-2">
                 <p
                   className={cn(
-                    "text-sm font-medium text-gray-900",
-                    task.completed && "line-through text-gray-400"
+                    "text-sm font-medium",
+                    task.completed ? "line-through text-gray-400" : "text-gray-800"
                   )}
                 >
                   {task.title}
@@ -179,7 +182,7 @@ export function TaskItem({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0"
+                    className="h-6 w-6 p-0 text-dilq-accent hover:text-dilq-accent/80 hover:bg-dilq-accent/10"
                     onClick={() => setIsExpanded(!isExpanded)}
                   >
                     {isExpanded ? (
@@ -190,12 +193,15 @@ export function TaskItem({
                   </Button>
                 )}
               </div>
-              <div className="flex gap-2 mt-1 flex-wrap">
-                <span className={cn("text-xs px-2 py-0.5 rounded-full border", priorityClass)}>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <span className={cn(
+                  "text-xs px-2 py-0.5 rounded-full border backdrop-blur-sm", 
+                  priorityClass
+                )}>
                   {priorityLabel}
                 </span>
                 {task.category && (
-                  <span className="text-xs px-2 py-0.5 rounded-full border text-purple-400 bg-purple-400/10 border-purple-400/20 flex items-center gap-1">
+                  <span className="text-xs px-2 py-0.5 rounded-full border text-dilq-accent bg-dilq-accent/10 border-dilq-accent/20 flex items-center gap-1 backdrop-blur-sm">
                     <Tag className="h-3 w-3" />
                     {task.category}
                   </span>
@@ -221,7 +227,7 @@ export function TaskItem({
               variant="ghost"
               size="icon"
               onClick={() => setIsEditing(true)}
-              className="h-8 w-8 text-gray-400 hover:text-purple-500"
+              className="h-8 w-8 text-gray-400 hover:text-dilq-accent hover:bg-dilq-accent/10 rounded-full"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -230,7 +236,7 @@ export function TaskItem({
             variant="ghost"
             size="icon"
             onClick={() => onDelete(task.id)}
-            className="h-8 w-8 text-gray-400 hover:text-red-500"
+            className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -239,28 +245,29 @@ export function TaskItem({
 
       {/* Subtasks section */}
       {isExpanded && (
-        <div className="pl-9 space-y-2">
+        <div className="mt-4 pl-9 space-y-2 pt-3 border-t border-dashed border-gray-100">
           {task.subtasks.map((subtask: SubTask) => (
-            <div key={subtask.id} className="flex items-center gap-2">
+            <div key={subtask.id} className="flex items-center gap-2 group">
               <Checkbox
                 checked={subtask.completed}
                 onCheckedChange={() => onToggleSubtask?.(task.id, subtask.id)}
-                className="h-4 w-4 border-2 border-gray-300 data-[state=checked]:border-purple-500 data-[state=checked]:bg-purple-500"
+                className="h-4 w-4 border-2 border-gray-300 rounded-full
+                        data-[state=checked]:border-dilq-accent data-[state=checked]:bg-dilq-accent"
               />
               <span className={cn(
-                "text-sm",
-                subtask.completed && "line-through text-gray-400"
+                "text-sm transition-all duration-300",
+                subtask.completed ? "line-through text-gray-400" : "text-gray-700"
               )}>
                 {subtask.title}
               </span>
             </div>
           ))}
-          <div className="flex gap-2">
+          <div className="flex gap-2 mt-3">
             <Input
               placeholder="Nova sub-tarefa..."
               value={newSubtask}
               onChange={(e) => setNewSubtask(e.target.value)}
-              className="h-8 text-sm"
+              className="h-8 text-sm focus:ring-dilq-accent focus:border-dilq-accent"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -270,9 +277,9 @@ export function TaskItem({
             />
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onClick={handleAddSubtask}
-              className="h-8 px-2"
+              className="h-8 px-3 text-dilq-accent border-dilq-accent/20 hover:bg-dilq-accent/10"
             >
               <Plus className="h-4 w-4" />
             </Button>

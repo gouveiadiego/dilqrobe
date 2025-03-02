@@ -3,6 +3,7 @@ import { Task } from "@/types/task";
 import { TaskItem } from "@/components/TaskItem";
 import { isThisWeek, isThisMonth, parseISO, isToday, isTomorrow } from "date-fns";
 import { ScrollArea } from "./ui/scroll-area";
+import { Rocket, Calendar, CheckCircle2, AlertTriangle, Clock, ChevronDown, ChevronUp } from "lucide-react";
 
 interface TaskListProps {
   tasks: Task[];
@@ -64,16 +65,26 @@ export function TaskList({
   const groupedCompletedTasks = groupTasksByPeriod(tasks);
 
   return (
-    <div className="space-y-8">
-      {/* Seções do topo: Fazer Hoje e Amanhã */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-10">
+      {/* Grade de Seções no Topo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Fazer Hoje</h3>
-          <ScrollArea className="h-[400px]">
-            <div className="pr-4 space-y-4">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dilq-accent to-dilq-teal flex items-center justify-center shadow-md">
+              <Rocket className="h-5 w-5 text-white animate-float" />
+            </div>
+            <h3 className="text-xl font-semibold bg-gradient-to-br from-dilq-accent to-dilq-teal bg-clip-text text-transparent">
+              Fazer Hoje
+            </h3>
+          </div>
+          <div className="relative overflow-hidden before:absolute before:inset-x-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-dilq-accent/50 before:to-transparent"></div>
+          <ScrollArea className="h-[400px] pr-2">
+            <div className="space-y-4 pr-4">
               {todayTasks.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  Nenhuma tarefa para hoje
+                <div className="text-center py-12 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 backdrop-blur-sm">
+                  <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-gray-400 text-sm">Nenhuma tarefa para hoje</p>
+                  <p className="text-gray-300 text-xs mt-1">Adicione sua primeira tarefa do dia</p>
                 </div>
               ) : (
                 todayTasks.map((task) => (
@@ -94,12 +105,22 @@ export function TaskList({
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">Amanhã</h3>
-          <ScrollArea className="h-[400px]">
-            <div className="pr-4 space-y-4">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-dilq-teal to-blue-400 flex items-center justify-center shadow-md">
+              <Clock className="h-5 w-5 text-white animate-pulse-subtle" />
+            </div>
+            <h3 className="text-xl font-semibold bg-gradient-to-br from-dilq-teal to-blue-400 bg-clip-text text-transparent">
+              Amanhã
+            </h3>
+          </div>
+          <div className="relative overflow-hidden before:absolute before:inset-x-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-dilq-teal/50 before:to-transparent"></div>
+          <ScrollArea className="h-[400px] pr-2">
+            <div className="space-y-4 pr-4">
               {tomorrowTasks.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  Nenhuma tarefa para amanhã
+                <div className="text-center py-12 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 backdrop-blur-sm">
+                  <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-gray-400 text-sm">Nenhuma tarefa para amanhã</p>
+                  <p className="text-gray-300 text-xs mt-1">Planeje seus próximos passos</p>
                 </div>
               ) : (
                 tomorrowTasks.map((task) => (
@@ -120,50 +141,77 @@ export function TaskList({
         </div>
       </div>
 
-      {/* Seção inferior: Tarefas Ativas */}
-      <div className="mt-8 space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Tarefas Ativas</h3>
-        <ScrollArea className="h-[400px]">
-          <div className="pr-4 space-y-4">
+      {/* Seção de Tarefas Ativas */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-md">
+            <AlertTriangle className="h-6 w-6 text-white animate-pulse-subtle" />
+          </div>
+          <h3 className="text-2xl font-semibold bg-gradient-to-br from-blue-500 to-purple-500 bg-clip-text text-transparent">
+            Tarefas Ativas
+          </h3>
+        </div>
+        <div className="relative overflow-hidden before:absolute before:inset-x-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-purple-500/50 before:to-transparent mb-6"></div>
+        <ScrollArea className="h-[400px] pr-2">
+          <div className="space-y-4 pr-4">
             {activeTasks.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                Nenhuma tarefa ativa encontrada
+              <div className="text-center py-16 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 backdrop-blur-sm">
+                <CheckCircle2 className="h-16 w-16 mx-auto mb-4 text-gray-200" />
+                <p className="text-gray-400">Nenhuma tarefa ativa encontrada</p>
+                <p className="text-gray-300 text-sm mt-1">Todas as suas tarefas foram concluídas</p>
               </div>
             ) : (
-              activeTasks.map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onToggle={onToggleTask}
-                  onDelete={onDeleteTask}
-                  onAddSubtask={onAddSubtask}
-                  onToggleSubtask={onToggleSubtask}
-                  onUpdateTask={onUpdateTask}
-                  categories={categories}
-                />
-              ))
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {activeTasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={onToggleTask}
+                    onDelete={onDeleteTask}
+                    onAddSubtask={onAddSubtask}
+                    onToggleSubtask={onToggleSubtask}
+                    onUpdateTask={onUpdateTask}
+                    categories={categories}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </ScrollArea>
       </div>
 
-      {/* Seção de tarefas concluídas */}
+      {/* Seção de Tarefas Concluídas */}
       {(groupedCompletedTasks.thisWeek.length > 0 || 
         groupedCompletedTasks.thisMonth.length > 0 || 
         groupedCompletedTasks.older.length > 0) && (
-        <div className="space-y-6 pt-8 border-t border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Tarefas Concluídas</h3>
+        <div className="space-y-6 pt-8 relative before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-gray-200 before:to-transparent">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-md">
+              <CheckCircle2 className="h-6 w-6 text-white animate-pulse-subtle" />
+            </div>
+            <h3 className="text-2xl font-semibold bg-gradient-to-br from-green-400 to-emerald-600 bg-clip-text text-transparent">
+              Tarefas Concluídas
+            </h3>
+          </div>
           
           {groupedCompletedTasks.thisWeek.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <button
                 onClick={() => setShowThisWeek(!showThisWeek)}
-                className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+                className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-dilq-accent transition-colors px-3 py-2 rounded-lg hover:bg-gray-50 w-full"
               >
-                {showThisWeek ? '▼' : '▶'} Esta Semana ({groupedCompletedTasks.thisWeek.length})
+                {showThisWeek ? (
+                  <ChevronDown className="h-4 w-4 text-dilq-accent" />
+                ) : (
+                  <ChevronUp className="h-4 w-4 text-dilq-accent" />
+                )}
+                <span>Esta Semana</span>
+                <span className="ml-2 bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs">
+                  {groupedCompletedTasks.thisWeek.length}
+                </span>
               </button>
               {showThisWeek && (
-                <div className="space-y-2 pl-4">
+                <div className="space-y-3 pl-6 pt-2">
                   {groupedCompletedTasks.thisWeek.map((task) => (
                     <TaskItem
                       key={task.id}
@@ -182,15 +230,23 @@ export function TaskList({
           )}
 
           {groupedCompletedTasks.thisMonth.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <button
                 onClick={() => setShowThisMonth(!showThisMonth)}
-                className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+                className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-dilq-accent transition-colors px-3 py-2 rounded-lg hover:bg-gray-50 w-full"
               >
-                {showThisMonth ? '▼' : '▶'} Este Mês ({groupedCompletedTasks.thisMonth.length})
+                {showThisMonth ? (
+                  <ChevronDown className="h-4 w-4 text-dilq-accent" />
+                ) : (
+                  <ChevronUp className="h-4 w-4 text-dilq-accent" />
+                )}
+                <span>Este Mês</span>
+                <span className="ml-2 bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs">
+                  {groupedCompletedTasks.thisMonth.length}
+                </span>
               </button>
               {showThisMonth && (
-                <div className="space-y-2 pl-4">
+                <div className="space-y-3 pl-6 pt-2">
                   {groupedCompletedTasks.thisMonth.map((task) => (
                     <TaskItem
                       key={task.id}
@@ -209,15 +265,23 @@ export function TaskList({
           )}
 
           {groupedCompletedTasks.older.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <button
                 onClick={() => setShowOlder(!showOlder)}
-                className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+                className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-dilq-accent transition-colors px-3 py-2 rounded-lg hover:bg-gray-50 w-full"
               >
-                {showOlder ? '▼' : '▶'} Mais Antigas ({groupedCompletedTasks.older.length})
+                {showOlder ? (
+                  <ChevronDown className="h-4 w-4 text-dilq-accent" />
+                ) : (
+                  <ChevronUp className="h-4 w-4 text-dilq-accent" />
+                )}
+                <span>Mais Antigas</span>
+                <span className="ml-2 bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs">
+                  {groupedCompletedTasks.older.length}
+                </span>
               </button>
               {showOlder && (
-                <div className="space-y-2 pl-4">
+                <div className="space-y-3 pl-6 pt-2">
                   {groupedCompletedTasks.older.map((task) => (
                     <TaskItem
                       key={task.id}
@@ -239,4 +303,3 @@ export function TaskList({
     </div>
   );
 }
-
