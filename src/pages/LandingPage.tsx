@@ -13,7 +13,6 @@ import {
   Users,
   Sparkles,
   Brain,
-  LucideIcon,
   ArrowDown
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,7 +35,7 @@ export default function LandingPage() {
 
   const features = [
     {
-      icon: <CheckCircle className="h-12 w-12 text-purple-500" />,
+      icon: <CheckCircle className="h-12 w-12 text-dilq-blue" />,
       title: "Gerenciamento de Tarefas",
       description: "Organize suas tarefas por prioridade, data e categoria. Visualize o progresso em tempo real e nunca perca um prazo.",
       image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
@@ -48,7 +47,7 @@ export default function LandingPage() {
       ]
     },
     {
-      icon: <CreditCard className="h-12 w-12 text-purple-500" />,
+      icon: <CreditCard className="h-12 w-12 text-dilq-blue" />,
       title: "Controle Financeiro",
       description: "Controle despesas e receitas, categorize transações e visualize relatórios detalhados de sua saúde financeira.",
       image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
@@ -60,7 +59,7 @@ export default function LandingPage() {
       ]
     },
     {
-      icon: <Users className="h-12 w-12 text-purple-500" />,
+      icon: <Users className="h-12 w-12 text-dilq-blue" />,
       title: "Gestão de Clientes",
       description: "Mantenha todos os detalhes de seus clientes organizados e acessíveis. Melhore seu relacionamento com clientes importantes.",
       image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
@@ -72,7 +71,7 @@ export default function LandingPage() {
       ]
     },
     {
-      icon: <Layers className="h-12 w-12 text-purple-500" />,
+      icon: <Layers className="h-12 w-12 text-dilq-blue" />,
       title: "Projetos Escritos",
       description: "Documente e acompanhe seus projetos escritos, mantendo um histórico organizado e acessível.",
       image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
@@ -84,7 +83,7 @@ export default function LandingPage() {
       ]
     },
     {
-      icon: <Calendar className="h-12 w-12 text-purple-500" />,
+      icon: <Calendar className="h-12 w-12 text-dilq-blue" />,
       title: "Hábitos & Desafios",
       description: "Crie e monitore hábitos diários. Participe de desafios e acompanhe seu progresso com métricas visuais.",
       image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
@@ -96,7 +95,7 @@ export default function LandingPage() {
       ]
     },
     {
-      icon: <BarChart3 className="h-12 w-12 text-purple-500" />,
+      icon: <BarChart3 className="h-12 w-12 text-dilq-blue" />,
       title: "Dashboard Intuitivo",
       description: "Visualize todos os seus dados importantes em um só lugar com gráficos intuitivos e relatórios personalizados.",
       image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
@@ -108,7 +107,7 @@ export default function LandingPage() {
       ]
     },
     {
-      icon: <Shield className="h-12 w-12 text-purple-500" />,
+      icon: <Shield className="h-12 w-12 text-dilq-blue" />,
       title: "Portal do Cliente",
       description: "Um espaço dedicado onde seus clientes podem acessar informações relevantes e acompanhar o progresso dos projetos.",
       image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
@@ -120,7 +119,7 @@ export default function LandingPage() {
       ]
     },
     {
-      icon: <Settings2 className="h-12 w-12 text-purple-500" />,
+      icon: <Settings2 className="h-12 w-12 text-dilq-blue" />,
       title: "Perfil & Configurações",
       description: "Personalize sua experiência ajustando configurações de acordo com suas preferências.",
       image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
@@ -163,7 +162,7 @@ export default function LandingPage() {
 
   const Step = ({ number, title, description, icon }: StepProps) => (
     <div className="flex items-start space-x-4">
-      <div className="flex-shrink-0 bg-purple-100 h-12 w-12 rounded-full flex items-center justify-center">
+      <div className="flex-shrink-0 bg-sky-100 h-12 w-12 rounded-full flex items-center justify-center">
         {icon}
       </div>
       <div>
@@ -174,19 +173,19 @@ export default function LandingPage() {
   );
 
   const TestimonialCard = ({ testimonial }: { testimonial: typeof testimonials[0] }) => (
-    <Card className="bg-white border-purple-100 hover:shadow-lg transition-all duration-300">
+    <Card className="bg-white border-gray-200 hover:border-dilq-blue hover:shadow-lg transition-all duration-300">
       <CardContent className="p-6">
         <div className="flex items-start space-x-4">
           <img 
             src={testimonial.avatar} 
             alt={testimonial.name} 
-            className="w-16 h-16 rounded-full object-cover border-2 border-purple-200" 
+            className="w-16 h-16 rounded-full object-cover border-2 border-sky-200" 
           />
           <div>
             <p className="italic text-gray-700 mb-4">"{testimonial.content}"</p>
             <div>
               <p className="font-semibold text-gray-900">{testimonial.name}</p>
-              <p className="text-sm text-purple-600">{testimonial.role}</p>
+              <p className="text-sm text-dilq-blue">{testimonial.role}</p>
             </div>
           </div>
         </div>
@@ -207,17 +206,17 @@ export default function LandingPage() {
       className={`
         cursor-pointer border transition-all duration-300 h-full
         ${isActive 
-          ? 'bg-purple-50 border-purple-300 shadow-md' 
-          : 'bg-white border-gray-200 hover:border-purple-200 hover:shadow-sm'}
+          ? 'bg-sky-50 border-sky-300 shadow-md' 
+          : 'bg-white border-gray-200 hover:border-sky-200 hover:shadow-sm'}
       `}
       onClick={onClick}
     >
       <CardContent className="p-6">
         <div className="mb-4">{icon}</div>
-        <h3 className={`text-xl font-semibold mb-2 ${isActive ? 'text-purple-700' : 'text-gray-900'}`}>
+        <h3 className={`text-xl font-semibold mb-2 ${isActive ? 'text-dilq-blue' : 'text-gray-900'}`}>
           {title}
         </h3>
-        <p className={`${isActive ? 'text-purple-600' : 'text-gray-600'}`}>
+        <p className={`${isActive ? 'text-dilq-blue' : 'text-gray-600'}`}>
           {description}
         </p>
       </CardContent>
@@ -239,7 +238,7 @@ export default function LandingPage() {
           </div>
           <Button 
             onClick={handleGetStarted} 
-            className="bg-purple-600 hover:bg-purple-700 text-white"
+            className="bg-dilq-blue hover:bg-sky-600 text-white"
           >
             Começar Agora
           </Button>
@@ -252,7 +251,7 @@ export default function LandingPage() {
           <div className="lg:w-1/2 space-y-8">
             <div className="space-y-6">
               <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">
-                O Grande <span className="text-purple-600">Alinhamento</span>
+                O Grande <span className="text-dilq-blue">Alinhamento</span>
               </h1>
               <p className="text-xl text-gray-600 max-w-2xl">
                 Sincronize sua mente, corpo e propósito. Transforme sua existência em um estado de alta performance e significado através deste sistema integrado de gestão.
@@ -262,13 +261,13 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 onClick={handleGetStarted} 
-                className="text-lg bg-purple-600 hover:bg-purple-700 text-white px-8 py-6 rounded-lg transition-all duration-300 transform hover:scale-105"
+                className="text-lg bg-dilq-blue hover:bg-sky-600 text-white px-8 py-6 rounded-lg transition-all duration-300 transform hover:scale-105"
               >
                 Começar Agora <ArrowRight className="ml-2" />
               </Button>
               <Button 
                 variant="outline"
-                className="text-lg border-purple-300 text-purple-700 hover:bg-purple-50 px-8 py-6 rounded-lg"
+                className="text-lg border-gray-300 text-dilq-dark hover:bg-sky-50 px-8 py-6 rounded-lg"
                 onClick={() => {
                   const featuresSection = document.getElementById('features');
                   featuresSection?.scrollIntoView({ behavior: 'smooth' });
@@ -286,7 +285,7 @@ export default function LandingPage() {
                 alt="DILQ ORBE"
                 className="w-full object-contain p-8"
               />
-              <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-purple-200 rounded-full opacity-20"></div>
+              <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-sky-200 rounded-full opacity-20"></div>
               <div className="absolute -top-10 -left-10 w-48 h-48 bg-blue-200 rounded-full opacity-20"></div>
             </div>
           </div>
@@ -294,11 +293,11 @@ export default function LandingPage() {
       </div>
 
       {/* Features Section */}
-      <div id="features" className="bg-gradient-to-b from-white to-purple-50 py-24 md:py-32">
+      <div id="features" className="bg-gradient-to-b from-white to-sky-50 py-24 md:py-32">
         <div className="container mx-auto px-4">
           <div className="text-center mb-20">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-              Funcionalidades <span className="text-purple-600">Poderosas</span>
+              Funcionalidades <span className="text-dilq-blue">Poderosas</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Todas as ferramentas que você precisa para transformar sua vida pessoal e profissional em um só lugar, projetadas para sincronizar todas as áreas da sua existência.
@@ -321,16 +320,16 @@ export default function LandingPage() {
           <div className="mt-24 bg-white rounded-2xl shadow-lg p-8 md:p-12">
             <div className="flex flex-col lg:flex-row items-center gap-12">
               <div className="lg:w-1/2">
-                <div className="relative rounded-xl overflow-hidden border-4 border-purple-100 shadow-xl h-[400px] transform transition-all duration-700 hover:scale-105">
+                <div className="relative rounded-xl overflow-hidden border-4 border-sky-100 shadow-xl h-[400px] transform transition-all duration-700 hover:scale-105">
                   <img
                     src={features[activeFeature].image}
                     alt={features[activeFeature].title}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-purple-900/70 to-transparent flex items-end">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
                     <div className="p-6 text-white">
                       <h3 className="text-2xl font-bold mb-2">{features[activeFeature].title}</h3>
-                      <p className="text-purple-100">{features[activeFeature].description}</p>
+                      <p className="text-sky-100">{features[activeFeature].description}</p>
                     </div>
                   </div>
                 </div>
@@ -355,7 +354,7 @@ export default function LandingPage() {
                 
                 <Button
                   onClick={handleGetStarted}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-dilq-blue hover:bg-sky-600 text-white"
                 >
                   Experimentar <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -370,7 +369,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-              Como <span className="text-purple-600">Funciona</span>
+              Como <span className="text-dilq-blue">Funciona</span>
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Em apenas alguns passos simples, você estará no caminho para uma vida mais organizada e produtiva.
@@ -382,30 +381,30 @@ export default function LandingPage() {
               number={1} 
               title="Crie sua Conta" 
               description="Configure seu perfil pessoal para começar a jornada de transformação."
-              icon={<Users className="h-6 w-6 text-purple-600" />}
+              icon={<Users className="h-6 w-6 text-dilq-blue" />}
             />
             <Step 
               number={2} 
               title="Configure seus Módulos" 
               description="Personalize cada módulo de acordo com suas necessidades específicas."
-              icon={<Settings2 className="h-6 w-6 text-purple-600" />}
+              icon={<Settings2 className="h-6 w-6 text-dilq-blue" />}
             />
             <Step 
               number={3} 
               title="Eleve sua Produtividade" 
               description="Acompanhe seu progresso através de métricas claras e objetivas."
-              icon={<Sparkles className="h-6 w-6 text-purple-600" />}
+              icon={<Sparkles className="h-6 w-6 text-dilq-blue" />}
             />
           </div>
         </div>
       </div>
 
       {/* Testimonials */}
-      <div className="bg-purple-50 py-24">
+      <div className="bg-sky-50 py-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-              O Que Nossos <span className="text-purple-600">Usuários</span> Dizem
+              O Que Nossos <span className="text-dilq-blue">Usuários</span> Dizem
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Descubra como nosso sistema está transformando a vida de pessoas em todo o Brasil.
@@ -426,7 +425,7 @@ export default function LandingPage() {
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-                Por Que <span className="text-purple-600">Escolher</span> Nossa Plataforma
+                Por Que <span className="text-dilq-blue">Escolher</span> Nossa Plataforma
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 Uma solução completa que transforma a maneira como você gerencia suas tarefas, finanças e relacionamentos.
@@ -479,17 +478,17 @@ export default function LandingPage() {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 py-20 px-4">
+      <div className="bg-gradient-to-r from-dilq-blue to-blue-600 py-20 px-4">
         <div className="container mx-auto text-center">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-8">
             Pronto para transformar sua vida?
           </h2>
-          <p className="text-xl text-purple-100 max-w-3xl mx-auto mb-12">
+          <p className="text-xl text-sky-100 max-w-3xl mx-auto mb-12">
             Comece a jornada para uma vida de significado, organização e alta performance hoje mesmo.
           </p>
           <Button 
             onClick={handleGetStarted} 
-            className="text-lg bg-white text-purple-700 hover:bg-purple-50 px-8 py-6 rounded-lg transition-all duration-300 transform hover:scale-105"
+            className="text-lg bg-white text-dilq-blue hover:bg-gray-100 px-8 py-6 rounded-lg transition-all duration-300 transform hover:scale-105"
           >
             Começar Gratuitamente <ArrowRight className="ml-2" />
           </Button>
