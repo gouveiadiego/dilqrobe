@@ -1,5 +1,6 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -14,6 +15,38 @@ import LandingPage from "./pages/LandingPage";
 const queryClient = new QueryClient();
 
 function App() {
+  // Initialize dark mode based on user preference or system preference
+  useEffect(() => {
+    // Check for saved preference
+    const savedTheme = localStorage.getItem('theme');
+    
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (savedTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      // If no saved preference, respect system preference
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+    }
+    
+    // Listen for system preference changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('theme')) {
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
@@ -40,7 +73,11 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />
-        <SonnerToaster position="top-right" />
+        <SonnerToaster 
+          position="top-right" 
+          theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+          className="dark:bg-gray-900 dark:text-white dark:border-gray-800"
+        />
       </Router>
     </QueryClientProvider>
   );
