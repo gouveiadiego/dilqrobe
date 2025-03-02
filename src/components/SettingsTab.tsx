@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,51 @@ export function SettingsTab() {
   const [animationsActive, setAnimationsActive] = useState(true);
   const [language, setLanguage] = useState("pt-BR");
   const [autoSave, setAutoSave] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Array das novas imagens
+  const featureImages = [
+    "/lovable-uploads/ca657169-1861-4dce-84cd-941028d0ba52.png",
+    "/lovable-uploads/e87325a2-96c0-408f-b732-701e7c5adb50.png",
+    "/lovable-uploads/7e67bd50-19e4-4287-bfc0-abf8713cdded.png",
+    "/lovable-uploads/a0a071af-6888-4faa-939a-d392b4519fac.png",
+    "/lovable-uploads/50084b23-1e3b-43de-b360-5a1b7b14108d.png"
+  ];
+
+  // Descrições para cada imagem
+  const imageDescriptions = [
+    {
+      title: "Gestão de Clientes",
+      desc: "Mantenha todos os detalhes de seus clientes organizados e acessíveis. Melhore seu relacionamento com clientes importantes."
+    },
+    {
+      title: "Fitness e Produtividade",
+      desc: "Acompanhe sua rotina de exercícios e maximize sua produtividade com nossas ferramentas integradas."
+    },
+    {
+      title: "Corridas ao Ar Livre",
+      desc: "Registre suas corridas e treinamentos ao ar livre com monitoramento em tempo real de suas atividades."
+    },
+    {
+      title: "Planejamento Criativo",
+      desc: "Organize suas ideias, projetos e inspirações em um ambiente tranquilo que estimula a criatividade."
+    },
+    {
+      title: "Análise de Dados",
+      desc: "Visualize e analise dados de forma eficiente com gráficos intuitivos e relatórios detalhados."
+    }
+  ];
+
+  // Atualizar índice da imagem a cada 5 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === featureImages.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains('dark');
@@ -80,13 +126,6 @@ export function SettingsTab() {
     setAutoSave(true);
     setAnimationsActive(true);
     toast.success("Configurações redefinidas para os valores padrão");
-  };
-
-  const tabImages = {
-    notifications: "/lovable-uploads/cfdaeb87-1249-4d11-9b08-efa04c175a38.png",
-    appearance: "/lovable-uploads/cfdaeb87-1249-4d11-9b08-efa04c175a38.png",
-    sound: "/lovable-uploads/cfdaeb87-1249-4d11-9b08-efa04c175a38.png",
-    privacy: "/lovable-uploads/cfdaeb87-1249-4d11-9b08-efa04c175a38.png"
   };
 
   return (
@@ -250,15 +289,47 @@ export function SettingsTab() {
               <div className="relative h-full rounded-xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-dilq-purple/10 to-dilq-blue/10 animate-pulse-subtle"></div>
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="relative rounded-xl overflow-hidden shadow-lg w-full h-full min-h-[250px] bg-white/10 backdrop-blur-sm border border-white/20">
-                    <div className="absolute inset-0 flex items-center justify-center p-6">
-                      <div className="flex flex-col items-center space-y-4 text-center">
-                        <div className="w-24 h-24 rounded-full bg-dilq-purple/20 flex items-center justify-center">
-                          <BellDot className="h-12 w-12 text-dilq-purple" />
+                  <div className="relative rounded-xl overflow-hidden shadow-lg w-full h-full min-h-[350px] bg-white/10 backdrop-blur-sm border border-white/20">
+                    {/* Carrossel de imagens */}
+                    <div className="absolute inset-0 flex items-center justify-center p-0">
+                      {featureImages.map((img, index) => (
+                        <div 
+                          key={index}
+                          className={`absolute inset-0 transition-opacity duration-1000 ${
+                            index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+                          }`}
+                        >
+                          <img 
+                            src={img} 
+                            alt={`Feature ${index + 1}`} 
+                            className="w-full h-full object-cover rounded-xl"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                          <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                            <h3 className="text-xl font-bold mb-1">
+                              {imageDescriptions[index].title}
+                            </h3>
+                            <p className="text-sm opacity-90">
+                              {imageDescriptions[index].desc}
+                            </p>
+                          </div>
                         </div>
-                        <h3 className="text-xl font-semibold text-dilq-purple">Mantenha-se Informado</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Receba alertas importantes e nunca perca atualizações essenciais</p>
-                      </div>
+                      ))}
+                    </div>
+                    
+                    {/* Indicadores de navegação */}
+                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-10">
+                      {featureImages.map((_, index) => (
+                        <button
+                          key={index}
+                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                            index === currentImageIndex 
+                              ? 'bg-white w-6' 
+                              : 'bg-white/50 hover:bg-white/70'
+                          }`}
+                          onClick={() => setCurrentImageIndex(index)}
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -336,15 +407,47 @@ export function SettingsTab() {
               <div className="relative h-full rounded-xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-dilq-blue/10 to-dilq-teal/10 animate-pulse-subtle"></div>
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="relative rounded-xl overflow-hidden shadow-lg w-full h-full min-h-[250px] bg-white/10 backdrop-blur-sm border border-white/20">
-                    <div className="absolute inset-0 flex items-center justify-center p-6">
-                      <div className="flex flex-col items-center space-y-4 text-center">
-                        <div className="w-24 h-24 rounded-full bg-dilq-blue/20 flex items-center justify-center">
-                          <SunDim className="h-12 w-12 text-dilq-blue" />
+                  <div className="relative rounded-xl overflow-hidden shadow-lg w-full h-full min-h-[350px] bg-white/10 backdrop-blur-sm border border-white/20">
+                    {/* Carrossel de imagens (mesmo código, renderizando nas mesmas posições) */}
+                    <div className="absolute inset-0 flex items-center justify-center p-0">
+                      {featureImages.map((img, index) => (
+                        <div 
+                          key={index}
+                          className={`absolute inset-0 transition-opacity duration-1000 ${
+                            index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+                          }`}
+                        >
+                          <img 
+                            src={img} 
+                            alt={`Feature ${index + 1}`} 
+                            className="w-full h-full object-cover rounded-xl"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                          <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                            <h3 className="text-xl font-bold mb-1">
+                              {imageDescriptions[index].title}
+                            </h3>
+                            <p className="text-sm opacity-90">
+                              {imageDescriptions[index].desc}
+                            </p>
+                          </div>
                         </div>
-                        <h3 className="text-xl font-semibold text-dilq-blue">Tema Personalizado</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Adapte a interface às suas preferências visuais</p>
-                      </div>
+                      ))}
+                    </div>
+                    
+                    {/* Indicadores de navegação */}
+                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-10">
+                      {featureImages.map((_, index) => (
+                        <button
+                          key={index}
+                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                            index === currentImageIndex 
+                              ? 'bg-white w-6' 
+                              : 'bg-white/50 hover:bg-white/70'
+                          }`}
+                          onClick={() => setCurrentImageIndex(index)}
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -400,15 +503,47 @@ export function SettingsTab() {
               <div className="relative h-full rounded-xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-dilq-teal/10 to-dilq-accent/10 animate-pulse-subtle"></div>
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="relative rounded-xl overflow-hidden shadow-lg w-full h-full min-h-[250px] bg-white/10 backdrop-blur-sm border border-white/20">
-                    <div className="absolute inset-0 flex items-center justify-center p-6">
-                      <div className="flex flex-col items-center space-y-4 text-center">
-                        <div className="w-24 h-24 rounded-full bg-dilq-teal/20 flex items-center justify-center">
-                          <Volume2 className="h-12 w-12 text-dilq-teal" />
+                  <div className="relative rounded-xl overflow-hidden shadow-lg w-full h-full min-h-[350px] bg-white/10 backdrop-blur-sm border border-white/20">
+                    {/* Carrossel de imagens (mesmo código, renderizando nas mesmas posições) */}
+                    <div className="absolute inset-0 flex items-center justify-center p-0">
+                      {featureImages.map((img, index) => (
+                        <div 
+                          key={index}
+                          className={`absolute inset-0 transition-opacity duration-1000 ${
+                            index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+                          }`}
+                        >
+                          <img 
+                            src={img} 
+                            alt={`Feature ${index + 1}`} 
+                            className="w-full h-full object-cover rounded-xl"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                          <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                            <h3 className="text-xl font-bold mb-1">
+                              {imageDescriptions[index].title}
+                            </h3>
+                            <p className="text-sm opacity-90">
+                              {imageDescriptions[index].desc}
+                            </p>
+                          </div>
                         </div>
-                        <h3 className="text-xl font-semibold text-dilq-teal">Experiência Sonora</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Personalize os feedbacks sonoros da aplicação</p>
-                      </div>
+                      ))}
+                    </div>
+                    
+                    {/* Indicadores de navegação */}
+                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-10">
+                      {featureImages.map((_, index) => (
+                        <button
+                          key={index}
+                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                            index === currentImageIndex 
+                              ? 'bg-white w-6' 
+                              : 'bg-white/50 hover:bg-white/70'
+                          }`}
+                          onClick={() => setCurrentImageIndex(index)}
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -490,15 +625,47 @@ export function SettingsTab() {
               <div className="relative h-full rounded-xl overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-dilq-accent/10 to-dilq-purple/10 animate-pulse-subtle"></div>
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="relative rounded-xl overflow-hidden shadow-lg w-full h-full min-h-[250px] bg-white/10 backdrop-blur-sm border border-white/20">
-                    <div className="absolute inset-0 flex items-center justify-center p-6">
-                      <div className="flex flex-col items-center space-y-4 text-center">
-                        <div className="w-24 h-24 rounded-full bg-dilq-accent/20 flex items-center justify-center">
-                          <Lock className="h-12 w-12 text-dilq-accent" />
+                  <div className="relative rounded-xl overflow-hidden shadow-lg w-full h-full min-h-[350px] bg-white/10 backdrop-blur-sm border border-white/20">
+                    {/* Carrossel de imagens (mesmo código, renderizando nas mesmas posições) */}
+                    <div className="absolute inset-0 flex items-center justify-center p-0">
+                      {featureImages.map((img, index) => (
+                        <div 
+                          key={index}
+                          className={`absolute inset-0 transition-opacity duration-1000 ${
+                            index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+                          }`}
+                        >
+                          <img 
+                            src={img} 
+                            alt={`Feature ${index + 1}`} 
+                            className="w-full h-full object-cover rounded-xl"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                          <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                            <h3 className="text-xl font-bold mb-1">
+                              {imageDescriptions[index].title}
+                            </h3>
+                            <p className="text-sm opacity-90">
+                              {imageDescriptions[index].desc}
+                            </p>
+                          </div>
                         </div>
-                        <h3 className="text-xl font-semibold text-dilq-accent">Proteção Total</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Mantenha seus dados seguros e sob seu controle</p>
-                      </div>
+                      ))}
+                    </div>
+                    
+                    {/* Indicadores de navegação */}
+                    <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 z-10">
+                      {featureImages.map((_, index) => (
+                        <button
+                          key={index}
+                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                            index === currentImageIndex 
+                              ? 'bg-white w-6' 
+                              : 'bg-white/50 hover:bg-white/70'
+                          }`}
+                          onClick={() => setCurrentImageIndex(index)}
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
