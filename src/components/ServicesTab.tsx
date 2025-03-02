@@ -510,7 +510,7 @@ export function ServicesTab() {
     const matchesFilter = !filterText || service.client_name.toLowerCase().includes(searchText) || service.company_name.toLowerCase().includes(searchText) || service.service_description.toLowerCase().includes(searchText) || service.stage.toLowerCase().includes(searchText) || service.status.toLowerCase().includes(searchText);
     const matchesClient = !filterClient || service.client_name.toLowerCase().includes(filterClient.toLowerCase());
     const matchesMonth = !filterMonth || format(new Date(service.start_date), "yyyy-MM") === filterMonth;
-    const matchesStatus = !filterStatus || filterStatus === 'paid' && service.payment_status === 'paid' || filterStatus === 'pending' && service.payment_status === 'pending';
+    const matchesStatus = !filterStatus || (filterStatus === 'paid' && service.payment_status === 'paid') || (filterStatus === 'pending' && service.payment_status === 'pending');
     return matchesFilter && matchesClient && matchesMonth && matchesStatus;
   });
 
