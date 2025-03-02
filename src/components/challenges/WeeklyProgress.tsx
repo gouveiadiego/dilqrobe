@@ -24,7 +24,7 @@ export function WeeklyProgress({ weeklyStats }: WeeklyStatsProps) {
     
     const change = ((currentWeek - previousWeek) / previousWeek) * 100;
     return {
-      percent: Math.abs(change.toFixed(1)),
+      percent: Math.abs(Number(change.toFixed(1))), // Convert to number after formatting
       trend: change >= 0 ? 'up' : 'down'
     };
   };
@@ -102,7 +102,7 @@ export function WeeklyProgress({ weeklyStats }: WeeklyStatsProps) {
                 }}
               />
               <ReferenceLine 
-                y={parseFloat(getAverageDistance())} 
+                y={parseFloat(getAverageDistance().toString())} 
                 stroke="#4F46E5" 
                 strokeDasharray="3 3"
                 label={{ 
