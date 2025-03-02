@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,24 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { FilePlus, FileText, Printer, Eye, Trash2, Upload } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { 
+  FilePlus, 
+  FileText, 
+  Printer, 
+  Eye, 
+  Trash2, 
+  Upload, 
+  Building2, 
+  User, 
+  ClipboardList,
+  Calendar,
+  CreditCard,
+  Clock,
+  PanelRight,
+  Plus,
+  Sparkles 
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 import { formatCurrency } from "@/lib/utils";
@@ -95,6 +113,7 @@ export function BudgetTab() {
     unitPrice: 0,
     totalPrice: 0,
   }]);
+  const [formTab, setFormTab] = useState('company');
 
   useEffect(() => {
     fetchBudgets();
@@ -468,42 +487,73 @@ export function BudgetTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Orçamentos</h2>
-          <p className="text-muted-foreground">
-            Gerencie seus orçamentos e propostas comerciais
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowForm(false)}>
-            <FileText className="mr-2 h-4 w-4" />
-            Ver Lista
-          </Button>
-          <Button onClick={() => setShowForm(true)}>
-            <FilePlus className="mr-2 h-4 w-4" />
-            Novo Orçamento
-          </Button>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 p-6 backdrop-blur-sm">
+        <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-purple-500/10 filter blur-3xl"></div>
+        <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-indigo-500/10 filter blur-3xl"></div>
+        
+        <div className="relative flex justify-between items-center">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <ClipboardList className="h-7 w-7 text-dilq-purple animate-float" />
+              <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-dilq-indigo to-dilq-purple bg-clip-text text-transparent">
+                Orçamentos
+              </h2>
+            </div>
+            <p className="text-muted-foreground">
+              Gerencie seus orçamentos e propostas comerciais
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowForm(false)}
+              className="border-indigo-200 hover:border-indigo-400 transition-all duration-300"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Ver Lista
+            </Button>
+            <Button 
+              onClick={() => setShowForm(true)}
+              className="bg-gradient-to-r from-dilq-indigo to-dilq-purple hover:from-dilq-indigo/90 hover:to-dilq-purple/90 text-white transition-all duration-300"
+            >
+              <FilePlus className="mr-2 h-4 w-4" />
+              Novo Orçamento
+            </Button>
+          </div>
         </div>
       </div>
 
       {!showForm ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Orçamentos</CardTitle>
+        <Card className="border border-gray-100 shadow-sm overflow-hidden backdrop-blur-sm transition-all duration-300 hover:shadow-md">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-indigo-500" />
+              Lista de Orçamentos
+            </CardTitle>
             <CardDescription>
               Visualize e gerencie todos os seus orçamentos
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="grid gap-4">
               {budgets.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">
-                  Nenhum orçamento encontrado. Clique em "Novo Orçamento" para criar um.
-                </p>
+                <div className="text-center text-muted-foreground py-8 border border-dashed border-gray-200 rounded-xl">
+                  <div className="flex justify-center mb-3">
+                    <ClipboardList className="h-12 w-12 text-gray-300" />
+                  </div>
+                  <p className="mb-2">Nenhum orçamento encontrado.</p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowForm(true)}
+                    className="mt-2"
+                  >
+                    <FilePlus className="mr-2 h-4 w-4" />
+                    Criar Orçamento
+                  </Button>
+                </div>
               ) : (
                 budgets.map((budget) => (
-                  <Card key={budget.id}>
+                  <Card key={budget.id} className="group overflow-hidden border-gray-100 hover:border-indigo-200 transition-all duration-300">
                     <CardContent className="pt-6">
                       <div className="grid grid-cols-5 gap-4">
                         <div>
@@ -528,7 +578,9 @@ export function BudgetTab() {
                         </div>
                         <div>
                           <Label className="text-sm text-muted-foreground">Valor Total</Label>
-                          <p className="font-medium">{formatCurrency(budget.total_amount)}</p>
+                          <p className="font-medium bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            {formatCurrency(budget.total_amount)}
+                          </p>
                         </div>
                       </div>
                       <div className="flex justify-end mt-4 space-x-2">
@@ -536,13 +588,18 @@ export function BudgetTab() {
                           variant="outline" 
                           size="sm"
                           onClick={() => handleViewBudget(budget)}
+                          className="border-indigo-200 hover:border-indigo-400 text-indigo-600 transition-all duration-300"
                         >
                           <Eye className="mr-2 h-4 w-4" />
                           Visualizar/Imprimir
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="border-red-200 hover:border-red-400 text-red-600 transition-all duration-300"
+                            >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Excluir
                             </Button>
@@ -558,6 +615,7 @@ export function BudgetTab() {
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => handleDeleteBudget(budget.id)}
+                                className="bg-red-600 hover:bg-red-700"
                               >
                                 Confirmar
                               </AlertDialogAction>
@@ -573,272 +631,419 @@ export function BudgetTab() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações da Empresa</CardTitle>
+        <div className="space-y-6">
+          <Card className="border border-indigo-100/50 shadow-sm overflow-hidden transition-all duration-300">
+            <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100/50">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-indigo-500" />
+                Novo Orçamento
+              </CardTitle>
               <CardDescription>
-                Configure as informações da sua empresa que aparecerão no orçamento
+                Preencha os dados para gerar um novo orçamento
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome da Empresa</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Nome ou razão social" 
-                    value={companyData.name}
-                    onChange={handleCompanyDataChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="document">CNPJ</Label>
-                  <Input 
-                    id="document" 
-                    placeholder="Digite o CNPJ" 
-                    value={companyData.document}
-                    onChange={handleCompanyDataChange}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input 
-                    id="phone" 
-                    placeholder="(00) 00000-0000" 
-                    value={companyData.phone}
-                    onChange={handleCompanyDataChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Endereço</Label>
-                  <Input 
-                    id="address" 
-                    placeholder="Endereço completo" 
-                    value={companyData.address}
-                    onChange={handleCompanyDataChange}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Logo da Empresa</Label>
-                <div className="flex items-center gap-4">
-                  {companyData.logo && (
-                    <img 
-                      src={companyData.logo} 
-                      alt="Logo da empresa" 
-                      className="h-12 w-auto object-contain"
-                    />
-                  )}
-                  <Label 
-                    htmlFor="logo-upload" 
-                    className="cursor-pointer flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50"
+            <CardContent className="p-6">
+              <Tabs value={formTab} onValueChange={setFormTab} className="w-full">
+                <TabsList className="mb-6 grid grid-cols-4 w-full bg-indigo-50/50">
+                  <TabsTrigger
+                    value="company"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white"
                   >
-                    <Upload className="h-4 w-4" />
-                    Enviar Logo
-                  </Label>
-                  <Input 
-                    id="logo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoUpload}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Empresa
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="client"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Cliente
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="items"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+                  >
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Itens
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="terms"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+                  >
+                    <PanelRight className="mr-2 h-4 w-4" />
+                    Condições
+                  </TabsTrigger>
+                </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Dados do Cliente</CardTitle>
-              <CardDescription>
-                Preencha os dados do cliente para o orçamento
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome do Cliente</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Nome completo ou razão social" 
-                    value={clientData.name}
-                    onChange={handleClientDataChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="document">CPF/CNPJ</Label>
-                  <Input 
-                    id="document" 
-                    placeholder="Digite o documento" 
-                    value={clientData.document}
-                    onChange={handleClientDataChange}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="email@exemplo.com" 
-                    value={clientData.email}
-                    onChange={handleClientDataChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input 
-                    id="phone" 
-                    placeholder="(00) 00000-0000" 
-                    value={clientData.phone}
-                    onChange={handleClientDataChange}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Endereço Completo</Label>
-                <Textarea 
-                  id="address" 
-                  placeholder="Digite o endereço completo" 
-                  value={clientData.address}
-                  onChange={handleClientDataChange}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalhes do Orçamento</CardTitle>
-              <CardDescription>
-                Configure os itens e condições do orçamento
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="validUntil">Validade</Label>
-                  <Input 
-                    id="validUntil" 
-                    type="date" 
-                    value={budgetDetails.validUntil}
-                    onChange={handleBudgetDetailsChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="paymentTerms">Condição de Pagamento</Label>
-                  <Select value={budgetDetails.paymentTerms} onValueChange={handlePaymentTermsChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="vista">À Vista</SelectItem>
-                      <SelectItem value="30dias">30 Dias</SelectItem>
-                      <SelectItem value="2x">2x Sem Juros</SelectItem>
-                      <SelectItem value="3x">3x Sem Juros</SelectItem>
-                      <SelectItem value="custom">Personalizado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="delivery">Prazo de Entrega</Label>
-                  <Input 
-                    id="delivery" 
-                    placeholder="Ex: 30 dias úteis" 
-                    value={budgetDetails.delivery}
-                    onChange={handleBudgetDetailsChange}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Itens do Orçamento</Label>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="grid grid-cols-12 gap-4 mb-4 font-semibold">
-                      <div className="col-span-5">Descrição</div>
-                      <div className="col-span-2">Quantidade</div>
-                      <div className="col-span-2">Valor Unitário</div>
-                      <div className="col-span-2">Valor Total</div>
-                      <div className="col-span-1"></div>
+                <TabsContent value="company" className="space-y-4 animate-fade-in">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome da Empresa</Label>
+                    <Input 
+                      id="name" 
+                      placeholder="Nome ou razão social" 
+                      value={companyData.name}
+                      onChange={handleCompanyDataChange}
+                      className="focus:border-indigo-300 focus:ring-indigo-200"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="document">CNPJ</Label>
+                      <Input 
+                        id="document" 
+                        placeholder="Digite o CNPJ" 
+                        value={companyData.document}
+                        onChange={handleCompanyDataChange}
+                        className="focus:border-indigo-300 focus:ring-indigo-200"
+                      />
                     </div>
-                    {items.map((item, index) => (
-                      <div key={index} className="grid grid-cols-12 gap-4 items-center mb-2">
-                        <div className="col-span-5">
-                          <Input 
-                            placeholder="Descrição do item"
-                            value={item.description}
-                            onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone</Label>
+                      <Input 
+                        id="phone" 
+                        placeholder="(00) 00000-0000" 
+                        value={companyData.phone}
+                        onChange={handleCompanyDataChange}
+                        className="focus:border-indigo-300 focus:ring-indigo-200"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Endereço</Label>
+                    <Input 
+                      id="address" 
+                      placeholder="Endereço completo" 
+                      value={companyData.address}
+                      onChange={handleCompanyDataChange}
+                      className="focus:border-indigo-300 focus:ring-indigo-200"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Logo da Empresa</Label>
+                    <div className="flex items-center gap-4">
+                      {companyData.logo && (
+                        <div className="relative h-16 w-24 overflow-hidden rounded-md border">
+                          <img 
+                            src={companyData.logo} 
+                            alt="Logo da empresa" 
+                            className="h-full w-full object-contain"
                           />
                         </div>
-                        <div className="col-span-2">
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            placeholder="Qtd"
-                            value={item.quantity}
-                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <Input 
-                            type="number" 
-                            step="0.01" 
-                            min="0" 
-                            placeholder="R$ 0,00"
-                            value={item.unitPrice}
-                            onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <Input 
-                            type="number" 
-                            value={item.totalPrice.toFixed(2)} 
-                            readOnly
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <Button variant="ghost" size="sm" onClick={addItem}>+</Button>
+                      )}
+                      <Label 
+                        htmlFor="logo-upload" 
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-600 shadow-sm hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Enviar Logo
+                      </Label>
+                      <Input 
+                        id="logo-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between pt-4">
+                    <div></div>
+                    <Button 
+                      onClick={() => setFormTab('client')}
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                    >
+                      Próximo
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="client" className="space-y-4 animate-fade-in">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nome do Cliente</Label>
+                      <Input 
+                        id="name" 
+                        placeholder="Nome completo ou razão social" 
+                        value={clientData.name}
+                        onChange={handleClientDataChange}
+                        className="focus:border-indigo-300 focus:ring-indigo-200"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="document">CPF/CNPJ</Label>
+                      <Input 
+                        id="document" 
+                        placeholder="Digite o documento" 
+                        value={clientData.document}
+                        onChange={handleClientDataChange}
+                        className="focus:border-indigo-300 focus:ring-indigo-200"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">E-mail</Label>
+                      <Input 
+                        id="email" 
+                        type="email" 
+                        placeholder="email@exemplo.com" 
+                        value={clientData.email}
+                        onChange={handleClientDataChange}
+                        className="focus:border-indigo-300 focus:ring-indigo-200"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone</Label>
+                      <Input 
+                        id="phone" 
+                        placeholder="(00) 00000-0000" 
+                        value={clientData.phone}
+                        onChange={handleClientDataChange}
+                        className="focus:border-indigo-300 focus:ring-indigo-200"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Endereço Completo</Label>
+                    <Textarea 
+                      id="address" 
+                      placeholder="Digite o endereço completo" 
+                      value={clientData.address}
+                      onChange={handleClientDataChange}
+                      className="focus:border-indigo-300 focus:ring-indigo-200"
+                    />
+                  </div>
+                  <div className="flex justify-between pt-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setFormTab('company')}
+                      className="border-indigo-200 hover:border-indigo-400"
+                    >
+                      Anterior
+                    </Button>
+                    <Button 
+                      onClick={() => setFormTab('items')}
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                    >
+                      Próximo
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="items" className="space-y-4 animate-fade-in">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <Label className="text-lg font-semibold">Itens do Orçamento</Label>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={addItem}
+                        className="border-indigo-200 hover:border-indigo-400 text-indigo-600"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Adicionar Item
+                      </Button>
+                    </div>
+                    
+                    <div className="rounded-lg border overflow-hidden">
+                      <div className="bg-indigo-50/50 p-4 grid grid-cols-12 gap-4 font-medium text-sm text-indigo-900">
+                        <div className="col-span-5">Descrição</div>
+                        <div className="col-span-2">Quantidade</div>
+                        <div className="col-span-2">Valor Unitário</div>
+                        <div className="col-span-2">Valor Total</div>
+                        <div className="col-span-1"></div>
+                      </div>
+                      
+                      <div className="p-4 space-y-3">
+                        {items.map((item, index) => (
+                          <div key={index} className="grid grid-cols-12 gap-4 items-center">
+                            <div className="col-span-5">
+                              <Input 
+                                placeholder="Descrição do item"
+                                value={item.description}
+                                onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                                className="focus:border-indigo-300 focus:ring-indigo-200"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <Input 
+                                type="number" 
+                                min="1" 
+                                placeholder="Qtd"
+                                value={item.quantity}
+                                onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                                className="focus:border-indigo-300 focus:ring-indigo-200"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <Input 
+                                type="number" 
+                                step="0.01" 
+                                min="0" 
+                                placeholder="R$ 0,00"
+                                value={item.unitPrice}
+                                onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                                className="focus:border-indigo-300 focus:ring-indigo-200"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <Input 
+                                type="text" 
+                                value={formatCurrency(item.totalPrice)} 
+                                readOnly
+                                className="bg-gray-50"
+                              />
+                            </div>
+                            <div className="col-span-1 text-center">
+                              {index === items.length - 1 && items.length > 1 && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => {
+                                    const newItems = [...items];
+                                    newItems.splice(index, 1);
+                                    setItems(newItems);
+                                  }}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50 h-9 w-9 p-0"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 flex justify-end">
+                        <div className="text-right">
+                          <div className="text-sm font-medium text-gray-500 mb-1">Total do Orçamento</div>
+                          <div className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            {formatCurrency(calculateTotal())}
+                          </div>
                         </div>
                       </div>
-                    ))}
-                    <div className="mt-4 text-right">
-                      <p className="font-semibold">Total: {formatCurrency(calculateTotal())}</p>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
+                  <div className="flex justify-between pt-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setFormTab('client')}
+                      className="border-indigo-200 hover:border-indigo-400"
+                    >
+                      Anterior
+                    </Button>
+                    <Button 
+                      onClick={() => setFormTab('terms')}
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                    >
+                      Próximo
+                    </Button>
+                  </div>
+                </TabsContent>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Observações</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Adicione informações importantes, termos e condições"
-                  className="min-h-[100px]"
-                  value={budgetDetails.notes}
-                  onChange={handleBudgetDetailsChange}
-                />
-              </div>
+                <TabsContent value="terms" className="space-y-4 animate-fade-in">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="validUntil" className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-indigo-500" />
+                        Validade
+                      </Label>
+                      <Input 
+                        id="validUntil" 
+                        type="date" 
+                        value={budgetDetails.validUntil}
+                        onChange={handleBudgetDetailsChange}
+                        className="focus:border-indigo-300 focus:ring-indigo-200"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentTerms" className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-indigo-500" />
+                        Condição de Pagamento
+                      </Label>
+                      <Select value={budgetDetails.paymentTerms} onValueChange={handlePaymentTermsChange}>
+                        <SelectTrigger className="focus:ring-indigo-200">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="vista">À Vista</SelectItem>
+                          <SelectItem value="30dias">30 Dias</SelectItem>
+                          <SelectItem value="2x">2x Sem Juros</SelectItem>
+                          <SelectItem value="3x">3x Sem Juros</SelectItem>
+                          <SelectItem value="custom">Personalizado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="delivery" className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-indigo-500" />
+                        Prazo de Entrega
+                      </Label>
+                      <Input 
+                        id="delivery" 
+                        placeholder="Ex: 30 dias úteis" 
+                        value={budgetDetails.delivery}
+                        onChange={handleBudgetDetailsChange}
+                        className="focus:border-indigo-300 focus:ring-indigo-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notes" className="flex items-center gap-2">
+                      <PanelRight className="h-4 w-4 text-indigo-500" />
+                      Observações
+                    </Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Adicione informações importantes, termos e condições"
+                      className="min-h-[150px] focus:border-indigo-300 focus:ring-indigo-200"
+                      value={budgetDetails.notes}
+                      onChange={handleBudgetDetailsChange}
+                    />
+                  </div>
+                  
+                  <div className="flex justify-between pt-6">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setFormTab('items')}
+                      className="border-indigo-200 hover:border-indigo-400"
+                    >
+                      Anterior
+                    </Button>
+                    <div className="space-x-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setShowForm(false)}
+                        className="border-indigo-200 hover:border-indigo-400"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button 
+                        onClick={handleSaveBudget}
+                        disabled={loading}
+                        className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                      >
+                        {loading ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Salvando...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Salvar Orçamento
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <div className="text-sm text-muted-foreground">
-                * Todos os campos são obrigatórios
-              </div>
-              <div className="space-x-2">
-                <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-                <Button 
-                  onClick={handleSaveBudget}
-                  disabled={loading}
-                >
-                  {loading ? "Salvando..." : "Salvar Orçamento"}
-                </Button>
-              </div>
-            </CardFooter>
           </Card>
         </div>
       )}
