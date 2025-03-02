@@ -143,56 +143,56 @@ export default function LandingPage() {
       icon: <CheckSquare className="h-12 w-12 text-white" />,
       title: "Gerenciamento de Tarefas",
       description: "Organize suas tarefas por prioridade, data e categoria. Visualize o progresso em tempo real e nunca perca um prazo.",
-      image: "/lovable-uploads/55bf7c85-7202-4d0e-b61f-373d6ae0861b.png",
+      image: "/lovable-uploads/5cbbd305-63ca-484b-9867-8522e15a00c3.png",
       benefits: ["Categorização inteligente de tarefas", "Sistema de prioridades visual", "Lembretes e notificações", "Visualização em calendário"]
     }, 
     {
       icon: <Wallet className="h-12 w-12 text-white" />,
       title: "Controle Financeiro",
       description: "Controle despesas e receitas, categorize transações e visualize relatórios detalhados de sua saúde financeira.",
-      image: "/lovable-uploads/55bf7c85-7202-4d0e-b61f-373d6ae0861b.png",
+      image: "/lovable-uploads/8f240519-6c48-4f3b-8df8-d14185a69801.png",
       benefits: ["Rastreamento de gastos em tempo real", "Categorização automática de transações", "Relatórios e gráficos interativos", "Previsão de fluxo de caixa"]
     }, 
     {
       icon: <Users className="h-12 w-12 text-white" />,
       title: "Gestão de Clientes",
       description: "Mantenha todos os detalhes de seus clientes organizados e acessíveis. Melhore seu relacionamento com clientes importantes.",
-      image: "/lovable-uploads/55bf7c85-7202-4d0e-b61f-373d6ae0861b.png",
+      image: "/lovable-uploads/5cbbd305-63ca-484b-9867-8522e15a00c3.png",
       benefits: ["Base de dados centralizada", "Histórico de interações", "Acompanhamento de projetos por cliente", "Acesso via portal do cliente"]
     }, 
     {
       icon: <FileText className="h-12 w-12 text-white" />,
       title: "Projetos Escritos",
       description: "Documente e acompanhe seus projetos escritos, mantendo um histórico organizado e acessível.",
-      image: "/lovable-uploads/55bf7c85-7202-4d0e-b61f-373d6ae0861b.png",
+      image: "/lovable-uploads/5ae00ec0-2ce3-4089-8b37-74e21853f67a.png",
       benefits: ["Repositório de documentos estruturado", "Controle de versões de arquivos", "Colaboração em equipe", "Métricas de progresso"]
     }, 
     {
       icon: <Calendar className="h-12 w-12 text-white" />,
       title: "Hábitos & Desafios",
       description: "Crie e monitore hábitos diários. Participe de desafios e acompanhe seu progresso com métricas visuais.",
-      image: "/lovable-uploads/55bf7c85-7202-4d0e-b61f-373d6ae0861b.png",
+      image: "/lovable-uploads/99e7aac7-744d-4de9-b9e1-9c20a8fc888d.png",
       benefits: ["Rastreador de hábitos diários", "Desafios personalizáveis", "Estatísticas de performance", "Sistema de recompensas"]
     }, 
     {
       icon: <LayoutDashboard className="h-12 w-12 text-white" />,
       title: "Dashboard Intuitivo",
       description: "Visualize todos os seus dados importantes em um só lugar com gráficos intuitivos e relatórios personalizados.",
-      image: "/lovable-uploads/55bf7c85-7202-4d0e-b61f-373d6ae0861b.png",
+      image: "/lovable-uploads/8f240519-6c48-4f3b-8df8-d14185a69801.png",
       benefits: ["Visão consolidada de todas as áreas", "Widgets personalizáveis", "Painéis interativos", "Métricas e KPIs configuráveis"]
     }, 
     {
       icon: <Shield className="h-12 w-12 text-white" />,
       title: "Portal do Cliente",
       description: "Um espaço dedicado onde seus clientes podem acessar informações relevantes e acompanhar o progresso dos projetos.",
-      image: "/lovable-uploads/55bf7c85-7202-4d0e-b61f-373d6ae0861b.png",
+      image: "/lovable-uploads/a75a2d60-5167-4f4b-a7d2-fb100c9c9a80.png",
       benefits: ["Acesso seguro para clientes", "Compartilhamento de arquivos", "Aprovações e feedback em tempo real", "Comunicação centralizada"]
     }, 
     {
       icon: <Settings2 className="h-12 w-12 text-white" />,
       title: "Perfil & Configurações",
       description: "Personalize sua experiência ajustando configurações de acordo com suas preferências.",
-      image: "/lovable-uploads/55bf7c85-7202-4d0e-b61f-373d6ae0861b.png",
+      image: "/lovable-uploads/5ae00ec0-2ce3-4089-8b37-74e21853f67a.png",
       benefits: ["Perfil detalhado do usuário", "Configurações de notificações", "Personalização visual", "Ajustes de privacidade"]
     }
   ];
