@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,147 +46,281 @@ interface NewService {
 }
 
 interface ServiceStats {
-  totalServices: number;
-  totalRevenue: number;
-  averageRevenue: number;
-  servicesByStatus: {
-    paid: number;
-    pending: number;
-    canceled: number;
-  };
+  total: number;
+  pending: number;
+  paid: number;
+  canceled: number;
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  canceledAmount: number;
 }
 
 const calculateStats = (services: Service[]): ServiceStats => {
-  const totalServices = services.length;
-  const totalRevenue = services.reduce((sum, service) => sum + service.amount, 0);
-  const averageRevenue = totalServices > 0 ? totalRevenue / totalServices : 0;
-  const servicesByStatus = services.reduce(
-    (acc, service) => {
-      if (service.payment_status === "paid") {
+  return services.reduce((acc: ServiceStats, service) => {
+    acc.total++;
+    acc.totalAmount += service.amount;
+    switch (service.payment_status) {
+      case 'paid':
         acc.paid++;
-      } else if (service.payment_status === "pending") {
-        acc.pending++;
-      } else {
+        acc.paidAmount += service.amount;
+        break;
+      case 'canceled':
         acc.canceled++;
-      }
-      return acc;
-    },
-    { paid: 0, pending: 0, canceled: 0 }
-  );
-
-  return {
-    totalServices,
-    totalRevenue,
-    averageRevenue,
-    servicesByStatus,
-  };
+        acc.canceledAmount += service.amount;
+        break;
+      default:
+        acc.pending++;
+        acc.pendingAmount += service.amount;
+    }
+    return acc;
+  }, {
+    total: 0,
+    pending: 0,
+    paid: 0,
+    canceled: 0,
+    totalAmount: 0,
+    paidAmount: 0,
+    pendingAmount: 0,
+    canceledAmount: 0
+  });
 };
 
 const calculateDailyRevenue = (services: Service[]) => {
-  const today = format(new Date(), "yyyy-MM-dd");
-  const dailyServices = services.filter((service) => service.start_date === today);
-  const dailyRevenue = dailyServices.reduce((sum, service) => sum + service.amount, 0);
-  return dailyRevenue;
+  // Se não temos serviços, retornamos um array vazio
+  if (services.length === 0) {
+    return [];
+  }
+  
+  // Pegar o mês atual ou o mês do primeiro serviço se existir
+  const currentDate = services.length > 0 
+    ? new Date(services[0].start_date) 
+    : new Date();
+  
+  // Criar intervalo para o mês todo
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  
+  // Gerar todos os dias do mês
+  const allDaysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Inicializar o objeto com todos os dias do mês e valor zero
+  const dailyRevenue = allDaysInMonth.reduce((acc: { [key: string]: number }, day) => {
+    const dateKey = format(day, 'yyyy-MM-dd');
+    acc[dateKey] = 0;
+    return acc;
+  }, {});
+  
+  // Somar os valores de todos os serviços, independente do status de pagamento
+  services.forEach(service => {
+    const date = format(new Date(service.start_date), 'yyyy-MM-dd');
+    dailyRevenue[date] = (dailyRevenue[date] || 0) + service.amount;
+  });
+
+  // Converter para o formato usado pelo gráfico
+  return Object.entries(dailyRevenue)
+    .map(([date, amount]) => ({
+      date,
+      amount
+    }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };
 
 const renderDashboard = (services: Service[]) => {
   const stats = calculateStats(services);
-  const dailyRevenue = calculateDailyRevenue(services);
-
-  const pieChartData = [
-    { name: "Paid", value: stats.servicesByStatus.paid },
-    { name: "Pending", value: stats.servicesByStatus.pending },
-    { name: "Canceled", value: stats.servicesByStatus.canceled },
-  ];
-
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28"];
-
-  const dailyRevenueData = eachDayOfInterval({
-    start: startOfMonth(new Date()),
-    end: endOfMonth(new Date()),
-  }).map((date) => {
-    const formattedDate = format(date, "yyyy-MM-dd");
-    const revenue = services
-      .filter((service) => service.start_date === formattedDate)
-      .reduce((sum, service) => sum + service.amount, 0);
-    return {
-      date: format(date, "dd/MM"),
-      revenue,
-    };
-  });
+  const dailyRevenueData = calculateDailyRevenue(services);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div className="stat-card">
-        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
-          Receita Total
-        </h3>
-        <p className="stat-value">
-          {formatCurrency(stats.totalRevenue)}
-        </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {stats.totalServices} serviços
-        </p>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="glass-card p-5 transition-all duration-300 hover:translate-y-[-5px]">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-gray-500">Total de Serviços</h3>
+          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+            <BarChart3 size={16} />
+          </div>
+        </div>
+        <div className="flex items-end gap-2">
+          <p className="text-3xl font-bold text-gradient">{stats.total}</p>
+          <p className="text-sm text-gray-500 mb-1">{formatCurrency(stats.totalAmount)}</p>
+        </div>
+        <div className="w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mt-2 shimmer-effect"></div>
+      </div>
+      
+      <div className="glass-card p-5 transition-all duration-300 hover:translate-y-[-5px]">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-gray-500">Pagos</h3>
+          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 text-green-600">
+            <CreditCard size={16} />
+          </div>
+        </div>
+        <div className="flex items-end gap-2">
+          <p className="text-3xl font-bold text-green-600">{stats.paid}</p>
+          <p className="text-sm text-gray-500 mb-1">{formatCurrency(stats.paidAmount)}</p>
+        </div>
+        <div className="w-full h-1 bg-gradient-to-r from-green-400 to-green-600 rounded-full mt-2 shimmer-effect"></div>
+      </div>
+      
+      <div className="glass-card p-5 transition-all duration-300 hover:translate-y-[-5px]">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-gray-500">Pendentes</h3>
+          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-100 text-orange-600">
+            <Calendar size={16} />
+          </div>
+        </div>
+        <div className="flex items-end gap-2">
+          <p className="text-3xl font-bold text-orange-600">{stats.pending}</p>
+          <p className="text-sm text-gray-500 mb-1">{formatCurrency(stats.pendingAmount)}</p>
+        </div>
+        <div className="w-full h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full mt-2 shimmer-effect"></div>
+      </div>
+      
+      <div className="glass-card p-5 transition-all duration-300 hover:translate-y-[-5px]">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-gray-500">Cancelados</h3>
+          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-red-100 text-red-600">
+            <Trash2 size={16} />
+          </div>
+        </div>
+        <div className="flex items-end gap-2">
+          <p className="text-3xl font-bold text-red-600">{stats.canceled}</p>
+          <p className="text-sm text-gray-500 mb-1">{formatCurrency(stats.canceledAmount)}</p>
+        </div>
+        <div className="w-full h-1 bg-gradient-to-r from-red-400 to-red-600 rounded-full mt-2 shimmer-effect"></div>
       </div>
 
-      <div className="stat-card">
-        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
-          Receita Média por Serviço
-        </h3>
-        <p className="stat-value">
-          {formatCurrency(stats.averageRevenue)}
-        </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Baseado em todos os serviços
-        </p>
+      <div className="col-span-full">
+        <div className="glass-card p-5">
+          <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-indigo-500" />
+            <span>Faturamento Diário</span>
+          </h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailyRevenueData}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7B68EE" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#7B68EE" stopOpacity={0.2}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(date) => format(new Date(date), 'dd/MM')}
+                  style={{ fontSize: '12px' }}
+                />
+                <YAxis 
+                  tickFormatter={(value) => formatCurrency(value)}
+                  style={{ fontSize: '12px' }}
+                />
+                <Tooltip 
+                  formatter={(value) => formatCurrency(Number(value))}
+                  labelFormatter={(label) => format(new Date(label), 'dd/MM/yyyy')}
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)', 
+                    borderRadius: '8px', 
+                    border: 'none', 
+                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' 
+                  }}
+                />
+                <Bar 
+                  dataKey="amount" 
+                  name="Faturamento"
+                  radius={[4, 4, 0, 0]}
+                  fill="url(#colorRevenue)"
+                  animationDuration={1500}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
-      <div className="stat-card">
-        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
-          Receita Diária
-        </h3>
-        <p className="stat-value">{formatCurrency(dailyRevenue)}</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Receita de hoje
-        </p>
-      </div>
-
-      <div className="lg:col-span-2 chart-container">
-        <h3 className="text-lg font-medium mb-4 p-4">Receita Mensal</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={dailyRevenueData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip formatter={(value: number) => formatCurrency(value)} />
-            <Legend />
-            <Line type="monotone" dataKey="revenue" stroke="#8884d8" activeDot={{ r: 8 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="chart-container">
-        <h3 className="text-lg font-medium mb-4 p-4">Status de Pagamento</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={pieChartData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-              label
-            >
-              {pieChartData.map((_entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value: number) => formatCurrency(value)} />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
+      <div className="col-span-full">
+        <div className="glass-card p-5">
+          <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+            <PieChartIcon className="h-5 w-5 text-indigo-500" />
+            <span>Valores por Status</span>
+          </h3>
+          <div className="h-[300px] flex flex-col md:flex-row items-center justify-center">
+            <div className="w-full md:w-2/3 h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart layout="vertical" data={[{
+                  name: 'Pagos',
+                  value: stats.paidAmount
+                }, {
+                  name: 'Pendentes',
+                  value: stats.pendingAmount
+                }, {
+                  name: 'Cancelados',
+                  value: stats.canceledAmount
+                }]}>
+                  <defs>
+                    <linearGradient id="colorPaid" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.6}/>
+                    </linearGradient>
+                    <linearGradient id="colorPending" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#f97316" stopOpacity={0.6}/>
+                    </linearGradient>
+                    <linearGradient id="colorCanceled" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.6}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} horizontal={true} vertical={false} />
+                  <XAxis type="number" tickFormatter={value => formatCurrency(Number(value))} />
+                  <YAxis type="category" dataKey="name" />
+                  <Tooltip formatter={value => formatCurrency(Number(value))} />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]} animationDuration={1500}>
+                    {[{
+                      name: 'Pagos',
+                      fill: 'url(#colorPaid)'
+                    }, {
+                      name: 'Pendentes',
+                      fill: 'url(#colorPending)'
+                    }, {
+                      name: 'Cancelados',
+                      fill: 'url(#colorCanceled)'
+                    }].map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="w-full md:w-1/3 h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[{
+                      name: 'Pagos',
+                      value: stats.paidAmount
+                    }, {
+                      name: 'Pendentes',
+                      value: stats.pendingAmount
+                    }, {
+                      name: 'Cancelados',
+                      value: stats.canceledAmount
+                    }]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                    animationDuration={1500}
+                  >
+                    <Cell key="paid" fill="#10b981" />
+                    <Cell key="pending" fill="#f97316" />
+                    <Cell key="canceled" fill="#ef4444" />
+                  </Pie>
+                  <Tooltip formatter={value => formatCurrency(Number(value))} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -221,62 +356,71 @@ export function ServicesTab() {
 
   const fetchServices = async () => {
     try {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        setServices(data);
-      }
-    } catch (error: any) {
-      toast.error(`Erro ao buscar serviços: ${error.message}`);
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const {
+        data,
+        error
+      } = await supabase.from('services').select('*').eq('user_id', user.id).order('created_at', {
+        ascending: false
+      });
+      if (error) throw error;
+      setServices(data || []);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      toast.error("Erro ao carregar serviços");
     }
   };
 
-  const fetchCompanyLogo = async (companyName: string) => {
+  const fetchCompanyLogo = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
       const { data, error } = await supabase
-        .from('companies')
-        .select('logo_url')
-        .eq('name', companyName)
+        .from('profiles')
+        .select('company_logo')
+        .eq('id', session.user.id)
         .single();
 
-      if (error) {
-        throw error;
+      if (error) throw error;
+      if (data) {
+        setCompanyLogo(data.company_logo);
       }
-
-      if (data && data.logo_url) {
-        setCompanyLogo(data.logo_url);
-      } else {
-        setCompanyLogo(null);
-      }
-    } catch (error: any) {
-      console.error("Erro ao buscar logo da empresa:", error);
-      setCompanyLogo(null);
+    } catch (error) {
+      console.error('Error fetching company logo:', error);
     }
   };
 
   useEffect(() => {
     fetchServices();
+    fetchCompanyLogo();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase
-        .from('services')
-        .insert([{ ...newService, user_id: supabase.auth.user()?.id }]);
-
-      if (error) {
-        throw error;
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Usuário não autenticado");
+        return;
       }
-
-      fetchServices();
+      const serviceData = {
+        ...newService,
+        user_id: user.id
+      };
+      const {
+        error
+      } = await supabase.from('services').insert([serviceData]);
+      if (error) throw error;
       toast.success("Serviço criado com sucesso!");
       setNewService({
         start_date: format(new Date(), "yyyy-MM-dd"),
@@ -290,51 +434,34 @@ export function ServicesTab() {
         reference_month: format(new Date(), "yyyy-MM-dd"),
         client_id: ""
       });
-    } catch (error: any) {
-      toast.error(`Erro ao criar serviço: ${error.message}`);
+      fetchServices();
+    } catch (error) {
+      console.error("Error creating service:", error);
+      toast.error("Erro ao criar serviço");
     }
   };
 
   const handleSharePortalLink = async (clientId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('share_id')
-        .eq('id', clientId)
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      if (data && data.share_id) {
-        const portalLink = `${window.location.origin}/client-portal?shareId=${data.share_id}`;
-        navigator.clipboard.writeText(portalLink);
-        toast.success("Link do portal copiado para a área de transferência!");
-      } else {
-        toast.error("Cliente não encontrado ou share_id não definido.");
-      }
-    } catch (error: any) {
-      toast.error(`Erro ao obter link do portal: ${error.message}`);
-    }
+    const portalUrl = `${window.location.origin}/client-portal?client=${clientId}${companyLogo ? `&logo=${encodeURIComponent(companyLogo)}` : ''}`;
+    await navigator.clipboard.writeText(portalUrl);
+    toast.success("Link copiado para a área de transferência!");
+    setShowShareDialog(false);
   };
 
-  const togglePaymentStatus = async (id: string, currentStatus: string) => {
+  const togglePaymentStatus = async (serviceId: string, currentStatus: string) => {
     try {
       const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
-      const { data, error } = await supabase
-        .from('services')
-        .update({ payment_status: newStatus })
-        .eq('id', id);
-
-      if (error) {
-        throw error;
-      }
-
-      fetchServices();
-      toast.success(`Status de pagamento alterado para ${newStatus === 'paid' ? 'Pago' : 'Pendente'}!`);
-    } catch (error: any) {
-      toast.error(`Erro ao alterar status de pagamento: ${error.message}`);
+      const {
+        error
+      } = await supabase.from('services').update({
+        payment_status: newStatus
+      }).eq('id', serviceId);
+      if (error) throw error;
+      await fetchServices();
+      toast.success("Status de pagamento atualizado!");
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      toast.error("Erro ao atualizar status de pagamento");
     }
   };
 
@@ -343,51 +470,38 @@ export function ServicesTab() {
   };
 
   const handleDelete = async () => {
+    if (!serviceToDelete) return;
     try {
-      if (!serviceToDelete) {
-        toast.error("ID do serviço para deletar não definido.");
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('services')
-        .delete()
-        .eq('id', serviceToDelete);
-
-      if (error) {
-        throw error;
-      }
-
-      fetchServices();
-      toast.success("Serviço deletado com sucesso!");
+      const {
+        error
+      } = await supabase.from('services').delete().eq('id', serviceToDelete);
+      if (error) throw error;
+      toast.success("Serviço excluído com sucesso!");
       setShowDeleteDialog(false);
-    } catch (error: any) {
-      toast.error(`Erro ao deletar serviço: ${error.message}`);
+      setServiceToDelete(null);
+      fetchServices();
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      toast.error("Erro ao excluir serviço");
     }
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingService) return;
     try {
-      if (!editingService) {
-        toast.error("Nenhum serviço selecionado para editar.");
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('services')
-        .update(editingService)
-        .eq('id', editingService.id);
-
-      if (error) {
-        throw error;
-      }
-
-      fetchServices();
+      const {
+        error
+      } = await supabase.from('services').update({
+        ...editingService
+      }).eq('id', editingService.id);
+      if (error) throw error;
       toast.success("Serviço atualizado com sucesso!");
       setEditingService(null);
-    } catch (error: any) {
-      toast.error(`Erro ao atualizar serviço: ${error.message}`);
+      fetchServices();
+    } catch (error) {
+      console.error("Error updating service:", error);
+      toast.error("Erro ao atualizar serviço");
     }
   };
 
@@ -454,117 +568,153 @@ export function ServicesTab() {
               </h2>
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="start_date" className="text-sm font-medium">Data de Início</Label>
-                  <Input
-                    type="date"
-                    id="start_date"
-                    value={newService.start_date}
-                    onChange={e => setNewService({
-                      ...newService,
-                      start_date: e.target.value
-                    })}
-                    className="glass-card"
-                  />
+                  <Label htmlFor="client" className="text-sm font-medium">Cliente</Label>
+                  <div className="flex gap-2">
+                    <select 
+                      id="client" 
+                      className="flex-1 px-3 py-2 border rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200" 
+                      value={newService.client_id} 
+                      onChange={e => {
+                        const client = clients.find(c => c.id === e.target.value);
+                        setNewService({
+                          ...newService,
+                          client_id: e.target.value,
+                          client_name: client ? client.name : ""
+                        });
+                      }} 
+                      required
+                    >
+                      <option value="">Selecione um cliente</option>
+                      {clients.map(client => (
+                        <option key={client.id} value={client.id}>
+                          {client.name}
+                        </option>
+                      ))}
+                    </select>
+                    <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="icon" type="button" disabled={!newService.client_id} onClick={() => setSelectedClientId(newService.client_id)}>
+                          <Link2 className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="glass-card">
+                        <DialogHeader>
+                          <DialogTitle>Compartilhar Portal do Cliente</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4">
+                          {companyLogo && (
+                            <div className="mb-4 flex justify-center">
+                              <img 
+                                src={companyLogo} 
+                                alt="Logo da empresa" 
+                                className="h-16 w-auto object-contain"
+                              />
+                            </div>
+                          )}
+                          <p className="mb-4">
+                            Compartilhe este link com seu cliente para que ele possa acompanhar os serviços:
+                          </p>
+                          <Input value={`${window.location.origin}/client-portal?client=${selectedClientId}${companyLogo ? `&logo=${encodeURIComponent(companyLogo)}` : ''}`} readOnly className="glass-card" />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <DialogClose asChild>
+                            <Button variant="outline">Fechar</Button>
+                          </DialogClose>
+                          <Button onClick={() => handleSharePortalLink(selectedClientId)} className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700">
+                            Copiar Link
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="client_name" className="text-sm font-medium">Nome do Cliente</Label>
-                  <Input
-                    type="text"
-                    id="client_name"
-                    value={newService.client_name}
+                  <Label htmlFor="start_date" className="text-sm font-medium">Data de Início</Label>
+                  <Input 
+                    id="start_date" 
+                    type="date" 
+                    value={newService.start_date} 
                     onChange={e => setNewService({
                       ...newService,
-                      client_name: e.target.value
-                    })}
+                      start_date: e.target.value
+                    })} 
                     className="glass-card"
+                    required 
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="company_name" className="text-sm font-medium">Nome da Empresa</Label>
-                  <Input
-                    type="text"
-                    id="company_name"
-                    value={newService.company_name}
+                  <Input 
+                    id="company_name" 
+                    value={newService.company_name} 
                     onChange={e => setNewService({
                       ...newService,
                       company_name: e.target.value
-                    })}
+                    })} 
                     className="glass-card"
+                    required 
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="service_description" className="text-sm font-medium">Descrição do Serviço</Label>
-                  <Input
-                    type="text"
-                    id="service_description"
-                    value={newService.service_description}
+                  <Input 
+                    id="service_description" 
+                    value={newService.service_description} 
                     onChange={e => setNewService({
                       ...newService,
                       service_description: e.target.value
-                    })}
+                    })} 
                     className="glass-card"
+                    required 
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="stage" className="text-sm font-medium">Etapa</Label>
-                  <Input
-                    type="text"
-                    id="stage"
-                    value={newService.stage}
+                  <Input 
+                    id="stage" 
+                    value={newService.stage} 
                     onChange={e => setNewService({
                       ...newService,
                       stage: e.target.value
-                    })}
+                    })} 
                     className="glass-card"
+                    required 
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="status" className="text-sm font-medium">Status</Label>
-                  <Input
-                    type="text"
-                    id="status"
-                    value={newService.status}
+                  <Input 
+                    id="status" 
+                    value={newService.status} 
                     onChange={e => setNewService({
                       ...newService,
                       status: e.target.value
-                    })}
+                    })} 
                     className="glass-card"
+                    required 
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="amount" className="text-sm font-medium">Valor</Label>
-                  <Input
-                    type="number"
-                    id="amount"
-                    value={newService.amount}
+                  <Input 
+                    id="amount" 
+                    type="number" 
+                    value={newService.amount} 
                     onChange={e => setNewService({
                       ...newService,
                       amount: Number(e.target.value)
-                    })}
+                    })} 
                     className="glass-card"
+                    required 
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="reference_month" className="text-sm font-medium">Mês de Referência</Label>
-                  <Input
-                    type="date"
-                    id="reference_month"
-                    value={newService.reference_month}
-                    onChange={e => setNewService({
-                      ...newService,
-                      reference_month: e.target.value
-                    })}
-                    className="glass-card"
-                  />
-                </div>
-                
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Status do Pagamento</Label>
                   <Select 
@@ -868,4 +1018,38 @@ export function ServicesTab() {
                 <Button type="button" variant="outline" onClick={() => setEditingService(null)}>
                   Cancelar
                 </Button>
-                <Button type="submit" className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-
+                <Button type="submit" className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700">
+                  Salvar Alterações
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="glass-card">
+          <DialogHeader>
+            <DialogTitle>Excluir Serviço</DialogTitle>
+          </DialogHeader>
+          <p className="py-4">
+            Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
