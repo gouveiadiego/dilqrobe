@@ -1,172 +1,97 @@
-
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowRight, 
-  BarChart3, 
-  Calendar, 
-  CheckCircle, 
-  CreditCard, 
-  Layers, 
-  Settings2, 
-  Shield, 
-  Users,
-  Sparkles,
-  Brain,
-  ArrowDown,
-  Origami,
-  Bird,
-  CheckSquare,
-  Wallet,
-  FileText
-} from "lucide-react";
+import { ArrowRight, BarChart3, Calendar, CheckCircle, CreditCard, Layers, Settings2, Shield, Users, Sparkles, Brain, ArrowDown, Origami, Bird, CheckSquare, Wallet, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
-
 export default function LandingPage() {
   const navigate = useNavigate();
   const [activeFeature, setActiveFeature] = useState(0);
-
   const handleGetStarted = () => {
     navigate("/login");
   };
-
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveFeature((prev) => (prev + 1) % features.length);
+      setActiveFeature(prev => (prev + 1) % features.length);
     }, 5000);
     return () => clearInterval(interval);
   }, []);
-
-  const features = [
-    {
-      icon: <CheckCircle className="h-12 w-12 text-dilq-blue" />,
-      title: "Gerenciamento de Tarefas",
-      description: "Organize suas tarefas por prioridade, data e categoria. Visualize o progresso em tempo real e nunca perca um prazo.",
-      image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
-      benefits: [
-        "Categorização inteligente de tarefas",
-        "Sistema de prioridades visual",
-        "Lembretes e notificações",
-        "Visualização em calendário"
-      ]
-    },
-    {
-      icon: <CreditCard className="h-12 w-12 text-dilq-blue" />,
-      title: "Controle Financeiro",
-      description: "Controle despesas e receitas, categorize transações e visualize relatórios detalhados de sua saúde financeira.",
-      image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
-      benefits: [
-        "Rastreamento de gastos em tempo real",
-        "Categorização automática de transações",
-        "Relatórios e gráficos interativos",
-        "Previsão de fluxo de caixa"
-      ]
-    },
-    {
-      icon: <Users className="h-12 w-12 text-dilq-blue" />,
-      title: "Gestão de Clientes",
-      description: "Mantenha todos os detalhes de seus clientes organizados e acessíveis. Melhore seu relacionamento com clientes importantes.",
-      image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
-      benefits: [
-        "Base de dados centralizada",
-        "Histórico de interações",
-        "Acompanhamento de projetos por cliente",
-        "Acesso via portal do cliente"
-      ]
-    },
-    {
-      icon: <Layers className="h-12 w-12 text-dilq-blue" />,
-      title: "Projetos Escritos",
-      description: "Documente e acompanhe seus projetos escritos, mantendo um histórico organizado e acessível.",
-      image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
-      benefits: [
-        "Repositório de documentos estruturado",
-        "Controle de versões de arquivos",
-        "Colaboração em equipe",
-        "Métricas de progresso"
-      ]
-    },
-    {
-      icon: <Calendar className="h-12 w-12 text-dilq-blue" />,
-      title: "Hábitos & Desafios",
-      description: "Crie e monitore hábitos diários. Participe de desafios e acompanhe seu progresso com métricas visuais.",
-      image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
-      benefits: [
-        "Rastreador de hábitos diários",
-        "Desafios personalizáveis",
-        "Estatísticas de performance",
-        "Sistema de recompensas"
-      ]
-    },
-    {
-      icon: <BarChart3 className="h-12 w-12 text-dilq-blue" />,
-      title: "Dashboard Intuitivo",
-      description: "Visualize todos os seus dados importantes em um só lugar com gráficos intuitivos e relatórios personalizados.",
-      image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
-      benefits: [
-        "Visão consolidada de todas as áreas",
-        "Widgets personalizáveis",
-        "Painéis interativos",
-        "Métricas e KPIs configuráveis"
-      ]
-    },
-    {
-      icon: <Shield className="h-12 w-12 text-dilq-blue" />,
-      title: "Portal do Cliente",
-      description: "Um espaço dedicado onde seus clientes podem acessar informações relevantes e acompanhar o progresso dos projetos.",
-      image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
-      benefits: [
-        "Acesso seguro para clientes",
-        "Compartilhamento de arquivos",
-        "Aprovações e feedback em tempo real",
-        "Comunicação centralizada"
-      ]
-    },
-    {
-      icon: <Settings2 className="h-12 w-12 text-dilq-blue" />,
-      title: "Perfil & Configurações",
-      description: "Personalize sua experiência ajustando configurações de acordo com suas preferências.",
-      image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
-      benefits: [
-        "Perfil detalhado do usuário",
-        "Configurações de notificações",
-        "Personalização visual",
-        "Ajustes de privacidade"
-      ]
-    }
-  ];
-
-  const testimonials = [
-    {
-      name: "Paulo Andrade",
-      role: "Empresário",
-      content: "Esta plataforma transformou completamente a maneira como gerencio meus projetos e finanças. A integração entre os módulos é simplesmente perfeita.",
-      avatar: "https://i.pravatar.cc/100?img=1"
-    },
-    {
-      name: "Aline Ferreira",
-      role: "Profissional Autônomo",
-      content: "Consegui aumentar minha produtividade em 40% usando o sistema de tarefas e hábitos. Os relatórios me ajudam a entender onde estou gastando meu tempo.",
-      avatar: "https://i.pravatar.cc/100?img=5"
-    },
-    {
-      name: "Ricardo Mendes",
-      role: "Consultor Financeiro",
-      content: "A funcionalidade de controle financeiro é excepcional. Consigo ter uma visão clara das minhas receitas e despesas, categorizadas automaticamente.",
-      avatar: "https://i.pravatar.cc/100?img=3"
-    }
-  ];
-
+  const features = [{
+    icon: <CheckCircle className="h-12 w-12 text-dilq-blue" />,
+    title: "Gerenciamento de Tarefas",
+    description: "Organize suas tarefas por prioridade, data e categoria. Visualize o progresso em tempo real e nunca perca um prazo.",
+    image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
+    benefits: ["Categorização inteligente de tarefas", "Sistema de prioridades visual", "Lembretes e notificações", "Visualização em calendário"]
+  }, {
+    icon: <CreditCard className="h-12 w-12 text-dilq-blue" />,
+    title: "Controle Financeiro",
+    description: "Controle despesas e receitas, categorize transações e visualize relatórios detalhados de sua saúde financeira.",
+    image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
+    benefits: ["Rastreamento de gastos em tempo real", "Categorização automática de transações", "Relatórios e gráficos interativos", "Previsão de fluxo de caixa"]
+  }, {
+    icon: <Users className="h-12 w-12 text-dilq-blue" />,
+    title: "Gestão de Clientes",
+    description: "Mantenha todos os detalhes de seus clientes organizados e acessíveis. Melhore seu relacionamento com clientes importantes.",
+    image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
+    benefits: ["Base de dados centralizada", "Histórico de interações", "Acompanhamento de projetos por cliente", "Acesso via portal do cliente"]
+  }, {
+    icon: <Layers className="h-12 w-12 text-dilq-blue" />,
+    title: "Projetos Escritos",
+    description: "Documente e acompanhe seus projetos escritos, mantendo um histórico organizado e acessível.",
+    image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
+    benefits: ["Repositório de documentos estruturado", "Controle de versões de arquivos", "Colaboração em equipe", "Métricas de progresso"]
+  }, {
+    icon: <Calendar className="h-12 w-12 text-dilq-blue" />,
+    title: "Hábitos & Desafios",
+    description: "Crie e monitore hábitos diários. Participe de desafios e acompanhe seu progresso com métricas visuais.",
+    image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
+    benefits: ["Rastreador de hábitos diários", "Desafios personalizáveis", "Estatísticas de performance", "Sistema de recompensas"]
+  }, {
+    icon: <BarChart3 className="h-12 w-12 text-dilq-blue" />,
+    title: "Dashboard Intuitivo",
+    description: "Visualize todos os seus dados importantes em um só lugar com gráficos intuitivos e relatórios personalizados.",
+    image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
+    benefits: ["Visão consolidada de todas as áreas", "Widgets personalizáveis", "Painéis interativos", "Métricas e KPIs configuráveis"]
+  }, {
+    icon: <Shield className="h-12 w-12 text-dilq-blue" />,
+    title: "Portal do Cliente",
+    description: "Um espaço dedicado onde seus clientes podem acessar informações relevantes e acompanhar o progresso dos projetos.",
+    image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
+    benefits: ["Acesso seguro para clientes", "Compartilhamento de arquivos", "Aprovações e feedback em tempo real", "Comunicação centralizada"]
+  }, {
+    icon: <Settings2 className="h-12 w-12 text-dilq-blue" />,
+    title: "Perfil & Configurações",
+    description: "Personalize sua experiência ajustando configurações de acordo com suas preferências.",
+    image: "/lovable-uploads/50f912fc-cfc5-4a73-aec2-3d41a195dd52.png",
+    benefits: ["Perfil detalhado do usuário", "Configurações de notificações", "Personalização visual", "Ajustes de privacidade"]
+  }];
+  const testimonials = [{
+    name: "Paulo Andrade",
+    role: "Empresário",
+    content: "Esta plataforma transformou completamente a maneira como gerencio meus projetos e finanças. A integração entre os módulos é simplesmente perfeita.",
+    avatar: "https://i.pravatar.cc/100?img=1"
+  }, {
+    name: "Aline Ferreira",
+    role: "Profissional Autônomo",
+    content: "Consegui aumentar minha produtividade em 40% usando o sistema de tarefas e hábitos. Os relatórios me ajudam a entender onde estou gastando meu tempo.",
+    avatar: "https://i.pravatar.cc/100?img=5"
+  }, {
+    name: "Ricardo Mendes",
+    role: "Consultor Financeiro",
+    content: "A funcionalidade de controle financeiro é excepcional. Consigo ter uma visão clara das minhas receitas e despesas, categorizadas automaticamente.",
+    avatar: "https://i.pravatar.cc/100?img=3"
+  }];
   interface StepProps {
     number: number;
     title: string;
     description: string;
     icon: React.ReactNode;
   }
-
-  const Step = ({ number, title, description, icon }: StepProps) => (
-    <div className="flex items-start space-x-4">
+  const Step = ({
+    number,
+    title,
+    description,
+    icon
+  }: StepProps) => <div className="flex items-start space-x-4">
       <div className="flex-shrink-0 bg-sky-100 h-12 w-12 rounded-full flex items-center justify-center">
         {icon}
       </div>
@@ -174,18 +99,15 @@ export default function LandingPage() {
         <h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
         <p className="text-gray-600">{description}</p>
       </div>
-    </div>
-  );
-
-  const TestimonialCard = ({ testimonial }: { testimonial: typeof testimonials[0] }) => (
-    <Card className="bg-white border-gray-200 hover:border-dilq-blue hover:shadow-lg transition-all duration-300">
+    </div>;
+  const TestimonialCard = ({
+    testimonial
+  }: {
+    testimonial: typeof testimonials[0];
+  }) => <Card className="bg-white border-gray-200 hover:border-dilq-blue hover:shadow-lg transition-all duration-300">
       <CardContent className="p-6">
         <div className="flex items-start space-x-4">
-          <img 
-            src={testimonial.avatar} 
-            alt={testimonial.name} 
-            className="w-16 h-16 rounded-full object-cover border-2 border-sky-200" 
-          />
+          <img src={testimonial.avatar} alt={testimonial.name} className="w-16 h-16 rounded-full object-cover border-2 border-sky-200" />
           <div>
             <p className="italic text-gray-700 mb-4">"{testimonial.content}"</p>
             <div>
@@ -195,9 +117,7 @@ export default function LandingPage() {
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
-
+    </Card>;
   interface FeatureCardProps {
     icon: React.ReactNode;
     title: string;
@@ -205,17 +125,16 @@ export default function LandingPage() {
     isActive?: boolean;
     onClick?: () => void;
   }
-
-  const FeatureCard = ({ icon, title, description, isActive = false, onClick }: FeatureCardProps) => (
-    <Card 
-      className={`
+  const FeatureCard = ({
+    icon,
+    title,
+    description,
+    isActive = false,
+    onClick
+  }: FeatureCardProps) => <Card className={`
         cursor-pointer border transition-all duration-300 h-full
-        ${isActive 
-          ? 'bg-sky-50 border-sky-300 shadow-md' 
-          : 'bg-white border-gray-200 hover:border-sky-200 hover:shadow-sm'}
-      `}
-      onClick={onClick}
-    >
+        ${isActive ? 'bg-sky-50 border-sky-300 shadow-md' : 'bg-white border-gray-200 hover:border-sky-200 hover:shadow-sm'}
+      `} onClick={onClick}>
       <CardContent className="p-6">
         <div className="mb-4">{icon}</div>
         <h3 className={`text-xl font-semibold mb-2 ${isActive ? 'text-dilq-blue' : 'text-gray-900'}`}>
@@ -225,26 +144,16 @@ export default function LandingPage() {
           {description}
         </p>
       </CardContent>
-    </Card>
-  );
-
-  return (
-    <div className="min-h-screen bg-white">
+    </Card>;
+  return <div className="min-h-screen bg-white">
       {/* Navbar */}
       <nav className="py-4 px-6 border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur-sm z-10">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <img
-              src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png"
-              alt="DILQ ORBE"
-              className="w-10 h-10 object-contain"
-            />
+            <img src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png" alt="DILQ ORBE" className="w-10 h-10 object-contain" />
             <span className="text-xl font-bold text-gray-900">DILQ ORBE</span>
           </div>
-          <Button 
-            onClick={handleGetStarted} 
-            className="bg-dilq-blue hover:bg-sky-600 text-white"
-          >
+          <Button onClick={handleGetStarted} className="bg-dilq-blue hover:bg-sky-600 text-white">
             Começar Agora
           </Button>
         </div>
@@ -264,20 +173,15 @@ export default function LandingPage() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                onClick={handleGetStarted} 
-                className="text-lg bg-dilq-blue hover:bg-sky-600 text-white px-8 py-6 rounded-lg transition-all duration-300 transform hover:scale-105"
-              >
+              <Button onClick={handleGetStarted} className="text-lg bg-dilq-blue hover:bg-sky-600 text-white px-8 py-6 rounded-lg transition-all duration-300 transform hover:scale-105">
                 Começar Agora <ArrowRight className="ml-2" />
               </Button>
-              <Button 
-                variant="outline"
-                className="text-lg border-gray-300 text-dilq-dark hover:bg-sky-50 px-8 py-6 rounded-lg"
-                onClick={() => {
-                  const featuresSection = document.getElementById('features');
-                  featuresSection?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
+              <Button variant="outline" className="text-lg border-gray-300 text-dilq-dark hover:bg-sky-50 px-8 py-6 rounded-lg" onClick={() => {
+              const featuresSection = document.getElementById('features');
+              featuresSection?.scrollIntoView({
+                behavior: 'smooth'
+              });
+            }}>
                 Explorar Recursos <ArrowDown className="ml-2" />
               </Button>
             </div>
@@ -286,11 +190,7 @@ export default function LandingPage() {
           <div className="lg:w-1/2">
             <div className="relative rounded-2xl shadow-2xl overflow-hidden border-8 border-white transform hover:scale-105 transition-transform duration-500 bg-gray-50">
               {/* UPDATED IMAGE */}
-              <img
-                src="/lovable-uploads/0622b97a-a347-445f-a248-3a837fa10ba7.png"
-                alt="DILQ ORBE - Vida Alinhada"
-                className="w-full object-contain"
-              />
+              <img alt="DILQ ORBE - Vida Alinhada" className="w-full object-contain" src="/lovable-uploads/afa05fbe-563a-45a3-b632-a69891d73fc9.jpg" />
               <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-sky-200 rounded-full opacity-20"></div>
               <div className="absolute -top-10 -left-10 w-48 h-48 bg-blue-200 rounded-full opacity-20"></div>
             </div>
@@ -311,27 +211,14 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={index}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                isActive={activeFeature === index}
-                onClick={() => setActiveFeature(index)}
-              />
-            ))}
+            {features.map((feature, index) => <FeatureCard key={index} icon={feature.icon} title={feature.title} description={feature.description} isActive={activeFeature === index} onClick={() => setActiveFeature(index)} />)}
           </div>
           
           <div className="mt-24 bg-white rounded-2xl shadow-lg p-8 md:p-12">
             <div className="flex flex-col lg:flex-row items-center gap-12">
               <div className="lg:w-1/2">
                 <div className="relative rounded-xl overflow-hidden border-4 border-sky-100 shadow-xl h-[400px] transform transition-all duration-700 hover:scale-105">
-                  <img
-                    src={features[activeFeature].image}
-                    alt={features[activeFeature].title}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={features[activeFeature].image} alt={features[activeFeature].title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
                     <div className="p-6 text-white">
                       <h3 className="text-2xl font-bold mb-2">{features[activeFeature].title}</h3>
@@ -350,18 +237,13 @@ export default function LandingPage() {
                 </p>
                 
                 <ul className="space-y-4">
-                  {features[activeFeature].benefits.map((benefit, i) => (
-                    <li key={i} className="flex items-center gap-3">
+                  {features[activeFeature].benefits.map((benefit, i) => <li key={i} className="flex items-center gap-3">
                       <CheckCircle className="h-6 w-6 text-green-500" />
                       <span className="text-gray-700">{benefit}</span>
-                    </li>
-                  ))}
+                    </li>)}
                 </ul>
                 
-                <Button
-                  onClick={handleGetStarted}
-                  className="bg-dilq-blue hover:bg-sky-600 text-white"
-                >
+                <Button onClick={handleGetStarted} className="bg-dilq-blue hover:bg-sky-600 text-white">
                   Experimentar <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -383,24 +265,9 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto">
-            <Step 
-              number={1} 
-              title="Crie sua Conta" 
-              description="Configure seu perfil pessoal para começar a jornada de transformação."
-              icon={<Users className="h-6 w-6 text-dilq-blue" />}
-            />
-            <Step 
-              number={2} 
-              title="Configure seus Módulos" 
-              description="Personalize cada módulo de acordo com suas necessidades específicas."
-              icon={<Settings2 className="h-6 w-6 text-dilq-blue" />}
-            />
-            <Step 
-              number={3} 
-              title="Eleve sua Produtividade" 
-              description="Acompanhe seu progresso através de métricas claras e objetivas."
-              icon={<Sparkles className="h-6 w-6 text-dilq-blue" />}
-            />
+            <Step number={1} title="Crie sua Conta" description="Configure seu perfil pessoal para começar a jornada de transformação." icon={<Users className="h-6 w-6 text-dilq-blue" />} />
+            <Step number={2} title="Configure seus Módulos" description="Personalize cada módulo de acordo com suas necessidades específicas." icon={<Settings2 className="h-6 w-6 text-dilq-blue" />} />
+            <Step number={3} title="Eleve sua Produtividade" description="Acompanhe seu progresso através de métricas claras e objetivas." icon={<Sparkles className="h-6 w-6 text-dilq-blue" />} />
           </div>
         </div>
       </div>
@@ -418,9 +285,7 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <TestimonialCard key={index} testimonial={testimonial} />
-            ))}
+            {testimonials.map((testimonial, index) => <TestimonialCard key={index} testimonial={testimonial} />)}
           </div>
         </div>
       </div>
@@ -492,10 +357,7 @@ export default function LandingPage() {
           <p className="text-xl text-sky-100 max-w-3xl mx-auto mb-12">
             Comece a jornada para uma vida de significado, organização e alta performance hoje mesmo.
           </p>
-          <Button 
-            onClick={handleGetStarted} 
-            className="text-lg bg-white text-dilq-blue hover:bg-gray-100 px-8 py-6 rounded-lg transition-all duration-300 transform hover:scale-105"
-          >
+          <Button onClick={handleGetStarted} className="text-lg bg-white text-dilq-blue hover:bg-gray-100 px-8 py-6 rounded-lg transition-all duration-300 transform hover:scale-105">
             Começar Gratuitamente <ArrowRight className="ml-2" />
           </Button>
         </div>
@@ -506,11 +368,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-6 md:mb-0">
-              <img
-                src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png"
-                alt="DILQ ORBE"
-                className="w-10 h-10 object-contain"
-              />
+              <img src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png" alt="DILQ ORBE" className="w-10 h-10 object-contain" />
               <span className="text-xl font-bold">DILQ ORBE</span>
             </div>
             
@@ -521,6 +379,5 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 }
