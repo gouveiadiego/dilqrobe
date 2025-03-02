@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Trophy, PersonStanding } from "lucide-react";
+import { Trophy, PersonStanding, ChevronDown, Plus, Calendar, Award, Medal, Target, ChartLine } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +19,8 @@ import { WeeklyProgress } from "./challenges/WeeklyProgress";
 import { Achievements } from "./challenges/Achievements";
 import { NewChallengeForm } from "./challenges/NewChallengeForm";
 import { NewRunForm } from "./challenges/NewRunForm";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 
 export function ChallengesTab() {
   const navigate = useNavigate();
@@ -29,6 +31,7 @@ export function ChallengesTab() {
     percentageComplete: 0,
     currentChallenge: null
   });
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Check authentication status
   useEffect(() => {
@@ -55,7 +58,7 @@ export function ChallengesTab() {
     };
   }, [navigate]);
 
-  // Fetch all challenges (agora mostra todos os desafios, não apenas os do usuário)
+  // Fetch all challenges
   const { data: challenges, isLoading, refetch } = useQuery({
     queryKey: ['running-challenges'],
     queryFn: async () => {
@@ -206,72 +209,151 @@ export function ChallengesTab() {
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Desafios de Corrida</h2>
-        <p className="text-muted-foreground">
-          Participe de desafios e acompanhe seu progresso
-        </p>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header with parallax effect */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-dilq-indigo via-dilq-purple to-dilq-vibrant rounded-2xl shadow-lg transition-all duration-300 transform hover:shadow-xl">
+        <div className="absolute inset-0 bg-[url('/public/lovable-uploads/e5c52c62-67c0-4d6c-8b97-6b0b3771a57f1.png')] bg-cover bg-center opacity-10"></div>
+        <div className="relative z-10 p-8">
+          <div className="max-w-3xl">
+            <h2 className="text-3xl font-bold mb-2 text-white flex items-center">
+              <Trophy className="mr-2 h-8 w-8 text-amber-300" />
+              Desafios de Corrida
+            </h2>
+            <p className="text-blue-100 text-lg">
+              Supere seus limites, alcance novas metas e transforme seu estilo de vida através de desafios motivadores.
+            </p>
+            
+            <div className="flex gap-4 mt-6">
+              <Dialog open={newChallengeOpen} onOpenChange={setNewChallengeOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-white/15 backdrop-blur-md hover:bg-white/25 text-white border border-white/20 shadow-xl transition-all duration-300 hover:shadow-indigo-500/20">
+                    <Trophy className="mr-2 h-4 w-4" />
+                    Criar Desafio
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md bg-white/95 backdrop-blur-xl border border-indigo-100 shadow-xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-indigo-800 flex items-center">
+                      <Trophy className="mr-2 h-5 w-5 text-amber-500" />
+                      Criar Novo Desafio
+                    </DialogTitle>
+                    <DialogDescription className="text-indigo-600">
+                      Defina as metas do seu novo desafio de corrida
+                    </DialogDescription>
+                  </DialogHeader>
+                  <NewChallengeForm 
+                    onSuccess={refetch} 
+                    onClose={() => setNewChallengeOpen(false)} 
+                  />
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={newRunOpen} onOpenChange={setNewRunOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border border-white/20 shadow-xl transition-all duration-300 hover:shadow-indigo-500/20">
+                    <PersonStanding className="mr-2 h-4 w-4" />
+                    Registrar Corrida
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-white/95 backdrop-blur-xl border border-indigo-100 shadow-xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-xl font-bold text-indigo-800 flex items-center">
+                      <PersonStanding className="mr-2 h-5 w-5 text-green-500" />
+                      Registrar Nova Corrida
+                    </DialogTitle>
+                    <DialogDescription className="text-indigo-600">
+                      Registre os detalhes da sua corrida
+                    </DialogDescription>
+                  </DialogHeader>
+                  <NewRunForm 
+                    onSuccess={refetch} 
+                    onClose={() => setNewRunOpen(false)} 
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* Stats */}
       <ChallengeStats currentStats={currentStats} />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <WeeklyProgress weeklyStats={weeklyStats || []} />
-        <Achievements achievements={achievements || []} />
-      </div>
-
-      <div className="flex gap-4">
-        <Dialog open={newChallengeOpen} onOpenChange={setNewChallengeOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Trophy className="mr-2 h-4 w-4" />
-              Criar Desafio
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Criar Novo Desafio</DialogTitle>
-              <DialogDescription>
-                Defina as metas do seu novo desafio de corrida
-              </DialogDescription>
-            </DialogHeader>
-            <NewChallengeForm 
-              onSuccess={refetch} 
-              onClose={() => setNewChallengeOpen(false)} 
+      {/* Content Tabs */}
+      <Tabs defaultValue="overview" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-3 mb-8 bg-gray-100/50 backdrop-blur-sm p-1 rounded-xl">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
+            <ChartLine className="h-4 w-4 mr-2" />
+            Visão Geral
+          </TabsTrigger>
+          <TabsTrigger value="challenges" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
+            <Trophy className="h-4 w-4 mr-2" />
+            Desafios
+          </TabsTrigger>
+          <TabsTrigger value="achievements" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
+            <Medal className="h-4 w-4 mr-2" />
+            Conquistas
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview" className="space-y-6 animate-fade-in">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <WeeklyProgress weeklyStats={weeklyStats || []} />
+            <Achievements achievements={achievements || []} />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="challenges" className="animate-fade-in">
+          <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 shadow-sm">
+            <h3 className="text-xl font-semibold mb-6 flex items-center text-indigo-800">
+              <Target className="h-5 w-5 mr-2 text-indigo-600" />
+              Desafios Disponíveis
+            </h3>
+            <ChallengesList 
+              challenges={challenges || []} 
+              onDelete={handleDeleteChallenge} 
             />
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={newRunOpen} onOpenChange={setNewRunOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              <PersonStanding className="mr-2 h-4 w-4" />
-              Registrar Corrida
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Registrar Nova Corrida</DialogTitle>
-              <DialogDescription>
-                Registre os detalhes da sua corrida
-              </DialogDescription>
-            </DialogHeader>
-            <NewRunForm 
-              onSuccess={refetch} 
-              onClose={() => setNewRunOpen(false)} 
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Desafios Disponíveis</h3>
-        <ChallengesList 
-          challenges={challenges || []} 
-          onDelete={handleDeleteChallenge} 
-        />
-      </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="achievements" className="animate-fade-in">
+          <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 shadow-sm">
+            <h3 className="text-xl font-semibold mb-6 flex items-center text-amber-800">
+              <Award className="h-5 w-5 mr-2 text-amber-600" />
+              Todas as Conquistas
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Achievements achievements={achievements || []} />
+              
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 shadow-sm border border-amber-100">
+                <h4 className="text-lg font-semibold mb-4 text-amber-800 flex items-center">
+                  <Target className="h-5 w-5 mr-2 text-amber-600" />
+                  Próximas Conquistas
+                </h4>
+                <div className="space-y-4">
+                  <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-amber-100 shadow-sm">
+                    <div className="flex justify-between items-center mb-2">
+                      <h5 className="font-medium text-amber-900">Corridista de Ouro</h5>
+                      <div className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">100km</div>
+                    </div>
+                    <Progress value={65} className="h-2 bg-amber-100" indicatorClassName="bg-gradient-to-r from-amber-400 to-amber-600" />
+                    <p className="text-xs text-amber-700 mt-2">65km completados dos 100km necessários</p>
+                  </div>
+                  
+                  <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-amber-100 shadow-sm">
+                    <div className="flex justify-between items-center mb-2">
+                      <h5 className="font-medium text-amber-900">Mestre da Consistência</h5>
+                      <div className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">30 dias</div>
+                    </div>
+                    <Progress value={40} className="h-2 bg-amber-100" indicatorClassName="bg-gradient-to-r from-amber-400 to-amber-600" />
+                    <p className="text-xs text-amber-700 mt-2">12 dias consecutivos de 30 dias necessários</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
