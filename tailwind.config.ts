@@ -56,7 +56,8 @@ export default {
         dilq: {
           blue: "#3c627c",
           dark: "#222222",
-          accent: "#7B68EE",
+          accent: "#8B5CF6", /* Updated to more vibrant purple */
+          purple: "#7e69ab",
           glow: "#8A2BE2",
           teal: "#20B2AA",
           darkblue: "#1A1F2C",
@@ -64,7 +65,6 @@ export default {
           lightpurple: "#E5DEFF",
           vibrant: "#8B5CF6",
           indigo: "#6366F1",
-          purple: "#8B5CF6",
           pink: "#EC4899",
           darkgray: "#333333",
           charcoal: "#403E43",
