@@ -540,7 +540,7 @@ export function ServicesTab() {
           </p>
         </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-6 bg-white dark:bg-gray-800 p-1 rounded-full border border-gray-100 dark:border-gray-700 shadow-inner">
             <TabsTrigger value="overview" className="rounded-full data-[state=active]:bg-indigo-600 data-[state=active]:text-white">
               Visão Geral
@@ -725,7 +725,7 @@ export function ServicesTab() {
                     })}
                   >
                     <SelectTrigger className="glass-card">
-                      <SelectValue />
+                      <SelectValue placeholder="Status do pagamento" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Pendente</SelectItem>
@@ -1003,7 +1003,7 @@ export function ServicesTab() {
                     })}
                   >
                     <SelectTrigger className="glass-card">
-                      <SelectValue />
+                      <SelectValue placeholder="Status do pagamento" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Pendente</SelectItem>
