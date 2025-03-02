@@ -143,7 +143,7 @@ export default function LandingPage() {
       icon: <CheckSquare className="h-12 w-12 text-white" />,
       title: "Gerenciamento de Tarefas",
       description: "Organize suas tarefas por prioridade, data e categoria. Visualize o progresso em tempo real e nunca perca um prazo.",
-      image: "/lovable-uploads/5cbbd305-63ca-484b-9867-8522e15a00c3.png",
+      image: "/lovable-uploads/99e7aac7-744d-4de9-b9e1-9c20a8fc888d.png",
       benefits: ["Categorização inteligente de tarefas", "Sistema de prioridades visual", "Lembretes e notificações", "Visualização em calendário"]
     }, 
     {
@@ -157,7 +157,7 @@ export default function LandingPage() {
       icon: <Users className="h-12 w-12 text-white" />,
       title: "Gestão de Clientes",
       description: "Mantenha todos os detalhes de seus clientes organizados e acessíveis. Melhore seu relacionamento com clientes importantes.",
-      image: "/lovable-uploads/5cbbd305-63ca-484b-9867-8522e15a00c3.png",
+      image: "/lovable-uploads/5ae00ec0-2ce3-4089-8b37-74e21853f67a.png",
       benefits: ["Base de dados centralizada", "Histórico de interações", "Acompanhamento de projetos por cliente", "Acesso via portal do cliente"]
     }, 
     {
