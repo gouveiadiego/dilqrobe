@@ -54,7 +54,7 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         dilq: {
-          blue: "#0EA5E9",
+          blue: "#3c627c", // Updated from #0EA5E9 to #3c627c
           dark: "#222222",
         },
       },
