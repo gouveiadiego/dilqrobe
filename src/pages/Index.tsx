@@ -158,7 +158,7 @@ const Index = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                  <div className="col-span-2 glass-card p-5 backdrop-blur-md bg-white/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-lg">
+                  <div className="col-span-3 glass-card p-3 backdrop-blur-md bg-white/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-lg">
                     <TaskFilters
                       search={search}
                       setSearch={setSearch}
@@ -176,6 +176,12 @@ const Index = () => {
                       sections={sections}
                     />
                   </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="md:col-span-3 gradient-border p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-md rounded-xl transition-all duration-300 hover:shadow-lg">
+                    <AddTask onAdd={addTask} categories={categories} sections={sections} />
+                  </div>
                   <div className="futuristic-card dark:bg-gray-800/50 transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10">
                     <CategoryManager 
                       categories={categories} 
@@ -184,10 +190,6 @@ const Index = () => {
                       onDeleteCategory={deleteCategory}
                     />
                   </div>
-                </div>
-                
-                <div className="gradient-border p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-md rounded-xl transition-all duration-300 hover:shadow-lg">
-                  <AddTask onAdd={addTask} categories={categories} sections={sections} />
                 </div>
                 
                 <div className="mt-10 p-6 bg-gradient-to-br from-white/80 to-gray-50/80 dark:from-gray-900/80 dark:to-gray-800/80 backdrop-blur-sm border border-gray-100 dark:border-gray-800 rounded-xl shadow-md">
