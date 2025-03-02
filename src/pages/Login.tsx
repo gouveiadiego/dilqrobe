@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -65,7 +64,7 @@ export const Login = () => {
         }
 
         if (data?.session) {
-          navigate("/", { replace: true });
+          navigate("/dashboard", { replace: true });
         }
       }
     } catch (error: any) {
