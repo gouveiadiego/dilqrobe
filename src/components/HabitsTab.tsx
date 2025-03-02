@@ -1,4 +1,4 @@
-<lov-code>
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -775,4 +775,341 @@ export function HabitsTab() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {habits
+                  {habits.map(habit => (
+                    <div key={habit.id} className="bg-white/80 backdrop-blur-sm p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-start gap-3">
+                          <Checkbox 
+                            id={`habit-${habit.id}`}
+                            checked={habit.completed}
+                            onCheckedChange={() => updateHabitStatus(habit.id, habit.completed ? 'pending' : 'completed')}
+                            className="mt-1"
+                          />
+                          <div>
+                            <label 
+                              htmlFor={`habit-${habit.id}`}
+                              className={`font-medium text-gray-900 ${habit.completed ? 'line-through text-gray-500' : ''}`}
+                            >
+                              {habit.title}
+                            </label>
+                            {habit.description && (
+                              <p className="text-sm text-gray-600 mt-1">
+                                {habit.description}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {habit.schedule_days.length > 0 && (
+                                <span className="inline-flex items-center text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  {formatScheduleDays(habit.schedule_days)}
+                                </span>
+                              )}
+                              {habit.schedule_time && (
+                                <span className="inline-flex items-center text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {habit.schedule_time}
+                                </span>
+                              )}
+                              <span className={`inline-flex items-center text-xs px-2 py-1 rounded-full ${
+                                habit.status === 'completed' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : habit.status === 'pending' 
+                                  ? 'bg-amber-100 text-amber-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {habit.status === 'completed' ? (
+                                  <><CheckCircle className="h-3 w-3 mr-1" /> Completado</>
+                                ) : habit.status === 'pending' ? (
+                                  <><Clock className="h-3 w-3 mr-1" /> Pendente</>
+                                ) : (
+                                  <><XCircle className="h-3 w-3 mr-1" /> Perdido</>
+                                )}
+                              </span>
+                              {habit.streak > 0 && (
+                                <span className="inline-flex items-center text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">
+                                  <Flame className="h-3 w-3 mr-1" />
+                                  {habit.streak} dias
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => openWhyDialog(habit)}
+                          >
+                            <Heart className="h-4 w-4 text-red-500" />
+                            <span className="sr-only">Por que</span>
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => startFocusMode(habit)}
+                          >
+                            <Target className="h-4 w-4 text-indigo-500" />
+                            <span className="sr-only">Foco</span>
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleEditHabit(habit)}
+                          >
+                            <Edit className="h-4 w-4 text-gray-500" />
+                            <span className="sr-only">Editar</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {habits.length === 0 && !isLoading && (
+            <div className="text-center p-8 bg-white/50 backdrop-blur-sm rounded-xl border border-indigo-100/50 shadow-sm">
+              <div className="mx-auto w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+                <ListCheck className="h-8 w-8 text-indigo-400" />
+              </div>
+              <h3 className="text-xl font-medium text-gray-900 mb-2">Nenhum hábito criado</h3>
+              <p className="text-gray-600 mb-4">
+                Comece a criar hábitos para melhorar sua vida e acompanhar seu progresso.
+              </p>
+              <Button onClick={() => setShowForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeiro Hábito
+              </Button>
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="flex justify-center items-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="dicas" className="space-y-4">
+          <Card className="border-none bg-gradient-to-br from-violet-50 to-blue-50 overflow-hidden shadow-md">
+            <div className="absolute top-0 left-0 w-1 h-full bg-violet-500"></div>
+            <CardHeader>
+              <CardTitle className="text-lg text-violet-900 flex items-center">
+                <Star className="h-5 w-5 mr-2 text-violet-500" />
+                Benefícios de Desenvolver Hábitos
+              </CardTitle>
+              <CardDescription className="text-violet-700">
+                Por que investir tempo no desenvolvimento de hábitos positivos?
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                {benefitsOfHabits.map((benefit, index) => (
+                  <li key={index} className="flex items-start">
+                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-violet-100 flex items-center justify-center mr-2">
+                      <CheckCircle className="h-4 w-4 text-violet-500" />
+                    </div>
+                    <span className="text-gray-800">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none bg-gradient-to-br from-emerald-50 to-teal-50 overflow-hidden shadow-md">
+            <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+            <CardHeader>
+              <CardTitle className="text-lg text-emerald-900 flex items-center">
+                <BookHeart className="h-5 w-5 mr-2 text-emerald-500" />
+                Dicas para Construir Hábitos Duradouros
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-white/70 backdrop-blur-sm p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <Medal className="h-4 w-4 mr-2 text-amber-500" />
+                    A Regra de 66 Dias
+                  </h4>
+                  <p className="text-gray-700">
+                    Pesquisas mostram que leva em média 66 dias para um novo comportamento se tornar automático. Seja paciente e consistente!
+                  </p>
+                </div>
+                
+                <div className="bg-white/70 backdrop-blur-sm p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <ThumbsUp className="h-4 w-4 mr-2 text-blue-500" />
+                    Comece com Hábitos Pequenos
+                  </h4>
+                  <p className="text-gray-700">
+                    Crie versões miniatura dos hábitos. Quanto menor, mais fácil de cumprir. Por exemplo, medite por apenas 1 minuto por dia.
+                  </p>
+                </div>
+                
+                <div className="bg-white/70 backdrop-blur-sm p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <Sparkles className="h-4 w-4 mr-2 text-purple-500" />
+                    Vincule a um Gatilho Existente
+                  </h4>
+                  <p className="text-gray-700">
+                    Use a fórmula "Depois de [hábito atual], eu vou [novo hábito]". Por exemplo: "Depois de escovar os dentes, vou fazer 5 minutos de alongamento".
+                  </p>
+                </div>
+                
+                <div className="bg-white/70 backdrop-blur-sm p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <Heart className="h-4 w-4 mr-2 text-red-500" />
+                    Celebre Pequenas Vitórias
+                  </h4>
+                  <p className="text-gray-700">
+                    Celebre cada vez que você cumprir seu hábito. A satisfação imediata reforça o comportamento e aumenta as chances de repetição.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Focus Mode Dialog */}
+      <Dialog open={showFocusMode} onOpenChange={setShowFocusMode}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Modo Foco: {focusHabit?.title}</DialogTitle>
+            <DialogDescription>
+              Foque neste hábito pelo tempo definido. Sem distrações!
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center py-4 space-y-4">
+            <div className="text-5xl font-bold text-indigo-700">
+              {formatTime(focusTimer)}
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleTimerControl}
+                className={isTimerRunning ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"}
+              >
+                {isTimerRunning ? "Pausar" : "Iniciar"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setFocusTimer(25 * 60);
+                  setIsTimerRunning(false);
+                }}
+              >
+                Reiniciar
+              </Button>
+            </div>
+
+            <div className="w-full space-y-2 mt-4">
+              <Label htmlFor="focus-notes">Anotações da sessão:</Label>
+              <Textarea 
+                id="focus-notes" 
+                value={focusNotes}
+                onChange={(e) => setFocusNotes(e.target.value)}
+                placeholder="Escreva suas reflexões, ideias ou progresso..."
+                className="h-32"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFocusMode(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={saveFocusSession} disabled={!focusNotes.trim()}>
+              Salvar Anotações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Why Dialog */}
+      <Dialog open={showWhyDialog} onOpenChange={setShowWhyDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Por que manter este hábito?</DialogTitle>
+            <DialogDescription>
+              Lembre-se de suas motivações quando sentir vontade de desistir.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col py-4 space-y-4">
+            {whyReasons.length > 0 ? (
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-indigo-700">Suas motivações:</h4>
+                <ul className="space-y-2">
+                  {whyReasons.map((reason, index) => (
+                    <li key={index} className="bg-indigo-50 p-3 rounded-lg text-gray-800 flex items-start">
+                      <Heart className="h-4 w-4 text-red-500 mt-1 mr-2 flex-shrink-0" />
+                      <span>{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <Heart className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-gray-500">Nenhuma motivação adicionada ainda</p>
+              </div>
+            )}
+
+            <div className="border-t pt-4 space-y-2">
+              <Label htmlFor="new-reason">Adicionar nova motivação:</Label>
+              <div className="flex gap-2">
+                <Input 
+                  id="new-reason" 
+                  value={newWhyReason}
+                  onChange={(e) => setNewWhyReason(e.target.value)}
+                  placeholder="Ex: Para ter mais energia durante o dia"
+                  className="flex-1"
+                />
+                <Button onClick={addWhyReason} disabled={!newWhyReason.trim()}>
+                  Adicionar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Habit Strength Dialog */}
+      <Dialog open={habitStrengthDialog} onOpenChange={setHabitStrengthDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Fortaleça seu compromisso</DialogTitle>
+            <DialogDescription>
+              Escreva um motivo poderoso que te lembre por que este hábito é importante.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col py-4 space-y-4">
+            <Label htmlFor="strength-reason">Por que este hábito é importante para você?</Label>
+            <Textarea 
+              id="strength-reason" 
+              value={strengthReason}
+              onChange={(e) => setStrengthReason(e.target.value)}
+              placeholder="Ex: Este hábito me ajuda a ter mais energia e ser mais produtivo no trabalho..."
+              className="h-32"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setHabitStrengthDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={saveHabitStrength} disabled={!strengthReason.trim()}>
+              Salvar Motivo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
