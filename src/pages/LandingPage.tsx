@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -541,4 +542,100 @@ export default function LandingPage() {
               Histórias reais
             </div>
             <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-              O Que Nossos <span className="text-transparent bg-clip-text
+              O Que Nossos <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Clientes</span> Dizem
+            </h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
+              Descubra como nossos usuários transformaram suas vidas usando a plataforma DILQ ORBE.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {testimonials.map((testimonial, index) => (
+              <TestimonialCard key={index} testimonial={testimonial} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="relative py-24 z-10">
+        <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-b from-gray-900/0 via-dilq-darkblue/20 to-gray-900/0 pointer-events-none"></div>
+        
+        <div className="container mx-auto px-4">
+          <div className="relative bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl rounded-3xl p-8 md:p-16 overflow-hidden border border-white/10 shadow-2xl max-w-5xl mx-auto">
+            {/* Decorative elements */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-dilq-accent/10 rounded-full blur-[100px] -z-10 animate-pulse-subtle" style={{ animationDuration: '15s' }}></div>
+              <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-dilq-teal/10 rounded-full blur-[100px] -z-10 animate-pulse-subtle" style={{ animationDuration: '20s', animationDelay: '2s' }}></div>
+            </div>
+            
+            <div className="relative z-10 text-center space-y-8">
+              <div className="inline-flex items-center justify-center p-1 bg-white/5 backdrop-blur-sm rounded-full border border-white/10 mb-6">
+                <div className="px-6 py-1 bg-gradient-to-r from-dilq-accent/20 to-dilq-teal/20 rounded-full">
+                  <span className="text-sm text-white flex items-center justify-center">
+                    <Infinity className="h-4 w-4 mr-2" /> Possibilidades Infinitas
+                  </span>
+                </div>
+              </div>
+              
+              <h2 className="text-3xl md:text-5xl font-bold text-white leading-tight">
+                Pronto para Transformar sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Existência</span>?
+              </h2>
+              
+              <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+                Junte-se a milhares de pessoas que estão levando sua vida a um novo patamar através da integração do que realmente importa.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4">
+                <Button 
+                  onClick={handleGetStarted} 
+                  className="relative overflow-hidden group bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white px-10 py-6 rounded-xl transition-all duration-300 text-lg font-semibold shadow-lg shadow-dilq-accent/20 w-full sm:w-auto"
+                >
+                  <span className="relative z-10 flex items-center justify-center">
+                    Comece sua Jornada <ArrowRight className="ml-2" />
+                  </span>
+                  <span className="absolute inset-0 translate-y-[105%] bg-white/20 transition-transform duration-300 group-hover:translate-y-0"></span>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="text-lg border-white/20 text-gray-300 hover:bg-white/10 px-10 py-6 rounded-xl backdrop-blur-sm transition-all duration-300 w-full sm:w-auto"
+                  onClick={() => window.open('mailto:info@dilqorbe.com')}
+                >
+                  <Globe className="mr-2 h-5 w-5" /> Entre em Contato
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="relative py-12 z-10 border-t border-white/10">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-6 md:mb-0">
+              <div className="flex items-center space-x-3">
+                <img src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png" alt="DILQ ORBE" className="w-8 h-8 object-contain" />
+                <span className="text-xl font-bold text-white">DILQ ORBE</span>
+              </div>
+              <p className="text-gray-400 mt-2 text-sm">© {new Date().getFullYear()} DILQ ORBE. Todos os direitos reservados.</p>
+            </div>
+            
+            <div className="flex space-x-6">
+              <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-transparent">
+                Termos de Uso
+              </Button>
+              <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-transparent">
+                Privacidade
+              </Button>
+              <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-transparent">
+                Contato
+              </Button>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
