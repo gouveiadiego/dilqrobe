@@ -1,20 +1,109 @@
+
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BarChart3, Calendar, CheckCircle, CreditCard, Layers, Settings2, Shield, Users, Sparkles, Brain, ArrowDown, Origami, Bird, CheckSquare, Wallet, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const [activeFeature, setActiveFeature] = useState(0);
+  const [currentTimeImage, setCurrentTimeImage] = useState("");
+  const [currentPeriod, setCurrentPeriod] = useState("");
+
+  const dayTimeImages = {
+    sunrise: [
+      "/lovable-uploads/fb142e12-7f04-465f-b651-75fa83e361bd.png",
+      "/lovable-uploads/16218e44-718f-4da1-94fe-d4aa5bdd945c.png",
+    ],
+    day: [
+      "/lovable-uploads/e5c52c62-67c0-4a53-90ce-47dfc2bc08f1.png",
+      "/lovable-uploads/be64081a-d75d-4507-b2dc-337948bb4bbc.png",
+      "/lovable-uploads/75844122-7008-4e1d-9c88-355fa1a25138.png",
+    ],
+    sunset: [
+      "/lovable-uploads/8d5658dd-0a54-4f4f-92b2-0aa25b544942.png",
+      "/lovable-uploads/48deecf0-3c7d-4ab4-84b1-914f996e585e.png",
+    ],
+    night: [
+      "/lovable-uploads/1689356a-975b-4f70-b497-b774fbf2fb0f.png",
+      "/lovable-uploads/adb2e7a1-b666-46fa-bfdb-546c5b6d9fea.png",
+      "/lovable-uploads/76be8734-243f-4c81-8021-81e311dfe74d.png",
+      "/lovable-uploads/1d07bcca-52ad-4691-9f71-b26b357c19cb.png",
+    ]
+  };
+
   const handleGetStarted = () => {
     navigate("/login");
   };
+
+  // Determine the current time period in Brazil
+  const getCurrentTimePeriod = () => {
+    // Get current time in Brazil timezone
+    const brazilTime = toZonedTime(new Date(), 'America/Sao_Paulo');
+    const hours = brazilTime.getHours();
+    
+    // Determine period based on hours
+    if (hours >= 5 && hours < 8) {
+      return "sunrise";
+    } else if (hours >= 8 && hours < 17) {
+      return "day";
+    } else if (hours >= 17 && hours < 19) {
+      return "sunset";
+    } else {
+      return "night";
+    }
+  };
+
+  // Get an image based on the current time period
+  const getTimeBasedImage = (period) => {
+    const images = dayTimeImages[period];
+    return images[Math.floor(Math.random() * images.length)];
+  };
+
+  useEffect(() => {
+    // Update time-based image every minute
+    const updateTimeImage = () => {
+      const period = getCurrentTimePeriod();
+      setCurrentPeriod(period);
+      setCurrentTimeImage(getTimeBasedImage(period));
+    };
+
+    // Initial update
+    updateTimeImage();
+    
+    // Set interval for updates
+    const interval = setInterval(updateTimeImage, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveFeature(prev => (prev + 1) % features.length);
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Display current time
+  const formatBrazilTime = () => {
+    const brazilTime = toZonedTime(new Date(), 'America/Sao_Paulo');
+    return format(brazilTime, 'HH:mm');
+  };
+
+  // Get period name in Portuguese
+  const getPeriodNamePt = (period) => {
+    const names = {
+      sunrise: "Nascer do Sol",
+      day: "Dia",
+      sunset: "Pôr do Sol",
+      night: "Noite"
+    };
+    return names[period] || "";
+  };
+
   const features = [{
     icon: <CheckCircle className="h-12 w-12 text-dilq-blue" />,
     title: "Gerenciamento de Tarefas",
@@ -159,7 +248,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section - UPDATED WITH NEW IMAGE */}
+      {/* Hero Section with Time-Based Images */}
       <div className="container mx-auto px-4 py-24 md:py-32">
         <div className="flex flex-col lg:flex-row items-center gap-12">
           <div className="lg:w-1/2 space-y-8">
@@ -170,6 +259,12 @@ export default function LandingPage() {
               <p className="text-xl text-gray-600 max-w-2xl">
                 Sincronize sua mente, corpo e propósito. Transforme sua existência em um estado de alta performance e significado através deste sistema integrado de gestão.
               </p>
+              
+              <div className="flex flex-col items-start space-y-2 text-gray-500">
+                <p className="text-sm bg-gray-100 px-3 py-1 rounded-full">
+                  Horário atual no Brasil: {formatBrazilTime()} - {getPeriodNamePt(currentPeriod)}
+                </p>
+              </div>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
@@ -189,8 +284,14 @@ export default function LandingPage() {
           
           <div className="lg:w-1/2">
             <div className="relative rounded-2xl shadow-2xl overflow-hidden border-8 border-white transform hover:scale-105 transition-transform duration-500 bg-gray-50">
-              {/* UPDATED IMAGE */}
-              <img alt="DILQ ORBE - Vida Alinhada" className="w-full object-contain" src="/lovable-uploads/afa05fbe-563a-45a3-b632-a69891d73fc9.jpg" />
+              {/* Dynamic time-based image */}
+              {currentTimeImage && (
+                <img 
+                  alt={`DILQ ORBE - ${getPeriodNamePt(currentPeriod)}`} 
+                  className="w-full object-contain"
+                  src={currentTimeImage}
+                />
+              )}
               <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-sky-200 rounded-full opacity-20"></div>
               <div className="absolute -top-10 -left-10 w-48 h-48 bg-blue-200 rounded-full opacity-20"></div>
             </div>
