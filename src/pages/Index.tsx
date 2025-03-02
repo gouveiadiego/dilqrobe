@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AddTask } from "@/components/AddTask";
 import { supabase } from "@/integrations/supabase/client";
@@ -135,8 +134,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50 transition-colors duration-300">
+      <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out z-30 dark:bg-gray-900 dark:border-gray-800 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} onLogout={handleLogout} />
       </aside>
 
@@ -151,12 +150,15 @@ const Index = () => {
           {activeTab === 'dashboard' ? (
             <DashboardTab />
           ) : activeTab === 'tasks' ? (
-            <div className="space-y-6 bg-white rounded-lg">
+            <div className="space-y-6 rounded-lg animate-fade-in">
               <div className="mb-8 space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900">Execução</h2>
+                <div className="flex items-center">
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-dilq-accent to-dilq-teal bg-clip-text text-transparent">Execução</h2>
+                  <div className="h-1 flex-grow ml-4 bg-gradient-to-r from-dilq-accent to-dilq-teal rounded-full opacity-50"></div>
+                </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                  <div className="col-span-2 glass-card p-5 backdrop-blur-md bg-white/50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-lg">
                     <TaskFilters
                       search={search}
                       setSearch={setSearch}
@@ -174,7 +176,7 @@ const Index = () => {
                       sections={sections}
                     />
                   </div>
-                  <div>
+                  <div className="futuristic-card dark:bg-gray-800/50 transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10">
                     <CategoryManager 
                       categories={categories} 
                       onAddCategory={addCategory}
@@ -184,25 +186,32 @@ const Index = () => {
                   </div>
                 </div>
                 
-                <AddTask onAdd={addTask} categories={categories} sections={sections} />
+                <div className="gradient-border p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-md rounded-xl transition-all duration-300 hover:shadow-lg">
+                  <AddTask onAdd={addTask} categories={categories} sections={sections} />
+                </div>
                 
-                <TaskList
-                  tasks={filteredTasks}
-                  onToggleTask={toggleTask}
-                  onDeleteTask={deleteTask}
-                  onUpdateTask={handleUpdateTask}
-                  categories={categories}
-                  showThisWeek={showThisWeek}
-                  setShowThisWeek={setShowThisWeek}
-                  showThisMonth={showThisMonth}
-                  setShowThisMonth={setShowThisMonth}
-                  showOlder={showOlder}
-                  setShowOlder={setShowOlder}
-                  onAddSubtask={() => {}}
-                  onToggleSubtask={() => {}}
-                />
+                <div className="mt-10 p-6 bg-gradient-to-br from-white/80 to-gray-50/80 dark:from-gray-900/80 dark:to-gray-800/80 backdrop-blur-sm border border-gray-100 dark:border-gray-800 rounded-xl shadow-md">
+                  <TaskList
+                    tasks={filteredTasks}
+                    onToggleTask={toggleTask}
+                    onDeleteTask={deleteTask}
+                    onUpdateTask={handleUpdateTask}
+                    categories={categories}
+                    showThisWeek={showThisWeek}
+                    setShowThisWeek={setShowThisWeek}
+                    showThisMonth={showThisMonth}
+                    setShowThisMonth={setShowThisMonth}
+                    showOlder={showOlder}
+                    setShowOlder={setShowOlder}
+                    onAddSubtask={() => {}}
+                    onToggleSubtask={() => {}}
+                  />
+                </div>
 
-                <KanbanCalendar tasks={tasks} onTaskDrop={handleTaskDrop} />
+                <div className="p-6 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border border-gray-100 dark:border-gray-800 rounded-xl shadow-md transition-all duration-300 hover:shadow-xl">
+                  <h3 className="text-xl font-bold mb-6 text-gradient">Visualização em Calendário</h3>
+                  <KanbanCalendar tasks={tasks} onTaskDrop={handleTaskDrop} />
+                </div>
               </div>
             </div>
           ) : activeTab === 'finance' ? (
