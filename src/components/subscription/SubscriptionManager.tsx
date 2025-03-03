@@ -2,36 +2,26 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
-interface SubscriptionType {
-  id: string;
-  user_id: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  status: string;
-  price_id: string | null;
-  plan_type: string;
-  trial_start: string | null;
-  trial_end: string | null;
-  current_period_start: string | null;
-  current_period_end: string | null;
-  created_at: string;
-  updated_at: string;
-  stripe_data?: {
-    status: string;
-    current_period_end: number;
-    cancel_at_period_end: boolean;
-  };
-}
+type SubscriptionStatus = 'loading' | 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'unpaid' | 'none';
+
+type SubscriptionData = {
+  status: SubscriptionStatus;
+  plan_type?: string;
+  current_period_end?: string;
+  trial_end?: string;
+};
 
 export function SubscriptionManager() {
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [subscription, setSubscription] = useState<SubscriptionType | null>(null);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const navigate = useNavigate();
+
   useEffect(() => {
     fetchSubscription();
   }, []);
@@ -40,214 +30,155 @@ export function SubscriptionManager() {
     try {
       setLoading(true);
       
-      // Get the current user
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !authData.user) {
-        console.error("Error getting user:", authError);
-        return;
-      }
-
-      const userId = authData.user.id;
-      
-      // Call the get-subscription function
+      // Get subscription data
       const { data, error } = await supabase.functions.invoke('get-subscription', {
-        query: { userId }
+        body: {}
       });
 
       if (error) {
         console.error("Error fetching subscription:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os dados da assinatura.",
-          variant: "destructive",
-        });
+        toast.error("Não foi possível obter os dados da assinatura");
+        setSubscription({ status: 'none' });
+        return;
+      }
+
+      if (!data || !data.subscription) {
+        setSubscription({ status: 'none' });
         return;
       }
 
       setSubscription(data.subscription);
     } catch (error) {
       console.error("Error:", error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao buscar os dados da assinatura.",
-        variant: "destructive",
-      });
+      toast.error("Ocorreu um erro ao carregar sua assinatura");
+      setSubscription({ status: 'none' });
     } finally {
       setLoading(false);
     }
   };
 
-  const createCheckoutSession = async (priceType: 'monthly' | 'yearly') => {
+  const handleCancelSubscription = async () => {
     try {
-      setCheckoutLoading(true);
-      
-      // Get the current user
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !authData.user) {
-        toast({
-          title: "Erro",
-          description: "Você precisa estar logado para assinar.",
-          variant: "destructive",
-        });
-        return;
-      }
+      setCancelLoading(true);
 
-      const userId = authData.user.id;
-      
-      // Generate the return URL (current origin)
-      const returnUrl = window.location.origin;
-      
-      // Call the create-checkout function
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          priceType, 
-          userId, 
-          returnUrl 
-        }
+      // Call the cancel-subscription function
+      const { error } = await supabase.functions.invoke('cancel-subscription', {
+        body: {}
       });
 
       if (error) {
-        console.error("Error creating checkout session:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível criar a sessão de pagamento.",
-          variant: "destructive",
-        });
+        console.error("Error canceling subscription:", error);
+        toast.error("Não foi possível cancelar a assinatura");
         return;
       }
 
-      // Redirect to Stripe Checkout
-      window.location.href = data.url;
+      toast.success("Assinatura cancelada com sucesso");
+      fetchSubscription(); // Refresh subscription data
     } catch (error) {
       console.error("Error:", error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao criar a sessão de pagamento.",
-        variant: "destructive",
-      });
+      toast.error("Ocorreu um erro ao cancelar sua assinatura");
     } finally {
-      setCheckoutLoading(false);
+      setCancelLoading(false);
     }
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
-
-  // Handle the query parameters after returning from Stripe
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const sessionId = queryParams.get('session_id');
-    const success = queryParams.get('success');
-    const canceled = queryParams.get('canceled');
-
-    // Remove query parameters
-    if (sessionId || success || canceled) {
-      const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
-    }
-
-    // Show toast based on the query parameters
-    if (success === 'true') {
-      toast({
-        title: "Sucesso!",
-        description: "Sua assinatura foi processada com sucesso!",
-      });
-      // Refresh subscription data
-      fetchSubscription();
-    } else if (canceled === 'true') {
-      toast({
-        title: "Cancelado",
-        description: "O processo de assinatura foi cancelado.",
-      });
-    }
-  }, []);
-
-  const renderSubscriptionDetails = () => {
-    if (!subscription) {
+  const renderSubscriptionStatus = () => {
+    if (loading) {
       return (
-        <CardDescription>
-          Você ainda não possui uma assinatura ativa.
-        </CardDescription>
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500 mb-4" />
+          <p className="text-gray-500">Carregando informações da assinatura...</p>
+        </div>
       );
     }
 
+    if (!subscription || subscription.status === 'none') {
+      return (
+        <div className="text-center py-8">
+          <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold mb-2">Sem assinatura ativa</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Você não possui uma assinatura ativa no momento.
+          </p>
+          <Button onClick={() => navigate('/')}>Ver planos disponíveis</Button>
+        </div>
+      );
+    }
+
+    const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+    const isCanceled = subscription.status === 'canceled';
+    
     return (
-      <div className="space-y-2">
-        <p><strong>Plano:</strong> {subscription.plan_type === 'yearly' ? 'Anual' : 'Mensal'}</p>
-        <p><strong>Status:</strong> {getStatusTranslation(subscription.status)}</p>
-        {subscription.trial_end && (
-          <p><strong>Período de teste termina em:</strong> {formatDate(subscription.trial_end)}</p>
+      <div className="text-center py-6">
+        {isActive ? (
+          <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
+        ) : (
+          <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
         )}
-        {subscription.current_period_end && (
-          <p><strong>Próxima cobrança:</strong> {formatDate(subscription.current_period_end)}</p>
+        
+        <h3 className="text-xl font-semibold mb-2">
+          {isActive 
+            ? subscription.status === 'trialing' 
+              ? 'Em período de teste' 
+              : 'Assinatura ativa'
+            : isCanceled 
+              ? 'Assinatura cancelada' 
+              : 'Assinatura com problema'}
+        </h3>
+        
+        <div className="space-y-4 mb-6">
+          {subscription.plan_type && (
+            <p className="text-gray-600 dark:text-gray-400">
+              <span className="font-medium">Plano:</span> {subscription.plan_type === 'yearly' ? 'Anual' : 'Mensal'}
+            </p>
+          )}
+          
+          {subscription.status === 'trialing' && subscription.trial_end && (
+            <p className="text-gray-600 dark:text-gray-400">
+              <span className="font-medium">Período de teste termina em:</span> {new Date(subscription.trial_end).toLocaleDateString('pt-BR')}
+            </p>
+          )}
+          
+          {subscription.current_period_end && (
+            <p className="text-gray-600 dark:text-gray-400">
+              <span className="font-medium">Próxima cobrança:</span> {new Date(subscription.current_period_end).toLocaleDateString('pt-BR')}
+            </p>
+          )}
+          
+          <p className="text-gray-600 dark:text-gray-400">
+            <span className="font-medium">Status:</span> {subscription.status}
+          </p>
+        </div>
+        
+        {isActive && (
+          <Button 
+            variant="destructive" 
+            onClick={handleCancelSubscription}
+            disabled={cancelLoading}
+          >
+            {cancelLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Cancelar assinatura
+          </Button>
+        )}
+        
+        {!isActive && (
+          <Button onClick={() => navigate('/')}>Ver planos disponíveis</Button>
         )}
       </div>
     );
   };
 
-  const getStatusTranslation = (status: string) => {
-    switch (status) {
-      case 'active': return 'Ativa';
-      case 'trialing': return 'Em período de teste';
-      case 'incomplete': return 'Incompleta';
-      case 'incomplete_expired': return 'Expirada';
-      case 'past_due': return 'Pagamento atrasado';
-      case 'canceled': return 'Cancelada';
-      case 'unpaid': return 'Não paga';
-      default: return status;
-    }
-  };
-
-  const isActiveOrTrialing = subscription?.status === 'active' || subscription?.status === 'trialing';
-
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Gerenciar Assinatura</CardTitle>
-        <CardDescription>
-          Gerencie sua assinatura e detalhes de pagamento
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-          </div>
-        ) : (
-          renderSubscriptionDetails()
-        )}
-      </CardContent>
-      <CardFooter className="flex flex-col space-y-2">
-        {!isActiveOrTrialing && (
-          <>
-            <Button 
-              onClick={() => createCheckoutSession('monthly')} 
-              disabled={checkoutLoading} 
-              className="w-full"
-            >
-              {checkoutLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Assinar Plano Mensal (R$19/mês)
-            </Button>
-            <Button 
-              onClick={() => createCheckoutSession('yearly')} 
-              disabled={checkoutLoading} 
-              className="w-full"
-            >
-              {checkoutLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Assinar Plano Anual (R$190/ano)
-            </Button>
-          </>
-        )}
-        {isActiveOrTrialing && (
-          <p className="text-center text-gray-600 dark:text-gray-400">
-            Para gerenciar sua assinatura atual, acesse o portal de gerenciamento.
-          </p>
-        )}
-      </CardFooter>
-    </Card>
+    <div className="max-w-md mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle>Gerenciar Assinatura</CardTitle>
+          <CardDescription>Visualize e gerencie sua assinatura atual</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {renderSubscriptionStatus()}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
