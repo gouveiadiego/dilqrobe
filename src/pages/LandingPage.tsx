@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -22,12 +21,16 @@ import {
   CircuitBoard,
   Atom,
   Infinity,
-  Globe
+  Globe,
+  Gem,
+  Star,
+  ArrowUp
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -63,13 +66,10 @@ export default function LandingPage() {
     navigate("/login");
   };
 
-  // Determine the current time period in Brazil
   const getCurrentTimePeriod = () => {
-    // Get current time in Brazil timezone
     const brazilTime = toZonedTime(new Date(), 'America/Sao_Paulo');
     const hours = brazilTime.getHours();
     
-    // Determine period based on hours
     if (hours >= 5 && hours < 8) {
       return "sunrise";
     } else if (hours >= 8 && hours < 17) {
@@ -81,26 +81,21 @@ export default function LandingPage() {
     }
   };
 
-  // Get an image based on the current time period
   const getTimeBasedImage = (period) => {
     const images = dayTimeImages[period];
     return images[Math.floor(Math.random() * images.length)];
   };
 
   useEffect(() => {
-    // Update time-based image every minute
     const updateTimeImage = () => {
       const period = getCurrentTimePeriod();
       setCurrentPeriod(period);
       setCurrentTimeImage(getTimeBasedImage(period));
     };
 
-    // Initial update
     updateTimeImage();
     
-    // Set interval for updates
-    const interval = setInterval(updateTimeImage, 60000); // Update every minute
-    
+    const interval = setInterval(updateTimeImage, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -111,7 +106,6 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Add parallax scrolling effect
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -121,13 +115,11 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Display current time
   const formatBrazilTime = () => {
     const brazilTime = toZonedTime(new Date(), 'America/Sao_Paulo');
     return format(brazilTime, 'HH:mm');
   };
 
-  // Get period name in Portuguese
   const getPeriodNamePt = (period) => {
     const names = {
       sunrise: "Nascer do Sol",
