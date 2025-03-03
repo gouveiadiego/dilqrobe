@@ -39,9 +39,9 @@ export function TaskItem({
   const [editCategory, setEditCategory] = useState(task.category || "none");
   
   const priorityClass = {
-    high: "text-red-500 bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-sm",
-    medium: "text-yellow-600 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 shadow-sm",
-    low: "text-green-600 bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-sm",
+    high: "text-red-500 bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-sm dark:text-red-400 dark:bg-red-950/50 dark:border-red-900",
+    medium: "text-yellow-600 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 shadow-sm dark:text-yellow-400 dark:bg-yellow-950/50 dark:border-yellow-900",
+    low: "text-green-600 bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-sm dark:text-green-400 dark:bg-green-950/50 dark:border-green-900",
   }[task.priority];
 
   const priorityLabel = {
@@ -86,13 +86,13 @@ export function TaskItem({
     tomorrow.setDate(tomorrow.getDate() + 1);
     
     if (dueDate < today) {
-      return "text-red-500";
+      return "text-red-500 dark:text-red-400";
     } else if (dueDate.toDateString() === today.toDateString()) {
-      return "text-orange-500";
+      return "text-orange-500 dark:text-orange-400";
     } else if (dueDate.toDateString() === tomorrow.toDateString()) {
-      return "text-yellow-500";
+      return "text-yellow-500 dark:text-yellow-400";
     }
-    return "text-gray-400";
+    return "text-gray-400 dark:text-gray-500";
   };
 
   return (
@@ -100,7 +100,7 @@ export function TaskItem({
       className={cn(
         "futuristic-card group transition-all duration-200",
         completedClass,
-        "hover:bg-white/80 backdrop-blur-sm"
+        "hover:bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 dark:hover:bg-gray-800/90"
       )}
     >
       <div className="flex items-center gap-4">

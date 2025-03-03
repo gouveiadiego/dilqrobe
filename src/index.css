@@ -74,6 +74,7 @@
   @apply text-green-600 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-950/50 dark:border-green-900;
 }
 
+/* Animation classes */
 .task-enter {
   opacity: 0;
   transform: translateY(10px);
@@ -95,7 +96,7 @@
   transition: opacity 300ms, transform 300ms;
 }
 
-/* Futuristic Components - Dark Mode Enhanced */
+/* Glassmorphism components - Dark Mode Enhanced */
 .glass-card {
   @apply relative overflow-hidden bg-white/10 backdrop-blur-lg border border-white/20 
          shadow-lg rounded-xl transition-all duration-300 hover:shadow-xl
@@ -174,6 +175,36 @@
 
 .text-gradient {
   @apply bg-gradient-to-br from-dilq-accent to-dilq-teal bg-clip-text text-transparent;
+}
+
+/* Dark mode enhanced components */
+.input-dark {
+  @apply dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-400
+         dark:focus:ring-dilq-accent dark:focus:border-dilq-accent;
+}
+
+.select-dark {
+  @apply dark:bg-gray-800 dark:border-gray-700 dark:text-white 
+         dark:focus:ring-dilq-accent dark:focus:border-dilq-accent;
+}
+
+.card-dark {
+  @apply dark:bg-gray-900 dark:border-gray-800 dark:text-gray-100 dark:shadow-card-dark;
+}
+
+.button-dark {
+  @apply dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-gray-700;
+}
+
+.button-primary-dark {
+  @apply dark:bg-dilq-accent dark:hover:bg-dilq-accent/90 dark:text-white;
+}
+
+/* Dashboard cards - Dark mode enhanced */
+.dashboard-card {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700
+         overflow-hidden transition-all duration-300
+         hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-800 dark:hover:shadow-black/20;
 }
 
 /* Dark Mode Enhanced Services and UI Components */
@@ -423,5 +454,40 @@
   
   .feature-grid {
     @apply grid-cols-1;
+  }
+}
+
+/* Additional dark mode specific styling classes */
+.dark-glassmorphism {
+  @apply dark:backdrop-blur-xl dark:bg-black/30 dark:border-white/10 dark:shadow-neo-dark;
+}
+
+.dark-gradient-bg {
+  @apply dark:bg-gradient-to-br dark:from-dilq-darkblue dark:via-gray-900 dark:to-dilq-darkpurple;
+}
+
+.dark-card {
+  @apply dark:bg-gray-800/70 dark:backdrop-blur-lg dark:border-gray-700 dark:shadow-card-dark;
+}
+
+.dark-input {
+  @apply dark:bg-gray-800/80 dark:border-gray-700 dark:text-white dark:placeholder-gray-400;
+}
+
+.dark-table {
+  @apply dark:bg-gray-800/80 dark:text-white dark:border-gray-700;
+}
+
+.dark-table-header {
+  @apply dark:bg-gray-900/80 dark:text-gray-200;
+}
+
+.dark-table-row {
+  @apply dark:border-gray-700 dark:hover:bg-gray-700/50;
+}
+
+@media (max-width: 640px) {
+  .filter-container > * {
+    min-width: calc(50% - 8px);
   }
 }
