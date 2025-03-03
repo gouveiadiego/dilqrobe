@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Check } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export function PricingSection() {
   const [isAnnual, setIsAnnual] = useState(false);
@@ -20,10 +19,7 @@ export function PricingSection() {
       const { data: authData, error: authError } = await supabase.auth.getUser();
       
       if (authError || !authData.user) {
-        toast({
-          title: "Aviso",
-          description: "Você precisa estar logado para prosseguir com a assinatura.",
-        });
+        toast.error("Você precisa estar logado para prosseguir com a assinatura.");
         
         // Redirect to login page
         // window.location.href = "/login"; // Uncomment when login page is available
@@ -46,11 +42,7 @@ export function PricingSection() {
 
       if (error) {
         console.error("Error creating checkout session:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível criar a sessão de pagamento.",
-          variant: "destructive",
-        });
+        toast.error("Não foi possível criar a sessão de pagamento.");
         return;
       }
 
@@ -58,11 +50,7 @@ export function PricingSection() {
       window.location.href = data.url;
     } catch (error) {
       console.error("Error:", error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao processar sua solicitação.",
-        variant: "destructive",
-      });
+      toast.error("Ocorreu um erro ao processar sua solicitação.");
     } finally {
       setLoading(false);
     }
