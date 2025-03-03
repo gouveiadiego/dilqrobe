@@ -24,7 +24,10 @@ import {
   Globe,
   Gem,
   Star,
-  ArrowUp
+  ArrowUp,
+  Check,
+  CreditCard as CreditCardIcon,
+  Lock
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
@@ -38,7 +41,9 @@ export default function LandingPage() {
   const [currentTimeImage, setCurrentTimeImage] = useState("");
   const [currentPeriod, setCurrentPeriod] = useState("");
   const [scrollY, setScrollY] = useState(0);
+  const [yearlyBilling, setYearlyBilling] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
+  const pricingRef = useRef<HTMLDivElement>(null);
 
   const dayTimeImages = {
     sunrise: [
@@ -64,6 +69,10 @@ export default function LandingPage() {
 
   const handleGetStarted = () => {
     navigate("/login");
+  };
+
+  const scrollToPricing = () => {
+    pricingRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const getCurrentTimePeriod = () => {
@@ -274,9 +283,72 @@ export default function LandingPage() {
     </Card>
   );
 
+  interface PricingCardProps {
+    title: string;
+    price: string;
+    description: string;
+    features: string[];
+    buttonText: string;
+    isPopular?: boolean;
+    onClick: () => void;
+  }
+
+  const PricingCard = ({ title, price, description, features, buttonText, isPopular = false, onClick }: PricingCardProps) => (
+    <Card 
+      className={`
+        relative overflow-hidden transition-all duration-300 h-full backdrop-blur-md
+        ${isPopular ? 
+          'bg-gradient-to-br from-purple-900/80 to-blue-900/80 border-dilq-accent shadow-lg shadow-dilq-accent/30' : 
+          'bg-gray-900/60 border-gray-700 hover:border-gray-500'}
+      `}
+    >
+      {isPopular && (
+        <div className="absolute top-0 right-0">
+          <div className="relative h-24 w-24">
+            <div className="absolute transform rotate-45 bg-dilq-accent text-white text-xs font-bold py-1 right-[-35px] top-[32px] w-[170px] text-center">
+              MAIS POPULAR
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <CardContent className="p-6 flex flex-col h-full">
+        <div className="mb-6">
+          <h3 className={`text-xl font-semibold mb-2 ${isPopular ? 'text-white' : 'text-gray-300'}`}>
+            {title}
+          </h3>
+          <div className="flex items-end gap-1 mb-2">
+            <span className="text-3xl font-bold text-white">{price}</span>
+            {price !== "Grátis" && <span className="text-gray-400 mb-1">/mês</span>}
+          </div>
+          <p className={`${isPopular ? 'text-gray-300' : 'text-gray-400'} mb-6`}>
+            {description}
+          </p>
+        </div>
+        
+        <div className="space-y-4 flex-grow mb-6">
+          {features.map((feature, index) => (
+            <div key={index} className="flex items-start gap-3">
+              <Check className={`h-5 w-5 mt-0.5 ${isPopular ? 'text-dilq-accent' : 'text-gray-400'}`} />
+              <span className={isPopular ? 'text-gray-200' : 'text-gray-400'}>{feature}</span>
+            </div>
+          ))}
+        </div>
+        
+        <Button 
+          onClick={onClick} 
+          className={`w-full ${isPopular ? 
+            'bg-dilq-accent hover:bg-dilq-accent/90 text-white' : 
+            'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700'}`}
+        >
+          {buttonText}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="min-h-screen bg-gray-900 text-white overflow-hidden">
-      {/* Animated Background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-dilq-darkblue via-gray-900 to-black"></div>
         <div className="absolute inset-0 opacity-30">
@@ -284,7 +356,6 @@ export default function LandingPage() {
           <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_400px_at_100%_100%,rgba(32,178,170,0.2),transparent)]"></div>
         </div>
         
-        {/* Animated particles */}
         <div className="absolute inset-0 overflow-hidden">
           {[...Array(20)].map((_, i) => (
             <div 
@@ -302,24 +373,30 @@ export default function LandingPage() {
           ))}
         </div>
         
-        {/* Grid lines */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(123,104,238,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(123,104,238,0.1)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
       </div>
 
-      {/* Navbar */}
       <nav className="py-4 px-6 border-b border-white/10 sticky top-0 bg-gray-900/80 backdrop-blur-lg z-50">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <img src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png" alt="DILQ ORBE" className="w-10 h-10 object-contain" />
             <span className="text-xl font-bold text-white">DILQ ORBE</span>
           </div>
-          <Button onClick={handleGetStarted} className="bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all">
-            Começar Agora
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              className="text-gray-300 hover:text-white"
+              onClick={scrollToPricing}
+            >
+              Preços
+            </Button>
+            <Button onClick={handleGetStarted} className="bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all">
+              Começar Agora
+            </Button>
+          </div>
         </div>
       </nav>
 
-      {/* Hero Section with Time-Based Images */}
       <div ref={heroRef} className="relative container mx-auto px-4 py-24 md:py-36">
         <div 
           className="absolute top-20 right-10 w-64 h-64 bg-dilq-accent/20 rounded-full blur-3xl opacity-30 animate-pulse-subtle"
@@ -373,12 +450,9 @@ export default function LandingPage() {
               <Button 
                 variant="outline" 
                 className="text-lg border-white/20 text-gray-300 hover:bg-white/10 px-8 py-6 rounded-lg backdrop-blur-sm transition-all duration-300"
-                onClick={() => {
-                  const featuresSection = document.getElementById('features');
-                  featuresSection?.scrollIntoView({ behavior: 'smooth' });
-                }}
+                onClick={scrollToPricing}
               >
-                Explorar Recursos <ArrowDown className="ml-2" />
+                Ver Preços <ArrowDown className="ml-2" />
               </Button>
             </div>
           </div>
@@ -387,7 +461,6 @@ export default function LandingPage() {
             <div className="absolute -inset-4 bg-gradient-to-r from-dilq-accent/20 to-dilq-teal/20 rounded-[30px] blur-xl opacity-70 animate-pulse-subtle" style={{ animationDuration: '8s' }}></div>
             
             <div className="relative rounded-2xl overflow-hidden border-[3px] border-white/20 transform hover:scale-105 transition-transform duration-500 bg-gray-800/50 backdrop-blur-md">
-              {/* Dynamic time-based image */}
               {currentTimeImage && (
                 <img 
                   alt={`DILQ ORBE - ${getPeriodNamePt(currentPeriod)}`} 
@@ -396,10 +469,8 @@ export default function LandingPage() {
                 />
               )}
               
-              {/* Overlay effect */}
               <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-transparent to-gray-900/30 pointer-events-none"></div>
               
-              {/* Floating elements */}
               <div className="absolute top-6 right-6 p-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 animate-float">
                 <CircuitBoard className="h-5 w-5 text-dilq-accent" />
               </div>
@@ -411,7 +482,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Features Section */}
       <div id="features" className="relative z-10 py-24 md:py-36">
         <div className="container mx-auto px-4">
           <div className="text-center mb-20 relative">
@@ -447,7 +517,6 @@ export default function LandingPage() {
                 <div className="relative rounded-xl overflow-hidden border-[3px] border-dilq-accent/20 shadow-2xl shadow-dilq-accent/10 h-[400px] transform transition-all duration-700 hover:scale-105 group">
                   <img src={features[activeFeature].image} alt={features[activeFeature].title} className="w-full h-full object-cover" />
                   
-                  {/* Overlay with interactive effects */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent flex items-end">
                     <div className="p-6 text-white transform transition-transform duration-300 group-hover:translate-y-0 translate-y-4">
                       <h3 className="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">{features[activeFeature].title}</h3>
@@ -455,7 +524,6 @@ export default function LandingPage() {
                     </div>
                   </div>
                   
-                  {/* Animated corners */}
                   <div className="absolute top-0 left-0 w-10 h-10 border-t-2 border-l-2 border-dilq-accent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <div className="absolute bottom-0 right-0 w-10 h-10 border-b-2 border-r-2 border-dilq-teal opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
@@ -491,7 +559,85 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* How It Works */}
+      <div id="pricing" ref={pricingRef} className="relative z-10 py-24 md:py-36">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16 relative">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-dilq-accent/10 rounded-full blur-[100px] -z-10"></div>
+            <div className="inline-block px-4 py-1 bg-white/5 border border-white/10 rounded-full text-sm text-gray-300 mb-4">
+              <CreditCardIcon className="inline-block h-4 w-4 mr-2 text-dilq-accent" />
+              Planos Acessíveis
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+              Escolha o <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Plano</span> Ideal
+            </h2>
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-10">
+              Experimente gratuitamente e escolha o plano que melhor se adapta às suas necessidades.
+            </p>
+            
+            <div className="flex items-center justify-center gap-3 mb-12">
+              <span className={`text-sm ${!yearlyBilling ? 'text-white font-medium' : 'text-gray-400'}`}>Cobrança Mensal</span>
+              <button 
+                onClick={() => setYearlyBilling(!yearlyBilling)}
+                className="relative inline-flex h-6 w-12 items-center rounded-full bg-gray-800 transition-colors focus:outline-none"
+              >
+                <span className="sr-only">Alternar entre cobrança mensal e anual</span>
+                <span
+                  className={`${
+                    yearlyBilling ? 'translate-x-6 bg-dilq-accent' : 'translate-x-1 bg-gray-400'
+                  } inline-block h-4 w-4 transform rounded-full transition-transform`}
+                />
+              </button>
+              <span className={`text-sm flex items-center gap-1 ${yearlyBilling ? 'text-white font-medium' : 'text-gray-400'}`}>
+                Cobrança Anual
+                <span className="text-xs px-1.5 py-0.5 bg-dilq-accent/30 text-dilq-accent rounded-full">Economize 20%</span>
+              </span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <PricingCard
+              title="Teste Grátis"
+              price="Grátis"
+              description="Experimente todas as funcionalidades por 3 dias sem compromisso."
+              features={[
+                "Acesso a todos os módulos",
+                "Gerenciamento de tarefas",
+                "Controle financeiro básico",
+                "Gestão de clientes (limitado)",
+                "Hábitos & Desafios"
+              ]}
+              buttonText="Começar Teste Grátis"
+              onClick={handleGetStarted}
+            />
+            
+            <PricingCard
+              title="Premium"
+              price={yearlyBilling ? "R$15,99" : "R$19,00"}
+              description="Acesso completo a todas as funcionalidades disponíveis."
+              features={[
+                "Acesso ilimitado a todos os módulos",
+                "Gerenciamento avançado de tarefas",
+                "Controle financeiro completo",
+                "Gestão ilimitada de clientes",
+                "Hábitos & Desafios avançados",
+                "Portal do cliente personalizado",
+                "Prioridade no suporte"
+              ]}
+              buttonText="Assinar Agora"
+              isPopular={true}
+              onClick={handleGetStarted}
+            />
+          </div>
+          
+          <div className="flex items-center justify-center mt-12">
+            <div className="flex items-center justify-center px-4 py-2 bg-white/5 backdrop-blur-sm rounded-full border border-white/10">
+              <Lock className="h-4 w-4 mr-2 text-gray-400" />
+              <span className="text-sm text-gray-400">Pagamentos seguros via Stripe</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="relative py-24 z-10">
         <div 
           className="absolute top-1/3 right-1/4 w-[300px] h-[300px] bg-dilq-teal/20 rounded-full blur-[100px] -z-10"
@@ -520,7 +666,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Testimonials */}
       <div className="relative py-24 z-10">
         <div 
           className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-dilq-accent/20 rounded-full blur-[100px] -z-10"
@@ -549,13 +694,11 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* CTA Section */}
       <div className="relative py-24 z-10">
         <div className="absolute top-0 left-0 right-0 bottom-0 bg-gradient-to-b from-gray-900/0 via-dilq-darkblue/20 to-gray-900/0 pointer-events-none"></div>
         
         <div className="container mx-auto px-4">
           <div className="relative bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl rounded-3xl p-8 md:p-16 overflow-hidden border border-white/10 shadow-2xl max-w-5xl mx-auto">
-            {/* Decorative elements */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
               <div className="absolute top-0 right-0 w-80 h-80 bg-dilq-accent/10 rounded-full blur-[100px] -z-10 animate-pulse-subtle" style={{ animationDuration: '15s' }}></div>
               <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-dilq-teal/10 rounded-full blur-[100px] -z-10 animate-pulse-subtle" style={{ animationDuration: '20s', animationDelay: '2s' }}></div>
@@ -580,11 +723,11 @@ export default function LandingPage() {
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4">
                 <Button 
-                  onClick={handleGetStarted} 
+                  onClick={scrollToPricing} 
                   className="relative overflow-hidden group bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white px-10 py-6 rounded-xl transition-all duration-300 text-lg font-semibold shadow-lg shadow-dilq-accent/20 w-full sm:w-auto"
                 >
                   <span className="relative z-10 flex items-center justify-center">
-                    Comece sua Jornada <ArrowRight className="ml-2" />
+                    Ver Planos <ArrowRight className="ml-2" />
                   </span>
                   <span className="absolute inset-0 translate-y-[105%] bg-white/20 transition-transform duration-300 group-hover:translate-y-0"></span>
                 </Button>
@@ -602,7 +745,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="relative py-12 z-10 border-t border-white/10">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
