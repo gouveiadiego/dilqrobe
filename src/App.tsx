@@ -1,9 +1,8 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
+import Auth from "./pages/Auth";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -47,12 +46,37 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
+  // Check for payment status parameters
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const success = queryParams.get('success');
+    const cancelled = queryParams.get('cancelled');
+    
+    if (success === 'true') {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setTimeout(() => {
+        const toast = document.createElement('script');
+        toast.innerHTML = `sonner.success("Assinatura realizada com sucesso!", { duration: 5000 })`;
+        document.body.appendChild(toast);
+        setTimeout(() => document.body.removeChild(toast), 100);
+      }, 500);
+    } else if (cancelled === 'true') {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setTimeout(() => {
+        const toast = document.createElement('script');
+        toast.innerHTML = `sonner.info("Pagamento cancelado.", { duration: 5000 })`;
+        document.body.appendChild(toast);
+        setTimeout(() => document.body.removeChild(toast), 100);
+      }, 500);
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<Auth />} />
           <Route
             path="/dashboard"
             element={

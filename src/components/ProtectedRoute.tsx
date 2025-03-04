@@ -48,7 +48,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // Show loading state
   if (loading) {
-    return <div>Carregando...</div>;
+    return <div className="flex justify-center items-center h-screen">Carregando...</div>;
   }
 
   // Redirect to login if no session
