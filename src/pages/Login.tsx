@@ -117,14 +117,21 @@ export const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-8">
-        <div className="w-full max-w-md space-y-8">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-black">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-hidden">
+        {/* Background elements for futuristic look */}
+        <div className="absolute inset-0 bg-white dark:bg-gray-900 opacity-90 z-0"></div>
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-100 dark:bg-purple-900/20 rounded-full filter blur-3xl opacity-50 animate-pulse-subtle"></div>
+          <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-blue-100 dark:bg-blue-900/20 rounded-full filter blur-3xl opacity-40 animate-float"></div>
+        </div>
+        
+        <div className="w-full max-w-md space-y-8 z-10 relative">
           <div className="text-center space-y-4">
-            <h2 className="text-2xl font-semibold text-gray-800">
+            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-dilq-accent to-dilq-teal">
               {showPaymentOption ? "Assinatura Necessária" : "Bem-vindo de volta"}
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               {showPaymentOption 
                 ? "Você precisa de uma assinatura para continuar" 
                 : "Entre com suas credenciais para continuar"}
@@ -133,15 +140,15 @@ export const Login = () => {
           
           {showPaymentOption ? (
             <div className="space-y-6">
-              <div className="bg-gray-50 p-4 rounded-md space-y-3">
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 backdrop-blur-sm transition-all duration-300 hover:shadow-xl">
                 <div className="flex items-center">
-                  <CreditCard className="h-5 w-5 text-gray-500 mr-2" />
+                  <CreditCard className="h-5 w-5 text-dilq-accent mr-2" />
                   <h3 className="font-medium">Assine agora</h3>
                 </div>
-                <p className="text-sm text-gray-600">
-                  Acesse todo o conteúdo por R$ 9,90 por mês.
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                  Acesse todo o conteúdo por R$ 19,00 por mês.
                 </p>
-                <ul className="text-sm text-gray-600 space-y-1">
+                <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 mt-3">
                   <li className="flex items-center">
                     <span className="text-green-500 mr-1">✓</span> Acesso total ao conteúdo
                   </li>
@@ -153,7 +160,7 @@ export const Login = () => {
               
               <Button
                 onClick={handleStartTrial}
-                className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+                className="w-full bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-dilq-accent/20 disabled:opacity-70"
                 disabled={isLoading}
               >
                 {isLoading ? "Processando..." : "Assinar agora"}
@@ -161,23 +168,23 @@ export const Login = () => {
               
               <button 
                 onClick={() => setShowPaymentOption(false)}
-                className="w-full text-sm text-gray-600 hover:text-gray-800"
+                className="w-full text-sm text-gray-600 hover:text-dilq-accent dark:text-gray-400 dark:hover:text-dilq-accent transition-colors"
               >
                 Voltar para o login
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</Label>
+                  <div className="relative group">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-hover:text-dilq-accent transition-colors" />
                     <Input
                       id="email"
                       type="email"
                       placeholder="seu@email.com"
-                      className="pl-10"
+                      className="pl-10 h-11 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-dilq-accent focus:border-transparent shadow-sm transition-all"
                       value={formData.email}
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
@@ -188,14 +195,14 @@ export const Login = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">Senha</Label>
+                  <div className="relative group">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-hover:text-dilq-accent transition-colors" />
                     <Input
                       id="password"
                       type="password"
                       placeholder="••••••••"
-                      className="pl-10"
+                      className="pl-10 h-11 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-dilq-accent focus:border-transparent shadow-sm transition-all"
                       value={formData.password}
                       onChange={(e) =>
                         setFormData({ ...formData, password: e.target.value })
@@ -207,7 +214,7 @@ export const Login = () => {
               </div>
               <Button
                 type="submit"
-                className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+                className="w-full bg-black hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg h-12 disabled:opacity-70"
                 disabled={isLoading}
               >
                 {isLoading ? "Carregando..." : "Entrar"}
@@ -215,12 +222,12 @@ export const Login = () => {
             </form>
           )}
 
-          <div className="text-center pt-4">
-            <p className="text-sm text-gray-500">
+          <div className="text-center pt-6">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Não tem uma conta?{" "}
               <button
                 onClick={() => navigate("/signup")}
-                className="text-blue-600 hover:underline"
+                className="font-medium bg-gradient-to-r from-dilq-pink to-dilq-accent bg-clip-text text-transparent hover:from-dilq-accent hover:to-dilq-pink transition-all duration-300 transform hover:scale-105 inline-block"
               >
                 Registre-se
               </button>
@@ -228,9 +235,15 @@ export const Login = () => {
           </div>
         </div>
       </div>
-      <div className="hidden lg:flex w-1/2 bg-[#465E73] p-12 items-center justify-center">
-        <div className="max-w-lg space-y-8">
-          <div className="aspect-square w-64 mx-auto relative overflow-hidden">
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-dilq-purple to-dilq-blue p-12 items-center justify-center relative">
+        {/* Animated elements for futuristic look */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-20 -right-20 w-80 h-80 bg-dilq-accent/10 rounded-full filter blur-3xl"></div>
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-dilq-teal/10 rounded-full filter blur-3xl"></div>
+        </div>
+        
+        <div className="max-w-lg space-y-8 relative z-10 backdrop-blur-sm glass-effect p-8 rounded-2xl">
+          <div className="aspect-square w-64 mx-auto relative overflow-hidden rounded-xl border border-white/20 shadow-lg transform hover:scale-[1.01] transition-all duration-500">
             <img
               src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png"
               alt="DILQ ORBE"
