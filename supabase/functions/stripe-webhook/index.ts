@@ -3,19 +3,55 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0'
 import Stripe from 'https://esm.sh/stripe@12.4.0'
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2023-10-16',
-})
-
-const endpointSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || ''
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 serve(async (req) => {
+  // Lidar com requisições OPTIONS para CORS
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
+  if (!stripeSecretKey) {
+    console.error('STRIPE_SECRET_KEY não está definida')
+    return new Response(
+      JSON.stringify({ error: 'Configuração do Stripe incompleta' }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    )
+  }
+
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: '2023-10-16',
+  })
+
+  const endpointSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
+  if (!endpointSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET não está definida')
+    return new Response(
+      JSON.stringify({ error: 'Configuração do webhook incompleta' }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    )
+  }
+
   const signature = req.headers.get('stripe-signature')
 
   if (!signature) {
-    return new Response(JSON.stringify({ error: 'Assinatura não fornecida' }), {
-      status: 400,
-    })
+    return new Response(
+      JSON.stringify({ error: 'Assinatura não fornecida' }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      }
+    )
   }
 
   try {
@@ -26,10 +62,16 @@ serve(async (req) => {
       event = stripe.webhooks.constructEvent(body, signature, endpointSecret)
     } catch (err) {
       console.error(`Erro de assinatura do webhook: ${err.message}`)
-      return new Response(JSON.stringify({ error: 'Assinatura inválida' }), {
-        status: 400,
-      })
+      return new Response(
+        JSON.stringify({ error: 'Assinatura inválida' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      )
     }
+
+    console.log(`Evento recebido: ${event.type}`)
 
     // Inicializar cliente Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
@@ -61,6 +103,8 @@ serve(async (req) => {
           break
         }
 
+        console.log(`Usuário encontrado: ${user.id} para o email: ${customer.email}`)
+
         // Atualizar a assinatura no banco de dados
         const { error: subError } = await supabase
           .from('subscriptions')
@@ -83,11 +127,15 @@ serve(async (req) => {
         
         if (subError) {
           console.error('Erro ao atualizar assinatura:', subError.message)
+        } else {
+          console.log(`Assinatura atualizada para o usuário: ${user.id}`)
         }
         break
         
       case 'customer.subscription.deleted':
         const canceledSubscription = event.data.object
+        
+        console.log(`Assinatura cancelada: ${canceledSubscription.id}`)
         
         // Atualizar status da assinatura para cancelado
         const { error: cancelError } = await supabase
@@ -97,17 +145,30 @@ serve(async (req) => {
         
         if (cancelError) {
           console.error('Erro ao cancelar assinatura:', cancelError.message)
+        } else {
+          console.log(`Status da assinatura atualizado para: canceled`)
         }
         break
+        
+      default:
+        console.log(`Evento não processado: ${event.type}`)
     }
 
-    return new Response(JSON.stringify({ received: true }), {
-      status: 200,
-    })
+    return new Response(
+      JSON.stringify({ received: true }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    )
   } catch (error) {
     console.error('Erro ao processar webhook:', error.message)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-    })
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      }
+    )
   }
 })

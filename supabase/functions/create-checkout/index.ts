@@ -40,6 +40,10 @@ serve(async (req) => {
       throw new Error('ID de preço não fornecido')
     }
 
+    // Registrar dados para debug
+    console.log(`Criando checkout para: ${email}, preço: ${priceId}`)
+    console.log(`URLs: sucesso=${successUrl}, cancelamento=${cancelUrl}`)
+
     // Criar uma sessão de checkout do Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -57,6 +61,8 @@ serve(async (req) => {
         trial_period_days: 3,
       },
     })
+
+    console.log(`Sessão de checkout criada: ${session.id}`)
 
     // Retornar a URL da sessão de checkout
     return new Response(
