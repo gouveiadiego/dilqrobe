@@ -89,9 +89,7 @@ serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       customer_email: email,
-      subscription_data: {
-        trial_period_days: 3, // 3-day trial period
-      },
+      // Removed the trial_period_days property from subscription_data
     });
 
     console.log(`Checkout session created: ${session.id}`);

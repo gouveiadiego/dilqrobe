@@ -42,7 +42,7 @@ export const Signup = () => {
       
       if (error) {
         console.error("Error creating checkout:", error);
-        toast.error("Erro ao iniciar o teste gratuito. Por favor, tente novamente.");
+        toast.error("Erro ao iniciar a assinatura. Por favor, tente novamente.");
         return;
       }
       
@@ -62,7 +62,7 @@ export const Signup = () => {
         window.location.href = data.checkoutUrl;
       } else {
         console.error("Checkout URL not received:", data);
-        toast.error("Erro ao iniciar o teste gratuito: URL de checkout não disponível");
+        toast.error("Erro ao iniciar a assinatura: URL de checkout não disponível");
       }
     } catch (error: any) {
       console.error("Error in checkout process:", error);
@@ -78,18 +78,17 @@ export const Signup = () => {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-semibold text-gray-800">
-              {showPaymentOption ? "Assinatura Necessária" : "Experimente 3 dias grátis"}
+              {showPaymentOption ? "Assinatura Necessária" : "Assine agora"}
             </h2>
             <p className="text-gray-600">
               {showPaymentOption 
                 ? "Você precisa de uma assinatura para continuar" 
-                : "Após o período de teste, será cobrado R$ 9,90 por mês."}
+                : "Acesse todo o conteúdo por R$ 9,90 por mês."}
             </p>
             {!showPaymentOption && (
               <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-md">
-                <p>✓ Acesso total por 3 dias</p>
+                <p>✓ Acesso total ao conteúdo</p>
                 <p>✓ Sem compromisso - cancele quando quiser</p>
-                <p>✓ Não há cobrança durante o período de avaliação</p>
               </div>
             )}
           </div>
@@ -99,20 +98,17 @@ export const Signup = () => {
               <div className="bg-gray-50 p-4 rounded-md space-y-3">
                 <div className="flex items-center">
                   <CreditCard className="h-5 w-5 text-gray-500 mr-2" />
-                  <h3 className="font-medium">Experimente 3 dias grátis</h3>
+                  <h3 className="font-medium">Assine agora</h3>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Após o período de teste, será cobrado R$ 9,90 por mês.
+                  Acesse todo o conteúdo por R$ 9,90 por mês.
                 </p>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li className="flex items-center">
-                    <span className="text-green-500 mr-1">✓</span> Acesso total por 3 dias
+                    <span className="text-green-500 mr-1">✓</span> Acesso total ao conteúdo
                   </li>
                   <li className="flex items-center">
                     <span className="text-green-500 mr-1">✓</span> Sem compromisso - cancele quando quiser
-                  </li>
-                  <li className="flex items-center">
-                    <span className="text-green-500 mr-1">✓</span> Não há cobrança durante o período de avaliação
                   </li>
                 </ul>
               </div>
@@ -122,7 +118,7 @@ export const Signup = () => {
                 className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
                 disabled={isLoading}
               >
-                {isLoading ? "Processando..." : "Iniciar Teste Gratuito de 3 Dias"}
+                {isLoading ? "Processando..." : "Assinar agora"}
               </Button>
               
               <button 
@@ -154,7 +150,7 @@ export const Signup = () => {
                 className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
                 disabled={isLoading}
               >
-                {isLoading ? "Processando..." : "Iniciar Teste Gratuito de 3 Dias"}
+                {isLoading ? "Processando..." : "Assinar agora"}
               </Button>
             </form>
           )}
