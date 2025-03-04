@@ -31,12 +31,12 @@ export const Signup = () => {
       
       // Create a Stripe checkout session
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: {
+        body: JSON.stringify({
           email: email,
           priceId: "price_1OWFPsGkrDRkZ3iCNqpyTp4t", // Stripe price ID
           successUrl: `${window.location.origin}/login?signup=success`,
           cancelUrl: `${window.location.origin}/signup?canceled=true`,
-        },
+        }),
       });
       
       if (error) {
