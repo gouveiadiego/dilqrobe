@@ -6,7 +6,7 @@ import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 import CompanyDetails from "./pages/CompanyDetails";
 import ClientPortal from "./pages/ClientPortal";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Toaster } from "sonner";
 import Success from "./pages/Success";
 
