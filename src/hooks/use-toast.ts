@@ -7,11 +7,11 @@ type ToastProps = {
   description?: string;
   action?: React.ReactNode;
   variant?: "default" | "destructive";
-  duration?: number;
+  duration?: number; // Added duration property
 };
 
-// Create the base toast object with different methods
-const toast = {
+// Export toast functions directly to match how they're called
+export const toast = {
   // For plain messages without title/description structure
   error: (message: string) => {
     sonnerToast.error(message);
@@ -29,7 +29,7 @@ const toast = {
       description: props.description,
       action: props.action,
       duration: props.duration,
-      // Map variant to sonner's type
+      // Map variant to sonner's type - using as any to bypass type checking
       ...(props.variant === "destructive" ? { type: "error" as any } : {})
     });
     return { id: crypto.randomUUID() };
@@ -50,9 +50,10 @@ Object.defineProperty(callableToast, "apply", {
 });
 
 export const useToast = () => {
+  const toasts: ToastProps[] = [];
+
   return {
-    toast: callableToast
+    toast: callableToast,
+    toasts,
   };
 };
-
-export { callableToast as toast };
