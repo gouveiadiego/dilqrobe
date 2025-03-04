@@ -28,14 +28,9 @@ serve(async (req) => {
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeSecretKey) {
       console.error('STRIPE_SECRET_KEY is not defined');
-      // Instead of throwing an error, for testing purposes, let's create a mock response
-      // This allows the frontend to continue development without Stripe
-      
-      // Log the request for debugging
+      // Create a mock response for testing purposes when STRIPE_SECRET_KEY is not available
       const requestData = await req.json();
       console.log("Received checkout request:", requestData);
-      
-      // Create a mock checkout URL for development/testing
       const mockCheckoutUrl = `${requestData.successUrl.split('?')[0]}?stripe_mock=true`;
       
       return new Response(
@@ -76,49 +71,71 @@ serve(async (req) => {
     console.log(`Creating checkout for: ${email}, price: ${priceId}`);
     console.log(`URLs: success=${successUrl}, cancel=${cancelUrl}`);
 
-    // Determine if priceId is actually a product ID, and if so, retrieve the default price
-    let actualPriceId = priceId;
-    if (priceId.startsWith('prod_')) {
-      // It's a product ID, we need to find its default price
-      const product = await stripe.products.retrieve(priceId);
-      if (product.default_price) {
-        actualPriceId = String(product.default_price);
-        console.log(`Retrieved price ID ${actualPriceId} from product ${priceId}`);
-      } else {
-        console.error(`Product ${priceId} doesn't have a default price`);
-        throw new Error('Produto sem preço padrão definido');
+    // Try to create a checkout session with test or live mode price
+    try {
+      // First attempt - try with the provided price/product ID
+      let actualPriceId = priceId;
+      if (priceId.startsWith('prod_')) {
+        // It's a product ID, we need to find its default price
+        const product = await stripe.products.retrieve(priceId);
+        if (product.default_price) {
+          actualPriceId = String(product.default_price);
+          console.log(`Retrieved price ID ${actualPriceId} from product ${priceId}`);
+        } else {
+          console.error(`Product ${priceId} doesn't have a default price`);
+          throw new Error('Produto sem preço padrão definido');
+        }
       }
-    }
 
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
+      // Create Stripe checkout session
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: actualPriceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        customer_email: email,
+      });
+
+      console.log(`Checkout session created: ${session.id}`);
+      console.log(`Checkout URL: ${session.url}`);
+
+      // Return success response
+      return new Response(
+        JSON.stringify({ 
+          checkoutUrl: session.url,
+          sessionId: session.id
+        }),
         {
-          price: actualPriceId,
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription',
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      customer_email: email,
-    });
-
-    console.log(`Checkout session created: ${session.id}`);
-    console.log(`Checkout URL: ${session.url}`);
-
-    // Return success response
-    return new Response(
-      JSON.stringify({ 
-        checkoutUrl: session.url,
-        sessionId: session.id
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+    } catch (stripeError) {
+      console.error('Stripe API error:', stripeError);
+      
+      // If there's an error about test/live mode mismatch, provide a clearer message
+      if (stripeError.message && stripeError.message.includes('live mode')) {
+        return new Response(
+          JSON.stringify({ 
+            error: "O produto foi criado no modo 'live' do Stripe, mas você está usando uma chave de API de teste. Por favor, use o ID de um produto no modo teste ou mude para a chave de API 'live'.",
+            details: stripeError.message
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
       }
-    );
+      
+      // For any other Stripe errors
+      throw stripeError;
+    }
   } catch (error) {
     console.error('Stripe checkout error:', error);
     return new Response(

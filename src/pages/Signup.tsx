@@ -42,11 +42,20 @@ export const Signup = () => {
       
       if (error) {
         console.error("Error creating checkout:", error);
-        toast.error("Erro ao iniciar a assinatura. Por favor, tente novamente.");
+        toast.error(`Erro ao iniciar a assinatura: ${error.message || 'Por favor, tente novamente'}`);
+        setIsLoading(false);
         return;
       }
       
       console.log("Response from create-checkout function:", data);
+      
+      // If there's an error property in the response data, show it
+      if (data && data.error) {
+        console.error("Checkout error:", data.error);
+        toast.error(data.error);
+        setIsLoading(false);
+        return;
+      }
       
       // If this is a mock response in development, show payment option directly
       if (data.isMock) {
@@ -67,7 +76,7 @@ export const Signup = () => {
       }
     } catch (error: any) {
       console.error("Error in checkout process:", error);
-      toast.error("Ocorreu um erro ao processar sua solicitação");
+      toast.error(`Ocorreu um erro ao processar sua solicitação: ${error.message || ''}`);
     } finally {
       setIsLoading(false);
     }
