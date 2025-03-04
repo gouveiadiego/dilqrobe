@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,11 +10,20 @@ import { toast } from "sonner";
 
 export const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
+  useEffect(() => {
+    // Verificar se o usuário veio de um signup bem-sucedido
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('signup') === 'success') {
+      toast.success("Registro concluído! Você pode fazer login agora.");
+    }
+  }, [location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +114,18 @@ export const Login = () => {
               {isLoading ? "Carregando..." : "Entrar"}
             </Button>
           </form>
+
+          <div className="text-center pt-4">
+            <p className="text-sm text-gray-500">
+              Não tem uma conta?{" "}
+              <button
+                onClick={() => navigate("/signup")}
+                className="text-blue-600 hover:underline"
+              >
+                Experimente 3 dias grátis
+              </button>
+            </p>
+          </div>
         </div>
       </div>
       <div className="hidden lg:flex w-1/2 bg-[#465E73] p-12 items-center justify-center">

@@ -1,1 +1,26 @@
+
 project_id = "wgnvrxubwifcscrbkimm"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+
+[db]
+port = 54322
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+[[edge_functions]]
+name = "create-checkout"
+
+[[edge_functions]]
+name = "stripe-webhook"
+
+[[edge_functions]]
+name = "delete-user"
