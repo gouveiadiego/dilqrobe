@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -61,7 +60,7 @@ export const Login = () => {
             .from('subscriptions')
             .select('*')
             .eq('user_id', data.session.user.id)
-            .in('status', ['active', 'trialing'])
+            .in('status', ['active', 'trialing', 'paused'])  // Added 'paused' status
             .maybeSingle();
             
           if (subscriptionError && subscriptionError.code !== 'PGRST116') {

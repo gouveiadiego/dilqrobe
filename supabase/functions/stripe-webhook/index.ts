@@ -207,28 +207,46 @@ serve(async (req) => {
             console.log(`Assinatura atualizada para o usuário: ${subUser.id}`)
             console.log(`Período de avaliação: ${subscription.trial_start ? 'De ' + new Date(subscription.trial_start * 1000).toISOString() + ' até ' + new Date(subscription.trial_end * 1000).toISOString() : 'Não aplicável'}`)
           }
-          break
+          break;
+          
+        case 'customer.subscription.paused':
+          const pausedSubscription = event.data.object;
+          
+          console.log(`Assinatura pausada: ${pausedSubscription.id}`);
+          
+          // Update subscription status to paused
+          const { error: pauseError } = await supabase
+            .from('subscriptions')
+            .update({ status: 'paused' })
+            .eq('stripe_subscription_id', pausedSubscription.id);
+          
+          if (pauseError) {
+            console.error('Erro ao atualizar assinatura pausada:', pauseError.message);
+          } else {
+            console.log(`Status da assinatura atualizado para: paused`);
+          }
+          break;
           
         case 'customer.subscription.deleted':
-          const canceledSubscription = event.data.object
+          const canceledSubscription = event.data.object;
           
-          console.log(`Assinatura cancelada: ${canceledSubscription.id}`)
+          console.log(`Assinatura cancelada: ${canceledSubscription.id}`);
           
           // Update subscription status to canceled
           const { error: cancelError } = await supabase
             .from('subscriptions')
             .update({ status: 'canceled' })
-            .eq('stripe_subscription_id', canceledSubscription.id)
+            .eq('stripe_subscription_id', canceledSubscription.id);
           
           if (cancelError) {
-            console.error('Erro ao cancelar assinatura:', cancelError.message)
+            console.error('Erro ao cancelar assinatura:', cancelError.message);
           } else {
-            console.log(`Status da assinatura atualizado para: canceled`)
+            console.log(`Status da assinatura atualizado para: canceled`);
           }
-          break
+          break;
           
         default:
-          console.log(`Evento não processado: ${event.type}`)
+          console.log(`Evento não processado: ${event.type}`);
       }
 
       return new Response(
@@ -237,25 +255,25 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         }
-      )
+      );
     } catch (error) {
-      console.error('Erro ao processar webhook:', error.message)
+      console.error('Erro ao processar webhook:', error.message);
       return new Response(
         JSON.stringify({ error: error.message }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
         }
-      )
+      );
     }
   } catch (error) {
-    console.error('Erro geral no webhook:', error.message)
+    console.error('Erro geral no webhook:', error.message);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       }
-    )
+    );
   }
-})
+});

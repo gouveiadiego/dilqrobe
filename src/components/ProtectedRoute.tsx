@@ -25,7 +25,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         .from('subscriptions')
         .select('*')
         .eq('user_id', userId)
-        .in('status', ['active', 'trialing'])
+        .in('status', ['active', 'trialing', 'paused'])  // Now also including paused subscriptions
         .maybeSingle();
       
       if (error) {
