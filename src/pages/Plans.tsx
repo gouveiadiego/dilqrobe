@@ -22,7 +22,7 @@ export const Plans = () => {
       
       if (!session) {
         toast.error("Faça login para continuar");
-        navigate("/login");
+        navigate("/auth");
         return;
       }
       
@@ -35,8 +35,8 @@ export const Plans = () => {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           email: session.user.email,
-          priceId: "prod_RsUFxPZfy7VBFx", // Using your Stripe product ID
-          successUrl: `${window.location.origin}/login?signup=success`,
+          priceId: "price_1QyjH8EJEe6kPCYCvdPmQNZS", // Using the actual price ID instead of product ID
+          successUrl: `${window.location.origin}/auth?signup=success`,
           cancelUrl: `${window.location.origin}/plans?canceled=true`,
         },
       });
@@ -64,7 +64,7 @@ export const Plans = () => {
       if (data.isMock) {
         console.log("Mock checkout detected, showing success");
         toast.info("Modo de desenvolvimento: simulando checkout");
-        navigate("/login?signup=success");
+        navigate("/auth?signup=success");
         return;
       }
       

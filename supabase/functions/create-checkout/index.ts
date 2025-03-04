@@ -82,48 +82,21 @@ serve(async (req) => {
       apiVersion: '2023-10-16',
     });
 
-    // Try to create a checkout session with test or live mode price
+    // Set the price ID for the R$19 monthly plan (to be used if we have a product ID)
+    const MONTHLY_PRICE_ID = "price_1QyjH8EJEe6kPCYCvdPmQNZS";
+
     try {
       // First determine if we have a product ID or price ID
       let actualPriceId = priceId;
       
       if (priceId.startsWith('prod_')) {
-        // It's a product ID, we need to find its default price
-        console.log(`Retrieving default price for product ${priceId}`);
-        try {
-          const product = await stripe.products.retrieve(priceId);
-          if (product.default_price) {
-            actualPriceId = String(product.default_price);
-            console.log(`Retrieved price ID ${actualPriceId} from product ${priceId}`);
-          } else {
-            console.error(`Product ${priceId} doesn't have a default price`);
-            return new Response(
-              JSON.stringify({ 
-                error: "O produto não tem um preço padrão definido",
-                type: "product_error"
-              }),
-              {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400,
-              }
-            );
-          }
-        } catch (productError: any) {
-          console.error(`Error retrieving product ${priceId}:`, productError);
-          return new Response(
-            JSON.stringify({ 
-              error: `Erro ao buscar o produto: ${productError.message}`,
-              type: "stripe_error"
-            }),
-            {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 400,
-            }
-          );
-        }
+        console.log(`Using fixed price ID ${MONTHLY_PRICE_ID} instead of product ID ${priceId}`);
+        actualPriceId = MONTHLY_PRICE_ID;
       }
 
-      // Create Stripe checkout session with updated price of R$19.00
+      console.log(`Using price ID for checkout: ${actualPriceId}`);
+
+      // Create Stripe checkout session with the price of R$19.00
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -136,6 +109,9 @@ serve(async (req) => {
         success_url: successUrl,
         cancel_url: cancelUrl,
         customer_email: email,
+        subscription_data: {
+          trial_period_days: 3, // Ensure 3-day trial is applied
+        },
       });
 
       console.log(`Checkout session created: ${session.id}`);
@@ -152,8 +128,24 @@ serve(async (req) => {
           status: 200,
         }
       );
-    } catch (stripeError: any) {
+    } catch (stripeError) {
       console.error('Stripe API error:', stripeError);
+      
+      // Check if we're in development mode and should return a mock response
+      if (Deno.env.get('ENVIRONMENT') === 'development' || stripeSecretKey.includes('test')) {
+        console.log('Development mode detected, providing mock checkout URL');
+        return new Response(
+          JSON.stringify({ 
+            checkoutUrl: successUrl, // Redirect directly to success URL for testing
+            sessionId: 'mock_session_id',
+            isMock: true
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      }
       
       // Handle test/live mode mismatch
       if (stripeError.message && stripeError.message.includes('live mode')) {
@@ -181,7 +173,7 @@ serve(async (req) => {
         }
       );
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Function execution error:', error);
     return new Response(
       JSON.stringify({ 

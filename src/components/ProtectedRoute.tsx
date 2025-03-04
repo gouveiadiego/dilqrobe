@@ -37,7 +37,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       console.log("Subscription check result:", data);
       
       if (!data) {
-        console.log("No active subscription found. Redirecting to login");
+        console.log("No active subscription found. Redirecting to plans");
         return false;
       }
       
@@ -61,7 +61,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         if (error) {
           console.error("Error getting session:", error);
           toast.error("Erro ao verificar autenticação");
-          navigate("/login");
+          navigate("/auth");
           return;
         }
         
@@ -76,9 +76,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
               setHasValidSubscription(hasSubscription);
               
               if (!hasSubscription) {
-                console.log("No valid subscription found, redirecting to login");
+                console.log("No valid subscription found, redirecting to plans");
                 toast.error("Assinatura não encontrada ou inválida. Por favor, verifique seu pagamento.");
-                navigate("/login");
+                navigate("/plans");
               } else {
                 console.log("Valid subscription confirmed, proceeding to protected content");
                 toast.success("Bem-vindo de volta!");
@@ -94,7 +94,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         console.error("Error in initializeAuth:", err);
         if (mounted) {
           setLoading(false);
-          navigate("/login");
+          navigate("/auth");
         }
       }
     };
@@ -119,14 +119,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           if (!hasSubscription) {
             console.log("No valid subscription found after auth change");
             toast.error("Assinatura não encontrada ou inválida. Por favor, verifique seu pagamento.");
-            navigate("/login");
+            navigate("/plans");
           } else {
             console.log("Valid subscription confirmed after auth change");
           }
         }
       } else {
-        console.log("No session found after auth change, redirecting to login");
-        navigate("/login");
+        console.log("No session found after auth change, redirecting to auth");
+        navigate("/auth");
       }
       
       setLoading(false);
@@ -151,15 +151,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Redirect to login if no session or no valid subscription
+  // Redirect to login if no session
   if (!session) {
-    console.log("No session in protected route, redirecting to login");
-    return <Navigate to="/login" replace />;
+    console.log("No session in protected route, redirecting to auth");
+    return <Navigate to="/auth" replace />;
   }
   
+  // Redirect to plans if no valid subscription
   if (!hasValidSubscription) {
-    console.log("No valid subscription in protected route, redirecting to login");
-    return <Navigate to="/login" replace />;
+    console.log("No valid subscription in protected route, redirecting to plans");
+    return <Navigate to="/plans" replace />;
   }
 
   // Render protected content
