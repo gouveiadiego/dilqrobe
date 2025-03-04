@@ -76,12 +76,26 @@ serve(async (req) => {
     console.log(`Creating checkout for: ${email}, price: ${priceId}`);
     console.log(`URLs: success=${successUrl}, cancel=${cancelUrl}`);
 
+    // Determine if priceId is actually a product ID, and if so, retrieve the default price
+    let actualPriceId = priceId;
+    if (priceId.startsWith('prod_')) {
+      // It's a product ID, we need to find its default price
+      const product = await stripe.products.retrieve(priceId);
+      if (product.default_price) {
+        actualPriceId = String(product.default_price);
+        console.log(`Retrieved price ID ${actualPriceId} from product ${priceId}`);
+      } else {
+        console.error(`Product ${priceId} doesn't have a default price`);
+        throw new Error('Produto sem preço padrão definido');
+      }
+    }
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
-          price: priceId,
+          price: actualPriceId,
           quantity: 1,
         },
       ],
@@ -89,7 +103,6 @@ serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       customer_email: email,
-      // Removed the trial_period_days property from subscription_data
     });
 
     console.log(`Checkout session created: ${session.id}`);

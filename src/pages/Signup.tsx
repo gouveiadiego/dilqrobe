@@ -34,7 +34,7 @@ export const Signup = () => {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           email: email,
-          priceId: "price_1PgJ5fJOumyCRZftPE91gDUU", // Stripe price ID
+          priceId: "prod_RsUFxPZfy7VBFx", // Using your Stripe product ID
           successUrl: `${window.location.origin}/login?signup=success`,
           cancelUrl: `${window.location.origin}/signup?canceled=true`,
         },
