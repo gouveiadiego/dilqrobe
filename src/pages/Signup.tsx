@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,7 @@ export const Signup = () => {
   });
   
   const { 
-    loading: isLoading, 
+    loading, 
     errorMessage, 
     setErrorMessage, 
     handleSignUp, 
@@ -49,7 +48,7 @@ export const Signup = () => {
   };
 
   const handleStartTrial = async () => {
-    setIsLoading(true);
+    // Use setErrorMessage from useAuth hook instead of directly setting an error
     setErrorMessage("");
     
     try {
@@ -106,8 +105,6 @@ export const Signup = () => {
       console.error("Error in checkout process:", error);
       toast.error(`Ocorreu um erro ao processar sua solicitação: ${error.message || ''}`);
       setErrorMessage(`Erro: ${error.message || 'Ocorreu um erro desconhecido'}`);
-    } finally {
-      setIsLoading(false);
     }
   };
   
@@ -249,9 +246,9 @@ export const Signup = () => {
               <Button
                 type="submit"
                 className="w-full h-12 bg-gradient-to-r from-dilq-accent to-dilq-teal hover:opacity-90 text-white font-medium rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 shadow-[0_0_15px_rgba(139,92,246,0.5)]"
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? 
+                {loading ? 
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
                     <span>Processando...</span>
@@ -309,9 +306,9 @@ export const Signup = () => {
               <Button
                 onClick={handleStartTrial}
                 className="w-full h-12 bg-gradient-to-r from-dilq-accent to-dilq-teal hover:opacity-90 text-white font-medium rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 shadow-[0_0_15px_rgba(139,92,246,0.5)]"
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? 
+                {loading ? 
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
                     <span>Processando...</span>
