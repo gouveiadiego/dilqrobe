@@ -108,6 +108,13 @@ export const Signup = () => {
                 : "Acesse todo o conteúdo por R$ 19,00 por mês."}
             </p>
             {!showPaymentOption && (
+              <div className="mt-2 bg-green-900/20 p-2 rounded-lg border border-green-700/30 animate-pulse">
+                <p className="text-sm font-medium text-green-400">
+                  Comece com 3 dias de teste grátis!
+                </p>
+              </div>
+            )}
+            {!showPaymentOption && (
               <div className="mt-6 space-y-4">
                 <div className="bg-gradient-to-r p-[1px] from-dilq-accent/30 to-dilq-teal/30 rounded-xl">
                   <div className="bg-black/50 backdrop-blur-md p-5 rounded-xl text-left space-y-3">
@@ -153,6 +160,11 @@ export const Signup = () => {
                   <span className="text-3xl font-bold text-white">R$ 19,00</span>
                   <span className="text-gray-400 ml-1">/mês</span>
                 </div>
+                <div className="bg-green-900/20 p-2 rounded-lg border border-green-700/30 text-center my-3">
+                  <p className="text-sm font-medium text-green-400">
+                    3 dias de teste grátis incluídos!
+                  </p>
+                </div>
                 <ul className="space-y-3">
                   <li className="flex items-center text-gray-300">
                     <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-dilq-accent/20 text-dilq-accent mr-2">✓</span> 
@@ -183,7 +195,7 @@ export const Signup = () => {
                     <div className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
                     <span>Processando...</span>
                   </div> : 
-                  "Assinar agora"
+                  "Iniciar teste grátis"
                 }
               </Button>
               

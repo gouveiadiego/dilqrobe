@@ -148,12 +148,20 @@ export const Login = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
                   Acesse todo o conteúdo por R$ 19,00 por mês.
                 </p>
+                <div className="mt-2 bg-green-50 dark:bg-green-900/20 p-2 rounded-lg border border-green-100 dark:border-green-800/30">
+                  <p className="text-sm font-medium text-green-800 dark:text-green-400">
+                    Comece com 3 dias de teste grátis!
+                  </p>
+                </div>
                 <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 mt-3">
                   <li className="flex items-center">
                     <span className="text-green-500 mr-1">✓</span> Acesso total ao conteúdo
                   </li>
                   <li className="flex items-center">
                     <span className="text-green-500 mr-1">✓</span> Sem compromisso - cancele quando quiser
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-1">✓</span> 3 dias de teste grátis
                   </li>
                 </ul>
               </div>
@@ -163,7 +171,7 @@ export const Login = () => {
                 className="w-full bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-dilq-accent/20 disabled:opacity-70"
                 disabled={isLoading}
               >
-                {isLoading ? "Processando..." : "Assinar agora"}
+                {isLoading ? "Processando..." : "Iniciar teste grátis"}
               </Button>
               
               <button 
