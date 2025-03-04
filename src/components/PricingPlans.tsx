@@ -32,13 +32,29 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
     async function fetchPlans() {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("plans")
-          .select("*")
-          .order("amount");
+        // Temporarily use hardcoded plans until the database is properly set up
+        const hardcodedPlans: Plan[] = [
+          {
+            id: "1",
+            name: "Plano Mensal",
+            description: "Acesso a todas as funcionalidades por um mês",
+            price_id: "price_1Qz51FRooQphZ1dFZhZ4AEhd", // The price ID provided by the user
+            amount: 3900,
+            currency: "BRL",
+            interval: "month"
+          },
+          {
+            id: "2",
+            name: "Plano Anual",
+            description: "Acesso a todas as funcionalidades por um ano com desconto",
+            price_id: "price_1Qz51FRooQphZ1dFZhZ4AEhd", // The price ID provided by the user
+            amount: 39900,
+            currency: "BRL",
+            interval: "year"
+          }
+        ];
         
-        if (error) throw error;
-        setPlans(data || []);
+        setPlans(hardcodedPlans);
       } catch (error) {
         console.error("Error fetching plans:", error);
         toast.error("Erro ao carregar os planos disponíveis");
