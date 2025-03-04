@@ -24,39 +24,39 @@ export const Signup = () => {
     setIsLoading(true);
     
     try {
-      // Informar o usuário que estamos processando a solicitação
+      // Inform the user that we're processing the request
       toast.info("Preparando checkout...");
       
-      console.log("Iniciando processo de checkout para:", email);
+      console.log("Starting checkout process for:", email);
       
-      // Criar uma sessão de checkout do Stripe
+      // Create a Stripe checkout session
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           email: email,
-          priceId: "price_1OWFPsGkrDRkZ3iCNqpyTp4t", // ID de preço do Stripe
+          priceId: "price_1OWFPsGkrDRkZ3iCNqpyTp4t", // Stripe price ID
           successUrl: `${window.location.origin}/login?signup=success`,
           cancelUrl: `${window.location.origin}/signup?canceled=true`,
         },
       });
       
       if (error) {
-        console.error("Erro ao criar checkout:", error);
+        console.error("Error creating checkout:", error);
         toast.error("Erro ao iniciar o teste gratuito. Por favor, tente novamente.");
         return;
       }
       
-      console.log("Resposta da função create-checkout:", data);
+      console.log("Response from create-checkout function:", data);
       
-      // Redirecionar para a página de checkout do Stripe
+      // Redirect to Stripe checkout page
       if (data && data.checkoutUrl) {
-        console.log("Redirecionando para:", data.checkoutUrl);
+        console.log("Redirecting to:", data.checkoutUrl);
         window.location.href = data.checkoutUrl;
       } else {
-        console.error("URL de checkout não recebida:", data);
+        console.error("Checkout URL not received:", data);
         toast.error("Erro ao iniciar o teste gratuito: URL de checkout não disponível");
       }
     } catch (error: any) {
-      console.error("Erro no processo de checkout:", error);
+      console.error("Error in checkout process:", error);
       toast.error("Ocorreu um erro ao processar sua solicitação");
     } finally {
       setIsLoading(false);
