@@ -5,23 +5,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Key, User, Phone, CreditCard, Sparkles, Zap, Shield, ArrowLeft, CheckCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth, AuthFormData } from "@/hooks/useAuth";
 
 export const Signup = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1); // 1 = registration form, 2 = payment options
-  const [errorMessage, setErrorMessage] = useState("");
   
   // Form data for registration
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AuthFormData>({
     email: "",
     password: "",
     confirmPassword: "",
     fullName: "",
     phone: ""
   });
+  
+  const { 
+    loading: isLoading, 
+    errorMessage, 
+    setErrorMessage, 
+    handleSignUp, 
+    handlePasswordReset 
+  } = useAuth();
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -31,78 +38,13 @@ export const Signup = () => {
     });
   };
 
-  const validateForm = () => {
-    if (!formData.email || !formData.email.includes("@")) {
-      toast.error("Por favor, insira um email válido");
-      return false;
-    }
-    
-    if (!formData.password || formData.password.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres");
-      return false;
-    }
-    
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("As senhas não coincidem");
-      return false;
-    }
-    
-    if (!formData.fullName) {
-      toast.error("Por favor, informe seu nome completo");
-      return false;
-    }
-    
-    return true;
-  };
-
   const handleRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
-      return;
-    }
-    
-    setIsLoading(true);
-    setErrorMessage("");
-    
-    try {
-      // Register the user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            phone: formData.phone
-          }
-        }
-      });
-      
-      if (authError) {
-        console.error("Error registering user:", authError);
-        
-        if (authError.message.includes("already exists")) {
-          toast.error("Este email já está registrado. Por favor, faça login ou use outro email.");
-        } else {
-          toast.error(`Erro ao registrar: ${authError.message}`);
-        }
-        
-        setErrorMessage(authError.message);
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log("User registered successfully:", authData);
-      toast.success("Conta criada com sucesso!");
-      
+    const success = await handleSignUp(formData);
+    if (success) {
       // Move to payment step
       setStep(2);
-    } catch (error: any) {
-      console.error("Error in registration process:", error);
-      toast.error(`Ocorreu um erro ao processar sua solicitação: ${error.message || ''}`);
-      setErrorMessage(`Erro: ${error.message || 'Ocorreu um erro desconhecido'}`);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -166,30 +108,6 @@ export const Signup = () => {
       setErrorMessage(`Erro: ${error.message || 'Ocorreu um erro desconhecido'}`);
     } finally {
       setIsLoading(false);
-    }
-  };
-  
-  const handlePasswordReset = async () => {
-    const email = prompt("Digite seu email para redefinir a senha:");
-    
-    if (!email || !email.includes("@")) {
-      toast.error("Por favor, insira um email válido");
-      return;
-    }
-    
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (error) {
-        toast.error(`Erro ao enviar email de redefinição: ${error.message}`);
-        return;
-      }
-      
-      toast.success("Email de redefinição de senha enviado. Verifique sua caixa de entrada.");
-    } catch (error: any) {
-      toast.error(`Erro ao solicitar redefinição de senha: ${error.message}`);
     }
   };
   
@@ -345,7 +263,7 @@ export const Signup = () => {
               <div className="flex justify-between text-sm text-gray-400 pt-2">
                 <button 
                   type="button"
-                  onClick={handlePasswordReset}
+                  onClick={() => handlePasswordReset()}
                   className="hover:text-dilq-accent transition-colors"
                 >
                   Esqueceu a senha?

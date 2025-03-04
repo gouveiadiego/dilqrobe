@@ -1,151 +1,41 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useAuth, AuthFormData } from "@/hooks/useAuth";
 
 const Login = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isPlanSelected, setIsPlanSelected] = useState(false);
-  const [checkingSession, setCheckingSession] = useState(true);
+  const [formData, setFormData] = useState<AuthFormData>({
+    email: "",
+    password: "",
+  });
+  
+  const { 
+    loading, 
+    checkingSession, 
+    errorMessage, 
+    handleSignIn, 
+    handlePasswordReset 
+  } = useAuth({
+    checkSubscriptionAfterAuth: true
+  });
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const selectedPlan = params.get("plan");
-    setIsPlanSelected(!!selectedPlan);
-    
-    // Check if user is already logged in with a valid subscription
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          console.log("Login page - session found for user:", session.user.id);
-          
-          // Check subscription
-          try {
-            const { data: subscription, error: subscriptionError } = await supabase
-              .from('subscriptions')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .in('status', ['active', 'trialing', 'paused'])
-              .maybeSingle();
-              
-            if (subscriptionError && subscriptionError.code !== 'PGRST116') {
-              console.error("Error checking subscription:", subscriptionError);
-            }
-            
-            if (subscription) {
-              console.log("Active subscription found:", subscription);
-              
-              // If user already has a valid subscription, redirect to dashboard
-              console.log("Valid subscription found, navigating to dashboard");
-              toast.success("Login realizado com sucesso");
-              navigate("/dashboard");
-              return;
-            } else {
-              console.log("No valid subscription found for logged-in user");
-            }
-          } catch (error) {
-            console.error("Error checking subscription status:", error);
-          }
-        } else {
-          console.log("No active session found");
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-      }
-      
-      setCheckingSession(false);
-    };
-    
-    checkSession();
-  }, [location.search, navigate]);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData({
+      ...formData,
+      [id]: value
+    });
+  };
 
-  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-    
-    try {
-      // Sign in with email and password
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        console.error("Login error:", error.message);
-        toast.error("Erro ao fazer login: " + error.message);
-        setLoading(false);
-        return;
-      }
-      
-      if (!data.session) {
-        console.error("No session returned after login");
-        toast.error("Erro ao obter sessão após login");
-        setLoading(false);
-        return;
-      }
-      
-      console.log("User logged in successfully:", data.session.user.id);
-      
-      // After successful login, check if user has a valid subscription
-      try {
-        console.log("Checking subscription after login");
-        const { data: subscription, error: subscriptionError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', data.session.user.id)
-          .in('status', ['active', 'trialing', 'paused'])
-          .maybeSingle();
-          
-        if (subscriptionError) {
-          console.error("Error checking subscription:", subscriptionError);
-          toast.error("Erro ao verificar assinatura");
-          setLoading(false);
-          return;
-        }
-        
-        if (subscription) {
-          console.log("Valid subscription found, navigating to dashboard");
-          toast.success("Login realizado com sucesso!");
-          navigate("/dashboard");
-        } else {
-          console.log("No valid subscription found, redirect user to plans");
-          // If user doesn't have a valid subscription, handle accordingly
-          if (isPlanSelected) {
-            // User was in the process of selecting a plan, redirect to checkout
-            console.log("Plan was selected, redirecting to payment");
-            // Extract plan ID from URL
-            const params = new URLSearchParams(location.search);
-            const planId = params.get("plan");
-            navigate(`/payment?plan=${planId}`);
-          } else {
-            // Otherwise redirect to plans page
-            console.log("No plan selected, redirecting to plans page");
-            toast.error("Você não possui uma assinatura ativa. Por favor, escolha um plano.");
-            navigate("/plans");
-          }
-        }
-      } catch (error) {
-        console.error("Error checking subscription:", error);
-        toast.error("Erro ao verificar assinatura");
-      } finally {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error("Error in handleSignIn:", error);
-      toast.error("Erro desconhecido ao fazer login");
-      setLoading(false);
-    }
+    await handleSignIn(formData);
   };
 
   // If still checking session, show loading spinner
@@ -168,16 +58,21 @@ const Login = () => {
             Entrar no DILQ
           </CardTitle>
         </CardHeader>
-        <form onSubmit={handleSignIn}>
+        <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {errorMessage && (
+              <div className="bg-red-900/30 border border-red-700/50 text-red-200 p-4 rounded-xl text-sm backdrop-blur-md">
+                {errorMessage}
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-white">Email</Label>
               <Input 
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={handleInputChange}
                 required
                 className="border-gray-700 bg-gray-800 text-white placeholder:text-gray-400"
               />
@@ -188,8 +83,8 @@ const Login = () => {
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={formData.password}
+                onChange={handleInputChange}
                 required
                 className="border-gray-700 bg-gray-800 text-white placeholder:text-gray-400"
               />
@@ -214,6 +109,16 @@ const Login = () => {
               Não tem uma conta?{" "}
               <Button variant="link" className="p-0 text-dilq-accent" onClick={() => navigate("/signup")}>
                 Cadastre-se
+              </Button>
+            </div>
+            <div className="text-sm text-gray-400 text-center">
+              <Button 
+                type="button" 
+                variant="link" 
+                className="p-0 text-dilq-accent"
+                onClick={() => handlePasswordReset()}
+              >
+                Esqueceu a senha?
               </Button>
             </div>
           </CardFooter>
