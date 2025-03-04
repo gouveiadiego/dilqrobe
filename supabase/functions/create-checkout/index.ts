@@ -3,9 +3,6 @@
 // https://deno.com/deploy/docs
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-// Using specific imports with no-dts to avoid type definition issues
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0?no-dts";
-import Stripe from "https://esm.sh/stripe@12.4.0?no-dts";
 
 // CORS headers configuration
 const corsHeaders = {
@@ -20,6 +17,10 @@ serve(async (req) => {
   }
 
   try {
+    // Import dependencies inside the handler to avoid bundling issues
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.0/dist/module/index.js?no-dts");
+    const { default: Stripe } = await import("https://esm.sh/stripe@12.4.0/dist/stripe.js?no-dts");
+
     // Initialize Supabase client with service role key for full database access
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
