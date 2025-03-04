@@ -85,6 +85,76 @@ serve(async (req) => {
 
       // Process Stripe events
       switch (event.type) {
+        case 'checkout.session.completed':
+          const checkoutSession = event.data.object;
+          console.log('Checkout session completed:', checkoutSession);
+          
+          // Get customer email from the checkout session
+          const customerEmail = checkoutSession.customer_details?.email;
+          if (!customerEmail) {
+            console.error('Customer email not found in checkout session');
+            break;
+          }
+          
+          console.log(`Looking for user with email: ${customerEmail}`);
+          
+          // Find user by email
+          const { data: users, error: userError } = await supabase.auth.admin.listUsers();
+          
+          if (userError) {
+            console.error('Erro ao buscar usuários:', userError.message);
+            break;
+          }
+          
+          const user = users.users.find(u => u.email === customerEmail);
+          
+          if (!user) {
+            console.error('Usuário não encontrado para o email:', customerEmail);
+            break;
+          }
+          
+          console.log(`Usuário encontrado: ${user.id} para o email: ${customerEmail}`);
+          
+          // If there's a subscription ID in the checkout session, make sure to save it
+          if (checkoutSession.subscription) {
+            // Fetch the subscription to get more details
+            const subscription = await stripe.subscriptions.retrieve(checkoutSession.subscription);
+            
+            console.log(`Assinatura encontrada: ${subscription.id}, status: ${subscription.status}`);
+            console.log(`Trial: ${subscription.trial_start ? 'Sim' : 'Não'}, 
+              Início: ${subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : 'N/A'}, 
+              Fim: ${subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : 'N/A'}`);
+            
+            // Update subscription in database
+            const { error: subError } = await supabase
+              .from('subscriptions')
+              .upsert({
+                user_id: user.id,
+                stripe_customer_id: subscription.customer,
+                stripe_subscription_id: subscription.id,
+                status: subscription.status, // Can be 'trialing' during trial period
+                plan_type: 'premium',
+                price_id: subscription.items.data[0].price.id,
+                current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+                current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                trial_start: subscription.trial_start 
+                  ? new Date(subscription.trial_start * 1000).toISOString() 
+                  : null,
+                trial_end: subscription.trial_end 
+                  ? new Date(subscription.trial_end * 1000).toISOString() 
+                  : null,
+              });
+            
+            if (subError) {
+              console.error('Erro ao atualizar assinatura:', subError.message);
+            } else {
+              console.log(`Assinatura atualizada para o usuário: ${user.id}`);
+            }
+          } else {
+            console.log('No subscription found in checkout session');
+          }
+          break;
+          
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
           const subscription = event.data.object
@@ -93,29 +163,29 @@ serve(async (req) => {
           const customer = await stripe.customers.retrieve(subscription.customer)
           
           // Find user by email
-          const { data: users, error: userError } = await supabase.auth.admin.listUsers()
+          const { data: subUsers, error: subUserError } = await supabase.auth.admin.listUsers()
           
-          if (userError) {
-            console.error('Erro ao buscar usuários:', userError.message)
+          if (subUserError) {
+            console.error('Erro ao buscar usuários:', subUserError.message)
             break
           }
           
           // Find user with the same email as the Stripe customer
-          const user = users.users.find(u => u.email === customer.email)
+          const subUser = subUsers.users.find(u => u.email === customer.email)
           
-          if (!user) {
+          if (!subUser) {
             console.error('Usuário não encontrado para o email:', customer.email)
             break
           }
 
-          console.log(`Usuário encontrado: ${user.id} para o email: ${customer.email}`)
+          console.log(`Usuário encontrado: ${subUser.id} para o email: ${customer.email}`)
           console.log(`Status da assinatura: ${subscription.status}, está em avaliação: ${subscription.status === 'trialing' ? 'Sim' : 'Não'}`)
 
           // Update subscription in database
           const { error: subError } = await supabase
             .from('subscriptions')
             .upsert({
-              user_id: user.id,
+              user_id: subUser.id,
               stripe_customer_id: subscription.customer,
               stripe_subscription_id: subscription.id,
               status: subscription.status, // Can be 'trialing' during trial period
@@ -134,7 +204,7 @@ serve(async (req) => {
           if (subError) {
             console.error('Erro ao atualizar assinatura:', subError.message)
           } else {
-            console.log(`Assinatura atualizada para o usuário: ${user.id}`)
+            console.log(`Assinatura atualizada para o usuário: ${subUser.id}`)
             console.log(`Período de avaliação: ${subscription.trial_start ? 'De ' + new Date(subscription.trial_start * 1000).toISOString() + ' até ' + new Date(subscription.trial_end * 1000).toISOString() : 'Não aplicável'}`)
           }
           break

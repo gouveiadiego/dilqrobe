@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -24,6 +23,11 @@ export const Login = () => {
     if (searchParams.get('signup') === 'success') {
       toast.success("Registro concluído! Você pode fazer login agora.");
     }
+    
+    // Se o usuário vier de um checkout cancelado
+    if (searchParams.get('canceled') === 'true') {
+      toast.info("Checkout cancelado. Você pode tentar novamente quando quiser.");
+    }
   }, [location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,42 +47,54 @@ export const Login = () => {
         } else {
           toast.error("Erro ao fazer login. Tente novamente.");
         }
+        setIsLoading(false);
         return;
       }
 
       // Check subscription status
       if (data?.session) {
         try {
+          console.log("Checking subscription for user:", data.session.user.id);
+          
           const { data: subscriptionData, error: subscriptionError } = await supabase
             .from('subscriptions')
             .select('*')
             .eq('user_id', data.session.user.id)
+            .in('status', ['active', 'trialing'])
             .single();
             
-          if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+          if (subscriptionError) {
             console.error("Error checking subscription:", subscriptionError);
+            // Only show an error if it's not a "no rows returned" error (PGRST116)
+            if (subscriptionError.code !== 'PGRST116') {
+              toast.error("Erro ao verificar assinatura. Tente novamente.");
+              setIsLoading(false);
+              return;
+            }
           }
           
-          if (!subscriptionData || 
-              (subscriptionData.status !== 'active' && 
-               subscriptionData.status !== 'trialing')) {
+          console.log("Subscription check result:", subscriptionData);
+          
+          if (!subscriptionData) {
             // Show payment option if no active subscription
             setShowPaymentOption(true);
             setIsLoading(false);
             return;
           }
           
+          console.log("Valid subscription found, status:", subscriptionData.status);
+          
           // Has valid subscription, proceed to dashboard
           navigate("/dashboard", { replace: true });
         } catch (error) {
           console.error("Error checking subscription status:", error);
-          navigate("/dashboard", { replace: true });
+          toast.error("Erro ao verificar status da assinatura. Tente novamente.");
+          setIsLoading(false);
         }
       }
     } catch (error: any) {
       console.error("Auth error:", error);
       toast.error(error.message);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -99,6 +115,7 @@ export const Login = () => {
       if (error) {
         console.error("Error creating checkout:", error);
         toast.error("Erro ao iniciar a assinatura. Por favor, tente novamente.");
+        setIsLoading(false);
         return;
       }
       
@@ -107,11 +124,11 @@ export const Login = () => {
         window.location.href = data.checkoutUrl;
       } else {
         toast.error("Erro ao iniciar a assinatura: URL de checkout não disponível");
+        setIsLoading(false);
       }
     } catch (error: any) {
       console.error("Error in checkout process:", error);
       toast.error("Ocorreu um erro ao processar sua solicitação");
-    } finally {
       setIsLoading(false);
     }
   };
