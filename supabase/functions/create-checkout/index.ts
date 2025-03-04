@@ -1,6 +1,6 @@
 
-// Follow the Deno deployment guide for Supabase:
-// https://deno.com/deploy/docs
+// Follow this Deno deployment guide for Supabase:
+// https://deno.land/deploy/docs
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
@@ -17,9 +17,12 @@ serve(async (req) => {
   }
 
   try {
-    // Import dependencies inside the handler to avoid bundling issues
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.0/dist/module/index.js?no-dts");
-    const { default: Stripe } = await import("https://esm.sh/stripe@12.4.0/dist/stripe.js?no-dts");
+    // Simplified dynamic imports that avoid type definition issues
+    const supabaseModule = await import("https://esm.sh/@supabase/supabase-js@2.38.0/dist/module/index.js");
+    const stripeModule = await import("https://esm.sh/stripe@12.4.0/dist/stripe.js");
+    
+    const createClient = supabaseModule.createClient;
+    const Stripe = stripeModule.default;
 
     // Initialize Supabase client with service role key for full database access
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
