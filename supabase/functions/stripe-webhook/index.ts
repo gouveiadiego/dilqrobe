@@ -15,9 +15,9 @@ serve(async (req) => {
   }
 
   try {
-    // Import dependencies dynamically to prevent bundling issues
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.0?no-dts");
-    const Stripe = await import("https://esm.sh/stripe@12.4.0?no-dts").then(mod => mod.default);
+    // Import dependencies dynamically to prevent bundling issues with frontend code
+    const { createClient } = await import('https://esm.sh/v135/@supabase/supabase-js@2.38.0?no-dts');
+    const Stripe = await import('https://esm.sh/v135/stripe@12.4.0?no-dts').then(mod => mod.default);
 
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
     if (!stripeSecretKey) {

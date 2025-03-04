@@ -16,8 +16,8 @@ serve(async (req) => {
 
   try {
     // Import dependencies directly inside the handler to avoid bundling issues
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.0?no-dts");
-    const Stripe = await import("https://esm.sh/stripe@12.4.0?no-dts").then(mod => mod.default);
+    const { createClient } = await import("https://esm.sh/v135/@supabase/supabase-js@2.38.0?no-dts");
+    const Stripe = await import("https://esm.sh/v135/stripe@12.4.0?no-dts").then(mod => mod.default);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
