@@ -3,9 +3,9 @@
 // https://deno.com/deploy/docs
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-// Using Deno-compatible imports
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
-import Stripe from "https://esm.sh/stripe@12.4.0";
+// Using specific imports with no-dts to avoid type definition issues
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0?no-dts";
+import Stripe from "https://esm.sh/stripe@12.4.0?no-dts";
 
 // CORS headers configuration
 const corsHeaders = {
