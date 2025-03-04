@@ -2,6 +2,7 @@
 // Import just what we need for HTTP server
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
+// Define CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -14,9 +15,9 @@ serve(async (req) => {
   }
 
   try {
-    // Import dependencies directly inside the handler to avoid bundling issues
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2?no-dts");
-    const Stripe = await import("https://esm.sh/stripe@12?no-dts").then(mod => mod.default);
+    // Import dependencies dynamically to prevent bundling issues
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.38.0?no-dts");
+    const Stripe = await import("https://esm.sh/stripe@12.4.0?no-dts").then(mod => mod.default);
 
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
     if (!stripeSecretKey) {
