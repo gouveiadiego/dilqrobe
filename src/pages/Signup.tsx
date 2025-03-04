@@ -13,6 +13,7 @@ export const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [showPaymentOption, setShowPaymentOption] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleStartTrial = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +24,7 @@ export const Signup = () => {
     }
     
     setIsLoading(true);
+    setErrorMessage("");
     
     try {
       // Inform the user that we're processing the request
@@ -41,8 +43,9 @@ export const Signup = () => {
       });
       
       if (error) {
-        console.error("Error creating checkout:", error);
+        console.error("Error invoking function:", error);
         toast.error(`Erro ao iniciar a assinatura: ${error.message || 'Por favor, tente novamente'}`);
+        setErrorMessage(`Erro: ${error.message}`);
         setIsLoading(false);
         return;
       }
@@ -53,6 +56,7 @@ export const Signup = () => {
       if (data && data.error) {
         console.error("Checkout error:", data.error);
         toast.error(data.error);
+        setErrorMessage(data.error);
         setIsLoading(false);
         return;
       }
@@ -73,10 +77,12 @@ export const Signup = () => {
       } else {
         console.error("Checkout URL not received:", data);
         toast.error("Erro ao iniciar a assinatura: URL de checkout não disponível");
+        setErrorMessage("URL de checkout não disponível");
       }
     } catch (error: any) {
       console.error("Error in checkout process:", error);
       toast.error(`Ocorreu um erro ao processar sua solicitação: ${error.message || ''}`);
+      setErrorMessage(`Erro: ${error.message || 'Ocorreu um erro desconhecido'}`);
     } finally {
       setIsLoading(false);
     }
@@ -102,6 +108,12 @@ export const Signup = () => {
               </div>
             )}
           </div>
+          
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm">
+              {errorMessage}
+            </div>
+          )}
           
           {showPaymentOption ? (
             <div className="space-y-6">

@@ -28,29 +28,17 @@ serve(async (req) => {
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeSecretKey) {
       console.error('STRIPE_SECRET_KEY is not defined');
-      // Create a mock response for testing purposes when STRIPE_SECRET_KEY is not available
-      const requestData = await req.json();
-      console.log("Received checkout request:", requestData);
-      const mockCheckoutUrl = `${requestData.successUrl.split('?')[0]}?stripe_mock=true`;
-      
       return new Response(
         JSON.stringify({ 
-          checkoutUrl: mockCheckoutUrl,
-          sessionId: "mock_session_id",
-          isMock: true,
-          message: "Using mock checkout because STRIPE_SECRET_KEY is not configured"
+          error: "A chave STRIPE_SECRET_KEY não está configurada. Por favor, configure-a no console do Supabase.",
+          type: "configuration_error"
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
+          status: 500,
         }
       );
     }
-
-    // Initialize Stripe
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
-    });
 
     // Parse request data
     const requestData = await req.json();
@@ -59,31 +47,79 @@ serve(async (req) => {
     // Validate request data
     if (!priceId) {
       console.error('Price ID not provided in request');
-      throw new Error('ID de preço não fornecido');
+      return new Response(
+        JSON.stringify({ 
+          error: "ID de preço não fornecido",
+          type: "validation_error"
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
     }
 
     if (!successUrl || !cancelUrl) {
       console.error('Success or cancel URLs not provided');
-      throw new Error('URLs de redirecionamento incompletas');
+      return new Response(
+        JSON.stringify({ 
+          error: "URLs de redirecionamento incompletas",
+          type: "validation_error"
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
     }
 
     // Log for debugging
-    console.log(`Creating checkout for: ${email}, price: ${priceId}`);
+    console.log(`Creating checkout for: ${email}, price/product: ${priceId}`);
     console.log(`URLs: success=${successUrl}, cancel=${cancelUrl}`);
+
+    // Initialize Stripe
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2023-10-16',
+    });
 
     // Try to create a checkout session with test or live mode price
     try {
-      // First attempt - try with the provided price/product ID
+      // First determine if we have a product ID or price ID
       let actualPriceId = priceId;
+      
       if (priceId.startsWith('prod_')) {
         // It's a product ID, we need to find its default price
-        const product = await stripe.products.retrieve(priceId);
-        if (product.default_price) {
-          actualPriceId = String(product.default_price);
-          console.log(`Retrieved price ID ${actualPriceId} from product ${priceId}`);
-        } else {
-          console.error(`Product ${priceId} doesn't have a default price`);
-          throw new Error('Produto sem preço padrão definido');
+        console.log(`Retrieving default price for product ${priceId}`);
+        try {
+          const product = await stripe.products.retrieve(priceId);
+          if (product.default_price) {
+            actualPriceId = String(product.default_price);
+            console.log(`Retrieved price ID ${actualPriceId} from product ${priceId}`);
+          } else {
+            console.error(`Product ${priceId} doesn't have a default price`);
+            return new Response(
+              JSON.stringify({ 
+                error: "O produto não tem um preço padrão definido",
+                type: "product_error"
+              }),
+              {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 400,
+              }
+            );
+          }
+        } catch (productError: any) {
+          console.error(`Error retrieving product ${priceId}:`, productError);
+          return new Response(
+            JSON.stringify({ 
+              error: `Erro ao buscar o produto: ${productError.message}`,
+              type: "stripe_error"
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400,
+            }
+          );
         }
       }
 
@@ -116,15 +152,15 @@ serve(async (req) => {
           status: 200,
         }
       );
-    } catch (stripeError) {
+    } catch (stripeError: any) {
       console.error('Stripe API error:', stripeError);
       
-      // If there's an error about test/live mode mismatch, provide a clearer message
+      // Handle test/live mode mismatch
       if (stripeError.message && stripeError.message.includes('live mode')) {
         return new Response(
           JSON.stringify({ 
             error: "O produto foi criado no modo 'live' do Stripe, mas você está usando uma chave de API de teste. Por favor, use o ID de um produto no modo teste ou mude para a chave de API 'live'.",
-            details: stripeError.message
+            type: "mode_mismatch_error"
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -134,15 +170,27 @@ serve(async (req) => {
       }
       
       // For any other Stripe errors
-      throw stripeError;
+      return new Response(
+        JSON.stringify({ 
+          error: `Erro do Stripe: ${stripeError.message}`,
+          type: "stripe_error"
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
     }
-  } catch (error) {
-    console.error('Stripe checkout error:', error);
+  } catch (error: any) {
+    console.error('Function execution error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: `Erro interno: ${error.message}`,
+        type: "server_error"
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 500,
       }
     );
   }
