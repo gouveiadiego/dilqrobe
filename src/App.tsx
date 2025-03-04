@@ -1,87 +1,45 @@
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Plans from "./pages/Plans";
-import Auth from "./pages/Auth";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as SonnerToaster } from "sonner";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import ClientPortal from "./pages/ClientPortal";
-import CompanyDetails from "./pages/CompanyDetails";
+import Login from "./pages/Login";
 import LandingPage from "./pages/LandingPage";
-
-const queryClient = new QueryClient();
+import NotFound from "./pages/NotFound";
+import CompanyDetails from "./pages/CompanyDetails";
+import ClientPortal from "./pages/ClientPortal";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { Toaster } from "sonner";
+import Success from "./pages/Success";
 
 function App() {
-  // Initialize dark mode based on user preference or system preference
-  useEffect(() => {
-    // Check for saved preference
-    const savedTheme = localStorage.getItem('theme');
-    
-    if (savedTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else if (savedTheme === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
-      // If no saved preference, respect system preference
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-      }
-    }
-    
-    // Listen for system preference changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem('theme')) {
-        if (e.matches) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      }
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
   return (
-    <QueryClientProvider client={queryClient}>
+    <>
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/plans" element={<Plans />} />
+          <Route path="/login" element={<Login />} />
           <Route
-            path="/dashboard"
+            path="/index"
             element={
               <ProtectedRoute>
                 <Index />
               </ProtectedRoute>
             }
           />
-          <Route path="/client-portal" element={<ClientPortal />} />
           <Route
-            path="/company/:companyId"
+            path="/company/:id"
             element={
               <ProtectedRoute>
                 <CompanyDetails />
               </ProtectedRoute>
             }
           />
+          <Route path="/client/:token" element={<ClientPortal />} />
+          <Route path="/success" element={<Success />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <Toaster />
-        <SonnerToaster 
-          position="top-right" 
-          theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-          className="dark:bg-gray-900 dark:text-white dark:border-gray-800"
-        />
       </Router>
-    </QueryClientProvider>
+      <Toaster position="top-right" richColors closeButton />
+    </>
   );
 }
 
