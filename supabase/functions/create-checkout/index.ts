@@ -123,7 +123,7 @@ serve(async (req) => {
         }
       }
 
-      // Create Stripe checkout session
+      // Create Stripe checkout session with updated price of R$19.00
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
