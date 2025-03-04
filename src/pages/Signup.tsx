@@ -41,7 +41,7 @@ export const Signup = () => {
       
       if (error) {
         console.error("Erro ao criar checkout:", error);
-        toast.error("Erro ao iniciar o teste gratuito");
+        toast.error("Erro ao iniciar o teste gratuito. Por favor, tente novamente.");
         return;
       }
       

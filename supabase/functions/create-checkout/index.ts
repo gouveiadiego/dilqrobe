@@ -1,5 +1,5 @@
 
-// Importando apenas as bibliotecas essenciais para a função
+// Simple imports for Edge Function - only what's absolutely needed
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0'
 import Stripe from 'https://esm.sh/stripe@12.4.0'
@@ -52,7 +52,6 @@ serve(async (req) => {
     // Registrar dados para debug
     console.log(`Criando checkout para: ${email}, preço: ${priceId}`)
     console.log(`URLs: sucesso=${successUrl}, cancelamento=${cancelUrl}`)
-    console.log('Dados completos da requisição:', JSON.stringify(requestData))
 
     // Criar uma sessão de checkout do Stripe
     try {
@@ -94,7 +93,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro no checkout do Stripe:', error)
     return new Response(
-      JSON.stringify({ error: error.message, stack: error.stack }),
+      JSON.stringify({ error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
