@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Mail } from "lucide-react";
+import { Lock, Mail, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -12,6 +12,7 @@ export const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPaymentOption, setShowPaymentOption] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -45,12 +46,71 @@ export const Login = () => {
         return;
       }
 
+      // Check subscription status
       if (data?.session) {
-        navigate("/dashboard", { replace: true });
+        try {
+          const { data: subscriptionData, error: subscriptionError } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', data.session.user.id)
+            .single();
+            
+          if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+            console.error("Error checking subscription:", subscriptionError);
+          }
+          
+          if (!subscriptionData || 
+              (subscriptionData.status !== 'active' && 
+               subscriptionData.status !== 'trialing')) {
+            // Show payment option if no active subscription
+            setShowPaymentOption(true);
+            setIsLoading(false);
+            return;
+          }
+          
+          // Has valid subscription, proceed to dashboard
+          navigate("/dashboard", { replace: true });
+        } catch (error) {
+          console.error("Error checking subscription status:", error);
+          navigate("/dashboard", { replace: true });
+        }
       }
     } catch (error: any) {
       console.error("Auth error:", error);
       toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartTrial = async () => {
+    setIsLoading(true);
+    try {
+      // Create a Stripe checkout session
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          email: formData.email,
+          priceId: "prod_RsUFxPZfy7VBFx",
+          successUrl: `${window.location.origin}/login?signup=success`,
+          cancelUrl: `${window.location.origin}/login?canceled=true`,
+        },
+      });
+      
+      if (error) {
+        console.error("Error creating checkout:", error);
+        toast.error("Erro ao iniciar o teste gratuito. Por favor, tente novamente.");
+        return;
+      }
+      
+      // Redirect to Stripe checkout page
+      if (data && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        toast.error("Erro ao iniciar o teste gratuito: URL de checkout não disponível");
+      }
+    } catch (error: any) {
+      console.error("Error in checkout process:", error);
+      toast.error("Ocorreu um erro ao processar sua solicitação");
     } finally {
       setIsLoading(false);
     }
@@ -62,58 +122,101 @@ export const Login = () => {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-semibold text-gray-800">
-              Bem-vindo de volta
+              {showPaymentOption ? "Assinatura Necessária" : "Bem-vindo de volta"}
             </h2>
             <p className="text-gray-600">
-              Entre com suas credenciais para continuar
+              {showPaymentOption 
+                ? "Você precisa de uma assinatura para continuar" 
+                : "Entre com suas credenciais para continuar"}
             </p>
           </div>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    className="pl-10"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    required
-                  />
+          
+          {showPaymentOption ? (
+            <div className="space-y-6">
+              <div className="bg-gray-50 p-4 rounded-md space-y-3">
+                <div className="flex items-center">
+                  <CreditCard className="h-5 w-5 text-gray-500 mr-2" />
+                  <h3 className="font-medium">Experimente 3 dias grátis</h3>
                 </div>
+                <p className="text-sm text-gray-600">
+                  Após o período de teste, será cobrado R$ 9,90 por mês.
+                </p>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-1">✓</span> Acesso total por 3 dias
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-1">✓</span> Sem compromisso - cancele quando quiser
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-1">✓</span> Não há cobrança durante o período de avaliação
+                  </li>
+                </ul>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-10"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
+              
+              <Button
+                onClick={handleStartTrial}
+                className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+                disabled={isLoading}
+              >
+                {isLoading ? "Processando..." : "Iniciar Teste Gratuito de 3 Dias"}
+              </Button>
+              
+              <button 
+                onClick={() => setShowPaymentOption(false)}
+                className="w-full text-sm text-gray-600 hover:text-gray-800"
+              >
+                Voltar para o login
+              </button>
             </div>
-            <Button
-              type="submit"
-              className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
-              disabled={isLoading}
-            >
-              {isLoading ? "Carregando..." : "Entrar"}
-            </Button>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      className="pl-10"
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Senha</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      className="pl-10"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+                disabled={isLoading}
+              >
+                {isLoading ? "Carregando..." : "Entrar"}
+              </Button>
+            </form>
+          )}
 
           <div className="text-center pt-4">
             <p className="text-sm text-gray-500">
