@@ -61,16 +61,13 @@ export const Login = () => {
             .select('*')
             .eq('user_id', data.session.user.id)
             .in('status', ['active', 'trialing'])
-            .single();
+            .maybeSingle();
             
-          if (subscriptionError) {
+          if (subscriptionError && subscriptionError.code !== 'PGRST116') {
             console.error("Error checking subscription:", subscriptionError);
-            // Only show an error if it's not a "no rows returned" error (PGRST116)
-            if (subscriptionError.code !== 'PGRST116') {
-              toast.error("Erro ao verificar assinatura. Tente novamente.");
-              setIsLoading(false);
-              return;
-            }
+            toast.error("Erro ao verificar assinatura. Tente novamente.");
+            setIsLoading(false);
+            return;
           }
           
           console.log("Subscription check result:", subscriptionData);

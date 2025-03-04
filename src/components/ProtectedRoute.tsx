@@ -28,9 +28,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         .in('status', ['active', 'trialing'])
         .single();
       
-      if (error && error.code !== 'PGRST116') {
-        console.error("Error checking subscription in protected route:", error);
-        return false;
+      if (error) {
+        console.error("Subscription check error:", error.message, "Code:", error.code);
+        
+        // Only consider it a real error if it's not the "no rows returned" error
+        if (error.code !== 'PGRST116') {
+          console.error("Error checking subscription in protected route:", error);
+          return false;
+        }
       }
       
       console.log("Subscription check in protected route result:", data);
@@ -48,52 +53,77 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   };
 
   useEffect(() => {
+    let mounted = true;
+    
     // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session: currentSession }, error }) => {
-      if (error) {
-        console.error("Error getting session:", error);
-        toast.error("Erro ao verificar autenticação");
-        navigate("/login");
-        return;
-      }
-      
-      setSession(currentSession);
-      
-      if (currentSession) {
-        const hasSubscription = await checkSubscription(currentSession.user.id);
-        setHasValidSubscription(hasSubscription);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
-        if (!hasSubscription) {
+        if (error) {
+          console.error("Error getting session:", error);
+          toast.error("Erro ao verificar autenticação");
+          navigate("/login");
+          return;
+        }
+        
+        if (mounted) {
+          setSession(currentSession);
+          
+          if (currentSession) {
+            const hasSubscription = await checkSubscription(currentSession.user.id);
+            if (mounted) {
+              setHasValidSubscription(hasSubscription);
+              
+              if (!hasSubscription) {
+                console.log("No valid subscription found in initial check, redirecting to login");
+                navigate("/login");
+              }
+            }
+          }
+          
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Error in initializeAuth:", err);
+        if (mounted) {
+          setLoading(false);
           navigate("/login");
         }
       }
-      
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
       console.log("Auth state changed:", _event, currentSession ? "session exists" : "no session");
+      
+      if (!mounted) return;
+      
       setSession(currentSession);
       
       if (currentSession) {
         const hasSubscription = await checkSubscription(currentSession.user.id);
-        setHasValidSubscription(hasSubscription);
-        
-        if (!hasSubscription) {
-          navigate("/login");
+        if (mounted) {
+          setHasValidSubscription(hasSubscription);
+          
+          if (!hasSubscription) {
+            console.log("No valid subscription found after auth change, redirecting to login");
+            navigate("/login");
+          }
         }
       } else {
         console.log("No session found, redirecting to login");
-        toast.error("Sessão expirada. Por favor, faça login novamente.");
         navigate("/login");
       }
       
       setLoading(false);
     });
 
-    // Cleanup subscription
+    // Cleanup subscription and mounted flag
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [navigate]);
