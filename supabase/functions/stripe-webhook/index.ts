@@ -77,6 +77,7 @@ serve(async (req) => {
       }
 
       console.log(`Evento recebido: ${event.type}`)
+      console.log('Payload completo:', JSON.stringify(event.data.object))
 
       // Initialize Supabase client
       const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
@@ -125,6 +126,21 @@ serve(async (req) => {
               Início: ${subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : 'N/A'}, 
               Fim: ${subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : 'N/A'}`);
             
+            // Check if subscription already exists
+            const { data: existingSub, error: checkError } = await supabase
+              .from('subscriptions')
+              .select('*')
+              .eq('stripe_customer_id', subscription.customer)
+              .maybeSingle();
+            
+            if (checkError) {
+              console.error('Erro ao verificar assinatura existente:', checkError.message);
+            }
+            
+            if (existingSub) {
+              console.log(`Assinatura existente encontrada, atualizando: ${existingSub.id}`);
+            }
+            
             // Update subscription in database
             const { error: subError } = await supabase
               .from('subscriptions')
@@ -150,6 +166,23 @@ serve(async (req) => {
             } else {
               console.log(`Assinatura atualizada para o usuário: ${user.id}`);
             }
+            
+            // Verify the subscription is now in the database
+            const { data: verifyData, error: verifyError } = await supabase
+              .from('subscriptions')
+              .select('*')
+              .eq('user_id', user.id)
+              .in('status', ['active', 'trialing', 'paused'])
+              .maybeSingle();
+              
+            if (verifyError) {
+              console.error('Erro ao verificar assinatura após inserção:', verifyError.message);
+            } else {
+              console.log('Verificação de assinatura após inserção:', verifyData ? 'Encontrada' : 'Não encontrada');
+              if (verifyData) {
+                console.log('Detalhes da assinatura verificada:', verifyData);
+              }
+            }
           } else {
             console.log('No subscription found in checkout session');
           }
@@ -157,29 +190,29 @@ serve(async (req) => {
           
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
-          const subscription = event.data.object
+          const subscription = event.data.object;
           
           // Get Stripe customer
-          const customer = await stripe.customers.retrieve(subscription.customer)
+          const customer = await stripe.customers.retrieve(subscription.customer);
           
           // Find user by email
-          const { data: subUsers, error: subUserError } = await supabase.auth.admin.listUsers()
+          const { data: subUsers, error: subUserError } = await supabase.auth.admin.listUsers();
           
           if (subUserError) {
-            console.error('Erro ao buscar usuários:', subUserError.message)
-            break
+            console.error('Erro ao buscar usuários:', subUserError.message);
+            break;
           }
           
           // Find user with the same email as the Stripe customer
-          const subUser = subUsers.users.find(u => u.email === customer.email)
+          const subUser = subUsers.users.find(u => u.email === customer.email);
           
           if (!subUser) {
-            console.error('Usuário não encontrado para o email:', customer.email)
-            break
+            console.error('Usuário não encontrado para o email:', customer.email);
+            break;
           }
 
-          console.log(`Usuário encontrado: ${subUser.id} para o email: ${customer.email}`)
-          console.log(`Status da assinatura: ${subscription.status}, está em avaliação: ${subscription.status === 'trialing' ? 'Sim' : 'Não'}`)
+          console.log(`Usuário encontrado: ${subUser.id} para o email: ${customer.email}`);
+          console.log(`Status da assinatura: ${subscription.status}, está em avaliação: ${subscription.status === 'trialing' ? 'Sim' : 'Não'}`);
 
           // Update subscription in database
           const { error: subError } = await supabase
@@ -199,13 +232,13 @@ serve(async (req) => {
               trial_end: subscription.trial_end 
                 ? new Date(subscription.trial_end * 1000).toISOString() 
                 : null,
-            })
+            });
           
           if (subError) {
-            console.error('Erro ao atualizar assinatura:', subError.message)
+            console.error('Erro ao atualizar assinatura:', subError.message);
           } else {
-            console.log(`Assinatura atualizada para o usuário: ${subUser.id}`)
-            console.log(`Período de avaliação: ${subscription.trial_start ? 'De ' + new Date(subscription.trial_start * 1000).toISOString() + ' até ' + new Date(subscription.trial_end * 1000).toISOString() : 'Não aplicável'}`)
+            console.log(`Assinatura atualizada para o usuário: ${subUser.id}`);
+            console.log(`Período de avaliação: ${subscription.trial_start ? 'De ' + new Date(subscription.trial_start * 1000).toISOString() + ' até ' + new Date(subscription.trial_end * 1000).toISOString() : 'Não aplicável'}`);
           }
           break;
           

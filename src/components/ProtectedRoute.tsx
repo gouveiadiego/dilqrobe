@@ -19,13 +19,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   // Check if user has a valid subscription
   const checkSubscription = async (userId: string) => {
     try {
-      console.log("Checking subscription for protected route, user:", userId);
+      console.log("Checking subscription for user:", userId);
       
+      // Fetch the subscription directly with detailed logging
       const { data, error } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('user_id', userId)
-        .in('status', ['active', 'trialing', 'paused'])  // Now also including paused subscriptions
+        .in('status', ['active', 'trialing', 'paused'])
         .maybeSingle();
       
       if (error) {
@@ -33,14 +34,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         return false;
       }
       
-      console.log("Subscription check in protected route result:", data);
+      console.log("Subscription check result:", data);
       
       if (!data) {
-        console.log("No valid subscription found, redirecting to login");
+        console.log("No active subscription found. Redirecting to login");
         return false;
       }
       
-      console.log("Valid subscription found, status:", data.status);
+      console.log("Valid subscription found with status:", data.status);
       return true;
     } catch (error) {
       console.error("Error in checkSubscription:", error);
@@ -54,6 +55,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log("Initializing auth and checking session...");
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -64,19 +66,26 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         }
         
         if (mounted) {
-          setSession(currentSession);
-          
           if (currentSession) {
+            console.log("Session found for user:", currentSession.user.id);
+            setSession(currentSession);
+            
             const hasSubscription = await checkSubscription(currentSession.user.id);
+            
             if (mounted) {
               setHasValidSubscription(hasSubscription);
               
               if (!hasSubscription) {
-                console.log("No valid subscription found in initial check, redirecting to login");
+                console.log("No valid subscription found, redirecting to login");
                 toast.error("Assinatura não encontrada ou inválida. Por favor, verifique seu pagamento.");
                 navigate("/login");
+              } else {
+                console.log("Valid subscription confirmed, proceeding to protected content");
+                toast.success("Bem-vindo de volta!");
               }
             }
+          } else {
+            console.log("No session found, user not logged in");
           }
           
           setLoading(false);
@@ -101,18 +110,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       setSession(currentSession);
       
       if (currentSession) {
+        console.log("Auth state change - checking subscription for user:", currentSession.user.id);
         const hasSubscription = await checkSubscription(currentSession.user.id);
+        
         if (mounted) {
           setHasValidSubscription(hasSubscription);
           
           if (!hasSubscription) {
-            console.log("No valid subscription found after auth change, redirecting to login");
+            console.log("No valid subscription found after auth change");
             toast.error("Assinatura não encontrada ou inválida. Por favor, verifique seu pagamento.");
             navigate("/login");
+          } else {
+            console.log("Valid subscription confirmed after auth change");
           }
         }
       } else {
-        console.log("No session found, redirecting to login");
+        console.log("No session found after auth change, redirecting to login");
         navigate("/login");
       }
       
@@ -139,8 +152,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   // Redirect to login if no session or no valid subscription
-  if (!session || !hasValidSubscription) {
-    console.log("No session or valid subscription in protected route, redirecting to login");
+  if (!session) {
+    console.log("No session in protected route, redirecting to login");
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (!hasValidSubscription) {
+    console.log("No valid subscription in protected route, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 

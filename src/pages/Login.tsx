@@ -3,289 +3,222 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Mail, CreditCard } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
-export const Login = () => {
+const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPaymentOption, setShowPaymentOption] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isPlanSelected, setIsPlanSelected] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    // Verificar se o usuário veio de um signup bem-sucedido
-    const searchParams = new URLSearchParams(location.search);
-    if (searchParams.get('signup') === 'success') {
-      toast.success("Registro concluído! Você pode fazer login agora.");
-    }
+    const params = new URLSearchParams(location.search);
+    const selectedPlan = params.get("plan");
+    setIsPlanSelected(!!selectedPlan);
     
-    // Se o usuário vier de um checkout cancelado
-    if (searchParams.get('canceled') === 'true') {
-      toast.info("Checkout cancelado. Você pode tentar novamente quando quiser.");
-    }
-  }, [location]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (signInError) {
-        console.error("Login error:", signInError);
-        if (signInError.message.includes("Invalid login credentials")) {
-          toast.error("Email ou senha incorretos");
-        } else {
-          toast.error("Erro ao fazer login. Tente novamente.");
-        }
-        setIsLoading(false);
-        return;
-      }
-
-      // Check subscription status
-      if (data?.session) {
-        try {
-          console.log("Checking subscription for user:", data.session.user.id);
+    // Check if user is already logged in with a valid subscription
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          console.log("Login page - session found for user:", session.user.id);
           
-          const { data: subscriptionData, error: subscriptionError } = await supabase
-            .from('subscriptions')
-            .select('*')
-            .eq('user_id', data.session.user.id)
-            .in('status', ['active', 'trialing', 'paused'])  // Added 'paused' status
-            .maybeSingle();
+          // Check subscription
+          try {
+            const { data: subscription, error: subscriptionError } = await supabase
+              .from('subscriptions')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .in('status', ['active', 'trialing', 'paused'])
+              .maybeSingle();
+              
+            if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+              console.error("Error checking subscription:", subscriptionError);
+            }
             
-          if (subscriptionError && subscriptionError.code !== 'PGRST116') {
-            console.error("Error checking subscription:", subscriptionError);
-            toast.error("Erro ao verificar assinatura. Tente novamente.");
-            setIsLoading(false);
-            return;
+            if (subscription) {
+              console.log("Active subscription found:", subscription);
+              
+              // If user already has a valid subscription, redirect to dashboard
+              console.log("Valid subscription found, navigating to dashboard");
+              toast.success("Login realizado com sucesso");
+              navigate("/dashboard");
+              return;
+            } else {
+              console.log("No valid subscription found for logged-in user");
+            }
+          } catch (error) {
+            console.error("Error checking subscription status:", error);
           }
-          
-          console.log("Subscription check result:", subscriptionData);
-          
-          if (!subscriptionData) {
-            // Show payment option if no active subscription
-            setShowPaymentOption(true);
-            setIsLoading(false);
-            return;
-          }
-          
-          console.log("Valid subscription found, status:", subscriptionData.status);
-          
-          // Has valid subscription, proceed to dashboard
-          toast.success("Login bem-sucedido! Redirecionando para o dashboard...");
-          navigate("/dashboard", { replace: true });
-        } catch (error) {
-          console.error("Error checking subscription status:", error);
-          toast.error("Erro ao verificar status da assinatura. Tente novamente.");
-          setIsLoading(false);
+        } else {
+          console.log("No active session found");
         }
+      } catch (error) {
+        console.error("Error checking session:", error);
       }
-    } catch (error: any) {
-      console.error("Auth error:", error);
-      toast.error(error.message);
-      setIsLoading(false);
-    }
-  };
+      
+      setCheckingSession(false);
+    };
+    
+    checkSession();
+  }, [location.search, navigate]);
 
-  const handleStartTrial = async () => {
-    setIsLoading(true);
+  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    
     try {
-      // Create a Stripe checkout session
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: {
-          email: formData.email,
-          priceId: "prod_RsUFxPZfy7VBFx",
-          successUrl: `${window.location.origin}/login?signup=success`,
-          cancelUrl: `${window.location.origin}/login?canceled=true`,
-        },
+      // Sign in with email and password
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
       
       if (error) {
-        console.error("Error creating checkout:", error);
-        toast.error("Erro ao iniciar a assinatura. Por favor, tente novamente.");
-        setIsLoading(false);
+        console.error("Login error:", error.message);
+        toast.error("Erro ao fazer login: " + error.message);
+        setLoading(false);
         return;
       }
       
-      // Redirect to Stripe checkout page
-      if (data && data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
-        toast.error("Erro ao iniciar a assinatura: URL de checkout não disponível");
-        setIsLoading(false);
+      if (!data.session) {
+        console.error("No session returned after login");
+        toast.error("Erro ao obter sessão após login");
+        setLoading(false);
+        return;
       }
-    } catch (error: any) {
-      console.error("Error in checkout process:", error);
-      toast.error("Ocorreu um erro ao processar sua solicitação");
-      setIsLoading(false);
+      
+      console.log("User logged in successfully:", data.session.user.id);
+      
+      // After successful login, check if user has a valid subscription
+      try {
+        console.log("Checking subscription after login");
+        const { data: subscription, error: subscriptionError } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('user_id', data.session.user.id)
+          .in('status', ['active', 'trialing', 'paused'])
+          .maybeSingle();
+          
+        if (subscriptionError) {
+          console.error("Error checking subscription:", subscriptionError);
+          toast.error("Erro ao verificar assinatura");
+          setLoading(false);
+          return;
+        }
+        
+        if (subscription) {
+          console.log("Valid subscription found, navigating to dashboard");
+          toast.success("Login realizado com sucesso!");
+          navigate("/dashboard");
+        } else {
+          console.log("No valid subscription found, redirect user to plans");
+          // If user doesn't have a valid subscription, handle accordingly
+          if (isPlanSelected) {
+            // User was in the process of selecting a plan, redirect to checkout
+            console.log("Plan was selected, redirecting to payment");
+            // Extract plan ID from URL
+            const params = new URLSearchParams(location.search);
+            const planId = params.get("plan");
+            navigate(`/payment?plan=${planId}`);
+          } else {
+            // Otherwise redirect to plans page
+            console.log("No plan selected, redirecting to plans page");
+            toast.error("Você não possui uma assinatura ativa. Por favor, escolha um plano.");
+            navigate("/plans");
+          }
+        }
+      } catch (error) {
+        console.error("Error checking subscription:", error);
+        toast.error("Erro ao verificar assinatura");
+      } finally {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Error in handleSignIn:", error);
+      toast.error("Erro desconhecido ao fazer login");
+      setLoading(false);
     }
   };
 
+  // If still checking session, show loading spinner
+  if (checkingSession) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#080a12]">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-dilq-accent mx-auto" />
+          <p className="mt-4 text-lg text-gray-300">Verificando sessão...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-black">
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative overflow-hidden">
-        {/* Background elements for futuristic look */}
-        <div className="absolute inset-0 bg-white dark:bg-gray-900 opacity-90 z-0"></div>
-        <div className="absolute inset-0 z-0">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-100 dark:bg-purple-900/20 rounded-full filter blur-3xl opacity-50 animate-pulse-subtle"></div>
-          <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-blue-100 dark:bg-blue-900/20 rounded-full filter blur-3xl opacity-40 animate-float"></div>
-        </div>
-        
-        <div className="w-full max-w-md space-y-8 z-10 relative">
-          <div className="text-center space-y-4">
-            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-dilq-accent to-dilq-teal">
-              {showPaymentOption ? "Assinatura Necessária" : "Bem-vindo de volta"}
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              {showPaymentOption 
-                ? "Você precisa de uma assinatura para continuar" 
-                : "Entre com suas credenciais para continuar"}
-            </p>
-          </div>
-          
-          {showPaymentOption ? (
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 backdrop-blur-sm transition-all duration-300 hover:shadow-xl">
-                <div className="flex items-center">
-                  <CreditCard className="h-5 w-5 text-dilq-accent mr-2" />
-                  <h3 className="font-medium">Assine agora</h3>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                  Acesse todo o conteúdo por R$ 19,00 por mês.
-                </p>
-                <div className="mt-2 bg-green-50 dark:bg-green-900/20 p-2 rounded-lg border border-green-100 dark:border-green-800/30">
-                  <p className="text-sm font-medium text-green-800 dark:text-green-400">
-                    Comece com 3 dias de teste grátis!
-                  </p>
-                </div>
-                <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1 mt-3">
-                  <li className="flex items-center">
-                    <span className="text-green-500 mr-1">✓</span> Acesso total ao conteúdo
-                  </li>
-                  <li className="flex items-center">
-                    <span className="text-green-500 mr-1">✓</span> Sem compromisso - cancele quando quiser
-                  </li>
-                  <li className="flex items-center">
-                    <span className="text-green-500 mr-1">✓</span> 3 dias de teste grátis
-                  </li>
-                </ul>
-              </div>
-              
-              <Button
-                onClick={handleStartTrial}
-                className="w-full bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-dilq-accent/20 disabled:opacity-70"
-                disabled={isLoading}
-              >
-                {isLoading ? "Processando..." : "Iniciar teste grátis"}
-              </Button>
-              
-              <button 
-                onClick={() => setShowPaymentOption(false)}
-                className="w-full text-sm text-gray-600 hover:text-dilq-accent dark:text-gray-400 dark:hover:text-dilq-accent transition-colors"
-              >
-                Voltar para o login
-              </button>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#080a12] to-[#1e2433] p-4">
+      <Card className="w-full max-w-md backdrop-blur-lg bg-white/10 border-gray-500/20">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-white">
+            Entrar no DILQ
+          </CardTitle>
+        </CardHeader>
+        <form onSubmit={handleSignIn}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white">Email</Label>
+              <Input 
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="border-gray-700 bg-gray-800 text-white placeholder:text-gray-400"
+              />
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</Label>
-                  <div className="relative group">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-hover:text-dilq-accent transition-colors" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      className="pl-10 h-11 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-dilq-accent focus:border-transparent shadow-sm transition-all"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">Senha</Label>
-                  <div className="relative group">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-hover:text-dilq-accent transition-colors" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="pl-10 h-11 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-dilq-accent focus:border-transparent shadow-sm transition-all"
-                      value={formData.password}
-                      onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-              <Button
-                type="submit"
-                className="w-full bg-black hover:bg-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg h-12 disabled:opacity-70"
-                disabled={isLoading}
-              >
-                {isLoading ? "Carregando..." : "Entrar"}
-              </Button>
-            </form>
-          )}
-
-          <div className="text-center pt-6">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white">Senha</Label>
+              <Input 
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="border-gray-700 bg-gray-800 text-white placeholder:text-gray-400"
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-dilq-accent hover:bg-dilq-accent/90"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Entrando...
+                </>
+              ) : (
+                "Entrar"
+              )}
+            </Button>
+            <div className="text-sm text-gray-400 text-center">
               Não tem uma conta?{" "}
-              <button
-                onClick={() => navigate("/signup")}
-                className="font-medium bg-gradient-to-r from-dilq-pink to-dilq-accent bg-clip-text text-transparent hover:from-dilq-accent hover:to-dilq-pink transition-all duration-300 transform hover:scale-105 inline-block"
-              >
-                Registre-se
-              </button>
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-dilq-purple to-dilq-blue p-12 items-center justify-center relative">
-        {/* Animated elements for futuristic look */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-80 h-80 bg-dilq-accent/10 rounded-full filter blur-3xl"></div>
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-dilq-teal/10 rounded-full filter blur-3xl"></div>
-        </div>
-        
-        <div className="max-w-lg space-y-8 relative z-10 backdrop-blur-sm glass-effect p-8 rounded-2xl">
-          <div className="aspect-square w-64 mx-auto relative overflow-hidden rounded-xl border border-white/20 shadow-lg transform hover:scale-[1.01] transition-all duration-500">
-            <img
-              src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png"
-              alt="DILQ ORBE"
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <div className="space-y-4 text-center max-w-md mx-auto">
-            <h1 className="text-3xl font-bold text-white leading-tight">
-              O Grande Alinhamento: Sincronize Sua Mente, Corpo e Propósito
-            </h1>
-            <p className="text-base text-gray-100 leading-relaxed">
-              Esta é a reinicialização que vai redesenhar sua vida: assuma o
-              controle das suas tarefas, finanças, corpo, hábitos e conexão com o
-              essencial. Transforme sua existência em um estado de alta
-              performance e significado.
-            </p>
-          </div>
-        </div>
-      </div>
+              <Button variant="link" className="p-0 text-dilq-accent" onClick={() => navigate("/signup")}>
+                Cadastre-se
+              </Button>
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 };
