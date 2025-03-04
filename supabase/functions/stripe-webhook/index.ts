@@ -104,6 +104,7 @@ serve(async (req) => {
         }
 
         console.log(`Usuário encontrado: ${user.id} para o email: ${customer.email}`)
+        console.log(`Status da assinatura: ${subscription.status}, está em avaliação: ${subscription.status === 'trialing' ? 'Sim' : 'Não'}`)
 
         // Atualizar a assinatura no banco de dados
         const { error: subError } = await supabase
@@ -112,7 +113,7 @@ serve(async (req) => {
             user_id: user.id,
             stripe_customer_id: subscription.customer,
             stripe_subscription_id: subscription.id,
-            status: subscription.status,
+            status: subscription.status, // Pode ser 'trialing' durante o período de avaliação
             plan_type: 'premium',
             price_id: subscription.items.data[0].price.id,
             current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
@@ -129,6 +130,7 @@ serve(async (req) => {
           console.error('Erro ao atualizar assinatura:', subError.message)
         } else {
           console.log(`Assinatura atualizada para o usuário: ${user.id}`)
+          console.log(`Período de avaliação: ${subscription.trial_start ? 'De ' + new Date(subscription.trial_start * 1000).toISOString() + ' até ' + new Date(subscription.trial_end * 1000).toISOString() : 'Não aplicável'}`)
         }
         break
         

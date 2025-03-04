@@ -31,7 +31,7 @@ export const Signup = () => {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           email: email,
-          priceId: "price_1OWFPsGkrDRkZ3iCNqpyTp4t", // Substitua pelo seu ID de preço real do Stripe
+          priceId: "price_1OWFPsGkrDRkZ3iCNqpyTp4t", // ID de preço do Stripe
           successUrl: `${window.location.origin}/login?signup=success`,
           cancelUrl: `${window.location.origin}/signup?canceled=true`,
         },
@@ -66,6 +66,11 @@ export const Signup = () => {
             <p className="text-gray-600">
               Após o período de teste, será cobrado R$ 9,90 por mês.
             </p>
+            <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-md">
+              <p>✓ Acesso total por 3 dias</p>
+              <p>✓ Sem compromisso - cancele quando quiser</p>
+              <p>✓ Não há cobrança durante o período de avaliação</p>
+            </div>
           </div>
           <form onSubmit={handleStartTrial} className="space-y-6">
             <div className="space-y-2">
@@ -88,7 +93,7 @@ export const Signup = () => {
               className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
               disabled={isLoading}
             >
-              {isLoading ? "Processando..." : "Iniciar Teste Gratuito"}
+              {isLoading ? "Processando..." : "Iniciar Teste Gratuito de 3 Dias"}
             </Button>
           </form>
           <div className="text-center pt-4">

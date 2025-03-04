@@ -58,7 +58,7 @@ serve(async (req) => {
       cancel_url: cancelUrl,
       customer_email: email,
       subscription_data: {
-        trial_period_days: 3,
+        trial_period_days: 3, // Define o período de avaliação como 3 dias
       },
     })
 
