@@ -1,20 +1,19 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Mail, User } from "lucide-react";
+import { Lock, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Login = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    name: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,50 +21,23 @@ export const Login = () => {
     setIsLoading(true);
 
     try {
-      if (isSignUp) {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              name: formData.name,
-            },
-          },
-        });
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
 
-        if (signUpError) {
-          console.error("Signup error:", signUpError);
-          if (signUpError.message.includes("Password")) {
-            toast.error("A senha deve ter pelo menos 6 caracteres");
-          } else if (signUpError.message.includes("User already registered")) {
-            toast.error("Este email já está registrado. Tente fazer login.");
-            setIsSignUp(false);
-          } else {
-            toast.error(signUpError.message);
-          }
-          return;
+      if (signInError) {
+        console.error("Login error:", signInError);
+        if (signInError.message.includes("Invalid login credentials")) {
+          toast.error("Email ou senha incorretos");
+        } else {
+          toast.error("Erro ao fazer login. Tente novamente.");
         }
+        return;
+      }
 
-        toast.success("Conta criada com sucesso! Verifique seu email.");
-      } else {
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
-
-        if (signInError) {
-          console.error("Login error:", signInError);
-          if (signInError.message.includes("Invalid login credentials")) {
-            toast.error("Email ou senha incorretos");
-          } else {
-            toast.error("Erro ao fazer login. Tente novamente.");
-          }
-          return;
-        }
-
-        if (data?.session) {
-          navigate("/dashboard", { replace: true });
-        }
+      if (data?.session) {
+        navigate("/dashboard", { replace: true });
       }
     } catch (error: any) {
       console.error("Auth error:", error);
@@ -81,36 +53,14 @@ export const Login = () => {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-semibold text-gray-800">
-              {isSignUp ? "Criar nova conta" : "Bem-vindo de volta"}
+              Bem-vindo de volta
             </h2>
             <p className="text-gray-600">
-              {isSignUp
-                ? "Preencha seus dados para começar"
-                : "Entre com suas credenciais para continuar"}
+              Entre com suas credenciais para continuar
             </p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
-              {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome completo</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Seu nome completo"
-                      className="pl-10"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      required={isSignUp}
-                    />
-                  </div>
-                </div>
-              )}
-
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
@@ -152,24 +102,9 @@ export const Login = () => {
               className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
               disabled={isLoading}
             >
-              {isLoading
-                ? "Carregando..."
-                : isSignUp
-                ? "Criar conta"
-                : "Entrar"}
+              {isLoading ? "Carregando..." : "Entrar"}
             </Button>
           </form>
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              {isSignUp
-                ? "Já tem uma conta? Entre aqui"
-                : "Não tem uma conta? Cadastre-se"}
-            </button>
-          </div>
         </div>
       </div>
       <div className="hidden lg:flex w-1/2 bg-[#465E73] p-12 items-center justify-center">
