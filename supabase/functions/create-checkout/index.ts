@@ -34,6 +34,9 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    
+    console.log("Creating Supabase client with URL:", supabaseUrl);
+    
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -41,12 +44,16 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
+      console.error("Error getting user:", userError);
       return new Response(
         JSON.stringify({ error: 'Could not get user', details: userError }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log("Creating checkout session for user:", user.id);
+    console.log("With price ID:", priceId);
+    
     // Create the checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -57,8 +64,8 @@ Deno.serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: successUrl || 'https://wgnvrxubwifcscrbkimm.supabase.co/storage/v1/object/public/assets/success?t={CHECKOUT_SESSION_ID}',
-      cancel_url: cancelUrl || 'https://wgnvrxubwifcscrbkimm.supabase.co/storage/v1/object/public/assets/cancel',
+      success_url: successUrl || `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/assets/success?t={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl || `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/assets/cancel`,
       client_reference_id: user.id,
       subscription_data: {
         trial_period_days: 3,
@@ -69,6 +76,8 @@ Deno.serve(async (req) => {
       customer_email: user.email,
     });
 
+    console.log("Checkout session created:", session.id);
+    
     return new Response(
       JSON.stringify({ sessionId: session.id, url: session.url }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -99,6 +99,8 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
         return;
       }
 
+      console.log("Creating checkout session for price ID:", priceId);
+      
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 
           priceId,
@@ -107,16 +109,24 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error invoking create-checkout function:", error);
+        toast.error(`Erro ao criar sessão de pagamento: ${error.message}`);
+        throw error;
+      }
       
-      if (data.url) {
+      console.log("Checkout session response:", data);
+      
+      if (data && data.url) {
         window.location.href = data.url;
       } else {
+        console.error("No URL received in checkout response:", data);
+        toast.error("Erro ao criar sessão de pagamento: URL não recebida");
         throw new Error("URL de checkout não recebida");
       }
     } catch (error) {
       console.error("Error creating checkout session:", error);
-      toast.error("Erro ao criar sessão de pagamento");
+      toast.error(`Erro ao criar sessão de pagamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
     }
@@ -187,7 +197,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
                   disabled={isSubscribed || loading}
                   onClick={() => handleCheckout(plan.price_id)}
                 >
-                  {isSubscribed ? 'Plano Atual' : 'Assinar Agora'}
+                  {isSubscribed ? 'Plano Atual' : loading ? 'Processando...' : 'Assinar Agora'}
                 </Button>
               </CardFooter>
             </Card>
