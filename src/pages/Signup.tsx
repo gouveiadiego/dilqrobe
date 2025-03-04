@@ -4,22 +4,61 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, CreditCard, Sparkles, Zap, Shield } from "lucide-react";
+import { Mail, Key, User, Phone, CreditCard, Sparkles, Zap, Shield, ArrowLeft, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const Signup = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState("");
-  const [showPaymentOption, setShowPaymentOption] = useState(false);
+  const [step, setStep] = useState(1); // 1 = registration form, 2 = payment options
   const [errorMessage, setErrorMessage] = useState("");
+  
+  // Form data for registration
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    fullName: "",
+    phone: ""
+  });
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
 
-  const handleStartTrial = async (e: React.FormEvent) => {
+  const validateForm = () => {
+    if (!formData.email || !formData.email.includes("@")) {
+      toast.error("Por favor, insira um email válido");
+      return false;
+    }
+    
+    if (!formData.password || formData.password.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return false;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("As senhas não coincidem");
+      return false;
+    }
+    
+    if (!formData.fullName) {
+      toast.error("Por favor, informe seu nome completo");
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !email.includes("@")) {
-      toast.error("Por favor, insira um email válido");
+    if (!validateForm()) {
       return;
     }
     
@@ -27,15 +66,60 @@ export const Signup = () => {
     setErrorMessage("");
     
     try {
+      // Register the user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            phone: formData.phone
+          }
+        }
+      });
+      
+      if (authError) {
+        console.error("Error registering user:", authError);
+        
+        if (authError.message.includes("already exists")) {
+          toast.error("Este email já está registrado. Por favor, faça login ou use outro email.");
+        } else {
+          toast.error(`Erro ao registrar: ${authError.message}`);
+        }
+        
+        setErrorMessage(authError.message);
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("User registered successfully:", authData);
+      toast.success("Conta criada com sucesso!");
+      
+      // Move to payment step
+      setStep(2);
+    } catch (error: any) {
+      console.error("Error in registration process:", error);
+      toast.error(`Ocorreu um erro ao processar sua solicitação: ${error.message || ''}`);
+      setErrorMessage(`Erro: ${error.message || 'Ocorreu um erro desconhecido'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartTrial = async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+    
+    try {
       // Inform the user that we're processing the request
       toast.info("Preparando checkout...");
       
-      console.log("Starting checkout process for:", email);
+      console.log("Starting checkout process for:", formData.email);
       
       // Create a Stripe checkout session
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
-          email: email,
+          email: formData.email,
           priceId: "prod_RsUFxPZfy7VBFx", // Using your Stripe product ID
           successUrl: `${window.location.origin}/login?signup=success`,
           cancelUrl: `${window.location.origin}/signup?canceled=true`,
@@ -46,7 +130,6 @@ export const Signup = () => {
         console.error("Error invoking function:", error);
         toast.error(`Erro ao iniciar a assinatura: ${error.message || 'Por favor, tente novamente'}`);
         setErrorMessage(`Erro: ${error.message}`);
-        setIsLoading(false);
         return;
       }
       
@@ -57,16 +140,14 @@ export const Signup = () => {
         console.error("Checkout error:", data.error);
         toast.error(data.error);
         setErrorMessage(data.error);
-        setIsLoading(false);
         return;
       }
       
-      // If this is a mock response in development, show payment option directly
+      // If this is a mock response in development, show success message
       if (data.isMock) {
-        console.log("Mock checkout detected, showing payment option");
-        setShowPaymentOption(true);
-        setIsLoading(false);
+        console.log("Mock checkout detected, showing success");
         toast.info("Modo de desenvolvimento: simulando checkout");
+        navigate("/login?signup=success");
         return;
       }
       
@@ -88,6 +169,30 @@ export const Signup = () => {
     }
   };
   
+  const handlePasswordReset = async () => {
+    const email = prompt("Digite seu email para redefinir a senha:");
+    
+    if (!email || !email.includes("@")) {
+      toast.error("Por favor, insira um email válido");
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        toast.error(`Erro ao enviar email de redefinição: ${error.message}`);
+        return;
+      }
+      
+      toast.success("Email de redefinição de senha enviado. Verifique sua caixa de entrada.");
+    } catch (error: any) {
+      toast.error(`Erro ao solicitar redefinição de senha: ${error.message}`);
+    }
+  };
+  
   return (
     <div className="flex min-h-screen">
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-[#080a12] bg-gradient-to-br from-[#0c1420]/80 to-[#1a1b25]/80 p-8">
@@ -99,46 +204,20 @@ export const Signup = () => {
             <div className="inline-flex items-center justify-center mb-2">
               <Sparkles className="h-6 w-6 text-dilq-accent mr-2 animate-pulse-subtle" />
               <h2 className="text-3xl font-bold bg-gradient-to-r from-dilq-accent via-purple-400 to-dilq-teal bg-clip-text text-transparent">
-                {showPaymentOption ? "Assinatura Premium" : "Assine agora"}
+                {step === 1 ? "Crie sua conta" : "Assinatura Premium"}
               </h2>
             </div>
             <p className="text-gray-300">
-              {showPaymentOption 
-                ? "Eleve sua experiência com acesso completo" 
+              {step === 1 
+                ? "Cadastre-se para acessar todos os recursos" 
                 : "Acesse todo o conteúdo por R$ 19,00 por mês."}
             </p>
-            {!showPaymentOption && (
+            
+            {step === 2 && (
               <div className="mt-2 bg-green-900/20 p-2 rounded-lg border border-green-700/30 animate-pulse">
                 <p className="text-sm font-medium text-green-400">
                   Comece com 3 dias de teste grátis!
                 </p>
-              </div>
-            )}
-            {!showPaymentOption && (
-              <div className="mt-6 space-y-4">
-                <div className="bg-gradient-to-r p-[1px] from-dilq-accent/30 to-dilq-teal/30 rounded-xl">
-                  <div className="bg-black/50 backdrop-blur-md p-5 rounded-xl text-left space-y-3">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-dilq-accent to-dilq-teal flex items-center justify-center">
-                        <Zap className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="ml-4">
-                        <h3 className="text-lg font-medium text-white">Acesso total ao conteúdo</h3>
-                        <p className="text-sm text-gray-300">Cursos, tutoriais e recursos exclusivos</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-dilq-teal to-dilq-accent flex items-center justify-center">
-                        <Shield className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="ml-4">
-                        <h3 className="text-lg font-medium text-white">Sem compromisso</h3>
-                        <p className="text-sm text-gray-300">Cancele quando quiser, sem burocracia</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
           </div>
@@ -149,7 +228,131 @@ export const Signup = () => {
             </div>
           )}
           
-          {showPaymentOption ? (
+          {step === 1 ? (
+            <form onSubmit={handleRegistration} className="space-y-5 relative z-10">
+              <div className="space-y-3">
+                <Label htmlFor="fullName" className="text-gray-300">Nome Completo</Label>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-dilq-accent/30 to-dilq-teal/30 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="relative bg-black/60 backdrop-blur-md rounded-lg overflow-hidden">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-dilq-accent transition-colors" />
+                    <Input
+                      id="fullName"
+                      name="fullName"
+                      placeholder="Seu nome completo"
+                      className="bg-transparent border-0 ring-offset-0 pl-10 text-white focus:ring-1 focus:ring-dilq-accent/50"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-gray-300">Email</Label>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-dilq-accent/30 to-dilq-teal/30 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="relative bg-black/60 backdrop-blur-md rounded-lg overflow-hidden">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-dilq-accent transition-colors" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      className="bg-transparent border-0 ring-offset-0 pl-10 text-white focus:ring-1 focus:ring-dilq-accent/50"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="phone" className="text-gray-300">Telefone (opcional)</Label>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-dilq-accent/30 to-dilq-teal/30 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="relative bg-black/60 backdrop-blur-md rounded-lg overflow-hidden">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-dilq-accent transition-colors" />
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      placeholder="(00) 00000-0000"
+                      className="bg-transparent border-0 ring-offset-0 pl-10 text-white focus:ring-1 focus:ring-dilq-accent/50"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-gray-300">Senha</Label>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-dilq-accent/30 to-dilq-teal/30 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="relative bg-black/60 backdrop-blur-md rounded-lg overflow-hidden">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-dilq-accent transition-colors" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="Senha"
+                      className="bg-transparent border-0 ring-offset-0 pl-10 text-white focus:ring-1 focus:ring-dilq-accent/50"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="confirmPassword" className="text-gray-300">Confirmar Senha</Label>
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-dilq-accent/30 to-dilq-teal/30 rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+                  <div className="relative bg-black/60 backdrop-blur-md rounded-lg overflow-hidden">
+                    <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-dilq-accent transition-colors" />
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      placeholder="Confirme sua senha"
+                      className="bg-transparent border-0 ring-offset-0 pl-10 text-white focus:ring-1 focus:ring-dilq-accent/50"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <Button
+                type="submit"
+                className="w-full h-12 bg-gradient-to-r from-dilq-accent to-dilq-teal hover:opacity-90 text-white font-medium rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 shadow-[0_0_15px_rgba(139,92,246,0.5)]"
+                disabled={isLoading}
+              >
+                {isLoading ? 
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
+                    <span>Processando...</span>
+                  </div> : 
+                  "Continuar"
+                }
+              </Button>
+              
+              <div className="flex justify-between text-sm text-gray-400 pt-2">
+                <button 
+                  type="button"
+                  onClick={handlePasswordReset}
+                  className="hover:text-dilq-accent transition-colors"
+                >
+                  Esqueceu a senha?
+                </button>
+              </div>
+            </form>
+          ) : (
             <div className="space-y-6">
               <div className="neo-blur p-6 rounded-xl space-y-4">
                 <div className="flex items-center">
@@ -200,47 +403,13 @@ export const Signup = () => {
               </Button>
               
               <button 
-                onClick={() => setShowPaymentOption(false)}
-                className="w-full text-sm text-gray-400 hover:text-white transition-colors"
+                onClick={() => setStep(1)}
+                className="w-full flex items-center justify-center text-sm text-gray-400 hover:text-white transition-colors gap-1"
               >
-                Voltar para o formulário
+                <ArrowLeft className="h-4 w-4" />
+                <span>Voltar para o formulário</span>
               </button>
             </div>
-          ) : (
-            <form onSubmit={handleStartTrial} className="space-y-6 relative z-10">
-              <div className="space-y-3">
-                <Label htmlFor="email" className="text-gray-300">Email</Label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-dilq-accent to-dilq-teal rounded-lg blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
-                  <div className="relative bg-black/60 backdrop-blur-md rounded-lg overflow-hidden">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-hover:text-dilq-accent transition-colors" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      className="bg-transparent border-0 ring-offset-0 pl-10 text-white focus:ring-1 focus:ring-dilq-accent/50"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <Button
-                type="submit"
-                className="w-full h-12 bg-gradient-to-r from-dilq-accent to-dilq-teal hover:opacity-90 text-white font-medium rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 shadow-[0_0_15px_rgba(139,92,246,0.5)]"
-                disabled={isLoading}
-              >
-                {isLoading ? 
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white animate-spin"></div>
-                    <span>Processando...</span>
-                  </div> : 
-                  "Assinar agora"
-                }
-              </Button>
-            </form>
           )}
           
           <div className="text-center pt-4">

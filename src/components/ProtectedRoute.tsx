@@ -4,6 +4,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -99,7 +100,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // Show loading state
   if (loading) {
-    return <div>Carregando...</div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[#080a12]">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-dilq-accent mx-auto" />
+          <p className="mt-4 text-lg text-gray-300">Carregando...</p>
+        </div>
+      </div>
+    );
   }
 
   // Redirect to login if no session or no valid subscription
