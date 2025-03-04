@@ -2,11 +2,10 @@
 // Follow the Deno deployment guide for Supabase:
 // https://deno.com/deploy/docs
 
-// Import only the core essentials
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-// Using specific version with no type definitions to avoid dependency issues
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/module/index.js";
-import Stripe from "https://cdn.jsdelivr.net/npm/stripe@12.4.0/dist/stripe.min.js";
+// Using Deno-compatible imports
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.0";
+import Stripe from "https://esm.sh/stripe@12.4.0";
 
 // CORS headers configuration
 const corsHeaders = {
