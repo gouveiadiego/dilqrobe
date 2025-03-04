@@ -15,6 +15,7 @@ export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [userSession, setUserSession] = useState<any>(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [signupSuccess, setSignupSuccess] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -86,7 +87,8 @@ export default function Auth() {
       
       if (error) throw error;
       
-      toast.success("Conta criada com sucesso! Por favor, verifique seu email.");
+      toast.success("Conta criada com sucesso! Por favor, assine um plano para continuar.");
+      setSignupSuccess(true);
     } catch (error: any) {
       console.error("Error signing up:", error);
       if (error.message.includes("User already registered")) {
@@ -104,8 +106,25 @@ export default function Auth() {
     return <div className="flex justify-center items-center h-screen">Carregando...</div>;
   }
 
-  if (userSession) {
+  if (userSession && !signupSuccess) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // If signup was successful, show pricing plans
+  if (signupSuccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-2">Selecione um Plano</h1>
+            <p className="text-muted-foreground mb-6">
+              Para continuar utilizando nossa plataforma, escolha um dos planos abaixo.
+            </p>
+          </div>
+          <PricingPlans />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -180,9 +199,11 @@ export default function Auth() {
           </div>
         </div>
       </div>
-      <div className="mt-16 border-t pt-8">
-        <PricingPlans />
-      </div>
+      {!isSignUp && (
+        <div className="mt-16 border-t pt-8">
+          <PricingPlans />
+        </div>
+      )}
     </div>
   );
 }

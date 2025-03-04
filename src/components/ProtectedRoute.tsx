@@ -46,8 +46,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         setLoading(false);
         toast.error("Sessão expirada. Por favor, faça login novamente.");
         navigate("/login");
-      } else if (_event === 'SIGNED_IN') {
-        // Check subscription when user signs in
+      } else if (_event === 'SIGNED_IN' || _event === 'SIGNED_UP') {
+        // Check subscription when user signs in or signs up
         checkSubscription(currentSession.user.id);
       }
     });

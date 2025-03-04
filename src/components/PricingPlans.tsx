@@ -38,7 +38,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
             id: "1",
             name: "Plano Mensal",
             description: "Acesso a todas as funcionalidades por um mês",
-            price_id: "price_1Qz51FRooQphZ1dFZhZ4AEhd", // The price ID provided by the user
+            price_id: "price_1Qz51FRooQphZ1dFZhZ4AEhd",
             amount: 3900,
             currency: "BRL",
             interval: "month"
@@ -47,7 +47,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
             id: "2",
             name: "Plano Anual",
             description: "Acesso a todas as funcionalidades por um ano com desconto",
-            price_id: "price_1Qz51FRooQphZ1dFZhZ4AEhd", // The price ID provided by the user
+            price_id: "price_1Qz51FRooQphZ1dFZhZ4AEhd", 
             amount: 39900,
             currency: "BRL",
             interval: "year"
@@ -183,6 +183,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
               <CardFooter>
                 <Button 
                   className="w-full" 
+                  variant={isSubscribed ? "outline" : "default"}
                   disabled={isSubscribed || loading}
                   onClick={() => handleCheckout(plan.price_id)}
                 >
