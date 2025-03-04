@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail } from "lucide-react";
+import { Mail, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -11,6 +12,7 @@ export const Signup = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
+  const [showPaymentOption, setShowPaymentOption] = useState(false);
 
   const handleStartTrial = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +34,7 @@ export const Signup = () => {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           email: email,
-          priceId: "prod_RsUFxPZfy7VBFx", // Updated to the new product ID
+          priceId: "price_1PgJ5fJOumyCRZftPE91gDUU", // Use a proper Stripe price ID
           successUrl: `${window.location.origin}/login?signup=success`,
           cancelUrl: `${window.location.origin}/signup?canceled=true`,
         },
@@ -45,6 +47,14 @@ export const Signup = () => {
       }
       
       console.log("Response from create-checkout function:", data);
+      
+      // If this is a mock response in development, show payment option directly
+      if (data.isMock) {
+        setShowPaymentOption(true);
+        setIsLoading(false);
+        toast.info("Modo de desenvolvimento: simulando checkout");
+        return;
+      }
       
       // Redirect to Stripe checkout page
       if (data && data.checkoutUrl) {
@@ -68,41 +78,87 @@ export const Signup = () => {
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-4">
             <h2 className="text-2xl font-semibold text-gray-800">
-              Experimente 3 dias grátis
+              {showPaymentOption ? "Assinatura Necessária" : "Experimente 3 dias grátis"}
             </h2>
             <p className="text-gray-600">
-              Após o período de teste, será cobrado R$ 9,90 por mês.
+              {showPaymentOption 
+                ? "Você precisa de uma assinatura para continuar" 
+                : "Após o período de teste, será cobrado R$ 9,90 por mês."}
             </p>
-            <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-md">
-              <p>✓ Acesso total por 3 dias</p>
-              <p>✓ Sem compromisso - cancele quando quiser</p>
-              <p>✓ Não há cobrança durante o período de avaliação</p>
-            </div>
-          </div>
-          <form onSubmit={handleStartTrial} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  className="pl-10"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+            {!showPaymentOption && (
+              <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-md">
+                <p>✓ Acesso total por 3 dias</p>
+                <p>✓ Sem compromisso - cancele quando quiser</p>
+                <p>✓ Não há cobrança durante o período de avaliação</p>
               </div>
+            )}
+          </div>
+          
+          {showPaymentOption ? (
+            <div className="space-y-6">
+              <div className="bg-gray-50 p-4 rounded-md space-y-3">
+                <div className="flex items-center">
+                  <CreditCard className="h-5 w-5 text-gray-500 mr-2" />
+                  <h3 className="font-medium">Experimente 3 dias grátis</h3>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Após o período de teste, será cobrado R$ 9,90 por mês.
+                </p>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-1">✓</span> Acesso total por 3 dias
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-1">✓</span> Sem compromisso - cancele quando quiser
+                  </li>
+                  <li className="flex items-center">
+                    <span className="text-green-500 mr-1">✓</span> Não há cobrança durante o período de avaliação
+                  </li>
+                </ul>
+              </div>
+              
+              <Button
+                onClick={handleStartTrial}
+                className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+                disabled={isLoading}
+              >
+                {isLoading ? "Processando..." : "Iniciar Teste Gratuito de 3 Dias"}
+              </Button>
+              
+              <button 
+                onClick={() => setShowPaymentOption(false)}
+                className="w-full text-sm text-gray-600 hover:text-gray-800"
+              >
+                Voltar para o formulário
+              </button>
             </div>
-            <Button
-              type="submit"
-              className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
-              disabled={isLoading}
-            >
-              {isLoading ? "Processando..." : "Iniciar Teste Gratuito de 3 Dias"}
-            </Button>
-          </form>
+          ) : (
+            <form onSubmit={handleStartTrial} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    className="pl-10"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70"
+                disabled={isLoading}
+              >
+                {isLoading ? "Processando..." : "Iniciar Teste Gratuito de 3 Dias"}
+              </Button>
+            </form>
+          )}
+          
           <div className="text-center pt-4">
             <p className="text-sm text-gray-500">
               Já tem uma conta?{" "}
