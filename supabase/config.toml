@@ -16,11 +16,12 @@ enabled = true
 enabled = true
 port = 54323
 
-[[edge_functions]]
-name = "create-checkout"
+[functions]
+[functions.create-checkout]
+verify_jwt = false
 
-[[edge_functions]]
-name = "stripe-webhook"
+[functions.stripe-webhook]
+verify_jwt = false
 
-[[edge_functions]]
-name = "delete-user"
+[functions.delete-user]
+verify_jwt = false
