@@ -33,52 +33,67 @@ serve(async (req) => {
     })
 
     // Obter dados da requisição
-    const { priceId, successUrl, cancelUrl, email } = await req.json()
+    const requestData = await req.json()
+    const { priceId, successUrl, cancelUrl, email } = requestData
 
     // Verificar se o ID de preço foi fornecido
     if (!priceId) {
+      console.error('ID de preço não fornecido na requisição')
       throw new Error('ID de preço não fornecido')
+    }
+
+    // Verificar se temos os URLs de sucesso e cancelamento
+    if (!successUrl || !cancelUrl) {
+      console.error('URLs de sucesso ou cancelamento não fornecidos')
+      throw new Error('URLs de redirecionamento incompletos')
     }
 
     // Registrar dados para debug
     console.log(`Criando checkout para: ${email}, preço: ${priceId}`)
     console.log(`URLs: sucesso=${successUrl}, cancelamento=${cancelUrl}`)
+    console.log('Dados completos da requisição:', JSON.stringify(requestData))
 
     // Criar uma sessão de checkout do Stripe
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
+    try {
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        customer_email: email,
+        subscription_data: {
+          trial_period_days: 3, // Define o período de avaliação como 3 dias
         },
-      ],
-      mode: 'subscription',
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      customer_email: email,
-      subscription_data: {
-        trial_period_days: 3, // Define o período de avaliação como 3 dias
-      },
-    })
+      })
 
-    console.log(`Sessão de checkout criada: ${session.id}`)
+      console.log(`Sessão de checkout criada: ${session.id}`)
+      console.log(`URL de checkout: ${session.url}`)
 
-    // Retornar a URL da sessão de checkout
-    return new Response(
-      JSON.stringify({ 
-        checkoutUrl: session.url,
-        sessionId: session.id
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    )
+      // Retornar a URL da sessão de checkout
+      return new Response(
+        JSON.stringify({ 
+          checkoutUrl: session.url,
+          sessionId: session.id
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      )
+    } catch (stripeError) {
+      console.error('Erro na API do Stripe:', stripeError)
+      throw new Error(`Erro do Stripe: ${stripeError.message}`)
+    }
   } catch (error) {
     console.error('Erro no checkout do Stripe:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, stack: error.stack }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,

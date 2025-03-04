@@ -8,9 +8,6 @@ import { Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Chave pública do Stripe
-const STRIPE_PUBLIC_KEY = "pk_live_51JzobYEJEe6kPCYC3QHUIrWCwki7fiIaVLB88jwvvoJq6Y1jQtzxIHL7aJuv0lsMVeuWSxWVS8AU4UDH4c8t3T9000h291QHyV";
-
 export const Signup = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +24,11 @@ export const Signup = () => {
     setIsLoading(true);
     
     try {
+      // Informar o usuário que estamos processando a solicitação
+      toast.info("Preparando checkout...");
+      
+      console.log("Iniciando processo de checkout para:", email);
+      
       // Criar uma sessão de checkout do Stripe
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
@@ -43,12 +45,18 @@ export const Signup = () => {
         return;
       }
       
+      console.log("Resposta da função create-checkout:", data);
+      
       // Redirecionar para a página de checkout do Stripe
-      if (data.checkoutUrl) {
+      if (data && data.checkoutUrl) {
+        console.log("Redirecionando para:", data.checkoutUrl);
         window.location.href = data.checkoutUrl;
+      } else {
+        console.error("URL de checkout não recebida:", data);
+        toast.error("Erro ao iniciar o teste gratuito: URL de checkout não disponível");
       }
     } catch (error: any) {
-      console.error("Erro:", error);
+      console.error("Erro no processo de checkout:", error);
       toast.error("Ocorreu um erro ao processar sua solicitação");
     } finally {
       setIsLoading(false);
