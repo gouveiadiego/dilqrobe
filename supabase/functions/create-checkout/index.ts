@@ -2,6 +2,7 @@
 // Follow this Deno deployment guide for Supabase:
 // https://deno.land/manual/runtime/http_server
 
+// Import just what we need for HTTP server
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 // CORS headers configuration
@@ -17,83 +18,78 @@ serve(async (req) => {
   }
 
   try {
-    // Use direct imports with minimal dependencies
-    const createClient = (await import("https://esm.sh/@supabase/supabase-js@2")).createClient;
-    const Stripe = (await import("https://esm.sh/stripe@12")).default;
+    // Import dependencies directly inside the handler to avoid bundling issues
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2?no-dts");
+    const Stripe = await import("https://esm.sh/stripe@12?no-dts").then(mod => mod.default);
 
-    // Initialize Supabase client with service role key for full database access
+    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Initialize Stripe with the secret key
+    // Get Stripe key
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeSecretKey) {
       console.error('STRIPE_SECRET_KEY is not defined');
-      throw new Error('Stripe configuration incomplete');
+      throw new Error('Configuração do Stripe incompleta');
     }
 
+    // Initialize Stripe
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     });
 
-    // Get request data
+    // Parse request data
     const requestData = await req.json();
     const { priceId, successUrl, cancelUrl, email } = requestData;
 
-    // Verify if price ID was provided
+    // Validate request data
     if (!priceId) {
       console.error('Price ID not provided in request');
-      throw new Error('Price ID not provided');
+      throw new Error('ID de preço não fornecido');
     }
 
-    // Verify if we have success and cancel URLs
     if (!successUrl || !cancelUrl) {
       console.error('Success or cancel URLs not provided');
-      throw new Error('Redirect URLs incomplete');
+      throw new Error('URLs de redirecionamento incompletas');
     }
 
-    // Log data for debugging
+    // Log for debugging
     console.log(`Creating checkout for: ${email}, price: ${priceId}`);
     console.log(`URLs: success=${successUrl}, cancel=${cancelUrl}`);
 
-    // Create a Stripe checkout session
-    try {
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        mode: 'subscription',
-        success_url: successUrl,
-        cancel_url: cancelUrl,
-        customer_email: email,
-        subscription_data: {
-          trial_period_days: 3, // 3-day trial period
-        },
-      });
-
-      console.log(`Checkout session created: ${session.id}`);
-      console.log(`Checkout URL: ${session.url}`);
-
-      // Return the checkout session URL
-      return new Response(
-        JSON.stringify({ 
-          checkoutUrl: session.url,
-          sessionId: session.id
-        }),
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
         {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      );
-    } catch (stripeError) {
-      console.error('Stripe API error:', stripeError);
-      throw new Error(`Stripe error: ${stripeError.message}`);
-    }
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription',
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      customer_email: email,
+      subscription_data: {
+        trial_period_days: 3, // 3-day trial period
+      },
+    });
+
+    console.log(`Checkout session created: ${session.id}`);
+    console.log(`Checkout URL: ${session.url}`);
+
+    // Return success response
+    return new Response(
+      JSON.stringify({ 
+        checkoutUrl: session.url,
+        sessionId: session.id
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error('Stripe checkout error:', error);
     return new Response(
