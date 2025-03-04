@@ -8,6 +8,9 @@ import { Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Chave pública do Stripe
+const STRIPE_PUBLIC_KEY = "pk_live_51JzobYEJEe6kPCYC3QHUIrWCwki7fiIaVLB88jwvvoJq6Y1jQtzxIHL7aJuv0lsMVeuWSxWVS8AU4UDH4c8t3T9000h291QHyV";
+
 export const Signup = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);

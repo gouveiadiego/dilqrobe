@@ -22,12 +22,23 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Inicializar Stripe com a chave secreta
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
+    if (!stripeSecretKey) {
+      console.error('STRIPE_SECRET_KEY não está definida')
+      throw new Error('Configuração do Stripe incompleta')
+    }
+
+    const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     })
 
     // Obter dados da requisição
     const { priceId, successUrl, cancelUrl, email } = await req.json()
+
+    // Verificar se o ID de preço foi fornecido
+    if (!priceId) {
+      throw new Error('ID de preço não fornecido')
+    }
 
     // Criar uma sessão de checkout do Stripe
     const session = await stripe.checkout.sessions.create({
