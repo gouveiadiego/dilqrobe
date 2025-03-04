@@ -34,7 +34,7 @@ export const Signup = () => {
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: {
           email: email,
-          priceId: "price_1PgJ5fJOumyCRZftPE91gDUU", // Use a proper Stripe price ID
+          priceId: "price_1PgJ5fJOumyCRZftPE91gDUU", // Stripe price ID
           successUrl: `${window.location.origin}/login?signup=success`,
           cancelUrl: `${window.location.origin}/signup?canceled=true`,
         },
@@ -50,6 +50,7 @@ export const Signup = () => {
       
       // If this is a mock response in development, show payment option directly
       if (data.isMock) {
+        console.log("Mock checkout detected, showing payment option");
         setShowPaymentOption(true);
         setIsLoading(false);
         toast.info("Modo de desenvolvimento: simulando checkout");
