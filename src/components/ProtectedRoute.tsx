@@ -26,16 +26,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         .select('*')
         .eq('user_id', userId)
         .in('status', ['active', 'trialing'])
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error("Subscription check error:", error.message, "Code:", error.code);
-        
-        // Only consider it a real error if it's not the "no rows returned" error
-        if (error.code !== 'PGRST116') {
-          console.error("Error checking subscription in protected route:", error);
-          return false;
-        }
+        return false;
       }
       
       console.log("Subscription check in protected route result:", data);
@@ -45,6 +40,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         return false;
       }
       
+      console.log("Valid subscription found, status:", data.status);
       return true;
     } catch (error) {
       console.error("Error in checkSubscription:", error);
@@ -77,6 +73,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
               
               if (!hasSubscription) {
                 console.log("No valid subscription found in initial check, redirecting to login");
+                toast.error("Assinatura não encontrada ou inválida. Por favor, verifique seu pagamento.");
                 navigate("/login");
               }
             }
@@ -110,6 +107,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           
           if (!hasSubscription) {
             console.log("No valid subscription found after auth change, redirecting to login");
+            toast.error("Assinatura não encontrada ou inválida. Por favor, verifique seu pagamento.");
             navigate("/login");
           }
         }

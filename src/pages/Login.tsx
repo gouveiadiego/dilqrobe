@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export const Login = () => {
           console.log("Valid subscription found, status:", subscriptionData.status);
           
           // Has valid subscription, proceed to dashboard
+          toast.success("Login bem-sucedido! Redirecionando para o dashboard...");
           navigate("/dashboard", { replace: true });
         } catch (error) {
           console.error("Error checking subscription status:", error);
