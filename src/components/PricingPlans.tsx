@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +48,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
             id: "2",
             name: "Plano Anual",
             description: "Acesso a todas as funcionalidades por um ano com desconto",
-            price_id: "price_1Qz51FRooQphZ1dFZhZ4AEhd", 
+            price_id: "price_1Qz52DRooQphZ1dF0Uy7m84K", // Corrigido o ID do plano anual
             amount: 39900,
             currency: "BRL",
             interval: "year"

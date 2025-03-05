@@ -35,22 +35,17 @@ Deno.serve(async (req) => {
     const body = await req.text();
     console.log("Received webhook event");
     
-    // Manual signature verification to avoid using SubtleCryptoProvider directly
+    // Create a completely synchronous way to validate the signature without async constructs
     let event;
     try {
-      // Instead of using constructEvent directly, we'll use a wrapper function with proper async handling
-      const constructEventAsync = async (body, signature, secret) => {
-        return new Promise((resolve, reject) => {
-          try {
-            const result = stripe.webhooks.constructEvent(body, signature, secret);
-            resolve(result);
-          } catch (err) {
-            reject(err);
-          }
-        });
-      };
-      
-      event = await constructEventAsync(body, signature, webhookSecret);
+      // Use direct synchronous validation without any Promise or async
+      event = (() => {
+        try {
+          return stripe.webhooks.constructEvent(body, signature, webhookSecret);
+        } catch (err) {
+          throw err;
+        }
+      })();
     } catch (err) {
       console.error(`⚠️ Webhook signature verification failed:`, err.message);
       return new Response(JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }), {
@@ -115,10 +110,11 @@ Deno.serve(async (req) => {
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : null,
             trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-            stripe_customer_id: stripeCustomerId, // Add the customer ID
-            plan_type: planType, // Add the plan type
+            stripe_customer_id: stripeCustomerId, 
+            plan_type: planType,
+            stripe_subscription_id: subscription.id, // Adicionando o ID da assinatura do Stripe
           }, {
-            onConflict: 'user_id' // Explicitar a coluna de conflito
+            onConflict: 'user_id'
           });
           
           if (error) {
@@ -163,8 +159,9 @@ Deno.serve(async (req) => {
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : null,
             trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-            stripe_customer_id: stripeCustomerId, // Add the customer ID
-            plan_type: planType, // Add the plan type
+            stripe_customer_id: stripeCustomerId,
+            plan_type: planType,
+            stripe_subscription_id: subscription.id, // Adicionando o ID da assinatura do Stripe
           });
           
           if (error) {

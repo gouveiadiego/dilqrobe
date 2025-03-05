@@ -14,6 +14,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
+  const [subscriptionCheckAttempts, setSubscriptionCheckAttempts] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -29,10 +30,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       
       if (session && session.user) {
         // Force subscription check with a slight delay to allow webhook processing
-        setTimeout(() => {
-          checkSubscription(session.user.id, true);
-          toast.success("Assinatura realizada com sucesso! Carregando seu acesso...");
-        }, 2000);
+        toast.success("Assinatura realizada com sucesso! Carregando seu acesso...");
+        
+        // Reset attempts counter for new payment flow
+        setSubscriptionCheckAttempts(0);
+        
+        // Start checking immediately for the new subscription
+        checkSubscription(session.user.id, true);
       }
     }
   }, [session, location.search]);
@@ -84,7 +88,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   const checkSubscription = async (userId: string, forceRefresh = false) => {
     try {
-      console.log("Checking subscription for user:", userId, forceRefresh ? "(forced refresh)" : "");
+      console.log("Checking subscription for user:", userId, 
+        forceRefresh ? "(forced refresh)" : "", 
+        "Attempt:", subscriptionCheckAttempts + 1);
       
       // Adiciona um parâmetro aleatório para evitar cache
       const cacheParam = forceRefresh ? `?cache=${Date.now()}` : '';
@@ -103,13 +109,33 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       } else {
         console.log("Subscription data:", data);
         const isActive = !!data;
+        
+        // Se o usuário acabou de assinar com sucesso e não encontramos
+        // a assinatura ainda, tentaremos novamente
+        if (forceRefresh && !isActive && subscriptionCheckAttempts < 5) {
+          console.log(`Subscription not found yet after payment. Retrying in ${2 + subscriptionCheckAttempts}s (Attempt ${subscriptionCheckAttempts + 1}/5)`);
+          
+          // Incrementamos o contador de tentativas
+          setSubscriptionCheckAttempts(prev => prev + 1);
+          
+          // Aumentamos o tempo de espera a cada tentativa subsequente
+          const retryDelay = (2 + subscriptionCheckAttempts) * 1000;
+          
+          setTimeout(() => checkSubscription(userId, true), retryDelay);
+          
+          // Não atualizamos o estado hasActiveSubscription ainda
+          return;
+        } else if (forceRefresh && !isActive && subscriptionCheckAttempts >= 5) {
+          // Se após 5 tentativas ainda não encontramos, mostramos uma mensagem mais amigável
+          toast.info("Sua assinatura está sendo processada. Isso pode levar alguns minutos. Por favor, recarregue a página em instantes.");
+        }
+        
+        // Atualizamos o estado da assinatura
         setHasActiveSubscription(isActive);
         
-        // Se o usuário acabou de assinar com sucesso mas ainda não encontramos
-        // a assinatura, tentar novamente após um breve atraso
-        if (forceRefresh && !isActive) {
-          console.log("Subscription not found yet after payment. Retrying in 3 seconds...");
-          setTimeout(() => checkSubscription(userId, true), 3000);
+        // Se encontramos a assinatura após tentativas, mostramos uma mensagem de sucesso
+        if (isActive && subscriptionCheckAttempts > 0) {
+          toast.success("Assinatura ativada com sucesso!");
         }
       }
     } catch (err) {
