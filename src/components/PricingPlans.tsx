@@ -121,15 +121,17 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
         return;
       }
       
-      const currentLocation = window.location.href;
-      const dashboardUrl = window.location.origin + "/dashboard";
+      // URLs específicas para garantir redirecionamento adequado
+      const origin = window.location.origin;
+      const successUrl = `${origin}/dashboard?success=true&subscription=active&timestamp=${Date.now()}`;
+      const cancelUrl = `${origin}/dashboard?cancelled=true`;
       
       // Make the request to create checkout with direct user info
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 
           priceId,
-          successUrl: `${dashboardUrl}?success=true&timestamp=${Date.now()}`,
-          cancelUrl: `${currentLocation}?cancelled=true`,
+          successUrl,
+          cancelUrl,
           userId,
           userEmail
         }
@@ -144,6 +146,19 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
       console.log("Checkout session response:", data);
       
       if (data && data.url) {
+        // Registre a tentativa de checkout
+        try {
+          await supabase.from('subscriptions').upsert({
+            user_id: userId,
+            status: 'pending',
+            plan_type: 'stripe',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+        } catch (e) {
+          console.error("Error logging checkout attempt:", e);
+        }
+        
         window.location.href = data.url;
       } else {
         console.error("No URL received in checkout response:", data);

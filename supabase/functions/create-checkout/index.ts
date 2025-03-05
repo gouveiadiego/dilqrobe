@@ -69,6 +69,13 @@ Deno.serve(async (req) => {
     
     console.log(`Creating checkout session for user ${userInfo.id} (${userInfo.email}) with price ID ${priceId}`);
 
+    // Determinar o host da aplicação
+    const origin = req.headers.get('origin') || 'https://dilqrobe.lovable.app';
+    
+    // URLs de redirecionamento com parâmetros de consulta específicos
+    const defaultSuccessUrl = `${origin}/dashboard?success=true&subscription=active&timestamp=${Date.now()}`;
+    const defaultCancelUrl = `${origin}/dashboard?cancelled=true`;
+
     // Create a Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -79,8 +86,8 @@ Deno.serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: successUrl || `${req.headers.get('origin')}/dashboard?success=true&timestamp=${Date.now()}`,
-      cancel_url: cancelUrl || `${req.headers.get('origin')}/dashboard?cancelled=true`,
+      success_url: successUrl || defaultSuccessUrl,
+      cancel_url: cancelUrl || defaultCancelUrl,
       customer_email: userInfo.email,
       client_reference_id: userInfo.id, // This is critical for the webhook to work
       subscription_data: {
@@ -98,6 +105,30 @@ Deno.serve(async (req) => {
       success_url: session.success_url,
       cancel_url: session.cancel_url
     });
+
+    // Pré-registrar a assinatura como "pending" para ajudar na detecção
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+      
+      if (supabaseUrl && supabaseServiceKey) {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        
+        // Criar uma entrada preliminar na tabela de assinaturas
+        await supabase.from('subscriptions').upsert({
+          user_id: userInfo.id,
+          status: 'pending',
+          plan_type: 'stripe',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+        
+        console.log("Created preliminary subscription record with pending status");
+      }
+    } catch (error) {
+      // Não falhar o checkout se este passo falhar
+      console.error("Error creating preliminary subscription record:", error);
+    }
 
     return new Response(
       JSON.stringify({ url: session.url }),
