@@ -55,9 +55,30 @@ Deno.serve(async (req) => {
       case 'checkout.session.completed': {
         console.log("Processing checkout.session.completed event");
         const session = event.data.object;
+        
+        // Extract customer ID from the session
+        const stripeCustomerId = session.customer;
+        console.log("Stripe customer ID:", stripeCustomerId);
+        
         if (session.subscription && session.client_reference_id) {
           console.log("Fetching subscription details for ID:", session.subscription);
           const subscription = await stripe.subscriptions.retrieve(session.subscription);
+          
+          // Determine plan type based on subscription interval
+          const priceId = subscription.items.data[0].price.id;
+          console.log("Price ID:", priceId);
+          
+          // Get product details to determine the plan type
+          const priceDetails = await stripe.prices.retrieve(priceId);
+          const productId = priceDetails.product;
+          const product = await stripe.products.retrieve(productId as string);
+          
+          // Determine plan type from product metadata or name
+          // You might want to set metadata on your Stripe products to indicate the plan type
+          const planType = product.metadata.plan_type || 
+                         (product.name.toLowerCase().includes('annual') ? 'annual' : 'monthly');
+          
+          console.log("Determined plan type:", planType);
           
           console.log("Upserting subscription record for user:", session.client_reference_id);
           const { data, error } = await supabase.from('subscriptions').upsert({
@@ -71,6 +92,8 @@ Deno.serve(async (req) => {
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : null,
             trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+            stripe_customer_id: stripeCustomerId, // Add the customer ID
+            plan_type: planType, // Add the plan type
           });
           
           if (error) {
@@ -78,7 +101,7 @@ Deno.serve(async (req) => {
             throw error;
           }
 
-          console.log(`Subscription record created/updated for user ${session.client_reference_id}`);
+          console.log(`Subscription record created/updated for user ${session.client_reference_id} with customer ID ${stripeCustomerId} and plan type ${planType}`);
         }
         break;
       }
@@ -86,6 +109,21 @@ Deno.serve(async (req) => {
         console.log("Processing customer.subscription.updated event");
         const subscription = event.data.object;
         const userId = subscription.metadata?.user_id;
+        
+        // Get customer ID and determine plan type
+        const stripeCustomerId = subscription.customer;
+        
+        // Get product details to determine the plan type
+        const priceId = subscription.items.data[0].price.id;
+        const priceDetails = await stripe.prices.retrieve(priceId);
+        const productId = priceDetails.product;
+        const product = await stripe.products.retrieve(productId as string);
+        
+        // Determine plan type from product metadata or name
+        const planType = product.metadata.plan_type || 
+                       (product.name.toLowerCase().includes('annual') ? 'annual' : 'monthly');
+        
+        console.log("Subscription update - Customer ID:", stripeCustomerId, "Plan Type:", planType);
         
         if (userId) {
           console.log("Updating subscription record for user:", userId);
@@ -100,6 +138,8 @@ Deno.serve(async (req) => {
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : null,
             trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+            stripe_customer_id: stripeCustomerId, // Add the customer ID
+            plan_type: planType, // Add the plan type
           });
           
           if (error) {
@@ -107,7 +147,7 @@ Deno.serve(async (req) => {
             throw error;
           }
           
-          console.log(`Subscription updated for user ${userId}`);
+          console.log(`Subscription updated for user ${userId} with customer ID ${stripeCustomerId} and plan type ${planType}`);
         }
         break;
       }

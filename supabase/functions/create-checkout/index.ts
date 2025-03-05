@@ -143,9 +143,33 @@ Deno.serve(async (req) => {
     console.log("Creating checkout session for user:", userInfo.id);
     console.log("With price ID:", priceId);
     
+    // Check if user already has a Stripe customer ID
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    let stripeCustomerId = null;
+    
+    // Try to find an existing customer ID for this user
+    try {
+      const { data: subscriptionData, error } = await supabase
+        .from('subscriptions')
+        .select('stripe_customer_id')
+        .eq('user_id', userInfo.id)
+        .maybeSingle();
+      
+      if (!error && subscriptionData && subscriptionData.stripe_customer_id) {
+        stripeCustomerId = subscriptionData.stripe_customer_id;
+        console.log("Found existing Stripe customer ID:", stripeCustomerId);
+      }
+    } catch (err) {
+      console.error("Error checking for existing customer:", err);
+      // Continue with checkout even if this fails
+    }
+    
     // Create the checkout session
     try {
-      const session = await stripe.checkout.sessions.create({
+      const sessionParams: any = {
         payment_method_types: ['card'],
         line_items: [
           {
@@ -162,9 +186,17 @@ Deno.serve(async (req) => {
           metadata: {
             user_id: userInfo.id,
           },
-        },
-        customer_email: userInfo.email,
-      });
+        }
+      };
+      
+      // If we have an existing customer, use it, otherwise set the email
+      if (stripeCustomerId) {
+        sessionParams.customer = stripeCustomerId;
+      } else {
+        sessionParams.customer_email = userInfo.email;
+      }
+      
+      const session = await stripe.checkout.sessions.create(sessionParams);
 
       console.log("Checkout session created successfully:", session.id);
       
