@@ -35,7 +35,22 @@ Deno.serve(async (req) => {
     const body = await req.text();
     console.log("Received webhook event");
     
-    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    // Using an async-safe approach to construct the event
+    let event;
+    try {
+      event = await Promise.resolve(stripe.webhooks.constructEvent(
+        body,
+        signature,
+        webhookSecret
+      ));
+    } catch (err) {
+      console.error(`⚠️ Webhook signature verification failed:`, err.message);
+      return new Response(JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
     console.log("Webhook event type:", event.type);
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
