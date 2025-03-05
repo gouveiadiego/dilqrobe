@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { stripe } from '../_shared/stripe.ts';
 
@@ -35,17 +34,23 @@ Deno.serve(async (req) => {
     const body = await req.text();
     console.log("Received webhook event");
     
-    // Create a completely synchronous way to validate the signature without async constructs
+    // Create Stripe event by verifying signature
     let event;
     try {
-      // Use direct synchronous validation without any Promise or async
-      event = (() => {
-        try {
-          return stripe.webhooks.constructEvent(body, signature, webhookSecret);
-        } catch (err) {
-          throw err;
-        }
-      })();
+      // Handle the signature verification in a safe way
+      const constructEventAsync = async (payload: string, signature: string, secret: string) => {
+        return await Promise.resolve().then(() => {
+          try {
+            return stripe.webhooks.constructEvent(payload, signature, secret);
+          } catch (err) {
+            console.error("Signature verification failed:", err.message);
+            throw err;
+          }
+        });
+      };
+      
+      event = await constructEventAsync(body, signature, webhookSecret);
+      console.log("Signature verification successful");
     } catch (err) {
       console.error(`⚠️ Webhook signature verification failed:`, err.message);
       return new Response(JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }), {
@@ -76,53 +81,92 @@ Deno.serve(async (req) => {
         
         // Extract customer ID from the session
         const stripeCustomerId = session.customer;
-        console.log("Stripe customer ID:", stripeCustomerId);
+        const clientReferenceId = session.client_reference_id;
         
-        if (session.subscription && session.client_reference_id) {
-          console.log("Fetching subscription details for ID:", session.subscription);
-          const subscription = await stripe.subscriptions.retrieve(session.subscription);
-          
-          // Determine plan type based on subscription interval
-          const priceId = subscription.items.data[0].price.id;
-          console.log("Price ID:", priceId);
-          
-          // Get product details to determine the plan type
-          const priceDetails = await stripe.prices.retrieve(priceId);
-          const productId = priceDetails.product;
-          const product = await stripe.products.retrieve(productId as string);
-          
-          // Determine plan type from product metadata or name
-          // You might want to set metadata on your Stripe products to indicate the plan type
-          const planType = product.metadata.plan_type || 
-                         (product.name.toLowerCase().includes('annual') ? 'annual' : 'monthly');
-          
-          console.log("Determined plan type:", planType);
-          
-          console.log("Upserting subscription record for user:", session.client_reference_id);
-          const { data, error } = await supabase.from('subscriptions').upsert({
-            user_id: session.client_reference_id,
-            subscription_id: subscription.id,
-            status: subscription.status,
-            price_id: subscription.items.data[0].price.id,
-            quantity: subscription.items.data[0].quantity,
-            cancel_at_period_end: subscription.cancel_at_period_end,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : null,
-            trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-            stripe_customer_id: stripeCustomerId, 
-            plan_type: planType,
-            stripe_subscription_id: subscription.id, // Adicionando o ID da assinatura do Stripe
-          }, {
-            onConflict: 'user_id'
+        console.log("Session details:", {
+          stripeCustomerId,
+          clientReferenceId,
+          hasSubscription: !!session.subscription,
+          mode: session.mode,
+          paymentStatus: session.payment_status
+        });
+        
+        if (!clientReferenceId) {
+          console.error("Missing client_reference_id in checkout session");
+          return new Response(JSON.stringify({ error: 'Missing client_reference_id in checkout session' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
+        }
+        
+        if (session.subscription && session.payment_status === 'paid') {
+          console.log("Fetching subscription details for ID:", session.subscription);
           
-          if (error) {
-            console.error("Error upserting subscription record:", error);
+          try {
+            const subscription = await stripe.subscriptions.retrieve(session.subscription);
+            console.log("Subscription retrieved:", {
+              id: subscription.id,
+              status: subscription.status,
+              currentPeriodEnd: subscription.current_period_end,
+              items: subscription.items.data.length
+            });
+            
+            // Determine plan type based on subscription interval
+            const priceId = subscription.items.data[0].price.id;
+            console.log("Price ID:", priceId);
+            
+            // Get product details to determine the plan type
+            const priceDetails = await stripe.prices.retrieve(priceId);
+            const productId = priceDetails.product;
+            const product = await stripe.products.retrieve(productId as string);
+            
+            // Determine plan type from product metadata or name
+            const planType = product.metadata.plan_type || 
+                           (product.name.toLowerCase().includes('annual') ? 'annual' : 'monthly');
+            
+            console.log("Determined plan type:", planType);
+            
+            // Create subscription record in Supabase
+            console.log("Creating subscription record for user:", clientReferenceId);
+            const subscriptionData = {
+              user_id: clientReferenceId,
+              subscription_id: subscription.id,
+              status: subscription.status,
+              price_id: priceId,
+              quantity: subscription.items.data[0].quantity,
+              cancel_at_period_end: subscription.cancel_at_period_end,
+              current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000).toISOString() : null,
+              trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+              stripe_customer_id: stripeCustomerId, 
+              plan_type: planType,
+              stripe_subscription_id: subscription.id
+            };
+            
+            console.log("Upserting subscription data:", JSON.stringify(subscriptionData));
+            
+            const { data, error } = await supabase
+              .from('subscriptions')
+              .upsert(subscriptionData, {
+                onConflict: 'user_id'
+              });
+            
+            if (error) {
+              console.error("Error upserting subscription record:", error);
+              throw error;
+            }
+            
+            console.log(`Subscription record created/updated for user ${clientReferenceId}`);
+          } catch (error) {
+            console.error("Error processing subscription:", error);
             throw error;
           }
-
-          console.log(`Subscription record created/updated for user ${session.client_reference_id} with customer ID ${stripeCustomerId} and plan type ${planType}`);
+        } else {
+          console.log("No subscription found in session or payment not complete:", {
+            subscription: session.subscription,
+            paymentStatus: session.payment_status
+          });
         }
         break;
       }
@@ -161,7 +205,7 @@ Deno.serve(async (req) => {
             trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
             stripe_customer_id: stripeCustomerId,
             plan_type: planType,
-            stripe_subscription_id: subscription.id, // Adicionando o ID da assinatura do Stripe
+            stripe_subscription_id: subscription.id,
           });
           
           if (error) {

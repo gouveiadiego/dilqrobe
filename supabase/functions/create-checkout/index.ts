@@ -49,12 +49,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Log all headers for debugging
-    console.log("Request headers:");
-    for (const [key, value] of req.headers.entries()) {
-      console.log(`${key}: ${key === 'authorization' ? 'REDACTED' : value}`);
-    }
-
     // Get user information - use direct info first if provided
     let userInfo = null;
     
@@ -169,6 +163,7 @@ Deno.serve(async (req) => {
     
     // Create the checkout session
     try {
+      // CRITICAL: Always use the user ID as the client_reference_id
       const sessionParams: any = {
         payment_method_types: ['card'],
         line_items: [
@@ -180,7 +175,7 @@ Deno.serve(async (req) => {
         mode: 'subscription',
         success_url: successUrl || `${req.headers.get('origin') || Deno.env.get('SUPABASE_URL')}/dashboard?success=true`,
         cancel_url: cancelUrl || `${req.headers.get('origin') || Deno.env.get('SUPABASE_URL')}/dashboard?cancelled=true`,
-        client_reference_id: userInfo.id,
+        client_reference_id: userInfo.id, // Using user ID as client_reference_id
         subscription_data: {
           trial_period_days: 3,
           metadata: {
@@ -195,6 +190,11 @@ Deno.serve(async (req) => {
       } else {
         sessionParams.customer_email = userInfo.email;
       }
+      
+      console.log("Creating checkout session with params:", JSON.stringify({
+        ...sessionParams,
+        customer_email: sessionParams.customer_email ? "[REDACTED]" : undefined,
+      }));
       
       const session = await stripe.checkout.sessions.create(sessionParams);
 
