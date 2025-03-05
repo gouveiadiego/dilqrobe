@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     
     // Case 1: Check if userId and userEmail were passed directly in the request body
     if (userId && userEmail) {
-      console.log("Using user information provided in request body");
+      console.log("Using user information provided in request body:", { userId, userEmail });
       userInfo = { id: userId, email: userEmail };
     } 
     // Case 2: Try to get user from auth header

@@ -33,13 +33,13 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
     async function fetchPlans() {
       setLoading(true);
       try {
-        // Temporarily use hardcoded plans until the database is properly set up
+        // Hardcoded plans com os price_ids corretos
         const hardcodedPlans: Plan[] = [
           {
             id: "1",
             name: "Plano Mensal",
             description: "Acesso a todas as funcionalidades por um mês",
-            price_id: "price_1Qz51FRooQphZ1dFZhZ4AEhd", // Monthly plan price ID
+            price_id: "price_1Qz51FRooQphZ1dFZhZ4AEhd", // ID do plano mensal
             amount: 3900,
             currency: "BRL",
             interval: "month"
@@ -48,7 +48,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
             id: "2",
             name: "Plano Anual",
             description: "Acesso a todas as funcionalidades por um ano com desconto",
-            price_id: "price_1Qz52DRooQphZ1dF0Uy7m84K", // Annual plan price ID
+            price_id: "price_1Qz52DRooQphZ1dF0Uy7m84K", // ID do plano anual
             amount: 39900,
             currency: "BRL",
             interval: "year"
@@ -56,6 +56,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
         ];
         
         setPlans(hardcodedPlans);
+        console.log("Planos definidos:", hardcodedPlans);
       } catch (error) {
         console.error("Error fetching plans:", error);
         toast.error("Erro ao carregar os planos disponíveis");
@@ -70,6 +71,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
       if (!user) return;
 
       try {
+        console.log("Verificando assinatura para usuário:", user.id);
         const { data, error } = await supabase
           .from("subscriptions")
           .select("*")
@@ -78,6 +80,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
           .maybeSingle();
         
         if (error) throw error;
+        console.log("Dados da assinatura:", data);
         setSubscription(data);
       } catch (error) {
         console.error("Error fetching subscription:", error);

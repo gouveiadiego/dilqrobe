@@ -37,19 +37,8 @@ Deno.serve(async (req) => {
     // Create Stripe event by verifying signature
     let event;
     try {
-      // Handle the signature verification in a safe way
-      const constructEventAsync = async (payload: string, signature: string, secret: string) => {
-        return await Promise.resolve().then(() => {
-          try {
-            return stripe.webhooks.constructEvent(payload, signature, secret);
-          } catch (err) {
-            console.error("Signature verification failed:", err.message);
-            throw err;
-          }
-        });
-      };
-      
-      event = await constructEventAsync(body, signature, webhookSecret);
+      // Using a simpler approach for signature verification to avoid async issues
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
       console.log("Signature verification successful");
     } catch (err) {
       console.error(`⚠️ Webhook signature verification failed:`, err.message);
@@ -148,16 +137,15 @@ Deno.serve(async (req) => {
             
             const { data, error } = await supabase
               .from('subscriptions')
-              .upsert(subscriptionData, {
-                onConflict: 'user_id'
-              });
+              .upsert(subscriptionData)
+              .select();
             
             if (error) {
               console.error("Error upserting subscription record:", error);
               throw error;
             }
             
-            console.log(`Subscription record created/updated for user ${clientReferenceId}`);
+            console.log(`Subscription record created/updated for user ${clientReferenceId}:`, data);
           } catch (error) {
             console.error("Error processing subscription:", error);
             throw error;
