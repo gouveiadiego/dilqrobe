@@ -5,14 +5,24 @@ const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY') || '';
 
 if (!stripeSecretKey) {
   console.error("STRIPE_SECRET_KEY environment variable is not set");
-  throw new Error('STRIPE_SECRET_KEY env var not found');
 }
 
 console.log("Initializing Stripe with API version 2023-10-16");
 
-export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2023-10-16',
-  httpClient: Stripe.createFetchHttpClient(),
-});
+let stripeInstance = null;
 
-console.log("Stripe initialized successfully");
+try {
+  if (stripeSecretKey) {
+    stripeInstance = new Stripe(stripeSecretKey, {
+      apiVersion: '2023-10-16',
+      httpClient: Stripe.createFetchHttpClient(),
+    });
+    console.log("Stripe initialized successfully");
+  } else {
+    console.error("Stripe initialization skipped due to missing secret key");
+  }
+} catch (error) {
+  console.error("Error initializing Stripe:", error);
+}
+
+export const stripe = stripeInstance;

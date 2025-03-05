@@ -24,6 +24,7 @@ interface PricingPlanProps {
 export function PricingPlans({ showTitle = true }: PricingPlanProps) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(false);
+  const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const navigate = useNavigate();
 
@@ -87,8 +88,8 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
     fetchSubscription();
   }, []);
 
-  const handleCheckout = async (priceId: string) => {
-    setLoading(true);
+  const handleCheckout = async (priceId: string, planId: string) => {
+    setProcessingPlanId(planId);
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -128,7 +129,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
       console.error("Error creating checkout session:", error);
       toast.error(`Erro ao criar sessão de pagamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
-      setLoading(false);
+      setProcessingPlanId(null);
     }
   };
 
@@ -157,6 +158,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
       <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
         {plans.map((plan) => {
           const isSubscribed = subscription && subscription.price_id === plan.price_id;
+          const isProcessing = processingPlanId === plan.id;
           
           return (
             <Card key={plan.id} className="flex flex-col">
@@ -194,10 +196,10 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
                 <Button 
                   className="w-full" 
                   variant={isSubscribed ? "outline" : "default"}
-                  disabled={isSubscribed || loading}
-                  onClick={() => handleCheckout(plan.price_id)}
+                  disabled={isSubscribed || isProcessing}
+                  onClick={() => handleCheckout(plan.price_id, plan.id)}
                 >
-                  {isSubscribed ? 'Plano Atual' : loading ? 'Processando...' : 'Assinar Agora'}
+                  {isSubscribed ? 'Plano Atual' : isProcessing ? 'Processando...' : 'Assinar Agora'}
                 </Button>
               </CardFooter>
             </Card>
