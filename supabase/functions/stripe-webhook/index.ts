@@ -34,11 +34,11 @@ Deno.serve(async (req) => {
     const body = await req.text();
     console.log("Received webhook event");
     
-    // Create Stripe event by verifying signature
+    // Create Stripe event by verifying signature - using async/await pattern
     let event;
     try {
-      // Using a simpler approach for signature verification to avoid async issues
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      // Use constructEventAsync instead of constructEvent for Deno/Edge runtime
+      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
       console.log("Signature verification successful");
     } catch (err) {
       console.error(`⚠️ Webhook signature verification failed:`, err.message);

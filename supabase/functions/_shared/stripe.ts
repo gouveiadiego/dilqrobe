@@ -18,6 +18,7 @@ try {
     stripeInstance = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
       httpClient: Stripe.createFetchHttpClient(),
+      maxNetworkRetries: 3, // Add retries for reliability
     });
     console.log("Stripe initialized successfully");
   } else {
