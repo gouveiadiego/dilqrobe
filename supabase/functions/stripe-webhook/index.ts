@@ -102,7 +102,8 @@ Deno.serve(async (req) => {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       console.log('Subscription details retrieved:', {
         status: subscription.status,
-        plan: subscription.items.data[0]?.plan.id
+        plan: subscription.items.data[0]?.plan.id,
+        cancel_at_period_end: subscription.cancel_at_period_end
       });
       
       // Connect to Supabase using Service Role Key (circumvents RLS policies)
@@ -122,29 +123,33 @@ Deno.serve(async (req) => {
       // Store subscription data in Supabase
       console.log(`Storing subscription in Supabase for user: ${clientReferenceId}`);
       
+      const subscriptionData = {
+        id: subscription.id,
+        user_id: clientReferenceId,
+        customer_id: customerId,
+        status: subscription.status,
+        price_id: subscription.items.data[0]?.price.id,
+        quantity: subscription.items.data[0]?.quantity,
+        cancel_at_period_end: subscription.cancel_at_period_end,
+        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        created_at: new Date(subscription.created * 1000).toISOString(),
+        ended_at: subscription.ended_at 
+          ? new Date(subscription.ended_at * 1000).toISOString() 
+          : null,
+        trial_start: subscription.trial_start 
+          ? new Date(subscription.trial_start * 1000).toISOString() 
+          : null,
+        trial_end: subscription.trial_end 
+          ? new Date(subscription.trial_end * 1000).toISOString() 
+          : null
+      };
+      
+      console.log('Subscription data to be inserted:', subscriptionData);
+      
       const { data, error } = await supabase
         .from('subscriptions')
-        .upsert({
-          id: subscription.id,
-          user_id: clientReferenceId,
-          customer_id: customerId,
-          status: subscription.status,
-          price_id: subscription.items.data[0]?.price.id,
-          quantity: subscription.items.data[0]?.quantity,
-          cancel_at_period_end: subscription.cancel_at_period_end,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          created_at: new Date(subscription.created * 1000).toISOString(),
-          ended_at: subscription.ended_at 
-            ? new Date(subscription.ended_at * 1000).toISOString() 
-            : null,
-          trial_start: subscription.trial_start 
-            ? new Date(subscription.trial_start * 1000).toISOString() 
-            : null,
-          trial_end: subscription.trial_end 
-            ? new Date(subscription.trial_end * 1000).toISOString() 
-            : null
-        }, { onConflict: 'id' })
+        .upsert(subscriptionData, { onConflict: 'id' })
         .select();
       
       if (error) {
@@ -177,25 +182,29 @@ Deno.serve(async (req) => {
       // Update subscription in database
       console.log(`Updating subscription ${subscription.id} in Supabase`);
       
+      const updateData = {
+        status: subscription.status,
+        price_id: subscription.items.data[0]?.price.id,
+        quantity: subscription.items.data[0]?.quantity,
+        cancel_at_period_end: subscription.cancel_at_period_end,
+        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        ended_at: subscription.ended_at 
+          ? new Date(subscription.ended_at * 1000).toISOString() 
+          : null,
+        trial_start: subscription.trial_start 
+          ? new Date(subscription.trial_start * 1000).toISOString() 
+          : null,
+        trial_end: subscription.trial_end 
+          ? new Date(subscription.trial_end * 1000).toISOString() 
+          : null
+      };
+      
+      console.log('Update data:', updateData);
+      
       const { data, error } = await supabase
         .from('subscriptions')
-        .update({
-          status: subscription.status,
-          price_id: subscription.items.data[0]?.price.id,
-          quantity: subscription.items.data[0]?.quantity,
-          cancel_at_period_end: subscription.cancel_at_period_end,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-          ended_at: subscription.ended_at 
-            ? new Date(subscription.ended_at * 1000).toISOString() 
-            : null,
-          trial_start: subscription.trial_start 
-            ? new Date(subscription.trial_start * 1000).toISOString() 
-            : null,
-          trial_end: subscription.trial_end 
-            ? new Date(subscription.trial_end * 1000).toISOString() 
-            : null
-        })
+        .update(updateData)
         .eq('id', subscription.id)
         .select();
       
