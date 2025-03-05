@@ -69,10 +69,10 @@ Deno.serve(async (req) => {
     
     console.log(`Creating checkout session for user ${userInfo.id} (${userInfo.email}) with price ID ${priceId}`);
 
-    // Determinar o host da aplicação
+    // Determine the application host
     const origin = req.headers.get('origin') || 'https://dilqrobe.lovable.app';
     
-    // URLs de redirecionamento com parâmetros de consulta específicos
+    // Redirect URLs with specific query parameters
     const defaultSuccessUrl = `${origin}/dashboard?success=true&subscription=active&timestamp=${Date.now()}`;
     const defaultCancelUrl = `${origin}/dashboard?cancelled=true`;
 
@@ -90,6 +90,9 @@ Deno.serve(async (req) => {
       cancel_url: cancelUrl || defaultCancelUrl,
       customer_email: userInfo.email,
       client_reference_id: userInfo.id, // This is critical for the webhook to work
+      metadata: {
+        user_id: userInfo.id, // Adding user_id in metadata as well for redundancy
+      },
       subscription_data: {
         metadata: {
           user_id: userInfo.id,
@@ -106,7 +109,7 @@ Deno.serve(async (req) => {
       cancel_url: session.cancel_url
     });
 
-    // Pré-registrar a assinatura como "pending" para ajudar na detecção
+    // Pre-register the subscription as "pending" to help with detection
     try {
       const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -114,11 +117,12 @@ Deno.serve(async (req) => {
       if (supabaseUrl && supabaseServiceKey) {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         
-        // Criar uma entrada preliminar na tabela de assinaturas
+        // Create a preliminary entry in the subscriptions table
         await supabase.from('subscriptions').upsert({
           user_id: userInfo.id,
           status: 'pending',
           plan_type: 'stripe',
+          stripe_customer_id: 'pending_' + session.id,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
@@ -126,7 +130,7 @@ Deno.serve(async (req) => {
         console.log("Created preliminary subscription record with pending status");
       }
     } catch (error) {
-      // Não falhar o checkout se este passo falhar
+      // Don't fail the checkout if this step fails
       console.error("Error creating preliminary subscription record:", error);
     }
 

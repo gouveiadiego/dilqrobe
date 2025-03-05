@@ -22,6 +22,7 @@ export default function Auth() {
     const checkSession = async () => {
       setLoadingSession(true);
       const { data } = await supabase.auth.getSession();
+      console.log("Auth page - current session:", data.session ? "exists" : "none");
       setUserSession(data.session);
       setLoadingSession(false);
     };
@@ -29,13 +30,19 @@ export default function Auth() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        console.log("Auth state changed:", event, session ? "session exists" : "no session");
         setUserSession(session);
+        
+        // If the user just signed in and is not in signup flow, redirect to dashboard
+        if (event === 'SIGNED_IN' && !signupSuccess) {
+          navigate("/dashboard");
+        }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate, signupSuccess]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +63,19 @@ export default function Auth() {
       if (error) throw error;
       
       toast.success("Login realizado com sucesso");
+      
+      // Check if user has an active subscription
+      const { data: subscriptionData, error: subscriptionError } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id as string)
+        .in("status", ["active", "trialing"])
+        .maybeSingle();
+        
+      if (subscriptionError) {
+        console.error("Error checking subscription after login:", subscriptionError);
+      }
+      
       navigate("/dashboard");
     } catch (error: any) {
       console.error("Error signing in:", error);

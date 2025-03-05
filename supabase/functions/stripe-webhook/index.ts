@@ -63,6 +63,20 @@ Deno.serve(async (req) => {
       );
     }
     
+    // Connect to Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Supabase URL or service key not configured');
+      return new Response(
+        JSON.stringify({ error: 'Supabase credentials not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
     // Handle the event based on its type
     if (event.type === 'checkout.session.completed') {
       console.log('Processing checkout.session.completed event');
@@ -78,13 +92,41 @@ Deno.serve(async (req) => {
         customerId,
         subscriptionId,
         clientReferenceId,
-        userEmail
+        userEmail,
+        metadata: session.metadata || {},
       });
       
-      if (!clientReferenceId) {
-        console.error('No client_reference_id found in session');
+      // Double check for client_reference_id (user ID)
+      let userId = clientReferenceId;
+      
+      if (!userId) {
+        console.error('No client_reference_id found in session, trying to find user by email');
+        
+        // Try to find user by email as fallback
+        if (userEmail) {
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('auth.users')
+              .select('id')
+              .eq('email', userEmail)
+              .maybeSingle();
+              
+            if (userError) {
+              console.error('Error finding user by email:', userError);
+            } else if (userData) {
+              userId = userData.id;
+              console.log(`Found user ID from email: ${userId}`);
+            }
+          } catch (err) {
+            console.error('Error looking up user by email:', err);
+          }
+        }
+      }
+      
+      if (!userId) {
+        console.error('No user ID found in session or by email lookup');
         return new Response(
-          JSON.stringify({ error: 'No client_reference_id found in session' }),
+          JSON.stringify({ error: 'No user ID found for subscription' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -106,26 +148,12 @@ Deno.serve(async (req) => {
         cancel_at_period_end: subscription.cancel_at_period_end
       });
       
-      // Connect to Supabase using Service Role Key (circumvents RLS policies)
-      const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-      
-      if (!supabaseUrl || !supabaseServiceKey) {
-        console.error('Supabase URL or service key not configured');
-        return new Response(
-          JSON.stringify({ error: 'Supabase credentials not configured' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
       // Store subscription data in Supabase
-      console.log(`Storing subscription in Supabase for user: ${clientReferenceId}`);
+      console.log(`Storing subscription in Supabase for user: ${userId}`);
       
       const subscriptionData = {
         id: subscription.id,
-        user_id: clientReferenceId,
+        user_id: userId,
         customer_id: customerId,
         status: subscription.status,
         price_id: subscription.items.data[0]?.price.id,
@@ -142,25 +170,56 @@ Deno.serve(async (req) => {
           : null,
         trial_end: subscription.trial_end 
           ? new Date(subscription.trial_end * 1000).toISOString() 
-          : null
+          : null,
+        plan_type: 'stripe',
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscription.id
       };
       
       console.log('Subscription data to be inserted:', subscriptionData);
       
-      const { data, error } = await supabase
+      // First, check if a pending subscription entry exists and update it
+      const { data: pendingSubscription, error: pendingError } = await supabase
         .from('subscriptions')
-        .upsert(subscriptionData, { onConflict: 'id' })
-        .select();
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .maybeSingle();
+        
+      console.log('Pending subscription check:', { 
+        found: !!pendingSubscription, 
+        error: pendingError ? pendingError.message : null 
+      });
       
-      if (error) {
-        console.error('Error storing subscription in Supabase:', error);
+      let result;
+      if (pendingSubscription) {
+        // Update the existing pending record
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .update(subscriptionData)
+          .eq('id', pendingSubscription.id)
+          .select();
+          
+        result = { data, error, operation: 'update' };
+      } else {
+        // Insert new record if no pending subscription found
+        const { data, error } = await supabase
+          .from('subscriptions')
+          .upsert(subscriptionData, { onConflict: 'id' })
+          .select();
+          
+        result = { data, error, operation: 'insert' };
+      }
+      
+      if (result.error) {
+        console.error(`Error ${result.operation} subscription in Supabase:`, result.error);
         return new Response(
-          JSON.stringify({ error: `Error storing subscription: ${error.message}` }),
+          JSON.stringify({ error: `Error storing subscription: ${result.error.message}` }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      console.log('Subscription stored successfully:', data);
+      console.log(`Subscription ${result.operation} successful:`, result.data);
       
     } else if (event.type === 'customer.subscription.updated') {
       console.log('Processing customer.subscription.updated event');

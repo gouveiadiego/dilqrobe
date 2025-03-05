@@ -24,9 +24,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const queryParams = new URLSearchParams(location.search);
     const success = queryParams.get('success');
     const subscription = queryParams.get('subscription');
+    const timestamp = queryParams.get('timestamp');
     
     // Clean URL without reloading page
-    if (success || subscription) {
+    if (success || subscription || timestamp) {
       const cleanedUrl = location.pathname;
       window.history.replaceState({}, document.title, cleanedUrl);
     }
@@ -108,12 +109,32 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         return;
       }
       
-      const { data, error } = await supabase
+      // First try to get an active subscription
+      let { data, error } = await supabase
         .from("subscriptions")
         .select("*")
         .eq("user_id", userId)
-        .in("status", ["active", "trialing", "pending"])
+        .in("status", ["active", "trialing"])
         .maybeSingle();
+
+      // If no active subscription found, check for pending subscription
+      if ((!data || error) && (!forceRefresh || subscriptionCheckAttempts < 1)) {
+        console.log("No active subscription found, checking for pending subscription");
+        
+        const { data: pendingData, error: pendingError } = await supabase
+          .from("subscriptions")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("status", "pending")
+          .maybeSingle();
+          
+        if (pendingError) {
+          console.error("Error checking pending subscription:", pendingError);
+        } else if (pendingData) {
+          console.log("Pending subscription found, will retry check soon");
+          data = pendingData;
+        }
+      }
 
       if (error) {
         console.error("Error checking subscription:", error);
@@ -122,46 +143,46 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       } else {
         console.log("Subscription data:", data);
         
-        // Se temos um registro de assinatura com status "pending", tratamos como uma assinatura em processo
+        // If we have a pending subscription, retry check after a delay
         if (data && data.status === "pending") {
           console.log("Pending subscription found, will retry check in a few seconds");
           
-          // Se há uma assinatura pendente, faça nova verificação em breve
-          if (subscriptionCheckAttempts < 12) { // Limite de 12 tentativas (cerca de 1 minuto)
+          // If there's a pending subscription, check again soon
+          if (subscriptionCheckAttempts < 12) { // Limit to 12 attempts (about 1 minute)
             setSubscriptionCheckAttempts(prev => prev + 1);
             setTimeout(() => checkSubscription(userId, true), 5000);
             
-            // Não atualizamos o estado hasActiveSubscription ainda
+            // Don't update hasActiveSubscription state yet
             return;
           } else {
-            // Após muitas tentativas, sugerimos atualização manual
+            // After many attempts, suggest manual refresh
             toast.info("Sua assinatura está sendo processada. Tente recarregar a página em alguns instantes.");
           }
         }
         
-        // Uma assinatura é ativa se:
-        // 1. Ela existe E
-        // 2. Tem status "active" ou "trialing"
+        // A subscription is active if:
+        // 1. It exists AND
+        // 2. Has status "active" or "trialing"
         const isActive = !!data && (data.status === "active" || data.status === "trialing");
         
-        // Se o usuário acabou de assinar com sucesso e não encontramos
-        // a assinatura ainda, tentaremos novamente
+        // If the user just successfully paid and we don't find the subscription yet,
+        // try again
         if (forceRefresh && !isActive && subscriptionCheckAttempts < 12) {
           console.log(`Subscription not found yet after payment. Retrying in 5s (Attempt ${subscriptionCheckAttempts + 1}/12)`);
           
-          // Incrementamos o contador de tentativas
+          // Increment the attempts counter
           setSubscriptionCheckAttempts(prev => prev + 1);
           
-          // Nova verificação após 5 segundos
+          // Check again after 5 seconds
           setTimeout(() => checkSubscription(userId, true), 5000);
           
-          // Não atualizamos o estado hasActiveSubscription ainda
+          // Don't update hasActiveSubscription state yet
           return;
         } else if (forceRefresh && !isActive && subscriptionCheckAttempts >= 12) {
-          // Se após 12 tentativas ainda não encontramos, mostramos uma mensagem mais amigável
+          // After 12 attempts still not found, show a more friendly message
           toast.info("Sua assinatura está sendo processada. Você pode precisar recarregar a página para acessar o conteúdo.");
           
-          // Tentaremos uma última vez com uma chamada direta ao banco
+          // Try one last time with a direct database call
           try {
             const { data: dataFinal, error: errorFinal } = await supabase
               .from("subscriptions")
@@ -180,10 +201,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           }
         }
         
-        // Atualizamos o estado da assinatura
+        // Update subscription state
         setHasActiveSubscription(isActive);
         
-        // Se encontramos a assinatura após tentativas, mostramos uma mensagem de sucesso
+        // If we found the subscription after attempts, show success message
         if (isActive && subscriptionCheckAttempts > 0) {
           toast.success("Assinatura ativada com sucesso!");
         }
