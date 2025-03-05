@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Navigate, useNavigate, Link } from "react-router-dom";
+import { Navigate, useNavigate, Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PricingPlans } from "@/components/PricingPlans";
@@ -17,6 +17,25 @@ export default function Auth() {
   const [loadingSession, setLoadingSession] = useState(true);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if there's a subscription success or cancelled parameter in the URL
+  const searchParams = new URLSearchParams(location.search);
+  const subscriptionSuccess = searchParams.get('success') === 'true';
+  const subscriptionCancelled = searchParams.get('cancelled') === 'true';
+
+  useEffect(() => {
+    if (subscriptionSuccess) {
+      toast.success("Assinatura realizada com sucesso! Redirecionando para o dashboard...");
+      
+      // Delay to ensure subscription data is processed
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 2000);
+    } else if (subscriptionCancelled) {
+      toast.error("Assinatura cancelada. Você pode tentar novamente quando quiser.");
+    }
+  }, [subscriptionSuccess, subscriptionCancelled, navigate]);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -124,6 +143,15 @@ export default function Auth() {
 
   if (loadingSession) {
     return <div className="flex justify-center items-center h-screen">Carregando...</div>;
+  }
+
+  // If user is coming back from a successful payment with subscription=active param,
+  // redirect to dashboard after a short delay to allow subscription to synchronize
+  if (subscriptionSuccess && userSession) {
+    return <div className="flex flex-col justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dilq-accent mb-4"></div>
+      <p className="text-lg">Processando sua assinatura, aguarde um momento...</p>
+    </div>;
   }
 
   if (userSession && !signupSuccess) {

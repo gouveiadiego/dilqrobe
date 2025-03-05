@@ -87,6 +87,7 @@ Deno.serve(async (req) => {
       const subscriptionId = session.subscription;
       const clientReferenceId = session.client_reference_id;
       const userEmail = session.customer_email;
+      const sessionId = session.id;
       
       console.log('Session details:', {
         customerId,
@@ -94,13 +95,14 @@ Deno.serve(async (req) => {
         clientReferenceId,
         userEmail,
         metadata: session.metadata || {},
+        sessionId
       });
       
       // Double check for client_reference_id (user ID)
-      let userId = clientReferenceId;
+      let userId = clientReferenceId || session.metadata?.user_id;
       
       if (!userId) {
-        console.error('No client_reference_id found in session, trying to find user by email');
+        console.error('No client_reference_id or user_id in metadata found in session, trying to find user by email');
         
         // Try to find user by email as fallback
         if (userEmail) {
@@ -119,6 +121,26 @@ Deno.serve(async (req) => {
             }
           } catch (err) {
             console.error('Error looking up user by email:', err);
+          }
+        }
+        
+        // If still no userId, check if there's a pending record with the session ID
+        if (!userId) {
+          try {
+            const { data: pendingData, error: pendingError } = await supabase
+              .from('subscriptions')
+              .select('user_id')
+              .eq('stripe_checkout_session', sessionId)
+              .maybeSingle();
+              
+            if (pendingError) {
+              console.error('Error finding subscription by session ID:', pendingError);
+            } else if (pendingData) {
+              userId = pendingData.user_id;
+              console.log(`Found user ID from pending subscription record: ${userId}`);
+            }
+          } catch (err) {
+            console.error('Error looking up subscription by session ID:', err);
           }
         }
       }
@@ -173,7 +195,8 @@ Deno.serve(async (req) => {
           : null,
         plan_type: 'stripe',
         stripe_customer_id: customerId,
-        stripe_subscription_id: subscription.id
+        stripe_subscription_id: subscription.id,
+        stripe_checkout_session: sessionId // Store the session ID for reference
       };
       
       console.log('Subscription data to be inserted:', subscriptionData);

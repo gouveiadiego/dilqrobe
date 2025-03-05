@@ -117,17 +117,30 @@ Deno.serve(async (req) => {
       if (supabaseUrl && supabaseServiceKey) {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         
-        // Create a preliminary entry in the subscriptions table
-        await supabase.from('subscriptions').upsert({
+        // Create a preliminary entry in the subscriptions table with more complete information
+        const pendingSubscriptionData = {
           user_id: userInfo.id,
           status: 'pending',
           plan_type: 'stripe',
+          price_id: priceId,
           stripe_customer_id: 'pending_' + session.id,
+          stripe_checkout_session: session.id, // Store the session ID to match in webhook
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
+        };
         
-        console.log("Created preliminary subscription record with pending status");
+        console.log("Creating preliminary subscription record:", pendingSubscriptionData);
+        
+        const { data, error } = await supabase.from('subscriptions').upsert(
+          pendingSubscriptionData, 
+          { onConflict: 'user_id' }
+        );
+        
+        if (error) {
+          console.error("Error creating preliminary subscription record:", error);
+        } else {
+          console.log("Created preliminary subscription record with pending status:", data);
+        }
       }
     } catch (error) {
       // Don't fail the checkout if this step fails
