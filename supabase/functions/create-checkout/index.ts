@@ -1,6 +1,6 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { stripe } from '../_shared/stripe.ts';
+import { verifySubscriptionsTable } from '../_shared/db-check.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +14,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Verify subscriptions table exists
+    const tableCheck = await verifySubscriptionsTable();
+    console.log('Subscriptions table check:', tableCheck);
+    
+    if (!tableCheck.exists) {
+      console.error('Subscriptions table does not exist or cannot be accessed:', tableCheck.error);
+    }
+
     const { priceId, successUrl, cancelUrl, userId, userEmail } = await req.json();
 
     if (!priceId) {

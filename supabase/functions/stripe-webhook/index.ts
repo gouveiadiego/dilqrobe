@@ -1,7 +1,7 @@
-
 // Import necessary modules
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { stripe } from '../_shared/stripe.ts';
+import { verifySubscriptionsTable } from '../_shared/db-check.ts';
 
 // CORS headers for cross-origin requests
 const corsHeaders = {
@@ -17,6 +17,14 @@ Deno.serve(async (req) => {
 
   try {
     console.log('Received webhook request');
+    
+    // Verify subscriptions table exists
+    const tableCheck = await verifySubscriptionsTable();
+    console.log('Subscriptions table check:', tableCheck);
+    
+    if (!tableCheck.exists) {
+      console.error('Subscriptions table does not exist or cannot be accessed:', tableCheck.error);
+    }
     
     // Get the signature from the headers
     const signature = req.headers.get('stripe-signature');
