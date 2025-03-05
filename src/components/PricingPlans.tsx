@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export interface Plan {
   id: string;
@@ -27,6 +27,7 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
   const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Fetch available plans
   useEffect(() => {
@@ -120,12 +121,15 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
         return;
       }
       
+      const currentLocation = window.location.href;
+      const dashboardUrl = window.location.origin + "/dashboard";
+      
       // Make the request to create checkout with direct user info
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 
           priceId,
-          successUrl: `${window.location.origin}/dashboard?success=true`,
-          cancelUrl: `${window.location.origin}/dashboard?cancelled=true`,
+          successUrl: `${dashboardUrl}?success=true&timestamp=${Date.now()}`,
+          cancelUrl: `${currentLocation}?cancelled=true`,
           userId,
           userEmail
         }

@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: successUrl || `${req.headers.get('origin')}/dashboard?success=true`,
+      success_url: successUrl || `${req.headers.get('origin')}/dashboard?success=true&timestamp=${Date.now()}`,
       cancel_url: cancelUrl || `${req.headers.get('origin')}/dashboard?cancelled=true`,
       customer_email: userInfo.email,
       client_reference_id: userInfo.id, // This is critical for the webhook to work
@@ -94,7 +94,9 @@ Deno.serve(async (req) => {
       id: session.id, 
       url: session.url,
       customer_email: userInfo.email,
-      client_reference_id: userInfo.id 
+      client_reference_id: userInfo.id,
+      success_url: session.success_url,
+      cancel_url: session.cancel_url
     });
 
     return new Response(

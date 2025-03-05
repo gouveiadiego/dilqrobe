@@ -15,6 +15,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [loading, setLoading] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
   const [subscriptionCheckAttempts, setSubscriptionCheckAttempts] = useState(0);
+  const [lastPaymentCheck, setLastPaymentCheck] = useState<number>(0);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,6 +32,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       if (session && session.user) {
         // Force subscription check with a slight delay to allow webhook processing
         toast.success("Assinatura realizada com sucesso! Carregando seu acesso...");
+        
+        // Set timestamp of this check to prevent duplicate checks
+        setLastPaymentCheck(Date.now());
         
         // Reset attempts counter for new payment flow
         setSubscriptionCheckAttempts(0);
@@ -92,8 +96,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         forceRefresh ? "(forced refresh)" : "", 
         "Attempt:", subscriptionCheckAttempts + 1);
       
-      // Adiciona um parâmetro aleatório para evitar cache
-      const cacheParam = forceRefresh ? `?cache=${Date.now()}` : '';
+      // If this is not a forced check and we just did a payment check in the last 5 seconds, skip
+      if (!forceRefresh && (Date.now() - lastPaymentCheck < 5000)) {
+        console.log("Skipping duplicate check, recently checked after payment");
+        return;
+      }
       
       const { data, error } = await supabase
         .from("subscriptions")
@@ -112,8 +119,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         
         // Se o usuário acabou de assinar com sucesso e não encontramos
         // a assinatura ainda, tentaremos novamente
-        if (forceRefresh && !isActive && subscriptionCheckAttempts < 5) {
-          console.log(`Subscription not found yet after payment. Retrying in ${2 + subscriptionCheckAttempts}s (Attempt ${subscriptionCheckAttempts + 1}/5)`);
+        if (forceRefresh && !isActive && subscriptionCheckAttempts < 10) {
+          console.log(`Subscription not found yet after payment. Retrying in ${2 + subscriptionCheckAttempts}s (Attempt ${subscriptionCheckAttempts + 1}/10)`);
           
           // Incrementamos o contador de tentativas
           setSubscriptionCheckAttempts(prev => prev + 1);
@@ -125,9 +132,23 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           
           // Não atualizamos o estado hasActiveSubscription ainda
           return;
-        } else if (forceRefresh && !isActive && subscriptionCheckAttempts >= 5) {
-          // Se após 5 tentativas ainda não encontramos, mostramos uma mensagem mais amigável
-          toast.info("Sua assinatura está sendo processada. Isso pode levar alguns minutos. Por favor, recarregue a página em instantes.");
+        } else if (forceRefresh && !isActive && subscriptionCheckAttempts >= 10) {
+          // Se após 10 tentativas ainda não encontramos, mostramos uma mensagem mais amigável
+          toast.info("Sua assinatura está sendo processada. Você pode precisar recarregar a página para acessar o conteúdo.");
+          
+          // Após muitas tentativas, tentaremos uma última vez com uma chamada direta ao banco
+          const { data: dataFinal, error: errorFinal } = await supabase
+            .from("subscriptions")
+            .select("*")
+            .eq("user_id", userId)
+            .in("status", ["active", "trialing"])
+            .maybeSingle();
+            
+          if (!errorFinal && dataFinal) {
+            setHasActiveSubscription(true);
+            toast.success("Assinatura ativada com sucesso!");
+            return;
+          }
         }
         
         // Atualizamos o estado da assinatura
