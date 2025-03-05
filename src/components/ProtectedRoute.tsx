@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -15,6 +15,27 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [loading, setLoading] = useState(true);
   const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for payment status parameters and force reload subscription check
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const success = queryParams.get('success');
+    
+    if (success === 'true') {
+      console.log("Detected successful payment return, forcing subscription check");
+      // Clean URL without reloading page
+      window.history.replaceState({}, document.title, location.pathname);
+      
+      if (session && session.user) {
+        // Force subscription check with a slight delay to allow webhook processing
+        setTimeout(() => {
+          checkSubscription(session.user.id, true);
+          toast.success("Assinatura realizada com sucesso! Carregando seu acesso...");
+        }, 2000);
+      }
+    }
+  }, [session, location.search]);
 
   useEffect(() => {
     // Get initial session
@@ -61,9 +82,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     };
   }, [navigate]);
 
-  const checkSubscription = async (userId: string) => {
+  const checkSubscription = async (userId: string, forceRefresh = false) => {
     try {
-      console.log("Checking subscription for user:", userId);
+      console.log("Checking subscription for user:", userId, forceRefresh ? "(forced refresh)" : "");
+      
+      // Adiciona um parâmetro aleatório para evitar cache
+      const cacheParam = forceRefresh ? `?cache=${Date.now()}` : '';
+      
       const { data, error } = await supabase
         .from("subscriptions")
         .select("*")
@@ -77,7 +102,15 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         setHasActiveSubscription(false);
       } else {
         console.log("Subscription data:", data);
-        setHasActiveSubscription(!!data);
+        const isActive = !!data;
+        setHasActiveSubscription(isActive);
+        
+        // Se o usuário acabou de assinar com sucesso mas ainda não encontramos
+        // a assinatura, tentar novamente após um breve atraso
+        if (forceRefresh && !isActive) {
+          console.log("Subscription not found yet after payment. Retrying in 3 seconds...");
+          setTimeout(() => checkSubscription(userId, true), 3000);
+        }
       }
     } catch (err) {
       console.error("Error in subscription check:", err);

@@ -94,6 +94,8 @@ Deno.serve(async (req) => {
             trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
             stripe_customer_id: stripeCustomerId, // Add the customer ID
             plan_type: planType, // Add the plan type
+          }, {
+            onConflict: 'user_id' // Explicitar a coluna de conflito
           });
           
           if (error) {
