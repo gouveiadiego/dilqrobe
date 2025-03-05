@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,29 +105,25 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
       console.log("Creating checkout session for price ID:", priceId);
       console.log("User is authenticated:", !!session.user.id);
       
-      // Get a fresh token before making the request
-      const { data: { session: freshSession } } = await supabase.auth.refreshSession();
+      // Pass user info directly in the request to avoid auth issues
+      const userId = session.user.id;
+      const userEmail = session.user.email;
       
-      if (!freshSession) {
-        toast.error("Sua sessão expirou. Por favor, faça login novamente.");
+      if (!userId || !userEmail) {
+        toast.error("Informações de usuário incompletas. Por favor, faça login novamente.");
         navigate("/login");
         setProcessingPlanId(null);
         return;
       }
       
-      // Include the fresh access token in the Authorization header
-      const token = freshSession.access_token;
-      console.log("Fresh token obtained, length:", token.length);
-
-      // Make the request to create checkout with the fresh token
+      // Make the request to create checkout with direct user info
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 
           priceId,
           successUrl: `${window.location.origin}/dashboard?success=true`,
-          cancelUrl: `${window.location.origin}/dashboard?cancelled=true`
-        },
-        headers: {
-          Authorization: `Bearer ${token}`
+          cancelUrl: `${window.location.origin}/dashboard?cancelled=true`,
+          userId,
+          userEmail
         }
       });
 

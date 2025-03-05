@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       );
     }
     
-    const { priceId, successUrl, cancelUrl } = body;
+    const { priceId, successUrl, cancelUrl, userId, userEmail } = body;
     
     if (!priceId) {
       console.error("No priceId provided in request");
@@ -55,99 +55,88 @@ Deno.serve(async (req) => {
       console.log(`${key}: ${key === 'authorization' ? 'REDACTED' : value}`);
     }
 
-    // Get the user from the auth header
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
-    const authHeader = req.headers.get('Authorization');
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error("Missing Supabase environment variables", { 
-        hasUrl: !!supabaseUrl, 
-        hasAnonKey: !!supabaseAnonKey 
-      });
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
-    console.log("Creating Supabase client with URL:", supabaseUrl);
-    console.log("Auth header present:", !!authHeader);
-    
-    if (!authHeader) {
-      console.error("No authorization header provided");
-      return new Response(
-        JSON.stringify({ error: 'Authentication required', details: 'No authorization header provided' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create the supabase client with the auth header
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { 
-        headers: { Authorization: authHeader } 
-      },
-    });
-
-    // Attempt direct token validation
+    // Get user information - use direct info first if provided
     let userInfo = null;
-    try {
-      console.log("Attempting to extract user from JWT token");
-      const jwt = authHeader.replace('Bearer ', '');
+    
+    // Case 1: Check if userId and userEmail were passed directly in the request body
+    if (userId && userEmail) {
+      console.log("Using user information provided in request body");
+      userInfo = { id: userId, email: userEmail };
+    } 
+    // Case 2: Try to get user from auth header
+    else {
+      console.log("Attempting to get user from authorization header");
+      const authHeader = req.headers.get('Authorization');
       
-      // First try using getUser
-      const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
+      // Get Supabase environment variables
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+      const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
       
-      if (userError) {
-        console.error("Error validating token with getUser:", userError);
-        // Don't throw yet, we'll try the session approach
-      } else if (user) {
-        userInfo = user;
-        console.log("User authenticated successfully via token:", user.id);
-      }
-    } catch (tokenError) {
-      console.error("Error processing token:", tokenError);
-      // Continue to next approach
-    }
-
-    // If token approach failed, try session
-    if (!userInfo) {
-      try {
-        console.log("Attempting to get session");
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Error getting session:", sessionError);
-          return new Response(
-            JSON.stringify({ error: 'Authentication error', details: 'Invalid session' }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        if (!session || !session.user) {
-          console.error("No user found in session");
-          return new Response(
-            JSON.stringify({ error: 'No authenticated user found' }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        userInfo = session.user;
-        console.log("User authenticated via session:", userInfo.id);
-      } catch (sessionError) {
-        console.error("Error during session retrieval:", sessionError);
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.error("Missing Supabase environment variables", { 
+          hasUrl: !!supabaseUrl, 
+          hasAnonKey: !!supabaseAnonKey 
+        });
         return new Response(
-          JSON.stringify({ error: 'Authentication process failed', details: sessionError instanceof Error ? sessionError.message : String(sessionError) }),
+          JSON.stringify({ error: 'Server configuration error' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log("Creating Supabase client with URL:", supabaseUrl);
+      console.log("Auth header present:", !!authHeader);
+      
+      if (!authHeader) {
+        console.error("No authorization header provided and no direct user info in request");
+        return new Response(
+          JSON.stringify({ 
+            error: 'Authentication required', 
+            details: 'No authorization header or user info provided' 
+          }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Create the supabase client with the auth header
+      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { 
+          headers: { Authorization: authHeader } 
+        },
+      });
+
+      // Try to get user info
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error("Error getting user from auth header:", error);
+          throw error;
+        }
+        
+        if (!user) {
+          console.error("No user found in auth header");
+          throw new Error("No user found in authentication header");
+        }
+        
+        userInfo = user;
+        console.log("User authenticated successfully from auth header:", user.id);
+      } catch (authError) {
+        console.error("Authentication error:", authError);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Authentication failed', 
+            details: authError instanceof Error ? authError.message : String(authError) 
+          }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     }
 
     if (!userInfo || !userInfo.id || !userInfo.email) {
-      console.error("Could not authenticate user properly");
+      console.error("Could not determine user information");
       return new Response(
-        JSON.stringify({ error: 'User authentication failed' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'User information missing or incomplete' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -165,8 +154,8 @@ Deno.serve(async (req) => {
           },
         ],
         mode: 'subscription',
-        success_url: successUrl || `${Deno.env.get('SUPABASE_URL')}/dashboard?success=true`,
-        cancel_url: cancelUrl || `${Deno.env.get('SUPABASE_URL')}/dashboard?cancelled=true`,
+        success_url: successUrl || `${req.headers.get('origin') || Deno.env.get('SUPABASE_URL')}/dashboard?success=true`,
+        cancel_url: cancelUrl || `${req.headers.get('origin') || Deno.env.get('SUPABASE_URL')}/dashboard?cancelled=true`,
         client_reference_id: userInfo.id,
         subscription_data: {
           trial_period_days: 3,
