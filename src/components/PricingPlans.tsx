@@ -92,16 +92,31 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
     setProcessingPlanId(planId);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // First check if user is authenticated
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session) {
+      if (sessionError || !session) {
+        console.error("Authentication error:", sessionError);
         toast.error("Você precisa estar logado para assinar um plano");
         navigate("/login");
+        setProcessingPlanId(null);
         return;
       }
 
       console.log("Creating checkout session for price ID:", priceId);
+      console.log("User is authenticated:", !!session.user.id);
       
+      // Get a fresh token before making the request
+      const { data: { session: freshSession } } = await supabase.auth.refreshSession();
+      
+      if (!freshSession) {
+        toast.error("Sua sessão expirou. Por favor, faça login novamente.");
+        navigate("/login");
+        setProcessingPlanId(null);
+        return;
+      }
+      
+      // Make the request to create checkout with the fresh token
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 
           priceId,

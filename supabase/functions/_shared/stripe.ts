@@ -5,6 +5,8 @@ const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY') || '';
 
 if (!stripeSecretKey) {
   console.error("STRIPE_SECRET_KEY environment variable is not set");
+} else {
+  console.log("STRIPE_SECRET_KEY is configured");
 }
 
 console.log("Initializing Stripe with API version 2023-10-16");

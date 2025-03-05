@@ -40,18 +40,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get the user from the auth header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error("No Authorization header provided");
+    // Verify the stripe instance is initialized properly
+    if (!stripe) {
+      console.error("Stripe instance is not initialized");
       return new Response(
-        JSON.stringify({ error: 'Authorization header is required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Stripe is not properly configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Get the user from the auth header
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const authHeader = req.headers.get('Authorization');
     
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error("Missing Supabase environment variables", { 
@@ -65,32 +66,79 @@ Deno.serve(async (req) => {
     }
     
     console.log("Creating Supabase client with URL:", supabaseUrl);
+    console.log("Auth header present:", !!authHeader);
     
+    // Create the supabase client
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: authHeader || '' } },
     });
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !user) {
-      console.error("Error getting user:", userError);
+    let userInfo = null;
+
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error("Error getting user:", userError);
+        return new Response(
+          JSON.stringify({ error: 'Authentication error', details: userError }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!user) {
+        console.error("No user found in session");
+        return new Response(
+          JSON.stringify({ error: 'No authenticated user found' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      userInfo = user;
+      console.log("User authenticated successfully:", user.id);
+    } catch (authError) {
+      console.error("Error during authentication:", authError);
       return new Response(
-        JSON.stringify({ error: 'Could not get user', details: userError }),
+        JSON.stringify({ error: 'Authentication process failed', details: authError instanceof Error ? authError.message : String(authError) }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Manually check session - fallback method
+    if (!userInfo) {
+      console.warn("Attempting to get session as fallback");
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+          console.error("Fallback authentication failed:", sessionError);
+          return new Response(
+            JSON.stringify({ error: 'Session not found', details: sessionError }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        userInfo = session.user;
+        console.log("User found via session fallback:", userInfo.id);
+      } catch (sessionError) {
+        console.error("Error in fallback authentication:", sessionError);
+        return new Response(
+          JSON.stringify({ error: 'Session retrieval failed', details: sessionError instanceof Error ? sessionError.message : String(sessionError) }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (!userInfo || !userInfo.id || !userInfo.email) {
+      console.error("Could not authenticate user properly");
+      return new Response(
+        JSON.stringify({ error: 'User authentication failed' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log("Creating checkout session for user:", user.id);
+    console.log("Creating checkout session for user:", userInfo.id);
     console.log("With price ID:", priceId);
-    
-    // Verify the stripe instance is initialized properly
-    if (!stripe) {
-      console.error("Stripe instance is not initialized");
-      return new Response(
-        JSON.stringify({ error: 'Stripe is not properly configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
     
     // Create the checkout session
     try {
@@ -105,14 +153,14 @@ Deno.serve(async (req) => {
         mode: 'subscription',
         success_url: successUrl || `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/assets/success?t={CHECKOUT_SESSION_ID}`,
         cancel_url: cancelUrl || `${Deno.env.get('SUPABASE_URL')}/storage/v1/object/public/assets/cancel`,
-        client_reference_id: user.id,
+        client_reference_id: userInfo.id,
         subscription_data: {
           trial_period_days: 3,
           metadata: {
-            user_id: user.id,
+            user_id: userInfo.id,
           },
         },
-        customer_email: user.email,
+        customer_email: userInfo.email,
       });
 
       console.log("Checkout session created successfully:", session.id);
