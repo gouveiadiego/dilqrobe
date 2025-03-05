@@ -21,25 +21,27 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const success = queryParams.get('success');
-    const subscription = queryParams.get('subscription');
+    const cancelled = queryParams.get('cancelled');
     
     // Clean URL without reloading page
-    if (success || subscription) {
+    if (success || cancelled) {
       const cleanedUrl = location.pathname;
       window.history.replaceState({}, document.title, cleanedUrl);
     }
     
-    if (success === 'true' || subscription === 'active') {
-      console.log("Detected successful payment return, forcing subscription check");
+    if (success === 'true') {
+      console.log("Payment successful, checking subscription status");
+      toast.success("Verificando assinatura... Por favor, aguarde.");
       
-      if (session && session.user) {
-        // Force subscription check with a slight delay to allow webhook processing
-        toast.success("Verificando assinatura... Por favor, aguarde.");
-        
+      // Force subscription check on successful payment
+      if (session?.user) {
         setTimeout(() => {
           checkSubscription(session.user.id, true);
         }, 2000);
       }
+    } else if (cancelled === 'true') {
+      console.log("Payment cancelled");
+      toast.error("Pagamento cancelado. Você pode tentar novamente quando quiser.");
     }
   }, [session, location.search]);
 
@@ -56,7 +58,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       setSession(currentSession);
       
       // Check subscription only if we have a session
-      if (currentSession) {
+      if (currentSession?.user) {
         checkSubscription(currentSession.user.id);
       } else {
         setLoading(false);
@@ -73,11 +75,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         setHasActiveSubscription(null);
         setLoading(false);
         navigate("/login");
-      } else if (_event === 'SIGNED_IN') {
-        // Check subscription when user signs in
-        checkSubscription(currentSession.user.id);
-      } else if (currentSession && currentSession.user) {
-        // Also check subscription for other auth events with a valid session
+      } else if (currentSession?.user) {
+        // Check subscription for all auth events with a valid session
         checkSubscription(currentSession.user.id);
       }
     });
@@ -94,7 +93,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       
       setLoading(true);
       
-      // Simple check: Only look for active or trialing subscriptions
+      // Query only for active or trialing subscriptions
       const { data, error } = await supabase
         .from("subscriptions")
         .select("*")
@@ -109,14 +108,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       } else {
         console.log("Subscription data:", data);
         
-        // A subscription is active if:
-        // 1. It exists AND
-        // 2. Has status "active" or "trialing"
-        const isActive = !!data && (data.status === "active" || data.status === "trialing");
+        // A subscription is active if it exists AND has status "active" or "trialing"
+        const isActive = !!data;
         
         setHasActiveSubscription(isActive);
         
-        // If we found the subscription after a force refresh, show success message
+        // Show success message on successful payment verification
         if (isActive && forceRefresh) {
           toast.success("Assinatura ativada com sucesso!");
         }
