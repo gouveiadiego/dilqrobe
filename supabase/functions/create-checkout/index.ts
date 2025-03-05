@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { stripe } from '../_shared/stripe.ts';
 
@@ -81,7 +82,7 @@ Deno.serve(async (req) => {
       success_url: successUrl || `${req.headers.get('origin')}/dashboard?success=true`,
       cancel_url: cancelUrl || `${req.headers.get('origin')}/dashboard?cancelled=true`,
       customer_email: userInfo.email,
-      client_reference_id: userInfo.id,
+      client_reference_id: userInfo.id, // This is critical for the webhook to work
       subscription_data: {
         metadata: {
           user_id: userInfo.id,
