@@ -127,6 +127,8 @@ Deno.serve(async (req) => {
         // If still no userId, check if there's a pending record with the session ID
         if (!userId) {
           try {
+            // IMPORTANTE: Verificando a tabela correta 'subscriptions'
+            console.log('Checking pending subscription record by session ID in subscriptions table');
             const { data: pendingData, error: pendingError } = await supabase
               .from('subscriptions')
               .select('user_id')
@@ -171,7 +173,7 @@ Deno.serve(async (req) => {
       });
       
       // Store subscription data in Supabase
-      console.log(`Storing subscription in Supabase for user: ${userId}`);
+      console.log(`Storing subscription in Supabase for user: ${userId} in table 'subscriptions'`);
       
       const subscriptionData = {
         id: subscription.id,
@@ -202,6 +204,7 @@ Deno.serve(async (req) => {
       console.log('Subscription data to be inserted:', subscriptionData);
       
       // First, check if a pending subscription entry exists and update it
+      // IMPORTANTE: Usando a tabela correta 'subscriptions'
       const { data: pendingSubscription, error: pendingError } = await supabase
         .from('subscriptions')
         .select('*')
@@ -209,14 +212,15 @@ Deno.serve(async (req) => {
         .eq('status', 'pending')
         .maybeSingle();
         
-      console.log('Pending subscription check:', { 
+      console.log('Pending subscription check in subscriptions table:', { 
         found: !!pendingSubscription, 
         error: pendingError ? pendingError.message : null 
       });
       
       let result;
       if (pendingSubscription) {
-        // Update the existing pending record
+        // Update the existing pending record in the correct table 'subscriptions'
+        console.log('Updating existing pending subscription record');
         const { data, error } = await supabase
           .from('subscriptions')
           .update(subscriptionData)
@@ -225,7 +229,8 @@ Deno.serve(async (req) => {
           
         result = { data, error, operation: 'update' };
       } else {
-        // Insert new record if no pending subscription found
+        // Insert new record if no pending subscription found in the correct table 'subscriptions'
+        console.log('Inserting new subscription record');
         const { data, error } = await supabase
           .from('subscriptions')
           .upsert(subscriptionData, { onConflict: 'id' })

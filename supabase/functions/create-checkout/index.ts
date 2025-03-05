@@ -117,6 +117,9 @@ Deno.serve(async (req) => {
       if (supabaseUrl && supabaseServiceKey) {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         
+        // IMPORTANTE: Verificando a tabela correta 'subscriptions'
+        console.log("Creating preliminary subscription record in the 'subscriptions' table");
+        
         // Create a preliminary entry in the subscriptions table with more complete information
         const pendingSubscriptionData = {
           user_id: userInfo.id,

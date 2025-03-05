@@ -109,6 +109,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         return;
       }
       
+      // IMPORTANTE: Verificando na tabela correta 'subscriptions'
+      console.log("Checking for active subscription in 'subscriptions' table");
+      
       // First try to get an active subscription
       let { data, error } = await supabase
         .from("subscriptions")
@@ -119,7 +122,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
       // If no active subscription found, check for pending subscription
       if ((!data || error) && (!forceRefresh || subscriptionCheckAttempts < 1)) {
-        console.log("No active subscription found, checking for pending subscription");
+        console.log("No active subscription found, checking for pending subscription in 'subscriptions' table");
         
         const { data: pendingData, error: pendingError } = await supabase
           .from("subscriptions")
@@ -141,7 +144,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         toast.error("Erro ao verificar assinatura");
         setHasActiveSubscription(false);
       } else {
-        console.log("Subscription data:", data);
+        console.log("Subscription data found in 'subscriptions' table:", data);
         
         // If we have a pending subscription, retry check after a delay
         if (data && data.status === "pending") {
@@ -184,6 +187,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           
           // Try one last time with a direct database call
           try {
+            console.log("Final attempt to check subscription in 'subscriptions' table");
             const { data: dataFinal, error: errorFinal } = await supabase
               .from("subscriptions")
               .select("*")
