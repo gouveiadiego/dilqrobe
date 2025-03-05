@@ -116,6 +116,10 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
         return;
       }
       
+      // Include the fresh access token in the Authorization header
+      const token = freshSession.access_token;
+      console.log("Fresh token obtained, length:", token.length);
+
       // Make the request to create checkout with the fresh token
       const { data, error } = await supabase.functions.invoke("create-checkout", {
         body: { 
@@ -123,6 +127,9 @@ export function PricingPlans({ showTitle = true }: PricingPlanProps) {
           successUrl: `${window.location.origin}/dashboard?success=true`,
           cancelUrl: `${window.location.origin}/dashboard?cancelled=true`
         },
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
       if (error) {
