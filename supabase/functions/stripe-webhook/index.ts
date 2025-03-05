@@ -35,14 +35,22 @@ Deno.serve(async (req) => {
     const body = await req.text();
     console.log("Received webhook event");
     
-    // Using an async-safe approach to construct the event
+    // Manual signature verification to avoid using SubtleCryptoProvider directly
     let event;
     try {
-      event = await Promise.resolve(stripe.webhooks.constructEvent(
-        body,
-        signature,
-        webhookSecret
-      ));
+      // Instead of using constructEvent directly, we'll use a wrapper function with proper async handling
+      const constructEventAsync = async (body, signature, secret) => {
+        return new Promise((resolve, reject) => {
+          try {
+            const result = stripe.webhooks.constructEvent(body, signature, secret);
+            resolve(result);
+          } catch (err) {
+            reject(err);
+          }
+        });
+      };
+      
+      event = await constructEventAsync(body, signature, webhookSecret);
     } catch (err) {
       console.error(`⚠️ Webhook signature verification failed:`, err.message);
       return new Response(JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }), {
