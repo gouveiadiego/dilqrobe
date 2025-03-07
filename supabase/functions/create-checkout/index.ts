@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { stripe } from '../_shared/stripe.ts';
 import { verifySubscriptionsTable } from '../_shared/db-check.ts';
