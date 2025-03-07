@@ -56,7 +56,7 @@ export default function Auth() {
         console.log("Auth state changed:", event, session ? "session exists" : "no session");
         setUserSession(session);
         
-        // If the user just signed in and is not in signup flow, redirect to dashboard
+        // Se o usuário acabou de fazer login e não está no fluxo de inscrição, redirecione para o dashboard
         if (event === 'SIGNED_IN' && !signupSuccess) {
           navigate("/dashboard");
         }
@@ -86,7 +86,7 @@ export default function Auth() {
       
       toast.success("Login realizado com sucesso");
       
-      // Check if user has an active subscription
+      // Verificar se o usuário tem uma assinatura ativa
       const { data: subscriptionData, error: subscriptionError } = await supabase
         .from("subscriptions")
         .select("*")
@@ -189,8 +189,9 @@ export default function Auth() {
       
       if (error) throw error;
       
-      toast.success("Conta criada com sucesso! Por favor, assine um plano para continuar.");
-      setSignupSuccess(true);
+      toast.success("Conta criada com sucesso! Por favor, verifique seu email para confirmar seu cadastro.");
+      // Não redirecionar para planos imediatamente, apenas após a confirmação do email
+      // setSignupSuccess(true);
     } catch (error: any) {
       console.error("Error signing up:", error);
       if (error.message.includes("User already registered")) {
