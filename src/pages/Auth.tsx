@@ -11,6 +11,9 @@ import { PricingPlans } from "@/components/PricingPlans";
 export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [userSession, setUserSession] = useState<any>(null);
@@ -108,11 +111,64 @@ export default function Auth() {
     }
   };
 
+  // Formatar CPF enquanto digita
+  const formatCPF = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    let formattedValue = digits;
+    
+    if (digits.length > 3) {
+      formattedValue = `${digits.substring(0, 3)}.${digits.substring(3)}`;
+    }
+    if (digits.length > 6) {
+      formattedValue = `${formattedValue.substring(0, 7)}.${digits.substring(6)}`;
+    }
+    if (digits.length > 9) {
+      formattedValue = `${formattedValue.substring(0, 11)}-${digits.substring(9, 11)}`;
+    }
+    
+    return formattedValue.substring(0, 14);
+  };
+
+  // Formatar telefone enquanto digita
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    let formattedValue = digits;
+    
+    if (digits.length > 0) {
+      formattedValue = `(${digits.substring(0, 2)}`;
+    }
+    if (digits.length > 2) {
+      formattedValue = `${formattedValue}) ${digits.substring(2)}`;
+    }
+    if (digits.length > 7) {
+      formattedValue = `${formattedValue.substring(0, 10)}-${digits.substring(7)}`;
+    }
+    
+    return formattedValue.substring(0, 15);
+  };
+
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatCPF(e.target.value);
+    setCpf(formattedValue);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedValue = formatPhone(e.target.value);
+    setPhone(formattedValue);
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
-      toast.error("Por favor, preencha todos os campos");
+    if (!email || !password || !fullName || !cpf) {
+      toast.error("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
+    
+    // Validar formato de CPF básico (apenas verificação de formato, não de validade)
+    const cpfDigits = cpf.replace(/\D/g, '');
+    if (cpfDigits.length !== 11) {
+      toast.error("CPF inválido");
       return;
     }
     
@@ -122,6 +178,13 @@ export default function Auth() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: fullName,
+            cpf: cpf,
+            phone: phone || null
+          }
+        }
       });
       
       if (error) throw error;
@@ -196,8 +259,43 @@ export default function Auth() {
           </div>
           <div className="space-y-4">
             <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+              {isSignUp && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Nome Completo <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="fullName"
+                      placeholder="José da Silva"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf">CPF <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="cpf"
+                      placeholder="123.456.789-00"
+                      value={cpf}
+                      onChange={handleCPFChange}
+                      maxLength={14}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      id="phone"
+                      placeholder="(11) 98765-4321"
+                      value={phone}
+                      onChange={handlePhoneChange}
+                      maxLength={15}
+                    />
+                  </div>
+                </>
+              )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
                 <Input
                   id="email"
                   type="email"
@@ -208,7 +306,7 @@ export default function Auth() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password">Senha <span className="text-red-500">*</span></Label>
                 <Input
                   id="password"
                   type="password"
