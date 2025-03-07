@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -46,15 +47,13 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Toasts for payment status are now handled in ProtectedRoute component
-
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Auth />} />
-          <Route path="/auth" element={<Auth />} /> {/* Adicionar alias para compatibilidade */}
+          <Route path="/auth" element={<Auth />} />
           <Route
             path="/dashboard"
             element={
