@@ -38,11 +38,13 @@ export const checkUserSubscription = async (userId: string) => {
 // Helper to update user profile with CPF
 export const updateUserProfile = async (userId: string, cpf: string) => {
   try {
+    // Use the from() method and cast to any to bypass TypeScript checking
+    // This is a temporary workaround until the types are updated
     const { error } = await supabase
       .from("profiles")
       .update({ 
-        cpf: cpf 
-      })
+        cpf 
+      } as any)
       .eq("id", userId);
     
     if (error) {

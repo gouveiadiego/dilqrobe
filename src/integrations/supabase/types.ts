@@ -333,6 +333,7 @@ export type Database = {
           about: string | null
           avatar_url: string | null
           company_logo: string | null
+          cpf: string | null
           created_at: string | null
           full_name: string | null
           id: string
@@ -343,6 +344,7 @@ export type Database = {
           about?: string | null
           avatar_url?: string | null
           company_logo?: string | null
+          cpf?: string | null
           created_at?: string | null
           full_name?: string | null
           id: string
@@ -353,6 +355,7 @@ export type Database = {
           about?: string | null
           avatar_url?: string | null
           company_logo?: string | null
+          cpf?: string | null
           created_at?: string | null
           full_name?: string | null
           id?: string
