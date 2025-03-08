@@ -39,7 +39,7 @@ const priceTiers: PriceTier[] = [
       "Suporte prioritário",
       "Sem anúncios",
     ],
-    priceId: "price_1Ods4CKdJnlOecA7s38l3njs", // Substitua pelo seu Stripe Price ID real
+    priceId: "price_1R0TzTRooQphZ1dFuimjjS1t", // Atualizado com o novo Stripe Price ID
   },
 ];
 
