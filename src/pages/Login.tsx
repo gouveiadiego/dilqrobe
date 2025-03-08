@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Mail, User } from "lucide-react";
+import { Lock, Mail, User, CreditCard, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ export const Login = () => {
     email: "",
     password: "",
     name: "",
+    cpf: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,6 +31,7 @@ export const Login = () => {
           options: {
             data: {
               name: formData.name,
+              cpf: formData.cpf,
             },
           },
         });
@@ -64,6 +67,8 @@ export const Login = () => {
         }
 
         if (data?.session) {
+          // After successful login, redirect to dashboard
+          // In the future, we may need to check subscription status here
           navigate("/dashboard", { replace: true });
         }
       }
@@ -73,6 +78,27 @@ export const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatCPF = (value: string) => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, '');
+    
+    // Apply CPF format (xxx.xxx.xxx-xx)
+    if (digits.length <= 3) {
+      return digits;
+    } else if (digits.length <= 6) {
+      return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    } else if (digits.length <= 9) {
+      return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    } else {
+      return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+    }
+  };
+
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCPF = formatCPF(e.target.value);
+    setFormData({ ...formData, cpf: formattedCPF });
   };
 
   return (
@@ -92,23 +118,42 @@ export const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome completo</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Seu nome completo"
-                      className="pl-10"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
-                      }
-                      required={isSignUp}
-                    />
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome completo</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="name"
+                        type="text"
+                        placeholder="Seu nome completo"
+                        className="pl-10"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({ ...formData, name: e.target.value })
+                        }
+                        required={isSignUp}
+                      />
+                    </div>
                   </div>
-                </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf">CPF</Label>
+                    <div className="relative">
+                      <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="cpf"
+                        type="text"
+                        placeholder="000.000.000-00"
+                        className="pl-10"
+                        maxLength={14}
+                        value={formData.cpf}
+                        onChange={handleCPFChange}
+                        required={isSignUp}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               <div className="space-y-2">
