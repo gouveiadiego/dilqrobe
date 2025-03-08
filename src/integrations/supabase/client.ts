@@ -124,3 +124,59 @@ export const removeDuplicateTransactions = async () => {
     return { removed: 0 };
   }
 };
+
+// Create a Stripe checkout session
+export const createStripeCheckout = async (priceId: string) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error("No session found. User must be logged in.");
+    }
+    
+    const { data, error } = await supabase.functions.invoke("create-checkout", {
+      body: {
+        priceId,
+        successUrl: `${window.location.origin}/dashboard?payment=success`,
+        cancelUrl: `${window.location.origin}/subscription?payment=canceled`,
+      },
+    });
+    
+    if (error) {
+      console.error("Error creating checkout session:", error);
+      throw new Error(error.message);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in createStripeCheckout:", error);
+    throw error;
+  }
+};
+
+// Get user subscription data
+export const getUserSubscription = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return null;
+    }
+    
+    const { data, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Error fetching subscription:", error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in getUserSubscription:", error);
+    return null;
+  }
+};

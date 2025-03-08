@@ -7,9 +7,10 @@ import { toast } from "sonner";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requireSubscription?: boolean;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requireSubscription = false }: ProtectedRouteProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
@@ -81,7 +82,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // Show loading state
   if (loading) {
-    return <div>Carregando...</div>;
+    return <div className="flex h-screen items-center justify-center">Carregando...</div>;
   }
 
   // Redirect to login if no session
@@ -90,14 +91,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // If user is authenticated but doesn't have a subscription, redirect to subscription page
-  // Uncomment this when subscription flow is ready
-  /* 
-  if (hasSubscription === false) {
+  // If subscription is required but user doesn't have one, redirect to subscription page
+  if (requireSubscription && hasSubscription === false) {
     console.log("No active subscription, redirecting to subscription page");
     return <Navigate to="/subscription" replace />;
   }
-  */
 
   // Render protected content
   return <>{children}</>;

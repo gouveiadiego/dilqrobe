@@ -11,6 +11,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import ClientPortal from "./pages/ClientPortal";
 import CompanyDetails from "./pages/CompanyDetails";
 import LandingPage from "./pages/LandingPage";
+import Subscription from "./pages/Subscription";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,11 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/subscription" element={
+            <ProtectedRoute>
+              <Subscription />
+            </ProtectedRoute>
+          } />
           <Route
             path="/dashboard"
             element={
