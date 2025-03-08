@@ -62,16 +62,20 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireSubscription={true}>
                 <Index />
               </ProtectedRoute>
             }
           />
-          <Route path="/client-portal" element={<ClientPortal />} />
+          <Route path="/client-portal" element={
+            <ProtectedRoute requireSubscription={true}>
+              <ClientPortal />
+            </ProtectedRoute>
+          } />
           <Route
             path="/company/:companyId"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireSubscription={true}>
                 <CompanyDetails />
               </ProtectedRoute>
             }
