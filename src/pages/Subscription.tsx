@@ -62,6 +62,11 @@ export default function Subscription() {
         setUser(user);
         const subscriptionData = await getUserSubscription();
         setSubscription(subscriptionData);
+        
+        // If user has active subscription, redirect to dashboard
+        if (subscriptionData?.status === "active") {
+          navigate("/dashboard");
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Erro ao carregar os dados da assinatura");
@@ -78,6 +83,8 @@ export default function Subscription() {
     
     if (paymentStatus === "success") {
       toast.success("Assinatura realizada com sucesso!");
+      // Redirect to dashboard after successful payment
+      navigate("/dashboard");
     } else if (paymentStatus === "canceled") {
       toast.error("Pagamento cancelado");
     }

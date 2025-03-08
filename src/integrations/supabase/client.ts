@@ -137,7 +137,7 @@ export const createStripeCheckout = async (priceId: string) => {
     const { data, error } = await supabase.functions.invoke("create-checkout", {
       body: {
         priceId,
-        successUrl: `${window.location.origin}/dashboard?payment=success`,
+        successUrl: `${window.location.origin}/dashboard`,
         cancelUrl: `${window.location.origin}/subscription?payment=canceled`,
       },
     });

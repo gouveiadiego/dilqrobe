@@ -59,16 +59,18 @@ serve(async (req) => {
           break;
         }
         
+        console.log(`Checkout session completed for user ${supabaseUserId}`);
+        
         // Update subscription status in database
         await supabaseAdmin
           .from("subscriptions")
-          .update({
+          .upsert({
+            user_id: supabaseUserId,
             stripe_subscription_id: session.subscription,
             status: "active",
-            plan_type: "paid",
+            plan_type: "pro",
             current_period_start: new Date(session.created * 1000).toISOString(),
-          })
-          .eq("user_id", supabaseUserId);
+          }, { onConflict: 'user_id' });
           
         console.log(`Subscription activated for user ${supabaseUserId}`);
         break;
@@ -118,7 +120,7 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ received: true }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Webhook error:", error.message);
