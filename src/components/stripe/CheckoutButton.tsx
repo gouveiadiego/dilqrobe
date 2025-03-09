@@ -6,9 +6,10 @@ interface CheckoutButtonProps {
   priceId: string
   customerId?: string
   children?: React.ReactNode
+  className?: string
 }
 
-export function CheckoutButton({ priceId, customerId, children }: CheckoutButtonProps) {
+export function CheckoutButton({ priceId, customerId, children, className }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false)
 
   const handleCheckout = async () => {
@@ -35,6 +36,7 @@ export function CheckoutButton({ priceId, customerId, children }: CheckoutButton
     <Button 
       onClick={handleCheckout} 
       disabled={loading}
+      className={className}
     >
       {loading ? "Processando..." : children || "Assinar"}
     </Button>

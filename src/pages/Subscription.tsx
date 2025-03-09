@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { createStripeCheckout, getUserSubscription } from "@/integrations/supabase/client";
+import { getUserSubscription } from "@/integrations/supabase/client";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Crown, Check, Loader2 } from "lucide-react";
 import { CheckoutButton } from "@/components/stripe/CheckoutButton";
+import { PortalButton } from "@/components/stripe/PortalButton";
 
 interface PriceTier {
   id: string;
@@ -39,7 +40,7 @@ const priceTiers: PriceTier[] = [
       "Suporte prioritário",
       "Sem anúncios",
     ],
-    priceId: "price_1R0nc2RooQphZ1dFnk4ZneeE", // Novo Stripe Price ID
+    priceId: "price_1R0nc2RooQphZ1dFnk4ZneeE",
   },
 ];
 
@@ -134,6 +135,11 @@ export default function Subscription() {
                   ? new Date(subscription.current_period_end).toLocaleDateString("pt-BR")
                   : "data não disponível"}
               </p>
+              <div className="mt-4">
+                <PortalButton customerId={user?.id}>
+                  Gerenciar Assinatura
+                </PortalButton>
+              </div>
             </div>
           </div>
         </div>
