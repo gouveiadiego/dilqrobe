@@ -27,10 +27,10 @@ serve(async (req) => {
     // Get raw body
     const body = await req.text();
     
-    // Verify the event
+    // Verify the event - IMPORTANT: Using constructEventAsync instead of constructEvent
     let event;
     try {
-      event = stripe.webhooks.constructEvent(
+      event = await stripe.webhooks.constructEventAsync(
         body,
         signature,
         Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? ""
