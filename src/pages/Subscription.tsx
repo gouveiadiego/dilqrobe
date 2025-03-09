@@ -87,10 +87,22 @@ export default function Subscription() {
     if (sessionId) {
       // Se temos um session_id, significa que o checkout foi concluído
       toast.success("Processando sua assinatura...");
+      
       // Aguardar um pouco para dar tempo do webhook processar
-      setTimeout(() => {
-        fetchData(); // Recarrega os dados da assinatura
-      }, 2000);
+      const checkSubscription = async () => {
+        const subscriptionData = await getUserSubscription();
+        console.log("Checking subscription data:", subscriptionData);
+        
+        if (subscriptionData?.status === "active") {
+          toast.success("Assinatura ativada com sucesso!");
+          navigate("/dashboard", { replace: true });
+        } else {
+          // Se ainda não está ativo, tentar novamente em 2 segundos
+          setTimeout(checkSubscription, 2000);
+        }
+      };
+      
+      checkSubscription();
     } else if (paymentStatus === "canceled") {
       toast.error("Pagamento cancelado");
     }
