@@ -4,6 +4,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -18,36 +19,47 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
-      if (error) {
-        console.error("Error getting session:", error);
-        toast.error("Erro ao verificar autenticação");
-        navigate("/login");
-        return;
-      }
-      setSession(currentSession);
-      
-      // Check subscription status if user is authenticated
-      if (currentSession) {
-        checkSubscription(currentSession.user.id);
-      } else {
+    const checkSession = async () => {
+      try {
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          toast.error("Erro ao verificar autenticação");
+          setLoading(false);
+          return;
+        }
+        
+        setSession(currentSession);
+        
+        // Check subscription status if user is authenticated and subscription is required
+        if (currentSession && requireSubscription) {
+          await checkSubscription(currentSession.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Error in session check:", err);
         setLoading(false);
       }
-    });
+    };
+
+    checkSession();
 
     // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
       console.log("Auth state changed:", _event, currentSession ? "session exists" : "no session");
       setSession(currentSession);
       
       if (!currentSession) {
         console.log("No session found, redirecting to login");
         setLoading(false);
-        toast.error("Sessão expirada. Por favor, faça login novamente.");
-        navigate("/login");
+        setHasSubscription(false);
+      } else if (requireSubscription) {
+        // Check subscription status whenever auth state changes if subscription is required
+        await checkSubscription(currentSession.user.id);
       } else {
-        // Check subscription status whenever auth state changes
-        checkSubscription(currentSession.user.id);
+        setLoading(false);
       }
     });
 
@@ -55,7 +67,7 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, requireSubscription]);
 
   const checkSubscription = async (userId: string) => {
     try {
@@ -69,9 +81,11 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
       if (error) {
         console.error("Error checking subscription:", error);
+        setHasSubscription(false);
+      } else {
+        setHasSubscription(!!data);
       }
-
-      setHasSubscription(!!data);
+      
       setLoading(false);
     } catch (err) {
       console.error("Error in subscription check:", err);
@@ -82,7 +96,11 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
   // Show loading state
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Carregando...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   // Redirect to login if no session

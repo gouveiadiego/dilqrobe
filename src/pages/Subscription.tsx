@@ -60,12 +60,29 @@ export default function Subscription() {
         }
         
         setUser(user);
+        
+        // Check URL params for payment status
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentStatus = urlParams.get("payment");
+        
+        if (paymentStatus === "success") {
+          toast.success("Assinatura realizada com sucesso!");
+          // Redirect to dashboard after successful payment
+          navigate("/dashboard");
+          return;
+        } else if (paymentStatus === "canceled") {
+          toast.error("Pagamento cancelado");
+        }
+        
+        // Get subscription data
         const subscriptionData = await getUserSubscription();
         setSubscription(subscriptionData);
         
         // If user has active subscription, redirect to dashboard
         if (subscriptionData?.status === "active") {
+          console.log("Active subscription found, redirecting to dashboard");
           navigate("/dashboard");
+          return;
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -76,18 +93,6 @@ export default function Subscription() {
     };
 
     fetchData();
-
-    // Check URL params for payment status
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get("payment");
-    
-    if (paymentStatus === "success") {
-      toast.success("Assinatura realizada com sucesso!");
-      // Redirect to dashboard after successful payment
-      navigate("/dashboard");
-    } else if (paymentStatus === "canceled") {
-      toast.error("Pagamento cancelado");
-    }
   }, [navigate]);
 
   const handleSubscribe = async (priceId: string) => {
