@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 import Stripe from "https://esm.sh/stripe@13.9.0";
@@ -60,19 +59,45 @@ serve(async (req) => {
         }
         
         console.log(`Checkout session completed for user ${supabaseUserId}`);
+        console.log("Session data:", JSON.stringify(session, null, 2));
+        
+        // Fetch existing subscription or create a new one
+        const { data: existingSubscription } = await supabaseAdmin
+          .from("subscriptions")
+          .select("*")
+          .eq("user_id", supabaseUserId)
+          .maybeSingle();
+          
+        // Get subscription details from Stripe if needed
+        let subscriptionDetails = null;
+        if (session.subscription) {
+          subscriptionDetails = await stripe.subscriptions.retrieve(session.subscription);
+          console.log("Retrieved subscription details:", JSON.stringify(subscriptionDetails, null, 2));
+        }
         
         // Update subscription status in database
-        await supabaseAdmin
+        const subscriptionData = {
+          user_id: supabaseUserId,
+          stripe_customer_id: session.customer,
+          stripe_subscription_id: session.subscription,
+          status: "active",
+          plan_type: "pro",
+          price_id: session.line_items?.data[0]?.price?.id || existingSubscription?.price_id,
+          current_period_start: new Date(session.created * 1000).toISOString(),
+          current_period_end: subscriptionDetails ? 
+            new Date(subscriptionDetails.current_period_end * 1000).toISOString() : 
+            existingSubscription?.current_period_end
+        };
+        
+        const { error: upsertError } = await supabaseAdmin
           .from("subscriptions")
-          .upsert({
-            user_id: supabaseUserId,
-            stripe_subscription_id: session.subscription,
-            status: "active",
-            plan_type: "pro",
-            current_period_start: new Date(session.created * 1000).toISOString(),
-          }, { onConflict: 'user_id' });
+          .upsert(subscriptionData, { onConflict: 'user_id' });
           
-        console.log(`Subscription activated for user ${supabaseUserId}`);
+        if (upsertError) {
+          console.error("Error updating subscription:", upsertError);
+        } else {
+          console.log(`Subscription activated for user ${supabaseUserId}`);
+        }
         break;
       }
       

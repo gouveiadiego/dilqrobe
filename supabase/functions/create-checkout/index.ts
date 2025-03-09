@@ -84,6 +84,7 @@ serve(async (req) => {
 
     if (existingSubscription?.stripe_customer_id) {
       customerId = existingSubscription.stripe_customer_id;
+      console.log(`Using existing customer ID: ${customerId}`);
     } else {
       // Create a new customer
       const customer = await stripe.customers.create({
@@ -95,14 +96,18 @@ serve(async (req) => {
         },
       });
       customerId = customer.id;
+      console.log(`Created new customer: ${customerId}`);
 
-      // Pre-register subscription in database
+      // Pre-register subscription in database with the price_id
       await supabaseClient.from("subscriptions").insert({
         user_id: user.id,
         stripe_customer_id: customerId,
         status: "incomplete",
         plan_type: "trial",
+        price_id: priceId,
       });
+      
+      console.log(`Pre-registered subscription for user ${user.id} with price_id ${priceId}`);
     }
 
     // Create checkout session
@@ -127,9 +132,12 @@ serve(async (req) => {
       },
       metadata: {
         supabaseUserId: user.id,
+        priceId: priceId,
       },
     });
 
+    console.log(`Created checkout session: ${session.id} for user ${user.id}`);
+    
     return new Response(
       JSON.stringify({ url: session.url }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
