@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 import Stripe from "https://esm.sh/stripe@13.9.0";
@@ -94,15 +93,108 @@ serve(async (req) => {
         };
         
         // Upsert subscription data
-        const { error } = await supabaseAdmin
+        const { error: subscriptionError } = await supabaseAdmin
           .from("subscriptions")
           .upsert(subscriptionData, { onConflict: 'user_id' });
           
-        if (error) {
-          console.error("Error updating subscription:", error);
+        if (subscriptionError) {
+          console.error("Error updating subscription:", subscriptionError);
         } else {
           console.log(`Subscription activated for user ${supabaseUserId}`);
         }
+
+        // Record the payment
+        const paymentData = {
+          user_id: supabaseUserId,
+          stripe_payment_id: session.payment_intent,
+          amount: session.amount_total,
+          currency: session.currency,
+          status: "succeeded",
+          created_at: new Date().toISOString(),
+        };
+
+        const { error: paymentError } = await supabaseAdmin
+          .from("payments")
+          .insert(paymentData);
+
+        if (paymentError) {
+          console.error("Error recording payment:", paymentError);
+        } else {
+          console.log(`Payment recorded for user ${supabaseUserId}`);
+        }
+
+        break;
+      }
+      
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object;
+        const customerId = invoice.customer;
+        
+        // Get customer to find the Supabase user ID
+        const customer = await stripe.customers.retrieve(customerId);
+        const supabaseUserId = customer.metadata?.supabaseUserId;
+        
+        if (!supabaseUserId) {
+          console.error("No Supabase user ID found in customer metadata");
+          break;
+        }
+
+        // Record the payment
+        const paymentData = {
+          user_id: supabaseUserId,
+          stripe_payment_id: invoice.payment_intent,
+          amount: invoice.amount_paid,
+          currency: invoice.currency,
+          status: "succeeded",
+          created_at: new Date().toISOString(),
+        };
+
+        const { error: paymentError } = await supabaseAdmin
+          .from("payments")
+          .insert(paymentData);
+
+        if (paymentError) {
+          console.error("Error recording payment:", paymentError);
+        } else {
+          console.log(`Payment recorded for user ${supabaseUserId}`);
+        }
+
+        break;
+      }
+      
+      case "invoice.payment_failed": {
+        const invoice = event.data.object;
+        const customerId = invoice.customer;
+        
+        // Get customer to find the Supabase user ID
+        const customer = await stripe.customers.retrieve(customerId);
+        const supabaseUserId = customer.metadata?.supabaseUserId;
+        
+        if (!supabaseUserId) {
+          console.error("No Supabase user ID found in customer metadata");
+          break;
+        }
+
+        // Record the failed payment
+        const paymentData = {
+          user_id: supabaseUserId,
+          stripe_payment_id: invoice.payment_intent,
+          amount: invoice.amount_due,
+          currency: invoice.currency,
+          status: "failed",
+          created_at: new Date().toISOString(),
+        };
+
+        const { error: paymentError } = await supabaseAdmin
+          .from("payments")
+          .insert(paymentData);
+
+        if (paymentError) {
+          console.error("Error recording failed payment:", paymentError);
+        } else {
+          console.log(`Failed payment recorded for user ${supabaseUserId}`);
+        }
+
         break;
       }
       

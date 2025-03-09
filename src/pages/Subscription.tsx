@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Crown, Check, Loader2 } from "lucide-react";
 import { CheckoutButton } from "@/components/stripe/CheckoutButton";
 import { PortalButton } from "@/components/stripe/PortalButton";
+import { PaymentHistory } from "@/components/stripe/PaymentHistory";
 
 interface PriceTier {
   id: string;
@@ -86,13 +87,6 @@ export default function Subscription() {
         const subscriptionData = await getUserSubscription();
         console.log("Subscription data:", subscriptionData);
         setSubscription(subscriptionData);
-        
-        // If user has active subscription, redirect to dashboard
-        if (subscriptionData?.status === "active") {
-          console.log("Active subscription found, redirecting to dashboard");
-          navigate("/dashboard", { replace: true });
-          return;
-        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Erro ao carregar os dados da assinatura");
@@ -197,6 +191,12 @@ export default function Subscription() {
           </Card>
         ))}
       </div>
+
+      {user && (
+        <div className="mt-12">
+          <PaymentHistory />
+        </div>
+      )}
       
       <div className="mt-12 text-center">
         <p className="text-sm text-gray-500 dark:text-gray-400">
