@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -61,6 +60,7 @@ export default function Subscription() {
         
         setUser(user);
         const subscriptionData = await getUserSubscription();
+        console.log("Subscription data:", subscriptionData);
         setSubscription(subscriptionData);
         
         // If user has active subscription, redirect to dashboard
@@ -77,14 +77,20 @@ export default function Subscription() {
 
     fetchData();
 
-    // Check URL params for payment status
+    // Check URL params for payment status and session_id
     const urlParams = new URLSearchParams(window.location.search);
     const paymentStatus = urlParams.get("payment");
+    const sessionId = urlParams.get("session_id");
     
-    if (paymentStatus === "success") {
-      toast.success("Assinatura realizada com sucesso!");
-      // Redirect to dashboard after successful payment
-      navigate("/dashboard");
+    console.log("URL params:", { paymentStatus, sessionId });
+    
+    if (sessionId) {
+      // Se temos um session_id, significa que o checkout foi concluído
+      toast.success("Processando sua assinatura...");
+      // Aguardar um pouco para dar tempo do webhook processar
+      setTimeout(() => {
+        fetchData(); // Recarrega os dados da assinatura
+      }, 2000);
     } else if (paymentStatus === "canceled") {
       toast.error("Pagamento cancelado");
     }

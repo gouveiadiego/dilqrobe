@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 import Stripe from "https://esm.sh/stripe@13.9.0";
@@ -48,6 +47,7 @@ serve(async (req) => {
 
     // Handle the event
     console.log(`Processing event: ${event.type}`);
+    console.log("Event data:", JSON.stringify(event.data.object, null, 2)); // Log detalhado do evento
     
     switch (event.type) {
       case "checkout.session.completed": {
@@ -56,23 +56,34 @@ serve(async (req) => {
         
         if (!supabaseUserId) {
           console.error("No Supabase user ID found in session metadata");
+          console.error("Session data:", JSON.stringify(session, null, 2));
           break;
         }
         
         console.log(`Checkout session completed for user ${supabaseUserId}`);
         
-        // Update subscription status in database
-        await supabaseAdmin
-          .from("subscriptions")
-          .upsert({
-            user_id: supabaseUserId,
-            stripe_subscription_id: session.subscription,
-            status: "active",
-            plan_type: "pro",
-            current_period_start: new Date(session.created * 1000).toISOString(),
-          }, { onConflict: 'user_id' });
+        try {
+          // Update subscription status in database
+          const { data, error } = await supabaseAdmin
+            .from("subscriptions")
+            .upsert({
+              user_id: supabaseUserId,
+              stripe_subscription_id: session.subscription,
+              status: "active",
+              plan_type: "pro",
+              current_period_start: new Date(session.created * 1000).toISOString(),
+            }, { onConflict: 'user_id' });
+            
+          if (error) {
+            console.error("Error updating subscription in database:", error);
+            throw error;
+          }
           
-        console.log(`Subscription activated for user ${supabaseUserId}`);
+          console.log(`Subscription activated for user ${supabaseUserId}`, data);
+        } catch (error) {
+          console.error("Error processing checkout.session.completed:", error);
+          throw error;
+        }
         break;
       }
       
