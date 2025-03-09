@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { createStripeCheckout, getUserSubscription } from "@/integrations/supaba
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Crown, Check, Loader2 } from "lucide-react";
+import { CheckoutButton } from "@/components/stripe/CheckoutButton";
 
 interface PriceTier {
   id: string;
@@ -39,7 +39,7 @@ const priceTiers: PriceTier[] = [
       "Suporte prioritário",
       "Sem anúncios",
     ],
-    priceId: "price_1R0TzTRooQphZ1dFuimjjS1t", // Stripe Price ID
+    priceId: "price_1R0nc2RooQphZ1dFnk4ZneeE", // Novo Stripe Price ID
   },
 ];
 
@@ -102,24 +102,6 @@ export default function Subscription() {
 
     fetchData();
   }, [navigate, location]);
-
-  const handleSubscribe = async (priceId: string) => {
-    if (!priceId) return;
-    
-    try {
-      setCheckoutLoading(priceId);
-      const { url } = await createStripeCheckout(priceId);
-      
-      if (url) {
-        window.location.href = url;
-      }
-    } catch (error) {
-      console.error("Error creating checkout:", error);
-      toast.error("Erro ao processar assinatura");
-    } finally {
-      setCheckoutLoading("");
-    }
-  };
 
   if (loading) {
     return (
@@ -194,23 +176,16 @@ export default function Subscription() {
                   Plano atual
                 </Button>
               ) : (
-                <Button
-                  onClick={() => handleSubscribe(tier.priceId)}
-                  disabled={checkoutLoading === tier.priceId}
+                <CheckoutButton
+                  priceId={tier.priceId}
+                  customerId={user?.id}
                   className="w-full"
-                  variant={tier.id === "pro" ? "default" : "outline"}
                 >
                   {checkoutLoading === tier.priceId ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processando...
-                    </>
-                  ) : isSubscribed ? (
-                    "Mudar plano"
-                  ) : (
-                    "Assinar agora"
-                  )}
-                </Button>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Assinar agora
+                </CheckoutButton>
               )}
             </CardFooter>
           </Card>

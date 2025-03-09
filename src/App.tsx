@@ -11,6 +11,8 @@ import ClientPortal from "./pages/ClientPortal";
 import CompanyDetails from "./pages/CompanyDetails";
 import LandingPage from "./pages/LandingPage";
 import Subscription from "./pages/Subscription";
+import PaymentSuccess from "./pages/payment/PaymentSuccess";
+import PaymentCanceled from "./pages/payment/PaymentCanceled";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +56,8 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/subscription" element={<Subscription />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/canceled" element={<PaymentCanceled />} />
           <Route
             path="/dashboard"
             element={
