@@ -11,8 +11,8 @@ import ClientPortal from "./pages/ClientPortal";
 import CompanyDetails from "./pages/CompanyDetails";
 import LandingPage from "./pages/LandingPage";
 import Subscription from "./pages/Subscription";
-import PaymentSuccess from "./pages/payment/PaymentSuccess";
-import PaymentCanceled from "./pages/payment/PaymentCanceled";
+import PaymentSuccess from "@/pages/payment/PaymentSuccess";
+import PaymentCanceled from "@/pages/payment/PaymentCanceled";
 
 const queryClient = new QueryClient();
 
