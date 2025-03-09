@@ -85,6 +85,15 @@ serve(async (req) => {
     if (existingSubscription?.stripe_customer_id) {
       customerId = existingSubscription.stripe_customer_id;
       console.log(`Using existing customer ID: ${customerId}`);
+      
+      // Limpar qualquer registro de assinatura incompleta existente
+      await supabaseClient
+        .from("subscriptions")
+        .update({
+          price_id: priceId,
+          status: "incomplete",
+        })
+        .eq("user_id", user.id);
     } else {
       // Create a new customer
       const customer = await stripe.customers.create({
@@ -98,7 +107,7 @@ serve(async (req) => {
       customerId = customer.id;
       console.log(`Created new customer: ${customerId}`);
 
-      // Pre-register subscription in database with the price_id
+      // Register subscription in database with the price_id
       await supabaseClient.from("subscriptions").insert({
         user_id: user.id,
         stripe_customer_id: customerId,

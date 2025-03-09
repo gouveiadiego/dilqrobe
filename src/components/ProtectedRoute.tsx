@@ -19,7 +19,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
   const location = useLocation();
 
   useEffect(() => {
-    // Get initial session
     const checkSession = async () => {
       try {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
@@ -33,7 +32,7 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         
         setSession(currentSession);
         
-        // Check subscription status if user is authenticated and subscription is required
+        // Verificar status de assinatura
         if (currentSession && requireSubscription) {
           await checkSubscription(currentSession.user.id);
         } else {
@@ -47,97 +46,93 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
     checkSession();
 
-    // Set up auth state listener
+    // Configurar listener de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
-      console.log("Auth state changed:", _event, currentSession ? "session exists" : "no session");
       setSession(currentSession);
       
       if (!currentSession) {
-        console.log("No session found, redirecting to login");
         setLoading(false);
         setHasSubscription(false);
       } else if (requireSubscription) {
-        // Check subscription status whenever auth state changes if subscription is required
         await checkSubscription(currentSession.user.id);
       } else {
         setLoading(false);
       }
     });
 
-    // Special handling for successful payment redirect
+    // Tratamento para redirecionamento após pagamento
     const searchParams = new URLSearchParams(location.search);
     if (searchParams.get("payment") === "success") {
-      console.log("Payment successful, redirecting to dashboard");
-      toast.success("Assinatura realizada com sucesso!");
+      toast.success("Pagamento recebido! Processando assinatura...");
       
-      // Wait for webhook to process (increased from 2s to 5s)
+      // Permitir tempo para o webhook processar
       setLoading(true);
       setTimeout(async () => {
-        // Force a subscription check after the delay to ensure data is up-to-date
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await checkSubscription(user.id, true);
         }
         navigate("/dashboard", { replace: true });
-      }, 5000);
-      
-      return;
+      }, 8000);  // Aumentado para 8 segundos
     }
 
-    // Cleanup subscription
     return () => {
       subscription.unsubscribe();
     };
   }, [navigate, requireSubscription, location]);
 
-  const checkSubscription = async (userId: string, forceRefresh = false) => {
+  const checkSubscription = async (userId: string, forceAccept = false) => {
     try {
-      console.log(`Checking subscription for user ${userId}${forceRefresh ? ' (forced refresh)' : ''}`);
+      console.log(`Verificando assinatura para usuário ${userId}`);
       
-      // Check if user has an active subscription
+      // Verificar assinatura ativa
       const { data, error } = await supabase
         .from("subscriptions")
         .select("*")
         .eq("user_id", userId)
-        .or(`status.eq.active,status.eq.trialing${forceRefresh ? ',status.eq.incomplete' : ''}`)
         .maybeSingle();
 
       if (error) {
-        console.error("Error checking subscription:", error);
+        console.error("Erro ao verificar assinatura:", error);
         setHasSubscription(false);
-      } else {
-        console.log("Subscription check result:", data);
-        
-        if (data) {
-          // If subscription is incomplete but we're forcing a refresh, we'll accept it
-          // This helps during the webhook processing delay after payment
-          const validStatus = data.status === 'active' || 
-                              data.status === 'trialing' || 
-                              (forceRefresh && data.status === 'incomplete');
-                              
-          setHasSubscription(validStatus);
-          
-          if (data.status === 'incomplete' && forceRefresh) {
-            console.log("Accepting incomplete subscription during payment processing");
-            // Set a background timer to check again in case the webhook hasn't processed yet
-            setTimeout(() => {
-              checkSubscription(userId, false);
-            }, 10000);
-          }
-        } else {
-          setHasSubscription(false);
+        setLoading(false);
+        return;
+      }
+      
+      console.log("Dados da assinatura:", data);
+      
+      if (data) {
+        // Se forceAccept for true, aceitar qualquer status
+        if (forceAccept) {
+          console.log("Aceitando assinatura em qualquer estado devido a forceAccept");
+          setHasSubscription(true);
+          setLoading(false);
+          return;
         }
+        
+        // Caso contrário, verificar status
+        const isActive = data.status === 'active' || data.status === 'trialing';
+        
+        setHasSubscription(isActive);
+        
+        // Caso ainda seja 'incomplete', verificar novamente em 5 segundos
+        if (data.status === 'incomplete') {
+          console.log("Status da assinatura é 'incomplete', verificando novamente em 5 segundos");
+          setTimeout(() => checkSubscription(userId), 5000);
+        }
+      } else {
+        setHasSubscription(false);
       }
       
       setLoading(false);
     } catch (err) {
-      console.error("Error in subscription check:", err);
+      console.error("Erro na verificação de assinatura:", err);
       setHasSubscription(false);
       setLoading(false);
     }
   };
 
-  // Show loading state
+  // Mostrar carregamento
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -146,18 +141,16 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     );
   }
 
-  // Redirect to login if no session
+  // Redirecionar para login se não houver sessão
   if (!session) {
-    console.log("No session in protected route, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
-  // If subscription is required but user doesn't have one, redirect to subscription page
+  // Redirecionar para página de assinatura se necessário
   if (requireSubscription && hasSubscription === false) {
-    console.log("No active subscription, redirecting to subscription page");
     return <Navigate to="/subscription" replace />;
   }
 
-  // Render protected content
+  // Renderizar conteúdo protegido
   return <>{children}</>;
 }

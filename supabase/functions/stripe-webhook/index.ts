@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 import Stripe from "https://esm.sh/stripe@13.9.0";
@@ -20,13 +21,14 @@ serve(async (req) => {
 
     const signature = req.headers.get("stripe-signature");
     if (!signature) {
+      console.error("Webhook signature missing");
       return new Response("Webhook signature missing", { status: 400 });
     }
 
     // Get raw body
     const body = await req.text();
     
-    // Verify the event - IMPORTANT: Using constructEventAsync instead of constructEvent
+    // Verify the event
     let event;
     try {
       event = await stripe.webhooks.constructEventAsync(
@@ -51,50 +53,53 @@ serve(async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
-        const supabaseUserId = session.metadata?.supabaseUserId;
+        console.log("Checkout session completed:", JSON.stringify(session, null, 2));
         
-        if (!supabaseUserId) {
-          console.error("No Supabase user ID found in session metadata");
+        const customerId = session.customer;
+        const subscriptionId = session.subscription;
+        
+        if (!customerId || !subscriptionId) {
+          console.error("Missing customer ID or subscription ID in session");
           break;
         }
         
-        console.log(`Checkout session completed for user ${supabaseUserId}`);
-        console.log("Session data:", JSON.stringify(session, null, 2));
+        // Get customer to find the Supabase user ID
+        const customer = await stripe.customers.retrieve(customerId);
+        const supabaseUserId = customer.metadata?.supabaseUserId;
         
-        // Fetch existing subscription or create a new one
-        const { data: existingSubscription } = await supabaseAdmin
-          .from("subscriptions")
-          .select("*")
-          .eq("user_id", supabaseUserId)
-          .maybeSingle();
-          
-        // Get subscription details from Stripe if needed
-        let subscriptionDetails = null;
-        if (session.subscription) {
-          subscriptionDetails = await stripe.subscriptions.retrieve(session.subscription);
-          console.log("Retrieved subscription details:", JSON.stringify(subscriptionDetails, null, 2));
+        if (!supabaseUserId) {
+          console.error("No Supabase user ID found in customer metadata");
+          break;
         }
         
-        // Update subscription status in database
+        console.log(`Found user ID ${supabaseUserId} for customer ${customerId}`);
+        
+        // Get subscription details from Stripe
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        console.log("Subscription details:", JSON.stringify(subscription, null, 2));
+        
+        // Get price ID from subscription
+        const priceId = subscription.items.data[0]?.price.id;
+        
+        // Update subscription in database with all details
         const subscriptionData = {
           user_id: supabaseUserId,
-          stripe_customer_id: session.customer,
-          stripe_subscription_id: session.subscription,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
           status: "active",
           plan_type: "pro",
-          price_id: session.line_items?.data[0]?.price?.id || existingSubscription?.price_id,
-          current_period_start: new Date(session.created * 1000).toISOString(),
-          current_period_end: subscriptionDetails ? 
-            new Date(subscriptionDetails.current_period_end * 1000).toISOString() : 
-            existingSubscription?.current_period_end
+          price_id: priceId,
+          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
         };
         
-        const { error: upsertError } = await supabaseAdmin
+        // Upsert subscription data
+        const { error } = await supabaseAdmin
           .from("subscriptions")
           .upsert(subscriptionData, { onConflict: 'user_id' });
           
-        if (upsertError) {
-          console.error("Error updating subscription:", upsertError);
+        if (error) {
+          console.error("Error updating subscription:", error);
         } else {
           console.log(`Subscription activated for user ${supabaseUserId}`);
         }
@@ -122,7 +127,7 @@ serve(async (req) => {
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             cancel_at_period_end: subscription.cancel_at_period_end,
           })
-          .eq("stripe_subscription_id", subscription.id);
+          .eq("user_id", supabaseUserId);
           
         console.log(`Subscription updated for user ${supabaseUserId}`);
         break;
@@ -131,15 +136,24 @@ serve(async (req) => {
       case "customer.subscription.deleted": {
         const subscription = event.data.object;
         
+        // Get the Supabase user ID from the subscription's customer
+        const customer = await stripe.customers.retrieve(subscription.customer as string);
+        const supabaseUserId = customer.metadata?.supabaseUserId;
+        
+        if (!supabaseUserId) {
+          console.error("No Supabase user ID found in customer metadata");
+          break;
+        }
+        
         // Update subscription status in database
         await supabaseAdmin
           .from("subscriptions")
           .update({
             status: "canceled"
           })
-          .eq("stripe_subscription_id", subscription.id);
+          .eq("user_id", supabaseUserId);
           
-        console.log(`Subscription canceled: ${subscription.id}`);
+        console.log(`Subscription canceled for user ${supabaseUserId}`);
         break;
       }
     }
