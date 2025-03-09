@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { createStripeCheckout, getUserSubscription } from "@/integrations/supabase/client";
@@ -39,12 +39,13 @@ const priceTiers: PriceTier[] = [
       "Suporte prioritário",
       "Sem anúncios",
     ],
-    priceId: "price_1R0TzTRooQphZ1dFuimjjS1t", // Atualizado com o novo Stripe Price ID
+    priceId: "price_1R0TzTRooQphZ1dFuimjjS1t", // Stripe Price ID
   },
 ];
 
 export default function Subscription() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState("");
@@ -53,6 +54,25 @@ export default function Subscription() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // First check URL params for payment status
+        const urlParams = new URLSearchParams(location.search);
+        const paymentStatus = urlParams.get("payment");
+        
+        if (paymentStatus === "success") {
+          // Set the subscription to active immediately for better UX
+          // The webhook will update the database
+          toast.success("Assinatura realizada com sucesso!");
+          console.log("Payment successful, redirecting to dashboard");
+          // Add a little delay to allow webhook to process
+          setTimeout(() => {
+            navigate("/dashboard", { replace: true });
+          }, 2000);
+          return;
+        } else if (paymentStatus === "canceled") {
+          toast.error("Pagamento cancelado");
+        }
+        
+        // Then check user auth
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           navigate("/login");
@@ -61,27 +81,15 @@ export default function Subscription() {
         
         setUser(user);
         
-        // Check URL params for payment status
-        const urlParams = new URLSearchParams(window.location.search);
-        const paymentStatus = urlParams.get("payment");
-        
-        if (paymentStatus === "success") {
-          toast.success("Assinatura realizada com sucesso!");
-          // Redirect to dashboard after successful payment
-          navigate("/dashboard");
-          return;
-        } else if (paymentStatus === "canceled") {
-          toast.error("Pagamento cancelado");
-        }
-        
         // Get subscription data
         const subscriptionData = await getUserSubscription();
+        console.log("Subscription data:", subscriptionData);
         setSubscription(subscriptionData);
         
         // If user has active subscription, redirect to dashboard
         if (subscriptionData?.status === "active") {
           console.log("Active subscription found, redirecting to dashboard");
-          navigate("/dashboard");
+          navigate("/dashboard", { replace: true });
           return;
         }
       } catch (error) {
@@ -93,7 +101,7 @@ export default function Subscription() {
     };
 
     fetchData();
-  }, [navigate]);
+  }, [navigate, location]);
 
   const handleSubscribe = async (priceId: string) => {
     if (!priceId) return;

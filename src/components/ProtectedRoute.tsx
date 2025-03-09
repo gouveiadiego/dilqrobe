@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
   const [loading, setLoading] = useState(true);
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Get initial session
@@ -63,11 +64,24 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       }
     });
 
+    // Special handling for successful payment redirect
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get("payment") === "success") {
+      console.log("Payment successful, redirecting to dashboard");
+      // We'll skip subscription check in this case as the webhook might not have processed yet
+      // Just show a loading indicator and redirect to dashboard
+      setLoading(true);
+      toast.success("Assinatura realizada com sucesso!");
+      setTimeout(() => {
+        navigate("/dashboard", { replace: true });
+      }, 2000); // Give webhook a moment to process
+    }
+
     // Cleanup subscription
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, requireSubscription]);
+  }, [navigate, requireSubscription, location]);
 
   const checkSubscription = async (userId: string) => {
     try {
@@ -83,6 +97,7 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         console.error("Error checking subscription:", error);
         setHasSubscription(false);
       } else {
+        console.log("Subscription check result:", data ? "has subscription" : "no subscription");
         setHasSubscription(!!data);
       }
       

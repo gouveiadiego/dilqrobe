@@ -37,8 +37,6 @@ export const checkUserSubscription = async (userId: string) => {
 // Helper to update user profile with CPF
 export const updateUserProfile = async (userId: string, cpf: string) => {
   try {
-    // Use the from() method and cast to any to bypass TypeScript checking
-    // This is a temporary workaround until the types are updated
     const { error } = await supabase
       .from("profiles")
       .update({ 
@@ -68,7 +66,6 @@ export const removeDuplicateTransactions = async () => {
       return { removed: 0 };
     }
     
-    // First get all transactions
     const { data: allTransactions, error } = await supabase
       .from("transactions")
       .select("*")
@@ -85,16 +82,13 @@ export const removeDuplicateTransactions = async () => {
       return { removed: 0 };
     }
     
-    // Find duplicates by creating a signature for each transaction
     const seen = new Map();
     const duplicates = [];
     
     for (const transaction of allTransactions) {
-      // Create a unique signature for the transaction based on key properties
       const signature = `${transaction.date}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
       
       if (seen.has(signature)) {
-        // This is a duplicate, keep the one we've already seen and mark this for deletion
         duplicates.push(transaction.id);
       } else {
         seen.set(signature, transaction.id);
@@ -103,7 +97,6 @@ export const removeDuplicateTransactions = async () => {
     
     console.info(`Found ${duplicates.length} duplicate transactions`);
     
-    // Delete duplicates if any were found
     if (duplicates.length > 0) {
       const { error: deleteError } = await supabase
         .from("transactions")

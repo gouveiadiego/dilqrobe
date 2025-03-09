@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -54,11 +53,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/subscription" element={
-            <ProtectedRoute>
-              <Subscription />
-            </ProtectedRoute>
-          } />
+          <Route path="/subscription" element={<Subscription />} />
           <Route
             path="/dashboard"
             element={
