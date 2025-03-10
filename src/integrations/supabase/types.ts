@@ -328,6 +328,36 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          status: string
+          stripe_payment_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency: string
+          id?: string
+          status: string
+          stripe_payment_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          status?: string
+          stripe_payment_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           about: string | null
@@ -943,6 +973,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_payments: {
+        Args: {
+          user_id_param: string
+        }
+        Returns: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          status: string
+          stripe_payment_id: string | null
+          user_id: string
+        }[]
+      }
       update_challenge_rankings: {
         Args: {
           challenge_id: string
