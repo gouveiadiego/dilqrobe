@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -31,14 +32,17 @@ export function PaymentHistory() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data, error } = await supabase
-          .from("payments")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .returns<Payment[]>();
+        // Use a direct SQL query through RPC instead of the typed client
+        // This works around type issues with tables not in the generated types
+        const { data, error } = await supabase.rpc('get_user_payments', {
+          user_id_param: user.id
+        });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching payments:", error);
+          return;
+        }
+        
         setPayments(data || []);
       } catch (error) {
         console.error("Error fetching payments:", error);
