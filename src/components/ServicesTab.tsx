@@ -1,4 +1,4 @@
-<lov-code>
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -832,4 +832,201 @@ export function ServicesTab() {
                     </TableRow>
                   ) : (
                     filteredServices.map(service => (
-                      <TableRow key={service.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/
+                      <TableRow key={service.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <TableCell className="font-medium">{service.client_name}</TableCell>
+                        <TableCell>{service.company_name}</TableCell>
+                        <TableCell>{service.service_description}</TableCell>
+                        <TableCell>{format(new Date(service.start_date), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                            {service.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>{formatCurrency(service.amount)}</TableCell>
+                        <TableCell>
+                          <button 
+                            onClick={() => togglePaymentStatus(service.id, service.payment_status)}
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                              service.payment_status === 'paid' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
+                                : service.payment_status === 'canceled'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                                : 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
+                            }`}
+                          >
+                            {service.payment_status === 'paid' ? 'Pago' : service.payment_status === 'canceled' ? 'Cancelado' : 'Pendente'}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleEdit(service)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Editar</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => {
+                                setServiceToDelete(service.id);
+                                setShowDeleteDialog(true);
+                              }}
+                              className="h-8 w-8 p-0 text-red-600 dark:text-red-400"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Excluir</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+      
+      {/* Edit Service Dialog */}
+      <Dialog open={!!editingService} onOpenChange={(open) => !open && setEditingService(null)}>
+        <DialogContent className="max-w-3xl glass-card">
+          <DialogHeader>
+            <DialogTitle>Editar Serviço</DialogTitle>
+          </DialogHeader>
+          {editingService && (
+            <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_client_name">Cliente</Label>
+                <Input 
+                  id="edit_client_name" 
+                  value={editingService.client_name} 
+                  onChange={e => setEditingService({ ...editingService, client_name: e.target.value })} 
+                  className="glass-card"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit_start_date">Data de Início</Label>
+                <Input 
+                  id="edit_start_date" 
+                  type="date" 
+                  value={editingService.start_date.substring(0, 10)} 
+                  onChange={e => setEditingService({ ...editingService, start_date: e.target.value })} 
+                  className="glass-card"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit_company_name">Nome da Empresa</Label>
+                <Input 
+                  id="edit_company_name" 
+                  value={editingService.company_name} 
+                  onChange={e => setEditingService({ ...editingService, company_name: e.target.value })} 
+                  className="glass-card"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit_service_description">Descrição do Serviço</Label>
+                <Input 
+                  id="edit_service_description" 
+                  value={editingService.service_description} 
+                  onChange={e => setEditingService({ ...editingService, service_description: e.target.value })} 
+                  className="glass-card"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit_stage">Etapa</Label>
+                <Input 
+                  id="edit_stage" 
+                  value={editingService.stage} 
+                  onChange={e => setEditingService({ ...editingService, stage: e.target.value })} 
+                  className="glass-card"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit_status">Status</Label>
+                <Input 
+                  id="edit_status" 
+                  value={editingService.status} 
+                  onChange={e => setEditingService({ ...editingService, status: e.target.value })} 
+                  className="glass-card"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit_amount">Valor</Label>
+                <Input 
+                  id="edit_amount" 
+                  type="number" 
+                  value={editingService.amount} 
+                  onChange={e => setEditingService({ ...editingService, amount: Number(e.target.value) })} 
+                  className="glass-card"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Status do Pagamento</Label>
+                <Select 
+                  value={editingService.payment_status} 
+                  onValueChange={value => setEditingService({ ...editingService, payment_status: value })}
+                >
+                  <SelectTrigger className="glass-card">
+                    <SelectValue placeholder="Status do pagamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="paid">Pago</SelectItem>
+                    <SelectItem value="canceled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="col-span-1 md:col-span-2 flex justify-end gap-2">
+                <DialogClose asChild>
+                  <Button variant="outline" type="button">Cancelar</Button>
+                </DialogClose>
+                <Button 
+                  type="submit" 
+                  className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700"
+                >
+                  Atualizar Serviço
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="glass-card">
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
