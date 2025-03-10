@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,37 +86,30 @@ const calculateStats = (services: Service[]): ServiceStats => {
 };
 
 const calculateDailyRevenue = (services: Service[]) => {
-  // Se não temos serviços, retornamos um array vazio
   if (services.length === 0) {
     return [];
   }
   
-  // Pegar o mês atual ou o mês do primeiro serviço se existir
   const currentDate = services.length > 0 
     ? new Date(services[0].start_date) 
     : new Date();
   
-  // Criar intervalo para o mês todo
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   
-  // Gerar todos os dias do mês
   const allDaysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
   
-  // Inicializar o objeto com todos os dias do mês e valor zero
   const dailyRevenue = allDaysInMonth.reduce((acc: { [key: string]: number }, day) => {
     const dateKey = format(day, 'yyyy-MM-dd');
     acc[dateKey] = 0;
     return acc;
   }, {});
   
-  // Somar os valores de todos os serviços, independente do status de pagamento
   services.forEach(service => {
     const date = format(new Date(service.start_date), 'yyyy-MM-dd');
     dailyRevenue[date] = (dailyRevenue[date] || 0) + service.amount;
   });
 
-  // Converter para o formato usado pelo gráfico
   return Object.entries(dailyRevenue)
     .map(([date, amount]) => ({
       date,
@@ -716,7 +708,7 @@ export function ServicesTab() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Status do Pagamento</Label>
+                  <Label>Status do Pagamento</Label>
                   <Select 
                     value={newService.payment_status} 
                     onValueChange={value => setNewService({
@@ -905,17 +897,16 @@ export function ServicesTab() {
         </Tabs>
       </div>
       
-      {/* Edit Service Dialog */}
       {editingService && (
         <Dialog open={!!editingService} onOpenChange={(open) => !open && setEditingService(null)}>
-          <DialogContent className="glass-card">
+          <DialogContent className="glass-card max-w-4xl">
             <DialogHeader>
               <DialogTitle>Editar Serviço</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleUpdate} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit_client_name">Cliente</Label>
+                  <Label htmlFor="edit_client_name" className="text-sm font-medium">Cliente</Label>
                   <Input 
                     id="edit_client_name" 
                     value={editingService.client_name} 
@@ -923,12 +914,12 @@ export function ServicesTab() {
                       ...editingService,
                       client_name: e.target.value
                     })} 
-                    className="glass-card"
+                    className="glass-card w-full"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="edit_company_name">Empresa</Label>
+                  <Label htmlFor="edit_company_name" className="text-sm font-medium">Empresa</Label>
                   <Input 
                     id="edit_company_name" 
                     value={editingService.company_name} 
@@ -936,12 +927,12 @@ export function ServicesTab() {
                       ...editingService,
                       company_name: e.target.value
                     })} 
-                    className="glass-card"
+                    className="glass-card w-full"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="edit_service_description">Descrição</Label>
+                  <Label htmlFor="edit_service_description" className="text-sm font-medium">Descrição</Label>
                   <Input 
                     id="edit_service_description" 
                     value={editingService.service_description} 
@@ -949,12 +940,12 @@ export function ServicesTab() {
                       ...editingService,
                       service_description: e.target.value
                     })} 
-                    className="glass-card"
+                    className="glass-card w-full"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="edit_amount">Valor</Label>
+                  <Label htmlFor="edit_amount" className="text-sm font-medium">Valor</Label>
                   <Input 
                     id="edit_amount" 
                     type="number" 
@@ -963,12 +954,12 @@ export function ServicesTab() {
                       ...editingService,
                       amount: Number(e.target.value)
                     })} 
-                    className="glass-card"
+                    className="glass-card w-full"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="edit_stage">Etapa</Label>
+                  <Label htmlFor="edit_stage" className="text-sm font-medium">Etapa</Label>
                   <Input 
                     id="edit_stage" 
                     value={editingService.stage} 
@@ -976,12 +967,12 @@ export function ServicesTab() {
                       ...editingService,
                       stage: e.target.value
                     })} 
-                    className="glass-card"
+                    className="glass-card w-full"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="edit_status">Status</Label>
+                  <Label htmlFor="edit_status" className="text-sm font-medium">Status</Label>
                   <Input 
                     id="edit_status" 
                     value={editingService.status} 
@@ -989,12 +980,26 @@ export function ServicesTab() {
                       ...editingService,
                       status: e.target.value
                     })} 
-                    className="glass-card"
+                    className="glass-card w-full"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Status do Pagamento</Label>
+                  <Label htmlFor="edit_date" className="text-sm font-medium">Data de Início</Label>
+                  <Input 
+                    id="edit_date" 
+                    type="date"
+                    value={format(new Date(editingService.start_date), "yyyy-MM-dd")}
+                    onChange={e => setEditingService({
+                      ...editingService,
+                      start_date: e.target.value
+                    })} 
+                    className="glass-card w-full"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit_payment_status" className="text-sm font-medium">Status do Pagamento</Label>
                   <Select 
                     value={editingService.payment_status} 
                     onValueChange={value => setEditingService({
@@ -1002,7 +1007,7 @@ export function ServicesTab() {
                       payment_status: value
                     })}
                   >
-                    <SelectTrigger className="glass-card">
+                    <SelectTrigger id="edit_payment_status" className="glass-card w-full">
                       <SelectValue placeholder="Status do pagamento" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1014,7 +1019,7 @@ export function ServicesTab() {
                 </div>
               </div>
               
-              <DialogFooter>
+              <DialogFooter className="mt-6">
                 <Button type="button" variant="outline" onClick={() => setEditingService(null)}>
                   Cancelar
                 </Button>
@@ -1027,7 +1032,6 @@ export function ServicesTab() {
         </Dialog>
       )}
       
-      {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="glass-card">
           <DialogHeader>
