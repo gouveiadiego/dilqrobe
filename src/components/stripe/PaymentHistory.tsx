@@ -15,10 +15,10 @@ import { Loader2 } from "lucide-react";
 interface Payment {
   id: string;
   user_id: string;
-  stripe_payment_id: string;
+  stripe_payment_id: string | null;
   amount: number;
   currency: string;
-  status: "succeeded" | "failed";
+  status: string; // Changed from "succeeded" | "failed" to accept any string
   created_at: string;
 }
 
