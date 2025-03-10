@@ -18,6 +18,23 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Função para renovar a sessão automaticamente
+  const refreshSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error("Erro ao renovar sessão:", error);
+        // Se não conseguir renovar, tentamos pegar a sessão atual
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+      } else {
+        setSession(data.session);
+      }
+    } catch (err) {
+      console.error("Erro ao renovar sessão:", err);
+    }
+  };
+
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -76,10 +93,36 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       }, 8000);  // Aumentado para 8 segundos
     }
 
+    // Configurar refresh automático da sessão a cada 10 minutos
+    const refreshInterval = setInterval(refreshSession, 10 * 60 * 1000);
+
     return () => {
       subscription.unsubscribe();
+      clearInterval(refreshInterval);
     };
   }, [navigate, requireSubscription, location]);
+
+  // Configurar detecção de atividade do usuário
+  useEffect(() => {
+    const handleUserActivity = () => {
+      // Renovar a sessão em caso de atividade do usuário
+      refreshSession();
+    };
+
+    // Adicionar listeners para eventos de atividade
+    window.addEventListener("click", handleUserActivity);
+    window.addEventListener("keypress", handleUserActivity);
+    window.addEventListener("scroll", handleUserActivity);
+    window.addEventListener("mousemove", handleUserActivity);
+
+    return () => {
+      // Remover listeners ao desmontar o componente
+      window.removeEventListener("click", handleUserActivity);
+      window.removeEventListener("keypress", handleUserActivity);
+      window.removeEventListener("scroll", handleUserActivity);
+      window.removeEventListener("mousemove", handleUserActivity);
+    };
+  }, []);
 
   const checkSubscription = async (userId: string, forceAccept = false) => {
     try {
