@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -231,7 +230,7 @@ export function ServicesTab() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('logo_url')
+        .select('company_logo')
         .eq('id', user.id)
         .single();
 
@@ -240,7 +239,7 @@ export function ServicesTab() {
         return;
       }
 
-      setCompanyLogo(data?.logo_url || null);
+      setCompanyLogo(data?.company_logo || null);
     } catch (error: any) {
       console.error('Erro ao carregar logo da empresa:', error);
     }
@@ -289,6 +288,19 @@ export function ServicesTab() {
       toast.success('Serviço adicionado com sucesso');
     } catch (error: any) {
       toast.error(error.message);
+    }
+  };
+
+  const handlePaymentStatusChange = (value: string) => {
+    if (value === 'pending' || value === 'paid' || value === 'canceled') {
+      setNewService({ ...newService, payment_status: value });
+    }
+  };
+
+  const handleEditingPaymentStatusChange = (value: string) => {
+    if (!editingService) return;
+    if (value === 'pending' || value === 'paid' || value === 'canceled') {
+      setEditingService({ ...editingService, payment_status: value });
     }
   };
 
@@ -499,7 +511,7 @@ export function ServicesTab() {
                 
                 <div className="space-y-2">
                   <Label>Status do Pagamento</Label>
-                  <Select value={newService.payment_status} onValueChange={value => setNewService({ ...newService, payment_status: value })}>
+                  <Select value={newService.payment_status} onValueChange={handlePaymentStatusChange}>
                     <SelectTrigger className="glass-card">
                       <SelectValue placeholder="Status do pagamento" />
                     </SelectTrigger>
@@ -635,7 +647,7 @@ export function ServicesTab() {
               
               <div className="space-y-2">
                 <Label>Status do Pagamento</Label>
-                <Select value={newService.payment_status} onValueChange={value => setNewService({ ...newService, payment_status: value })}>
+                <Select value={newService.payment_status} onValueChange={handlePaymentStatusChange}>
                   <SelectTrigger className="glass-card">
                     <SelectValue placeholder="Status do pagamento" />
                   </SelectTrigger>
@@ -976,7 +988,7 @@ export function ServicesTab() {
                 <Label>Status do Pagamento</Label>
                 <Select 
                   value={editingService.payment_status} 
-                  onValueChange={value => setEditingService({ ...editingService, payment_status: value })}
+                  onValueChange={handleEditingPaymentStatusChange}
                 >
                   <SelectTrigger className="glass-card">
                     <SelectValue placeholder="Status do pagamento" />
