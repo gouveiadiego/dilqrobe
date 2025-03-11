@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -58,19 +59,23 @@ function App() {
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
           <Route path="/payment/canceled" element={<PaymentCanceled />} />
-          <Route
-            path="/dashboard"
+          
+          {/* Use a nested route for dashboard to handle refreshes better */}
+          <Route 
+            path="/dashboard/*" 
             element={
               <ProtectedRoute requireSubscription={true}>
                 <Index />
               </ProtectedRoute>
-            }
+            } 
           />
+          
           <Route path="/client-portal" element={
             <ProtectedRoute requireSubscription={true}>
               <ClientPortal />
             </ProtectedRoute>
           } />
+          
           <Route
             path="/company/:companyId"
             element={
@@ -79,6 +84,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />

@@ -18,6 +18,57 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Function to refresh the session
+  const refreshSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error("Error refreshing session:", error);
+        return;
+      }
+      
+      if (data.session) {
+        setSession(data.session);
+      }
+    } catch (err) {
+      console.error("Error in refreshSession:", err);
+    }
+  };
+
+  // Set up user activity listeners
+  useEffect(() => {
+    const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+    let inactivityTimer: number;
+
+    const handleUserActivity = () => {
+      clearTimeout(inactivityTimer);
+      // Refresh the session after 5 minutes of inactivity when user becomes active again
+      inactivityTimer = window.setTimeout(() => {
+        refreshSession();
+      }, 5 * 60 * 1000);
+    };
+
+    // Add event listeners
+    activityEvents.forEach(event => {
+      window.addEventListener(event, handleUserActivity);
+    });
+
+    // Start initial timer
+    handleUserActivity();
+
+    // Set up periodic refresh every 10 minutes regardless of activity
+    const periodicRefresh = setInterval(refreshSession, 10 * 60 * 1000);
+
+    return () => {
+      // Clean up event listeners
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, handleUserActivity);
+      });
+      clearTimeout(inactivityTimer);
+      clearInterval(periodicRefresh);
+    };
+  }, []);
+
   useEffect(() => {
     const checkSession = async () => {
       try {
