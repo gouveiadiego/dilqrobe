@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronRight, Edit, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -30,6 +30,9 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [customCategory, setCustomCategory] = useState("");
   const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItemText, setEditingItemText] = useState("");
+  const [editingItemCategory, setEditingItemCategory] = useState("");
   const queryClient = useQueryClient();
 
   // Inicializa todas as categorias como expandidas
@@ -132,6 +135,26 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
     }
   });
 
+  const updateItemMutation = useMutation({
+    mutationFn: async ({ id, title, category }: { id: string; title: string; category: string }) => {
+      const { error } = await supabase
+        .from('project_checklist')
+        .update({ title, category })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setEditingItemId(null);
+      queryClient.invalidateQueries({ queryKey: ['company-checklist', companyId] });
+      toast.success('Item atualizado com sucesso');
+    },
+    onError: (error) => {
+      toast.error('Erro ao atualizar item');
+      console.error(error);
+    }
+  });
+
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (newItemText.trim()) {
@@ -150,6 +173,28 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
     if (confirm("Tem certeza que deseja remover este item?")) {
       deleteItemMutation.mutate(id);
     }
+  };
+
+  const handleEditItem = (item: ChecklistItem) => {
+    setEditingItemId(item.id);
+    setEditingItemText(item.title);
+    setEditingItemCategory(item.category || "geral");
+  };
+
+  const handleSaveEdit = (id: string) => {
+    if (editingItemText.trim()) {
+      updateItemMutation.mutate({
+        id,
+        title: editingItemText.trim(),
+        category: editingItemCategory
+      });
+    } else {
+      toast.error('O texto do item não pode estar vazio');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
   };
 
   const handleAddCustomCategory = () => {
@@ -276,22 +321,80 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
                 <div className="space-y-1 p-2 bg-white">
                   {groupedItems[category].map((item) => (
                     <div key={item.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                      <div className="flex items-center space-x-2 flex-1">
-                        <Checkbox 
-                          id={`check-${item.id}`}
-                          checked={item.completed}
-                          onCheckedChange={() => handleToggleItem(item.id, item.completed)}
-                        />
-                        <Label 
-                          htmlFor={`check-${item.id}`}
-                          className={`${item.completed ? 'line-through text-gray-500' : ''} cursor-pointer`}
-                        >
-                          {item.title}
-                        </Label>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      {editingItemId === item.id ? (
+                        <div className="flex items-center space-x-2 flex-1">
+                          <div className="flex-1 flex flex-col space-y-2">
+                            <Input
+                              value={editingItemText}
+                              onChange={(e) => setEditingItemText(e.target.value)}
+                              className="flex-1"
+                            />
+                            <Select
+                              value={editingItemCategory}
+                              onValueChange={setEditingItemCategory}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione uma categoria" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categories.map((cat) => (
+                                  <SelectItem key={cat} value={cat}>
+                                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex space-x-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleSaveEdit(item.id)}
+                            >
+                              <Save className="h-4 w-4 text-green-500" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={handleCancelEdit}
+                            >
+                              <X className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center space-x-2 flex-1">
+                            <Checkbox 
+                              id={`check-${item.id}`}
+                              checked={item.completed}
+                              onCheckedChange={() => handleToggleItem(item.id, item.completed)}
+                            />
+                            <Label 
+                              htmlFor={`check-${item.id}`}
+                              className={`${item.completed ? 'line-through text-gray-500' : ''} cursor-pointer`}
+                            >
+                              {item.title}
+                            </Label>
+                          </div>
+                          <div className="flex space-x-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleEditItem(item)}
+                            >
+                              <Edit className="h-4 w-4 text-blue-500" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleDeleteItem(item.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
