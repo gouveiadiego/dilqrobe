@@ -10,8 +10,8 @@ type ToastProps = {
   duration?: number;
 };
 
-// Export toast functions directly to match how they're called
-export const toast = {
+// Create the base toast object with methods
+const toastObject = {
   // For plain messages without title/description structure
   error: (message: string) => {
     sonnerToast.error(message);
@@ -25,38 +25,31 @@ export const toast = {
   warning: (message: string) => {
     sonnerToast.warning(message);
   },
-  // For structured toast with title and description
-  // This allows calling toast({ title: "...", description: "..." })
-  __call: (props: ToastProps) => {
-    sonnerToast(props.title || "", {
-      description: props.description,
-      action: props.action,
-      duration: props.duration,
-      // Map variant to sonner's type - using as any to bypass type checking
-      ...(props.variant === "destructive" ? { type: "error" as any } : {})
-    });
-    return { id: crypto.randomUUID() };
-  }
 };
 
-// Add call signature to make toast callable as a function
-export type Toast = typeof toast & {
-  (props: ToastProps): { id: string };
-};
+// Create a function that can be called directly with toast props
+function toastFunction(props: ToastProps) {
+  sonnerToast(props.title || "", {
+    description: props.description,
+    action: props.action,
+    duration: props.duration,
+    // Map variant to sonner's type - using as any to bypass type checking
+    ...(props.variant === "destructive" ? { type: "error" as any } : {})
+  });
+  return { id: crypto.randomUUID() };
+}
 
-// Cast to add the call signature
-const callableToast = toast as Toast;
-Object.defineProperty(callableToast, "apply", {
-  value: function(this: any, _: any, args: any[]) {
-    return this.__call(args[0]);
-  }
-});
+// Create the toast object by merging the function and the object
+export const toast = Object.assign(toastFunction, toastObject);
+
+// Define the toast type with both function call and methods
+export type Toast = typeof toast;
 
 export const useToast = () => {
   const toasts: ToastProps[] = [];
 
   return {
-    toast: callableToast,
+    toast,
     toasts,
   };
 };
