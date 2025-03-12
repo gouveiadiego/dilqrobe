@@ -23,6 +23,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { ServicesTab } from "@/components/ServicesTab";
 import { WrittenProjectsTab } from "@/components/WrittenProjectsTab";
 import { HabitsTab } from "@/components/HabitsTab";
+import { HabitReminder } from "@/components/HabitReminder";
 
 type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects';
 
@@ -135,6 +136,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-50 transition-colors duration-300">
+      <HabitReminder />
+      
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out z-30 dark:bg-gray-900 dark:border-gray-800 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} onLogout={handleLogout} />
       </aside>

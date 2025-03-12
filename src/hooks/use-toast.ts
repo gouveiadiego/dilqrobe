@@ -7,7 +7,7 @@ type ToastProps = {
   description?: string;
   action?: React.ReactNode;
   variant?: "default" | "destructive";
-  duration?: number; // Added duration property
+  duration?: number;
 };
 
 // Export toast functions directly to match how they're called
@@ -21,6 +21,9 @@ export const toast = {
   },
   info: (message: string) => {
     sonnerToast(message);
+  },
+  warning: (message: string) => {
+    sonnerToast.warning(message);
   },
   // For structured toast with title and description
   // This allows calling toast({ title: "...", description: "..." })
