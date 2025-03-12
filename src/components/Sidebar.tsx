@@ -101,7 +101,7 @@ export function Sidebar({ activeTab, setActiveTab, onLogout }: SidebarProps) {
                 onClick={() => setActiveTab('projects')}
               >
                 <FileText size={20} />
-                Written Projects
+                Projetos
               </Button>
               <Button 
                 variant={activeTab === 'budget' ? "secondary" : "ghost"}
