@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";

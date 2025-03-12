@@ -9,7 +9,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Check, X, Calendar } from "lucide-react";
+import { Edit, Trash2, Plus, Calendar } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -38,9 +38,10 @@ type RunningRecord = {
 interface RunningRecordsListProps {
   records: RunningRecord[];
   onUpdate: () => void;
+  showEmptyState?: boolean;
 }
 
-export function RunningRecordsList({ records, onUpdate }: RunningRecordsListProps) {
+export function RunningRecordsList({ records, onUpdate, showEmptyState = true }: RunningRecordsListProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentRecord, setCurrentRecord] = useState<RunningRecord | null>(null);
@@ -49,6 +50,22 @@ export function RunningRecordsList({ records, onUpdate }: RunningRecordsListProp
     duration: "",
     date: "",
     notes: ""
+  });
+
+  // Check if these records belong to the current user
+  const [isCurrentUserRecords, setIsCurrentUserRecords] = useState(false);
+  
+  useState(() => {
+    const checkUserRecords = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && records.length > 0) {
+        // Check if at least one record belongs to the current user
+        const belongsToUser = records.some(record => record.user_id === session.user.id);
+        setIsCurrentUserRecords(belongsToUser);
+      }
+    };
+    
+    checkUserRecords();
   });
 
   const handleEditClick = (record: RunningRecord) => {
@@ -150,6 +167,11 @@ export function RunningRecordsList({ records, onUpdate }: RunningRecordsListProp
     
     return `${minutes}:${seconds.toString().padStart(2, '0')} min/km`;
   };
+
+  // If we're not supposed to show empty state and there are no records, return nothing
+  if (!showEmptyState && records.length === 0) {
+    return null;
+  }
 
   return (
     <div className="space-y-4">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Trophy, PersonStanding, ChevronDown, Plus, Calendar, Award, Medal, Target, ChartLine } from "lucide-react";
@@ -19,6 +20,7 @@ import { Achievements } from "./challenges/Achievements";
 import { NewChallengeForm } from "./challenges/NewChallengeForm";
 import { NewRunForm } from "./challenges/NewRunForm";
 import { RunningRecordsList } from "./challenges/RunningRecordsList";
+import { ChallengeRanking } from "./challenges/ChallengeRanking"; 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 
@@ -32,6 +34,8 @@ export function ChallengesTab() {
     currentChallenge: null
   });
   const [activeTab, setActiveTab] = useState("overview");
+  const [userHasRecords, setUserHasRecords] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Check authentication status
   useEffect(() => {
@@ -40,6 +44,8 @@ export function ChallengesTab() {
       if (!session) {
         console.log("No active session found, redirecting to login");
         navigate("/login");
+      } else {
+        setCurrentUserId(session.user.id);
       }
     };
 
@@ -50,6 +56,9 @@ export function ChallengesTab() {
       if (!session) {
         console.log("Auth state changed: no session, redirecting to login");
         navigate("/login");
+        setCurrentUserId(null);
+      } else {
+        setCurrentUserId(session.user.id);
       }
     });
 
@@ -129,10 +138,25 @@ export function ChallengesTab() {
     }
   });
 
+  // Check if current user has any records
   useEffect(() => {
-    if (challenges?.length > 0 && records) {
+    if (records && currentUserId) {
+      const userRecords = records.filter(record => record.user_id === currentUserId);
+      setUserHasRecords(userRecords.length > 0);
+    } else {
+      setUserHasRecords(false);
+    }
+  }, [records, currentUserId]);
+
+  useEffect(() => {
+    if (challenges?.length > 0 && records && currentUserId) {
       const latestChallenge = challenges[0];
-      const challengeRecords = records.filter(r => r.challenge_id === latestChallenge.id);
+      
+      // Only count records for the current user
+      const challengeRecords = records.filter(
+        r => r.challenge_id === latestChallenge.id && r.user_id === currentUserId
+      );
+      
       const totalDistance = challengeRecords.reduce((acc, curr) => acc + Number(curr.distance), 0);
       const percentageComplete = totalDistance > 0 
         ? (totalDistance / Number(latestChallenge.yearly_goal)) * 100 
@@ -144,7 +168,7 @@ export function ChallengesTab() {
         currentChallenge: latestChallenge
       });
     }
-  }, [challenges, records]);
+  }, [challenges, records, currentUserId]);
 
   const { data: weeklyStats } = useQuery({
     queryKey: ['weekly-stats'],
@@ -215,6 +239,9 @@ export function ChallengesTab() {
     refetch();
   };
 
+  // Filter records for current user only
+  const userRecords = records ? records.filter(record => record.user_id === currentUserId) : [];
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header with parallax effect */}
@@ -283,8 +310,8 @@ export function ChallengesTab() {
         </div>
       </div>
 
-      {/* Stats */}
-      <ChallengeStats currentStats={currentStats} />
+      {/* Stats - Only show for users who have records */}
+      {userHasRecords && <ChallengeStats currentStats={currentStats} />}
 
       {/* Content Tabs */}
       <Tabs defaultValue="overview" className="w-full" value={activeTab} onValueChange={setActiveTab}>
@@ -297,21 +324,37 @@ export function ChallengesTab() {
             <Trophy className="h-4 w-4 mr-2" />
             Desafios
           </TabsTrigger>
-          <TabsTrigger value="records" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
-            <Calendar className="h-4 w-4 mr-2" />
-            Corridas
-          </TabsTrigger>
-          <TabsTrigger value="achievements" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
+          {userHasRecords && (
+            <TabsTrigger value="records" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
+              <Calendar className="h-4 w-4 mr-2" />
+              Corridas
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="ranking" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
             <Medal className="h-4 w-4 mr-2" />
-            Conquistas
+            Ranking
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6 animate-fade-in">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <WeeklyProgress weeklyStats={weeklyStats || []} />
-            <Achievements achievements={achievements || []} />
-          </div>
+          {userHasRecords ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <WeeklyProgress weeklyStats={weeklyStats || []} />
+              <Achievements achievements={achievements || []} />
+            </div>
+          ) : (
+            <div className="bg-white/60 backdrop-blur-sm p-6 rounded-xl border border-gray-100 shadow-sm text-center">
+              <h3 className="text-xl font-semibold mb-4 text-indigo-800">Bem-vindo aos Desafios de Corrida!</h3>
+              <p className="text-gray-600 mb-6">Registre sua primeira corrida para visualizar estatísticas e acompanhar seu progresso.</p>
+              <Button 
+                onClick={() => setNewRunOpen(true)}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
+                <PersonStanding className="mr-2 h-4 w-4" />
+                Registrar Primeira Corrida
+              </Button>
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="challenges" className="animate-fade-in">
@@ -327,50 +370,22 @@ export function ChallengesTab() {
           </div>
         </TabsContent>
         
-        <TabsContent value="records" className="animate-fade-in">
-          <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 shadow-sm">
-            <RunningRecordsList 
-              records={records || []}
-              onUpdate={handleRecordUpdate}
-            />
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="achievements" className="animate-fade-in">
-          <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 shadow-sm">
-            <h3 className="text-xl font-semibold mb-6 flex items-center text-amber-800">
-              <Award className="h-5 w-5 mr-2 text-amber-600" />
-              Todas as Conquistas
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Achievements achievements={achievements || []} />
-              
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 shadow-sm border border-amber-100">
-                <h4 className="text-lg font-semibold mb-4 text-amber-800 flex items-center">
-                  <Target className="h-5 w-5 mr-2 text-amber-600" />
-                  Próximas Conquistas
-                </h4>
-                <div className="space-y-4">
-                  <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-amber-100 shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <h5 className="font-medium text-amber-900">Corridista de Ouro</h5>
-                      <div className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">100km</div>
-                    </div>
-                    <Progress value={65} className="h-2 bg-amber-100" indicatorClassName="bg-gradient-to-r from-amber-400 to-amber-600" />
-                    <p className="text-xs text-amber-700 mt-2">65km completados dos 100km necessários</p>
-                  </div>
-                  
-                  <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-amber-100 shadow-sm">
-                    <div className="flex justify-between items-center mb-2">
-                      <h5 className="font-medium text-amber-900">Mestre da Consistência</h5>
-                      <div className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">30 dias</div>
-                    </div>
-                    <Progress value={40} className="h-2 bg-amber-100" indicatorClassName="bg-gradient-to-r from-amber-400 to-amber-600" />
-                    <p className="text-xs text-amber-700 mt-2">12 dias consecutivos de 30 dias necessários</p>
-                  </div>
-                </div>
-              </div>
+        {userHasRecords && (
+          <TabsContent value="records" className="animate-fade-in">
+            <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 shadow-sm">
+              <RunningRecordsList 
+                records={userRecords || []}
+                onUpdate={handleRecordUpdate}
+              />
             </div>
+          </TabsContent>
+        )}
+        
+        <TabsContent value="ranking" className="animate-fade-in">
+          <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 shadow-sm">
+            {challenges && challenges.length > 0 && (
+              <ChallengeRanking challengeId={challenges[0].id} />
+            )}
           </div>
         </TabsContent>
       </Tabs>
