@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Trophy, PersonStanding, ChevronDown, Plus, Calendar, Award, Medal, Target, ChartLine } from "lucide-react";
@@ -19,6 +18,7 @@ import { WeeklyProgress } from "./challenges/WeeklyProgress";
 import { Achievements } from "./challenges/Achievements";
 import { NewChallengeForm } from "./challenges/NewChallengeForm";
 import { NewRunForm } from "./challenges/NewRunForm";
+import { RunningRecordsList } from "./challenges/RunningRecordsList";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 
@@ -94,7 +94,7 @@ export function ChallengesTab() {
     }
   });
 
-  const { data: records } = useQuery({
+  const { data: records, refetch: refetchRecords } = useQuery({
     queryKey: ['running-records'],
     queryFn: async () => {
       console.log("Fetching running records...");
@@ -134,7 +134,9 @@ export function ChallengesTab() {
       const latestChallenge = challenges[0];
       const challengeRecords = records.filter(r => r.challenge_id === latestChallenge.id);
       const totalDistance = challengeRecords.reduce((acc, curr) => acc + Number(curr.distance), 0);
-      const percentageComplete = (totalDistance / Number(latestChallenge.yearly_goal)) * 100;
+      const percentageComplete = totalDistance > 0 
+        ? (totalDistance / Number(latestChallenge.yearly_goal)) * 100 
+        : 0;
 
       setCurrentStats({
         totalDistance,
@@ -208,6 +210,11 @@ export function ChallengesTab() {
     refetch();
   };
 
+  const handleRecordUpdate = () => {
+    refetchRecords();
+    refetch();
+  };
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header with parallax effect */}
@@ -266,7 +273,7 @@ export function ChallengesTab() {
                     </DialogDescription>
                   </DialogHeader>
                   <NewRunForm 
-                    onSuccess={refetch} 
+                    onSuccess={handleRecordUpdate} 
                     onClose={() => setNewRunOpen(false)} 
                   />
                 </DialogContent>
@@ -281,7 +288,7 @@ export function ChallengesTab() {
 
       {/* Content Tabs */}
       <Tabs defaultValue="overview" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3 mb-8 bg-gray-100/50 backdrop-blur-sm p-1 rounded-xl">
+        <TabsList className="grid grid-cols-4 mb-8 bg-gray-100/50 backdrop-blur-sm p-1 rounded-xl">
           <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
             <ChartLine className="h-4 w-4 mr-2" />
             Visão Geral
@@ -289,6 +296,10 @@ export function ChallengesTab() {
           <TabsTrigger value="challenges" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
             <Trophy className="h-4 w-4 mr-2" />
             Desafios
+          </TabsTrigger>
+          <TabsTrigger value="records" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
+            <Calendar className="h-4 w-4 mr-2" />
+            Corridas
           </TabsTrigger>
           <TabsTrigger value="achievements" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
             <Medal className="h-4 w-4 mr-2" />
@@ -312,6 +323,15 @@ export function ChallengesTab() {
             <ChallengesList 
               challenges={challenges || []} 
               onDelete={handleDeleteChallenge} 
+            />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="records" className="animate-fade-in">
+          <div className="bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-gray-100 shadow-sm">
+            <RunningRecordsList 
+              records={records || []}
+              onUpdate={handleRecordUpdate}
             />
           </div>
         </TabsContent>
