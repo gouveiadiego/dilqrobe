@@ -35,7 +35,7 @@ export function WeeklyProgress({ weeklyStats }: WeeklyStatsProps) {
   const getAverageDistance = () => {
     if (weeklyStats.length === 0) return 0;
     const total = weeklyStats.reduce((acc, curr) => acc + curr.total_distance, 0);
-    return (total / weeklyStats.length).toFixed(1);
+    return Number((total / weeklyStats.length).toFixed(1));
   };
 
   // Get current week data
@@ -50,6 +50,8 @@ export function WeeklyProgress({ weeklyStats }: WeeklyStatsProps) {
   };
 
   const currentWeekData = getCurrentWeekData();
+  // Get the average distance as a number, not a string
+  const averageDistance = getAverageDistance();
 
   return (
     <Card className="col-span-2 border-none bg-gradient-to-br from-blue-50 to-indigo-50 overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg group">
@@ -115,11 +117,11 @@ export function WeeklyProgress({ weeklyStats }: WeeklyStatsProps) {
                 }}
               />
               <ReferenceLine 
-                y={parseFloat(getAverageDistance())} 
+                y={averageDistance} 
                 stroke="#4F46E5" 
                 strokeDasharray="3 3"
                 label={{ 
-                  value: `Média: ${getAverageDistance()} km`, 
+                  value: `Média: ${averageDistance} km`, 
                   position: 'insideBottomRight',
                   fill: '#4F46E5',
                   fontSize: 12
