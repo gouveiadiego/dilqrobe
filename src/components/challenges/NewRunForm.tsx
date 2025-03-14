@@ -21,11 +21,15 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
     date: new Date().toISOString().split('T')[0],
     notes: ""
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     try {
+      setIsSubmitting(true);
+      
       if (!newRun.distance || !newRun.date) {
         toast.error("Por favor, preencha os campos obrigatórios");
+        setIsSubmitting(false);
         return;
       }
 
@@ -35,6 +39,7 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
         console.error("No user session found");
         toast.error("Usuário não autenticado");
         navigate("/login");
+        setIsSubmitting(false);
         return;
       }
 
@@ -49,6 +54,7 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
       if (challengeError || !latestChallenge) {
         console.error("Error fetching latest challenge:", challengeError);
         toast.error("Nenhum desafio encontrado");
+        setIsSubmitting(false);
         return;
       }
 
@@ -79,6 +85,13 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
         toast.error("Erro ao atualizar ranking");
       }
 
+      // Update or create weekly stats
+      await updateWeeklyStats(session.user.id, latestChallenge.id, {
+        distance: parseFloat(newRun.distance),
+        duration: newRun.duration ? parseInt(newRun.duration) : 0,
+        date: newRun.date
+      });
+
       console.log("Run record created successfully");
       toast.success("Corrida registrada com sucesso!");
       onSuccess();
@@ -92,7 +105,83 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
     } catch (error) {
       console.error("Error in handleNewRun:", error);
       toast.error("Erro ao registrar corrida");
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const updateWeeklyStats = async (
+    userId: string, 
+    challengeId: string, 
+    record: {distance: number, duration: number, date: string}
+  ) => {
+    try {
+      // Get the start of the week (Sunday)
+      const recordDate = new Date(record.date);
+      const weekStart = new Date(recordDate);
+      weekStart.setDate(recordDate.getDate() - recordDate.getDay());
+      const weekStartString = weekStart.toISOString().split('T')[0];
+
+      // Check if a weekly stats record already exists for this week
+      const { data: existingStats, error: statsCheckError } = await supabase
+        .from('running_weekly_stats')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('challenge_id', challengeId)
+        .eq('week_start', weekStartString)
+        .maybeSingle();
+
+      if (statsCheckError) {
+        console.error("Error checking weekly stats:", statsCheckError);
+        return;
+      }
+
+      if (existingStats) {
+        // Update existing weekly stats
+        const { error: updateError } = await supabase
+          .from('running_weekly_stats')
+          .update({
+            total_distance: Number(existingStats.total_distance) + record.distance,
+            total_duration: Number(existingStats.total_duration || 0) + record.duration,
+            avg_pace: calculatePace(
+              Number(existingStats.total_distance) + record.distance,
+              Number(existingStats.total_duration || 0) + record.duration
+            ),
+            completed_runs: Number(existingStats.completed_runs || 0) + 1
+          })
+          .eq('id', existingStats.id);
+
+        if (updateError) {
+          console.error("Error updating weekly stats:", updateError);
+        }
+      } else {
+        // Create new weekly stats
+        const { error: createError } = await supabase
+          .from('running_weekly_stats')
+          .insert({
+            user_id: userId,
+            challenge_id: challengeId,
+            week_start: weekStartString,
+            total_distance: record.distance,
+            total_duration: record.duration,
+            avg_pace: record.duration > 0 ? record.duration / record.distance : 0,
+            completed_runs: 1
+          });
+
+        if (createError) {
+          console.error("Error creating weekly stats:", createError);
+        }
+      }
+
+      console.log("Weekly stats updated successfully");
+    } catch (error) {
+      console.error("Error updating weekly stats:", error);
+    }
+  };
+
+  const calculatePace = (distance: number, duration: number): number => {
+    if (distance <= 0 || duration <= 0) return 0;
+    return Number((duration / distance).toFixed(2));
   };
 
   return (
@@ -136,8 +225,12 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
           placeholder="Adicione observações sobre sua corrida..."
         />
       </div>
-      <Button onClick={handleSubmit} className="w-full">
-        Registrar Corrida
+      <Button 
+        onClick={handleSubmit} 
+        className="w-full" 
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Registrando..." : "Registrar Corrida"}
       </Button>
     </div>
   );
