@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartLine, Calendar, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
+import { ChartLine, Calendar, TrendingUp, ArrowUp, ArrowDown, Timer } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 interface WeeklyStatsProps {
@@ -37,6 +37,19 @@ export function WeeklyProgress({ weeklyStats }: WeeklyStatsProps) {
     const total = weeklyStats.reduce((acc, curr) => acc + curr.total_distance, 0);
     return (total / weeklyStats.length).toFixed(1);
   };
+
+  // Get current week data
+  const getCurrentWeekData = () => {
+    if (weeklyStats.length === 0) return { distance: 0, pace: 0, runs: 0 };
+    const currentWeek = weeklyStats[weeklyStats.length - 1];
+    return {
+      distance: currentWeek?.total_distance || 0,
+      pace: currentWeek?.avg_pace || 0,
+      runs: currentWeek?.completed_runs || 0
+    };
+  };
+
+  const currentWeekData = getCurrentWeekData();
 
   return (
     <Card className="col-span-2 border-none bg-gradient-to-br from-blue-50 to-indigo-50 overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg group">
@@ -102,7 +115,7 @@ export function WeeklyProgress({ weeklyStats }: WeeklyStatsProps) {
                 }}
               />
               <ReferenceLine 
-                y={parseFloat(getAverageDistance().toString())} 
+                y={parseFloat(getAverageDistance())} 
                 stroke="#4F46E5" 
                 strokeDasharray="3 3"
                 label={{ 
@@ -132,23 +145,29 @@ export function WeeklyProgress({ weeklyStats }: WeeklyStatsProps) {
               Esta Semana
             </div>
             <div className="text-2xl font-bold text-blue-800">
-              {weeklyStats[weeklyStats.length - 1]?.total_distance.toFixed(1) || 0}
+              {currentWeekData.distance.toFixed(1)}
               <span className="text-sm font-normal text-blue-600 ml-1">km</span>
             </div>
           </div>
           
           <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-blue-100 transition-all duration-300 hover:shadow-md hover:translate-y-[-2px]">
-            <div className="text-xs text-blue-600 mb-1">Ritmo Médio</div>
+            <div className="text-xs text-blue-600 mb-1 flex items-center">
+              <Timer className="h-3 w-3 mr-1" />
+              Ritmo Médio
+            </div>
             <div className="text-2xl font-bold text-blue-800">
-              {weeklyStats[weeklyStats.length - 1]?.avg_pace.toFixed(2) || 0}
+              {currentWeekData.pace.toFixed(2)}
               <span className="text-sm font-normal text-blue-600 ml-1">min/km</span>
             </div>
           </div>
           
           <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 shadow-sm border border-blue-100 transition-all duration-300 hover:shadow-md hover:translate-y-[-2px]">
-            <div className="text-xs text-blue-600 mb-1">Corridas</div>
+            <div className="text-xs text-blue-600 mb-1 flex items-center">
+              <Calendar className="h-3 w-3 mr-1" />
+              Corridas
+            </div>
             <div className="text-2xl font-bold text-blue-800">
-              {weeklyStats[weeklyStats.length - 1]?.completed_runs || 0}
+              {currentWeekData.runs}
               <span className="text-sm font-normal text-blue-600 ml-1">total</span>
             </div>
           </div>
