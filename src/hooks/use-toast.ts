@@ -29,14 +29,21 @@ const toastObject = {
 
 // Create a function that can be called directly with toast props
 function toastFunction(props: ToastProps) {
-  sonnerToast(props.title || "", {
-    description: props.description,
-    action: props.action,
-    duration: props.duration,
-    // Map variant to sonner's type - using as any to bypass type checking
-    ...(props.variant === "destructive" ? { type: "error" as any } : {})
+  const { title, description, action, duration, variant } = props;
+  
+  if (variant === "destructive") {
+    return sonnerToast.error(title || "", {
+      description,
+      action,
+      duration,
+    });
+  } 
+  
+  return sonnerToast(title || "", {
+    description,
+    action,
+    duration,
   });
-  return { id: crypto.randomUUID() };
 }
 
 // Create the toast object by merging the function and the object

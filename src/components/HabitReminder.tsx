@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 import { Bell, Check, Clock, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,18 @@ const motivationalMessages = [
 
 export function HabitReminder() {
   const [checkedHabits, setCheckedHabits] = useState<Record<string, boolean>>({});
+  const notificationSound = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    // Criar elemento de áudio para a notificação
+    notificationSound.current = new Audio("/notification-sound.mp3");
+    
+    return () => {
+      if (notificationSound.current) {
+        notificationSound.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const checkHabits = async () => {
@@ -86,22 +98,31 @@ export function HabitReminder() {
     const randomIndex = Math.floor(Math.random() * motivationalMessages.length);
     const message = motivationalMessages[randomIndex];
     
+    // Tocar o som de notificação
+    if (notificationSound.current) {
+      notificationSound.current.play().catch(err => {
+        console.error("Erro ao reproduzir som de notificação:", err);
+      });
+    }
+
+    // Exibir a notificação usando o toast correto
     toast({
       title: `Hora do seu hábito: ${habit.title}`,
       description: message,
+      variant: "default",
       duration: 10000, // 10 seconds
       action: (
-        <div className="flex space-x-2 mt-2">
+        <div className="flex flex-col space-y-2 mt-2 sm:flex-row sm:space-x-2 sm:space-y-0">
           <button 
             onClick={() => completeHabit(habit.id)}
-            className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-sm transition-colors"
+            className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md text-sm transition-colors"
           >
             <Check size={14} />
             <span>Completar</span>
           </button>
           <button 
             onClick={() => dismissReminder()}
-            className="flex items-center gap-1 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-3 py-1.5 rounded-md text-sm transition-colors"
+            className="flex items-center justify-center gap-1 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 px-3 py-1.5 rounded-md text-sm transition-colors"
           >
             <XCircle size={14} />
             <span>Depois</span>
@@ -152,11 +173,16 @@ export function HabitReminder() {
           title: "Hábito completado!",
           description: "Continue assim, você está construindo um futuro melhor!",
           duration: 3000,
+          variant: "default"
         });
       }
     } catch (error) {
       console.error("Error completing habit:", error);
-      toast.error("Erro ao completar hábito");
+      toast({
+        title: "Erro ao completar hábito",
+        variant: "destructive",
+        duration: 3000
+      });
     }
   };
 
