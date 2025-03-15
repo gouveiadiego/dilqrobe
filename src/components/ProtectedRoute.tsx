@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +28,7 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       
       if (data.session) {
         setSession(data.session);
+        console.log("Session refreshed successfully");
       }
     } catch (err) {
       console.error("Error in refreshSession:", err);
@@ -42,10 +42,13 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
     const handleUserActivity = () => {
       clearTimeout(inactivityTimer);
-      // Refresh the session after 5 minutes of inactivity when user becomes active again
+      // Reduced time - refresh session on every user activity to keep it alive
+      refreshSession();
+      
+      // Set up a timer to refresh again if user remains active
       inactivityTimer = window.setTimeout(() => {
         refreshSession();
-      }, 5 * 60 * 1000);
+      }, 3 * 60 * 1000); // Every 3 minutes
     };
 
     // Add event listeners
@@ -56,8 +59,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     // Start initial timer
     handleUserActivity();
 
-    // Set up periodic refresh every 10 minutes regardless of activity
-    const periodicRefresh = setInterval(refreshSession, 10 * 60 * 1000);
+    // Set up periodic refresh every 5 minutes regardless of activity
+    const periodicRefresh = setInterval(refreshSession, 5 * 60 * 1000);
 
     return () => {
       // Clean up event listeners
