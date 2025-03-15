@@ -1,0 +1,9 @@
+
+# Netlify configuration file
+
+# This redirect rule ensures that all paths are handled by index.html
+# which is essential for single-page applications with client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
