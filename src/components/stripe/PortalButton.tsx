@@ -8,9 +8,17 @@ interface PortalButtonProps {
   customerId?: string
   children?: React.ReactNode
   className?: string
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined
+  cancelMode?: boolean
 }
 
-export function PortalButton({ customerId, children, className }: PortalButtonProps) {
+export function PortalButton({ 
+  customerId, 
+  children, 
+  className,
+  variant = "default",
+  cancelMode = false 
+}: PortalButtonProps) {
   const [loading, setLoading] = useState(false)
 
   const handlePortal = async () => {
@@ -22,9 +30,14 @@ export function PortalButton({ customerId, children, className }: PortalButtonPr
 
     try {
       setLoading(true)
+      
+      // When in cancel mode, set returnUrl to the subscription page
+      // This way, after cancellation they'll be redirected back to manage their subscription
+      const returnUrl = `${window.location.origin}${cancelMode ? '/subscription' : '/dashboard'}`
+      
       const response = await createPortalSession({
         customerId,
-        returnUrl: `${window.location.origin}/subscription`,
+        returnUrl,
       })
 
       if (response?.error) {
@@ -54,8 +67,9 @@ export function PortalButton({ customerId, children, className }: PortalButtonPr
       onClick={handlePortal} 
       disabled={loading || !customerId}
       className={className}
+      variant={variant}
     >
-      {loading ? "Carregando..." : children || "Gerenciar Assinatura"}
+      {loading ? "Carregando..." : children || (cancelMode ? "Cancelar Assinatura" : "Gerenciar Assinatura")}
     </Button>
   )
 }
