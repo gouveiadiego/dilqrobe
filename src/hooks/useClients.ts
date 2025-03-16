@@ -11,6 +11,7 @@ export interface Client {
   phone?: string;
   address?: string;
   created_at?: string;
+  stripe_customer_id?: string;
 }
 
 export const useClients = () => {

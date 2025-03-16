@@ -10,6 +10,7 @@ interface PortalButtonProps {
   className?: string
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined
   cancelMode?: boolean
+  size?: "default" | "sm" | "lg" | "icon" | string
 }
 
 export function PortalButton({ 
@@ -17,7 +18,8 @@ export function PortalButton({
   children, 
   className,
   variant = "default",
-  cancelMode = false 
+  cancelMode = false,
+  size
 }: PortalButtonProps) {
   const [loading, setLoading] = useState(false)
 
@@ -68,6 +70,7 @@ export function PortalButton({
       disabled={loading || !customerId}
       className={className}
       variant={variant}
+      size={size}
     >
       {loading ? "Carregando..." : children || (cancelMode ? "Cancelar Assinatura" : "Gerenciar Assinatura")}
     </Button>
