@@ -1,6 +1,8 @@
+
 import { Button } from "@/components/ui/button"
 import { createPortalSession } from "@/integrations/stripe/client"
 import { useState } from "react"
+import { toast } from "sonner"
 
 interface PortalButtonProps {
   customerId?: string
@@ -24,11 +26,14 @@ export function PortalButton({ customerId, children, className }: PortalButtonPr
         returnUrl: `${window.location.origin}/subscription`,
       })
 
-      if (session.url) {
+      if (session?.url) {
         window.location.href = session.url
+      } else {
+        toast.error("Não foi possível acessar o portal de gerenciamento")
       }
     } catch (error) {
       console.error('Error redirecting to portal:', error)
+      toast.error("Erro ao acessar o portal de gerenciamento")
     } finally {
       setLoading(false)
     }
