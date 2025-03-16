@@ -22,7 +22,7 @@ export const createCheckoutSession = async ({
     // Check if we have Stripe configured before trying to create a checkout session
     if (!stripePublishableKey) {
       console.warn('Stripe publishable key is not configured. Checkout session cannot be created.');
-      throw new Error('Stripe is not configured');
+      return { error: 'Stripe is not configured' };
     }
 
     const { data, error } = await supabase.functions.invoke("create-checkout", {
@@ -34,11 +34,15 @@ export const createCheckoutSession = async ({
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating checkout session:', error);
+      return { error: error.message || 'Error creating checkout session' };
+    }
+    
     return data;
   } catch (error) {
     console.error('Error creating checkout session:', error);
-    throw error;
+    return { error: error instanceof Error ? error.message : 'Unknown error during checkout' };
   }
 };
 
@@ -50,7 +54,7 @@ export const createPortalSession = async ({
     // Check if we have Stripe configured before trying to create a portal session
     if (!stripePublishableKey) {
       console.warn('Stripe publishable key is not configured. Portal session cannot be created.');
-      throw new Error('Stripe is not configured');
+      return { error: 'Stripe is not configured' };
     }
     
     const { data, error } = await supabase.functions.invoke("create-portal-session", {
@@ -60,10 +64,14 @@ export const createPortalSession = async ({
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating portal session:', error);
+      return { error: error.message || 'Error creating portal session' };
+    }
+    
     return data;
   } catch (error) {
     console.error('Error creating portal session:', error);
-    throw error;
+    return { error: error instanceof Error ? error.message : 'Unknown error during portal session creation' };
   }
 };

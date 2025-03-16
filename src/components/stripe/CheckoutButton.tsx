@@ -17,16 +17,25 @@ export function CheckoutButton({ priceId, customerId, children, className }: Che
   const handleCheckout = async () => {
     try {
       setLoading(true)
-      const session = await createCheckoutSession({
+      const response = await createCheckoutSession({
         priceId,
         customerId,
         successUrl: `${window.location.origin}/payment/success`,
         cancelUrl: `${window.location.origin}/payment/canceled`,
       })
 
-      if (session?.url) {
-        window.location.href = session.url
+      if (response?.error) {
+        console.error('Error response:', response.error)
+        toast.error(response.error === 'Stripe is not configured' 
+          ? "Sistema de pagamento não configurado" 
+          : "Não foi possível criar a sessão de checkout")
+        return
+      }
+
+      if (response?.url) {
+        window.location.href = response.url
       } else {
+        console.error('No URL returned from checkout session')
         toast.error("Não foi possível criar a sessão de checkout")
       }
     } catch (error) {
