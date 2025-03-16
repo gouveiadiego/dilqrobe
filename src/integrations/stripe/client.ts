@@ -39,7 +39,7 @@ export const createCheckoutSession = async ({
       return { error: error.message || 'Error creating checkout session' };
     }
     
-    return data;
+    return data || { error: 'No data returned from checkout session' };
   } catch (error) {
     console.error('Error creating checkout session:', error);
     return { error: error instanceof Error ? error.message : 'Unknown error during checkout' };
@@ -57,6 +57,12 @@ export const createPortalSession = async ({
       return { error: 'Stripe is not configured' };
     }
     
+    // Early return if customerId is missing
+    if (!customerId) {
+      console.error('Customer ID is required for portal session');
+      return { error: 'Customer ID is required' };
+    }
+    
     const { data, error } = await supabase.functions.invoke("create-portal-session", {
       body: {
         customerId,
@@ -69,7 +75,7 @@ export const createPortalSession = async ({
       return { error: error.message || 'Error creating portal session' };
     }
     
-    return data;
+    return data || { error: 'No data returned from portal session' };
   } catch (error) {
     console.error('Error creating portal session:', error);
     return { error: error instanceof Error ? error.message : 'Unknown error during portal session creation' };

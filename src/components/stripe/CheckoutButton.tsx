@@ -15,6 +15,11 @@ export function CheckoutButton({ priceId, customerId, children, className }: Che
   const [loading, setLoading] = useState(false)
 
   const handleCheckout = async () => {
+    if (!priceId) {
+      toast.error("ID do preço é necessário para checkout");
+      return;
+    }
+    
     try {
       setLoading(true)
       const response = await createCheckoutSession({

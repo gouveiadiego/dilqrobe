@@ -40,58 +40,79 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
   // Initial session check and setup
   useEffect(() => {
+    let isMounted = true;
+    
     const checkSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error getting session:", error);
-          setLoading(false);
+          if (isMounted) setLoading(false);
           return;
         }
         
         if (!data?.session) {
           console.log("No session found, redirecting to login");
-          setLoading(false);
+          if (isMounted) setLoading(false);
           return;
         }
         
-        setSession(data.session);
+        if (isMounted) setSession(data.session);
         
         // Verify subscription status if required
-        if (requireSubscription) {
+        if (requireSubscription && isMounted) {
           await checkSubscription(data.session.user.id);
-        } else {
+        } else if (isMounted) {
           setLoading(false);
         }
       } catch (err) {
         console.error("Error in initial session check:", err);
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          // Default to allow access even if there's an error checking
+          setHasSubscription(true);
+        }
       }
     };
 
     checkSession();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [requireSubscription]);
 
   // Set up auth state change listener and user activity monitoring
   useEffect(() => {
+    let isMounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    let sessionRefreshInterval: number | null = null;
+    
     // Error boundary for auth state change listener
     try {
       // Auth state change listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (_event, currentSession) => {
-          setSession(currentSession);
+          if (!isMounted) return;
           
-          if (!currentSession) {
+          if (currentSession) {
+            setSession(currentSession);
+            
+            if (requireSubscription) {
+              await checkSubscription(currentSession.user.id);
+            } else {
+              setLoading(false);
+            }
+          } else {
+            setSession(null);
             setLoading(false);
             setHasSubscription(false);
-          } else if (requireSubscription) {
-            await checkSubscription(currentSession.user.id);
-          } else {
-            setLoading(false);
           }
         }
       );
+      
+      authSubscription = subscription;
       
       // Handling post-payment redirect
       const searchParams = new URLSearchParams(location.search);
@@ -99,9 +120,11 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         toast.success("Pagamento recebido! Processando assinatura...");
         
         // Allow time for the webhook to process
-        setLoading(true);
-        setTimeout(async () => {
+        if (isMounted) setLoading(true);
+        const timeoutId = setTimeout(async () => {
           try {
+            if (!isMounted) return;
+            
             const { data } = await supabase.auth.getUser();
             if (data?.user) {
               await checkSubscription(data.user.id, true);
@@ -110,30 +133,44 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
           } catch (error) {
             console.error("Error processing payment success:", error);
             // Don't block the user on error
-            setLoading(false);
+            if (isMounted) {
+              setLoading(false);
+              setHasSubscription(true); // Default to allowing access on error
+            }
             navigate("/dashboard", { replace: true });
           }
         }, 8000);
+        
+        return () => {
+          clearTimeout(timeoutId);
+        };
       }
 
       // Set up less aggressive session refresh (only every 10 minutes)
-      const sessionRefreshInterval = setInterval(async () => {
+      sessionRefreshInterval = window.setInterval(async () => {
+        if (!isMounted) return;
         const success = await refreshSession();
-        if (!success) {
-          clearInterval(sessionRefreshInterval);
+        if (!success && sessionRefreshInterval !== null) {
+          window.clearInterval(sessionRefreshInterval);
         }
       }, 10 * 60 * 1000); // Every 10 minutes
-
-      return () => {
-        if (subscription && typeof subscription.unsubscribe === 'function') {
-          subscription.unsubscribe();
-        }
-        clearInterval(sessionRefreshInterval);
-      };
     } catch (err) {
       console.error("Error setting up auth listeners:", err);
-      setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+        setHasSubscription(true); // Default to allowing access on error
+      }
     }
+
+    return () => {
+      isMounted = false;
+      if (authSubscription && typeof authSubscription.unsubscribe === 'function') {
+        authSubscription.unsubscribe();
+      }
+      if (sessionRefreshInterval !== null) {
+        window.clearInterval(sessionRefreshInterval);
+      }
+    };
   }, [navigate, requireSubscription, location]);
 
   const checkSubscription = async (userId: string, forceAccept = false) => {
@@ -141,7 +178,7 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       console.log(`Verificando assinatura para usuário ${userId}`);
       
       // Always allow access - if we can't check subscription status, default to allowing access
-      let foundValidSubscription = false;
+      let foundValidSubscription = true;
       
       try {
         // Check for active subscription
@@ -164,18 +201,7 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
             // Otherwise, check status
             const isActive = data.status === 'active' || data.status === 'trialing';
             foundValidSubscription = isActive;
-            
-            // If status is still 'incomplete', check again in 5 seconds
-            if (data.status === 'incomplete') {
-              console.log("Status da assinatura é 'incomplete', verificando novamente em 5 segundos");
-              setTimeout(() => checkSubscription(userId), 5000);
-              return;
-            }
           }
-        } else {
-          // If no subscription found, still allow access for better UX
-          console.log("Nenhuma assinatura encontrada, mas permitindo acesso temporariamente");
-          foundValidSubscription = true;
         }
       } catch (err) {
         console.error("Erro na verificação de assinatura:", err);
