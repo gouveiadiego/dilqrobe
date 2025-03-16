@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, parse, isValid, isSameMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, parse, isValid, isSameMonth, getMonth, getYear } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
@@ -16,6 +16,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Ba
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PortalButton } from "./stripe/PortalButton";
 
 interface Service {
   id: string;
@@ -200,6 +201,7 @@ export function ServicesTab() {
   const [showStatsCard, setShowStatsCard] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [showCurrentMonth, setShowCurrentMonth] = useState(false);
 
   const fetchServices = async () => {
     try {
@@ -395,14 +397,21 @@ export function ServicesTab() {
     const matchesClient = !filterClient || 
       service.client_name.toLowerCase().includes(filterClient.toLowerCase());
     
-    const matchesMonth = !filterDate || 
+    const matchesSelectedMonth = !filterDate || 
       (isValid(filterDate) && isSameMonth(new Date(service.start_date), filterDate));
+    
+    const today = new Date();
+    const isCurrentMonth = getMonth(new Date(service.start_date)) === getMonth(today) && 
+                          getYear(new Date(service.start_date)) === getYear(today);
+    const matchesCurrentMonth = !showCurrentMonth || isCurrentMonth;
     
     const matchesStatus = !filterStatus || 
       (filterStatus === 'paid' && service.payment_status === 'paid') || 
       (filterStatus === 'pending' && service.payment_status === 'pending');
     
-    return matchesFilter && matchesClient && matchesMonth && matchesStatus;
+    return matchesFilter && matchesClient && 
+           ((showCurrentMonth && matchesCurrentMonth) || (!showCurrentMonth && matchesSelectedMonth)) && 
+           matchesStatus;
   });
 
   const groupedServices = filteredServices.reduce((acc: { [key: string]: { clientName: string; services: Service[] } }, service) => {
@@ -415,6 +424,8 @@ export function ServicesTab() {
     acc[service.client_id].services.push(service);
     return acc;
   }, {});
+
+  const currentMonth = format(new Date(), 'MMMM yyyy');
 
   return (
     <div className="space-y-6">
@@ -718,14 +729,26 @@ export function ServicesTab() {
                         <div key={clientId} className="glass-card p-4 transition-all duration-300 hover:translate-y-[-2px]">
                           <div className="flex justify-between items-center mb-2">
                             <h3 className="font-medium">{clientName}</h3>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-xs"
-                              onClick={() => handleSharePortalLink(clientId)}
-                            >
-                              <Link2 className="h-3 w-3 mr-1" /> Compartilhar
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="text-xs"
+                                onClick={() => handleSharePortalLink(clientId)}
+                              >
+                                <Link2 className="h-3 w-3 mr-1" /> Compartilhar
+                              </Button>
+                              {clients.find(client => client.id === clientId)?.stripe_customer_id && (
+                                <PortalButton 
+                                  customerId={clients.find(client => client.id === clientId)?.stripe_customer_id} 
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs"
+                                >
+                                  <CreditCard className="h-3 w-3 mr-1" /> Portal
+                                </PortalButton>
+                              )}
+                            </div>
                           </div>
                           <p className="text-sm text-gray-500">{services.length} serviços</p>
                         </div>
@@ -766,45 +789,64 @@ export function ServicesTab() {
                   />
                 </div>
                 
-                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal glass-card"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {filterDate ? (
-                        format(filterDate, "MMMM yyyy")
-                      ) : (
-                        <span>Selecione o mês</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 glass-card" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={filterDate}
-                      onSelect={(date) => {
-                        setFilterDate(date);
+                <div className="flex gap-2">
+                  <Button
+                    variant={showCurrentMonth ? "default" : "outline"}
+                    className={`gap-2 ${showCurrentMonth ? "bg-indigo-600 text-white" : "bg-white dark:bg-gray-800"}`}
+                    onClick={() => {
+                      setShowCurrentMonth(!showCurrentMonth);
+                      if (!showCurrentMonth) {
+                        setFilterDate(undefined);
                         setCalendarOpen(false);
-                      }}
-                      initialFocus
-                      className="bg-white dark:bg-gray-800"
-                    />
-                    <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex justify-end">
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => {
-                          setFilterDate(undefined);
-                          setCalendarOpen(false);
-                        }}
-                        className="text-xs h-8"
-                      >
-                        Limpar filtro
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                      }
+                    }}
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                    {currentMonth}
+                  </Button>
+                  
+                  {!showCurrentMonth && (
+                    <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="justify-start text-left font-normal glass-card"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {filterDate ? (
+                            format(filterDate, "MMMM yyyy")
+                          ) : (
+                            <span>Selecione o mês</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 glass-card" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={filterDate}
+                          onSelect={(date) => {
+                            setFilterDate(date);
+                            setCalendarOpen(false);
+                          }}
+                          initialFocus
+                          className="bg-white dark:bg-gray-800"
+                        />
+                        <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex justify-end">
+                          <Button 
+                            variant="ghost" 
+                            onClick={() => {
+                              setFilterDate(undefined);
+                              setCalendarOpen(false);
+                            }}
+                            className="text-xs h-8"
+                          >
+                            Limpar filtro
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                </div>
               </div>
               
               <div className="flex gap-2">
@@ -944,7 +986,7 @@ export function ServicesTab() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="edit_service_description">Descrição do Serviço</Label>
+                <Label htmlFor="edit_service_description">Descrição do Servi��o</Label>
                 <Input 
                   id="edit_service_description" 
                   value={editingService.service_description} 
@@ -1035,6 +1077,26 @@ export function ServicesTab() {
               onClick={handleDelete}
             >
               Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="glass-card">
+          <DialogHeader>
+            <DialogTitle>Compartilhar com cliente</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Compartilhar os serviços com este cliente?</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowShareDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => setShowShareDialog(false)}>
+              Compartilhar
             </Button>
           </DialogFooter>
         </DialogContent>
