@@ -10,7 +10,7 @@ interface PortalButtonProps {
   className?: string
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined
   cancelMode?: boolean
-  size?: "default" | "sm" | "lg" | "icon" | string
+  size?: "default" | "sm" | "lg" | "icon"
 }
 
 export function PortalButton({ 
