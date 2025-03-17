@@ -70,6 +70,10 @@ export default function Subscription() {
           return;
         } else if (paymentStatus === "canceled") {
           toast.error("Pagamento cancelado");
+          console.log("Payment canceled, redirecting to payment canceled page");
+          // Redirect to payment canceled page
+          navigate("/payment/canceled", { replace: true });
+          return;
         }
         
         // Then check user auth

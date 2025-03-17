@@ -131,7 +131,7 @@ export const createStripeCheckout = async (priceId: string) => {
       body: {
         priceId,
         successUrl: `${window.location.origin}/payment/success`,
-        cancelUrl: `${window.location.origin}/subscription?payment=canceled`,
+        cancelUrl: `${window.location.origin}/payment/canceled`,
       },
     });
     
