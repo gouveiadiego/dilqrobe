@@ -56,6 +56,8 @@ serve(async (req) => {
       );
     }
 
+    console.log(`Creating checkout session for user ${user.id} with priceId ${priceId}`);
+
     // Get user profile to access name and email
     const { data: profile, error: profileError } = await supabaseClient
       .from("profiles")

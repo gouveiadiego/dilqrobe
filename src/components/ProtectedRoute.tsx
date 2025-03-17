@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,8 +71,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         console.error("Error in initial session check:", err);
         if (isMounted) {
           setLoading(false);
-          // Default to allow access even if there's an error checking
-          setHasSubscription(true);
+          // Don't default to allow access on error
+          setHasSubscription(false);
         }
       }
     };
@@ -135,7 +136,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
             // Don't block the user on error
             if (isMounted) {
               setLoading(false);
-              setHasSubscription(true); // Default to allowing access on error
+              // Don't default to allowing access on error
+              setHasSubscription(false);
             }
             navigate("/dashboard", { replace: true });
           }
@@ -158,7 +160,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       console.error("Error setting up auth listeners:", err);
       if (isMounted) {
         setLoading(false);
-        setHasSubscription(true); // Default to allowing access on error
+        // Don't default to allowing access on error
+        setHasSubscription(false);
       }
     }
 
@@ -177,8 +180,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     try {
       console.log(`Verificando assinatura para usuário ${userId}`);
       
-      // Always allow access - if we can't check subscription status, default to allowing access
-      let foundValidSubscription = true;
+      // Do not default to allowing access - only allow if we confirm subscription
+      let foundValidSubscription = false;
       
       try {
         // Check for active subscription
@@ -190,8 +193,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
         if (error) {
           console.error("Erro ao verificar assinatura:", error);
-          // Don't fail completely on error - assume subscription is valid for better UX
-          foundValidSubscription = true;
+          // Don't default to success on error
+          foundValidSubscription = false;
         } else if (data) {
           // If forceAccept is true, accept any status
           if (forceAccept) {
@@ -201,20 +204,25 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
             // Otherwise, check status
             const isActive = data.status === 'active' || data.status === 'trialing';
             foundValidSubscription = isActive;
+            console.log(`Status da assinatura: ${data.status}, isActive: ${isActive}`);
           }
+        } else {
+          console.log("Nenhuma assinatura encontrada para o usuário");
+          foundValidSubscription = false;
         }
       } catch (err) {
         console.error("Erro na verificação de assinatura:", err);
-        // Don't fail completely on error - assume subscription is valid for better UX
-        foundValidSubscription = true;
+        // Don't default to success on error
+        foundValidSubscription = false;
       }
       
+      console.log(`Resultado da verificação de assinatura: ${foundValidSubscription}`);
       setHasSubscription(foundValidSubscription);
       setLoading(false);
     } catch (err) {
       console.error("Erro na verificação de assinatura:", err);
-      // Default to allowing access
-      setHasSubscription(true);
+      // Don't default to success
+      setHasSubscription(false);
       setLoading(false);
     }
   };

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export default function Subscription() {
         }
         
         setUser(user);
+        console.log("User authenticated:", user.id);
         
         // Get subscription data
         const subscriptionData = await getUserSubscription();
