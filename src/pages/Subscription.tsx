@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,26 +21,18 @@ interface PriceTier {
 
 const priceTiers: PriceTier[] = [
   {
-    id: "basic",
-    name: "Basic",
-    price: "Grátis",
-    features: [
-      "Gerenciamento de tarefas básico",
-      "Limitado a 5 projetos",
-      "Suporte via e-mail",
-    ],
-    priceId: "", // Não tem priceId porque é grátis
-  },
-  {
     id: "pro",
     name: "Pro",
-    price: "R$ 29,90/mês",
+    price: "R$ 19,90/mês",
     features: [
-      "Todos os recursos do plano Basic",
+      "Gerenciamento completo de tarefas",
       "Projetos ilimitados",
       "Acesso a todos os recursos premium",
-      "Suporte prioritário",
+      "Suporte prioritário via chat",
       "Sem anúncios",
+      "Recursos de produtividade avançados",
+      "Relatórios detalhados de progresso",
+      "Integração com outros aplicativos",
     ],
     priceId: "price_1R0nc2RooQphZ1dFnk4ZneeE",
   },
@@ -114,9 +107,9 @@ export default function Subscription() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold">Planos e Preços</h1>
+        <h1 className="text-3xl font-bold">Plano Premium</h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
-          Escolha o plano que melhor atende às suas necessidades
+          Desbloqueie todo o potencial do sistema com nosso plano Pro
         </p>
       </div>
 
@@ -142,57 +135,53 @@ export default function Subscription() {
         </div>
       )}
 
-      <div className="grid gap-8 md:grid-cols-2">
-        {priceTiers.map((tier) => (
-          <Card 
-            key={tier.id} 
-            className={`flex flex-col overflow-hidden ${
-              tier.id === "pro" 
-                ? "border-2 border-primary shadow-lg" 
-                : ""
-            }`}
-          >
-            {tier.id === "pro" && (
+      <div className="flex justify-center">
+        <div className="w-full max-w-lg">
+          {priceTiers.map((tier) => (
+            <Card 
+              key={tier.id} 
+              className="overflow-hidden border-2 border-primary shadow-lg"
+            >
               <div className="bg-primary px-4 py-1 text-center text-xs font-medium text-primary-foreground">
                 RECOMENDADO
               </div>
-            )}
-            <CardHeader>
-              <CardTitle>{tier.name}</CardTitle>
-              <CardDescription>
-                <span className="mt-2 block text-2xl font-bold">{tier.price}</span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow">
-              <ul className="space-y-2">
-                {tier.features.map((feature, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-            <CardFooter>
-              {(tier.id === "basic" || (isSubscribed && subscription?.plan_type === tier.id)) ? (
-                <Button disabled variant="outline" className="w-full">
-                  Plano atual
-                </Button>
-              ) : (
-                <CheckoutButton
-                  priceId={tier.priceId}
-                  customerId={user?.id}
-                  className="w-full"
-                >
-                  {checkoutLoading === tier.priceId ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  Assinar agora
-                </CheckoutButton>
-              )}
-            </CardFooter>
-          </Card>
-        ))}
+              <CardHeader>
+                <CardTitle>{tier.name}</CardTitle>
+                <CardDescription>
+                  <span className="mt-2 block text-2xl font-bold">{tier.price}</span>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <ul className="space-y-2">
+                  {tier.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+              <CardFooter>
+                {isSubscribed ? (
+                  <Button disabled variant="outline" className="w-full">
+                    Plano atual
+                  </Button>
+                ) : (
+                  <CheckoutButton
+                    priceId={tier.priceId}
+                    customerId={user?.id}
+                    className="w-full"
+                  >
+                    {checkoutLoading === tier.priceId ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Assinar agora
+                  </CheckoutButton>
+                )}
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {user && (
@@ -203,7 +192,7 @@ export default function Subscription() {
       
       <div className="mt-12 text-center">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Tem dúvidas sobre os planos? Entre em contato com nosso suporte.
+          Tem dúvidas sobre o plano? Entre em contato com nosso suporte.
         </p>
       </div>
     </div>
