@@ -790,62 +790,58 @@ export function ServicesTab() {
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button
-                    variant={showCurrentMonth ? "default" : "outline"}
-                    className={`gap-2 ${showCurrentMonth ? "bg-indigo-600 text-white" : "bg-white dark:bg-gray-800"}`}
-                    onClick={() => {
-                      setShowCurrentMonth(!showCurrentMonth);
-                      if (!showCurrentMonth) {
-                        setFilterDate(undefined);
-                        setCalendarOpen(false);
-                      }
-                    }}
-                  >
-                    <CalendarIcon className="h-4 w-4" />
-                    {currentMonth}
-                  </Button>
-                  
-                  {!showCurrentMonth && (
-                    <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="justify-start text-left font-normal glass-card"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {filterDate ? (
-                            format(filterDate, "MMMM yyyy")
-                          ) : (
-                            <span>Selecione o mês</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 glass-card" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={filterDate}
-                          onSelect={(date) => {
+                  <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={showCurrentMonth ? "default" : "outline"}
+                        className={`gap-2 ${showCurrentMonth ? "bg-indigo-600 text-white" : "bg-white dark:bg-gray-800"}`}
+                      >
+                        <CalendarIcon className="h-4 w-4" />
+                        {showCurrentMonth ? currentMonth : (filterDate ? format(filterDate, "MMMM yyyy") : "Selecione o mês")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 glass-card" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={filterDate}
+                        onSelect={(date) => {
+                          if (date) {
                             setFilterDate(date);
+                            setShowCurrentMonth(false);
+                          } else {
+                            setShowCurrentMonth(true);
+                          }
+                          setCalendarOpen(false);
+                        }}
+                        initialFocus
+                        className="bg-white dark:bg-gray-800 pointer-events-auto"
+                      />
+                      <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex justify-between">
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => {
+                            setShowCurrentMonth(true);
+                            setFilterDate(undefined);
                             setCalendarOpen(false);
                           }}
-                          initialFocus
-                          className="bg-white dark:bg-gray-800"
-                        />
-                        <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex justify-end">
-                          <Button 
-                            variant="ghost" 
-                            onClick={() => {
-                              setFilterDate(undefined);
-                              setCalendarOpen(false);
-                            }}
-                            className="text-xs h-8"
-                          >
-                            Limpar filtro
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  )}
+                          className="text-xs h-8"
+                        >
+                          Mês atual
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => {
+                            setFilterDate(undefined);
+                            setShowCurrentMonth(false);
+                            setCalendarOpen(false);
+                          }}
+                          className="text-xs h-8"
+                        >
+                          Limpar filtro
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
               
@@ -1104,3 +1100,4 @@ export function ServicesTab() {
     </div>
   );
 }
+
