@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -65,11 +64,9 @@ export default function Subscription() {
           // Set the subscription to active immediately for better UX
           // The webhook will update the database
           toast.success("Assinatura realizada com sucesso!");
-          console.log("Payment successful, redirecting to dashboard");
-          // Add a little delay to allow webhook to process
-          setTimeout(() => {
-            navigate("/dashboard", { replace: true });
-          }, 2000);
+          console.log("Payment successful, redirecting to payment success page");
+          // Redirect to payment success page
+          navigate("/payment/success", { replace: true });
           return;
         } else if (paymentStatus === "canceled") {
           toast.error("Pagamento cancelado");
