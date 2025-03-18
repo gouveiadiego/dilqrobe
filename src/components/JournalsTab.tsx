@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,7 @@ import {
   Star
 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, fetchJournalEntries, deleteJournalEntry } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -31,6 +32,7 @@ export function JournalsTab() {
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [openDeleteAlertId, setOpenDeleteAlertId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState({
     consecutiveDays: 0,
     totalEntries: 0,
@@ -38,22 +40,21 @@ export function JournalsTab() {
   });
 
   useEffect(() => {
-    fetchJournalEntries();
+    loadJournalEntries();
     calculateStats();
   }, []);
 
-  const fetchJournalEntries = async () => {
+  const loadJournalEntries = async () => {
     try {
-      const { data, error } = await supabase
-        .from('journal_entries')
-        .select('*')
-        .order('created_at', { ascending: false });
-        
-      if (error) throw error;
-      setEntries(data || []);
+      setIsLoading(true);
+      const data = await fetchJournalEntries();
+      console.log("Loaded journal entries:", data);
+      setEntries(data);
     } catch (error) {
-      console.error('Error fetching journal entries:', error);
+      console.error('Error loading journal entries:', error);
       toast.error("Erro ao carregar as entradas do diário");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -109,6 +110,7 @@ export function JournalsTab() {
     }
 
     try {
+      setIsLoading(true);
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) {
@@ -128,11 +130,13 @@ export function JournalsTab() {
 
       toast.success("Entrada salva com sucesso!");
       setJournalEntry("");
-      await fetchJournalEntries();
+      await loadJournalEntries();
       await calculateStats();
     } catch (error) {
       console.error('Error saving journal entry:', error);
       toast.error("Erro ao salvar a entrada");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -140,6 +144,7 @@ export function JournalsTab() {
     if (!editingEntry) return;
     
     try {
+      setIsLoading(true);
       const { error } = await supabase
         .from('journal_entries')
         .update({ content: editingEntry.content })
@@ -155,54 +160,55 @@ export function JournalsTab() {
       setEditingEntry(null);
       
       // Refresh entries from the database to ensure we have the latest data
-      await fetchJournalEntries();
+      await loadJournalEntries();
     } catch (error) {
       console.error('Error updating journal entry:', error);
       toast.error("Erro ao atualizar a entrada");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDeleteEntry = async (entryId: string) => {
     try {
-      console.log('Attempting to delete entry:', entryId);
+      setIsLoading(true);
       
-      // Verificar se o ID é válido
       if (!entryId) {
         console.error('Invalid entry ID for deletion');
         toast.error("ID de entrada inválido");
         return;
       }
       
-      // Atualizar o estado local antes da operação de rede para melhorar a UX
+      console.log('Attempting to delete entry:', entryId);
+      
+      // Immediately update the UI to remove the entry
       setEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
       
-      // Fechar o diálogo de confirmação
+      // Close the confirmation dialog
       setOpenDeleteAlertId(null);
       
-      // Executar a operação de exclusão no Supabase
-      const { error } = await supabase
-        .from('journal_entries')
-        .delete()
-        .eq('id', entryId);
+      // Use the helper function to delete the entry from the database
+      const { success, count } = await deleteJournalEntry(entryId);
+      
+      if (success && count) {
+        console.log(`Entry deleted successfully: ${count} entries removed`);
+        toast.success("Entrada excluída com sucesso!");
         
-      if (error) {
-        console.error('Delete error:', error);
-        // Reverter alterações locais em caso de erro
-        await fetchJournalEntries();
-        toast.error("Erro ao excluir a entrada: " + error.message);
-        return;
+        // Recalculate stats after successful deletion
+        await calculateStats();
+      } else {
+        console.warn("Delete operation completed but no entries were deleted");
+        toast.warning("Nenhuma entrada foi excluída");
+        // Reload entries to ensure UI is in sync with the database
+        await loadJournalEntries();
       }
-      
-      console.log('Entry deleted successfully from database');
-      toast.success("Entrada excluída com sucesso!");
-      
-      // Recalcular estatísticas após a exclusão bem-sucedida
-      await calculateStats();
     } catch (error: any) {
       console.error('Error deleting journal entry:', error);
       toast.error("Erro ao excluir a entrada: " + (error.message || 'Erro desconhecido'));
-      // Garantir que a UI esteja sincronizada com o banco de dados em caso de erro
-      await fetchJournalEntries();
+      // Ensure the UI is synchronized with the database in case of error
+      await loadJournalEntries();
+    } finally {
+      setIsLoading(false);
     }
   };
 
