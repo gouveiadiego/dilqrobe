@@ -165,6 +165,8 @@ export function JournalsTab() {
 
   const handleDeleteEntry = async (entryId: string) => {
     try {
+      console.log('Attempting to delete entry:', entryId);
+      
       const { error } = await supabase
         .from('journal_entries')
         .delete()
@@ -175,10 +177,14 @@ export function JournalsTab() {
         throw error;
       }
       
+      console.log('Entry deleted successfully');
       toast.success("Entrada excluída com sucesso!");
       setOpenDeleteAlertId(null);
       
-      // Refresh entries from the database to ensure we have the latest data
+      // Remove the entry from local state to immediately update UI
+      setEntries(entries.filter(entry => entry.id !== entryId));
+      
+      // Refresh entries and recalculate stats
       await fetchJournalEntries();
       await calculateStats();
     } catch (error) {
