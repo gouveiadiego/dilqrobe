@@ -129,8 +129,8 @@ export function JournalsTab() {
 
       toast.success("Entrada salva com sucesso!");
       setJournalEntry("");
-      fetchJournalEntries();
-      calculateStats();
+      await fetchJournalEntries();
+      await calculateStats();
     } catch (error) {
       console.error('Error saving journal entry:', error);
       toast.error("Erro ao salvar a entrada");
@@ -146,18 +146,17 @@ export function JournalsTab() {
         .update({ content: editingEntry.content })
         .eq('id', editingEntry.id);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
       
       toast.success("Entrada atualizada com sucesso!");
       setDialogOpen(false);
       setEditingEntry(null);
       
-      // Update the entry in the local state to refresh the UI
-      setEntries(entries.map(entry => 
-        entry.id === editingEntry.id 
-          ? { ...entry, content: editingEntry.content } 
-          : entry
-      ));
+      // Refresh entries from the database to ensure we have the latest data
+      await fetchJournalEntries();
     } catch (error) {
       console.error('Error updating journal entry:', error);
       toast.error("Erro ao atualizar a entrada");
@@ -171,16 +170,17 @@ export function JournalsTab() {
         .delete()
         .eq('id', entryId);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
       
       toast.success("Entrada excluída com sucesso!");
       setOpenDeleteAlertId(null);
       
-      // Remove the deleted entry from the local state immediately
-      setEntries(entries.filter(entry => entry.id !== entryId));
-      
-      // Update stats after deletion
-      calculateStats();
+      // Refresh entries from the database to ensure we have the latest data
+      await fetchJournalEntries();
+      await calculateStats();
     } catch (error) {
       console.error('Error deleting journal entry:', error);
       toast.error("Erro ao excluir a entrada");
