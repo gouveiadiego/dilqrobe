@@ -33,6 +33,7 @@ export function JournalsTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [openDeleteAlertId, setOpenDeleteAlertId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [stats, setStats] = useState({
     consecutiveDays: 0,
     totalEntries: 0,
@@ -171,44 +172,53 @@ export function JournalsTab() {
 
   const handleDeleteEntry = async (entryId: string) => {
     try {
-      setIsLoading(true);
-      
       if (!entryId) {
         console.error('Invalid entry ID for deletion');
         toast.error("ID de entrada inválido");
         return;
       }
       
+      setIsDeletingId(entryId);
+      setIsLoading(true);
+      
       console.log('Attempting to delete entry:', entryId);
       
-      // Immediately update the UI to remove the entry
+      // Optimistically update the UI first by removing the entry
       setEntries(prevEntries => prevEntries.filter(entry => entry.id !== entryId));
       
       // Close the confirmation dialog
       setOpenDeleteAlertId(null);
       
-      // Use the helper function to delete the entry from the database
+      // Actually delete from the database
       const { success, count } = await deleteJournalEntry(entryId);
       
-      if (success && count) {
-        console.log(`Entry deleted successfully: ${count} entries removed`);
-        toast.success("Entrada excluída com sucesso!");
-        
-        // Recalculate stats after successful deletion
-        await calculateStats();
+      if (success) {
+        if (count && count > 0) {
+          console.log(`Entry deleted successfully: ${count} entries removed`);
+          toast.success("Entrada excluída com sucesso!");
+          
+          // Recalculate stats after successful deletion
+          await calculateStats();
+        } else {
+          console.warn("Delete operation completed but no entries were deleted");
+          toast.warning("Nenhuma entrada foi excluída. Tente novamente.");
+          
+          // Reload entries to ensure UI is in sync with the database as our optimistic update may be incorrect
+          await loadJournalEntries();
+        }
       } else {
-        console.warn("Delete operation completed but no entries were deleted");
-        toast.warning("Nenhuma entrada foi excluída");
-        // Reload entries to ensure UI is in sync with the database
+        toast.error("Erro ao excluir. Tente novamente.");
         await loadJournalEntries();
       }
     } catch (error: any) {
       console.error('Error deleting journal entry:', error);
       toast.error("Erro ao excluir a entrada: " + (error.message || 'Erro desconhecido'));
-      // Ensure the UI is synchronized with the database in case of error
+      
+      // Reload entries to ensure UI is synchronized with the database
       await loadJournalEntries();
     } finally {
       setIsLoading(false);
+      setIsDeletingId(null);
     }
   };
 
@@ -358,7 +368,11 @@ export function JournalsTab() {
         </h3>
         
         <div className="grid grid-cols-1 gap-4">
-          {entries.length === 0 ? (
+          {isLoading && entries.length === 0 ? (
+            <Card className="p-6 text-center">
+              <p className="text-muted-foreground">Carregando entradas...</p>
+            </Card>
+          ) : entries.length === 0 ? (
             <Card className="p-6 text-center">
               <p className="text-muted-foreground">Você ainda não tem nenhuma entrada no diário.</p>
             </Card>
@@ -447,6 +461,7 @@ export function JournalsTab() {
                             variant="ghost" 
                             size="icon" 
                             className="rounded-full h-8 w-8 bg-white hover:bg-red-50 text-red-500 border border-red-100/30"
+                            disabled={isDeletingId === entry.id}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -465,8 +480,9 @@ export function JournalsTab() {
                             <AlertDialogAction 
                               className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
                               onClick={() => handleDeleteEntry(entry.id)}
+                              disabled={isLoading}
                             >
-                              Excluir
+                              {isDeletingId === entry.id ? 'Excluindo...' : 'Excluir'}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
