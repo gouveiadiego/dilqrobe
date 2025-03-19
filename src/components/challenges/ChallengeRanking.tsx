@@ -6,16 +6,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useEffect } from "react";
 
 interface ChallengeRankingProps {
   challengeId: string;
 }
 
 export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Get current user ID
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setCurrentUserId(session?.user?.id || null);
+    };
+    getUser();
+  }, []);
+
   // First, fetch all running records for this challenge
-  const { data: records } = useQuery({
+  const { data: records, isLoading: recordsLoading } = useQuery({
     queryKey: ['challenge-records', challengeId],
     queryFn: async () => {
+      console.log("Fetching records for challenge:", challengeId);
       const { data, error } = await supabase
         .from('running_records')
         .select('*')
@@ -26,15 +39,16 @@ export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
         throw error;
       }
 
-      console.log("Fetched records:", data);
+      console.log(`Fetched ${data?.length || 0} running records for challenge ${challengeId}`);
       return data || [];
     },
   });
 
   // Then fetch participants with their profiles
-  const { data: participants, isLoading } = useQuery({
+  const { data: participants, isLoading: participantsLoading } = useQuery({
     queryKey: ['challenge-participants', challengeId],
     queryFn: async () => {
+      console.log("Fetching participants for challenge:", challengeId);
       const { data, error } = await supabase
         .from('challenge_participants')
         .select(`
@@ -49,16 +63,25 @@ export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
         throw error;
       }
 
-      console.log("Fetched participants:", data);
+      console.log(`Fetched ${data?.length || 0} participants for challenge ${challengeId}`);
 
       // Calculate total distance for each participant from records
       const participantsWithDistance = (data || []).map(participant => {
         const userRecords = records?.filter(record => record.user_id === participant.user_id) || [];
-        const totalDistance = userRecords.reduce((sum, record) => sum + Number(record.distance), 0);
+        
+        // Ensure we're converting string values to numbers before summing
+        const totalDistance = userRecords.reduce((sum, record) => {
+          const distance = typeof record.distance === 'string' 
+            ? parseFloat(record.distance) 
+            : Number(record.distance);
+          
+          return sum + (isNaN(distance) ? 0 : distance);
+        }, 0);
+        
         const totalRuns = userRecords.length;
 
-        console.log(`Calculating for user ${participant.user_id}:`, {
-          records: userRecords,
+        console.log(`Calculated for user ${participant.user_id}:`, {
+          records: userRecords.length,
           totalDistance,
           totalRuns
         });
@@ -107,6 +130,8 @@ export function ChallengeRanking({ challengeId }: ChallengeRankingProps) {
       toast.error("Erro ao participar do desafio");
     }
   };
+
+  const isLoading = recordsLoading || participantsLoading;
 
   if (isLoading) {
     return (
