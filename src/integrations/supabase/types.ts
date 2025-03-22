@@ -973,6 +973,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_journal_entry: {
+        Args: {
+          entry_id_param: string
+          user_id_param: string
+        }
+        Returns: boolean
+      }
       get_user_payments: {
         Args: {
           user_id_param: string
