@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -171,13 +170,13 @@ export function JournalsTab() {
   };
 
   const handleDeleteEntry = async (entryId: string) => {
+    if (!entryId) {
+      console.error('Invalid entry ID for deletion');
+      toast.error("ID de entrada inválido");
+      return;
+    }
+    
     try {
-      if (!entryId) {
-        console.error('Invalid entry ID for deletion');
-        toast.error("ID de entrada inválido");
-        return;
-      }
-      
       setIsDeletingId(entryId);
       setIsLoading(true);
       
@@ -193,28 +192,20 @@ export function JournalsTab() {
       const { success, count } = await deleteJournalEntry(entryId);
       
       if (success) {
-        if (count && count > 0) {
-          console.log(`Entry deleted successfully: ${count} entries removed`);
-          toast.success("Entrada excluída com sucesso!");
-          
-          // Recalculate stats after successful deletion
-          await calculateStats();
-        } else {
-          console.warn("Delete operation completed but no entries were deleted");
-          toast.warning("Nenhuma entrada foi excluída. Tente novamente.");
-          
-          // Reload entries to ensure UI is in sync with the database as our optimistic update may be incorrect
-          await loadJournalEntries();
-        }
+        toast.success("Entrada excluída com sucesso!");
+        
+        // Recalculate stats after successful deletion
+        await calculateStats();
       } else {
-        toast.error("Erro ao excluir. Tente novamente.");
+        toast.error("Falha ao excluir entrada. Por favor, tente novamente.");
+        // Reload entries to restore the UI state
         await loadJournalEntries();
       }
     } catch (error: any) {
       console.error('Error deleting journal entry:', error);
       toast.error("Erro ao excluir a entrada: " + (error.message || 'Erro desconhecido'));
       
-      // Reload entries to ensure UI is synchronized with the database
+      // Reload entries to restore the UI state
       await loadJournalEntries();
     } finally {
       setIsLoading(false);
