@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,11 +16,14 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const [lastActivity, setLastActivity] = useState<number>(Date.now());
 
   // Function to refresh the session
   const refreshSession = async () => {
     try {
+      console.log("Attempting to refresh session...");
       const { data, error } = await supabase.auth.refreshSession();
+      
       if (error) {
         console.error("Error refreshing session:", error);
         return false;
@@ -39,12 +41,75 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     }
   };
 
+  // Monitor user activity
+  useEffect(() => {
+    const handleUserActivity = () => {
+      setLastActivity(Date.now());
+    };
+
+    // Add event listeners for user activity
+    window.addEventListener('mousedown', handleUserActivity);
+    window.addEventListener('keydown', handleUserActivity);
+    window.addEventListener('touchstart', handleUserActivity);
+    window.addEventListener('scroll', handleUserActivity);
+
+    return () => {
+      window.removeEventListener('mousedown', handleUserActivity);
+      window.removeEventListener('keydown', handleUserActivity);
+      window.removeEventListener('touchstart', handleUserActivity);
+      window.removeEventListener('scroll', handleUserActivity);
+    };
+  }, []);
+
+  // Automatic session refresh based on activity
+  useEffect(() => {
+    const INACTIVITY_THRESHOLD = 60 * 1000; // 1 minute
+    const SESSION_CHECK_INTERVAL = 30 * 1000; // 30 seconds
+
+    const intervalId = setInterval(async () => {
+      const now = Date.now();
+      const timeSinceLastActivity = now - lastActivity;
+
+      // If user has been active recently, ensure session is valid
+      if (timeSinceLastActivity < INACTIVITY_THRESHOLD) {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        // If session exists but is close to expiry, refresh it
+        if (currentSession) {
+          const expiresAt = currentSession.expires_at;
+          if (expiresAt) {
+            const expiresAtMs = expiresAt * 1000;
+            const timeToExpiry = expiresAtMs - now;
+            
+            // If session expires in less than 5 minutes, refresh it
+            if (timeToExpiry < 5 * 60 * 1000) {
+              console.log("Session nearing expiry, refreshing...");
+              await refreshSession();
+            }
+          }
+        } else if (session) {
+          // If we think we have a session but supabase doesn't, refresh
+          console.log("Session state mismatch, attempting refresh...");
+          const success = await refreshSession();
+          if (!success) {
+            console.log("Session refresh failed, redirecting to login");
+            setSession(null);
+            navigate('/login', { replace: true });
+          }
+        }
+      }
+    }, SESSION_CHECK_INTERVAL);
+
+    return () => clearInterval(intervalId);
+  }, [lastActivity, session, navigate]);
+
   // Initial session check and setup
   useEffect(() => {
     let isMounted = true;
     
     const checkSession = async () => {
       try {
+        console.log("Initial session check...");
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -71,7 +136,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         console.error("Error in initial session check:", err);
         if (isMounted) {
           setLoading(false);
-          // Don't default to allow access on error
           setHasSubscription(false);
         }
       }
@@ -84,17 +148,17 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     };
   }, [requireSubscription]);
 
-  // Set up auth state change listener and user activity monitoring
+  // Set up auth state change listener
   useEffect(() => {
     let isMounted = true;
-    let authSubscription: { unsubscribe: () => void } | null = null;
-    let sessionRefreshInterval: number | null = null;
     
     // Error boundary for auth state change listener
     try {
+      console.log("Setting up auth state change listener...");
       // Auth state change listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (_event, currentSession) => {
+          console.log("Auth state changed:", _event);
           if (!isMounted) return;
           
           if (currentSession) {
@@ -112,8 +176,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
           }
         }
       );
-      
-      authSubscription = subscription;
       
       // Handling post-payment redirect
       const searchParams = new URLSearchParams(location.search);
@@ -133,10 +195,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
             navigate("/dashboard", { replace: true });
           } catch (error) {
             console.error("Error processing payment success:", error);
-            // Don't block the user on error
             if (isMounted) {
               setLoading(false);
-              // Don't default to allowing access on error
               setHasSubscription(false);
             }
             navigate("/dashboard", { replace: true });
@@ -148,32 +208,17 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         };
       }
 
-      // Set up less aggressive session refresh (only every 10 minutes)
-      sessionRefreshInterval = window.setInterval(async () => {
-        if (!isMounted) return;
-        const success = await refreshSession();
-        if (!success && sessionRefreshInterval !== null) {
-          window.clearInterval(sessionRefreshInterval);
-        }
-      }, 10 * 60 * 1000); // Every 10 minutes
+      return () => {
+        isMounted = false;
+        subscription.unsubscribe();
+      };
     } catch (err) {
       console.error("Error setting up auth listeners:", err);
       if (isMounted) {
         setLoading(false);
-        // Don't default to allowing access on error
         setHasSubscription(false);
       }
     }
-
-    return () => {
-      isMounted = false;
-      if (authSubscription && typeof authSubscription.unsubscribe === 'function') {
-        authSubscription.unsubscribe();
-      }
-      if (sessionRefreshInterval !== null) {
-        window.clearInterval(sessionRefreshInterval);
-      }
-    };
   }, [navigate, requireSubscription, location]);
 
   const checkSubscription = async (userId: string, forceAccept = false) => {
@@ -193,7 +238,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
         if (error) {
           console.error("Erro ao verificar assinatura:", error);
-          // Don't default to success on error
           foundValidSubscription = false;
         } else if (data) {
           // If forceAccept is true, accept any status
@@ -212,7 +256,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         }
       } catch (err) {
         console.error("Erro na verificação de assinatura:", err);
-        // Don't default to success on error
         foundValidSubscription = false;
       }
       
@@ -221,7 +264,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       setLoading(false);
     } catch (err) {
       console.error("Erro na verificação de assinatura:", err);
-      // Don't default to success
       setHasSubscription(false);
       setLoading(false);
     }
