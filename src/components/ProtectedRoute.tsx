@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,10 +18,14 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
   const navigate = useNavigate();
   const location = useLocation();
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Function to refresh the session
   const refreshSession = async () => {
+    if (isRefreshing) return false;
+    
     try {
+      setIsRefreshing(true);
       console.log("Attempting to refresh session...");
       const { data, error } = await supabase.auth.refreshSession();
       
@@ -38,6 +43,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     } catch (err) {
       console.error("Error in refreshSession:", err);
       return false;
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -52,50 +59,58 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     window.addEventListener('keydown', handleUserActivity);
     window.addEventListener('touchstart', handleUserActivity);
     window.addEventListener('scroll', handleUserActivity);
+    window.addEventListener('mousemove', handleUserActivity);
 
     return () => {
       window.removeEventListener('mousedown', handleUserActivity);
       window.removeEventListener('keydown', handleUserActivity);
       window.removeEventListener('touchstart', handleUserActivity);
       window.removeEventListener('scroll', handleUserActivity);
+      window.removeEventListener('mousemove', handleUserActivity);
     };
   }, []);
 
   // Automatic session refresh based on activity
   useEffect(() => {
-    const INACTIVITY_THRESHOLD = 60 * 1000; // 1 minute
-    const SESSION_CHECK_INTERVAL = 30 * 1000; // 30 seconds
+    const INACTIVITY_THRESHOLD = 30 * 1000; // 30 seconds of inactivity before we start checking session
+    const SESSION_CHECK_INTERVAL = 15 * 1000; // 15 seconds between checks
+    const SESSION_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes buffer before expiry
 
     const intervalId = setInterval(async () => {
       const now = Date.now();
       const timeSinceLastActivity = now - lastActivity;
 
-      // If user has been active recently, ensure session is valid
-      if (timeSinceLastActivity < INACTIVITY_THRESHOLD) {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        // If session exists but is close to expiry, refresh it
-        if (currentSession) {
-          const expiresAt = currentSession.expires_at;
-          if (expiresAt) {
-            const expiresAtMs = expiresAt * 1000;
-            const timeToExpiry = expiresAtMs - now;
-            
-            // If session expires in less than 5 minutes, refresh it
-            if (timeToExpiry < 5 * 60 * 1000) {
-              console.log("Session nearing expiry, refreshing...");
-              await refreshSession();
+      // If user has been active recently or inactive for less than threshold, ensure session is valid
+      if (timeSinceLastActivity < INACTIVITY_THRESHOLD || session) {
+        try {
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          
+          // If session exists but is close to expiry, refresh it
+          if (currentSession) {
+            const expiresAt = currentSession.expires_at;
+            if (expiresAt) {
+              const expiresAtMs = expiresAt * 1000;
+              const timeToExpiry = expiresAtMs - now;
+              
+              // If session expires soon, refresh it
+              if (timeToExpiry < SESSION_EXPIRY_BUFFER) {
+                console.log(`Session nearing expiry (${Math.round(timeToExpiry/1000)}s remaining), refreshing...`);
+                await refreshSession();
+              }
+            }
+          } else if (session) {
+            // If we think we have a session but supabase doesn't, refresh
+            console.log("Session state mismatch, attempting refresh...");
+            const success = await refreshSession();
+            if (!success) {
+              console.log("Session refresh failed, redirecting to login");
+              toast.error("Sua sessão expirou. Por favor, faça login novamente.");
+              setSession(null);
+              navigate('/login', { replace: true });
             }
           }
-        } else if (session) {
-          // If we think we have a session but supabase doesn't, refresh
-          console.log("Session state mismatch, attempting refresh...");
-          const success = await refreshSession();
-          if (!success) {
-            console.log("Session refresh failed, redirecting to login");
-            setSession(null);
-            navigate('/login', { replace: true });
-          }
+        } catch (error) {
+          console.error("Error checking session:", error);
         }
       }
     }, SESSION_CHECK_INTERVAL);
