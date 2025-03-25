@@ -442,7 +442,7 @@ export function ServicesTab() {
                 Adicionar Serviço
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl glass-card">
+            <DialogContent className="w-full max-w-3xl p-6">
               <DialogHeader>
                 <DialogTitle>Adicionar Novo Serviço</DialogTitle>
                 <DialogDescription>Preencha o formulário abaixo para adicionar um novo serviço</DialogDescription>
@@ -454,7 +454,7 @@ export function ServicesTab() {
                     id="client_name" 
                     value={newService.client_name} 
                     onChange={e => setNewService({ ...newService, client_name: e.target.value })} 
-                    className="glass-card"
+                    className="w-full"
                   />
                 </div>
                 
@@ -465,7 +465,7 @@ export function ServicesTab() {
                     type="date" 
                     value={newService.start_date} 
                     onChange={e => setNewService({ ...newService, start_date: e.target.value })} 
-                    className="glass-card"
+                    className="w-full"
                   />
                 </div>
                 
@@ -475,7 +475,7 @@ export function ServicesTab() {
                     id="company_name" 
                     value={newService.company_name} 
                     onChange={e => setNewService({ ...newService, company_name: e.target.value })} 
-                    className="glass-card"
+                    className="w-full"
                   />
                 </div>
                 
@@ -485,7 +485,7 @@ export function ServicesTab() {
                     id="service_description" 
                     value={newService.service_description} 
                     onChange={e => setNewService({ ...newService, service_description: e.target.value })} 
-                    className="glass-card"
+                    className="w-full"
                   />
                 </div>
                 
@@ -495,7 +495,7 @@ export function ServicesTab() {
                     id="stage" 
                     value={newService.stage} 
                     onChange={e => setNewService({ ...newService, stage: e.target.value })} 
-                    className="glass-card"
+                    className="w-full"
                   />
                 </div>
                 
@@ -505,7 +505,7 @@ export function ServicesTab() {
                     id="status" 
                     value={newService.status} 
                     onChange={e => setNewService({ ...newService, status: e.target.value })} 
-                    className="glass-card"
+                    className="w-full"
                   />
                 </div>
                 
@@ -516,14 +516,14 @@ export function ServicesTab() {
                     type="number" 
                     value={newService.amount} 
                     onChange={e => setNewService({ ...newService, amount: Number(e.target.value) })} 
-                    className="glass-card"
+                    className="w-full"
                   />
                 </div>
                 
                 <div className="space-y-2">
                   <Label>Status do Pagamento</Label>
                   <Select value={newService.payment_status} onValueChange={handlePaymentStatusChange}>
-                    <SelectTrigger className="glass-card">
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Status do pagamento" />
                     </SelectTrigger>
                     <SelectContent>
@@ -537,7 +537,7 @@ export function ServicesTab() {
                 <div className="space-y-2">
                   <Label htmlFor="client_id">Cliente</Label>
                   <Select value={newService.client_id} onValueChange={value => setNewService({ ...newService, client_id: value })}>
-                    <SelectTrigger className="glass-card">
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecione o cliente" />
                     </SelectTrigger>
                     <SelectContent>
@@ -944,7 +944,7 @@ export function ServicesTab() {
       
       {/* Edit Service Dialog */}
       <Dialog open={!!editingService} onOpenChange={(open) => !open && setEditingService(null)}>
-        <DialogContent className="max-w-3xl glass-card">
+        <DialogContent className="w-full max-w-3xl p-6">
           <DialogHeader>
             <DialogTitle>Editar Serviço</DialogTitle>
           </DialogHeader>
@@ -956,7 +956,7 @@ export function ServicesTab() {
                   id="edit_client_name" 
                   value={editingService.client_name} 
                   onChange={e => setEditingService({ ...editingService, client_name: e.target.value })} 
-                  className="glass-card"
+                  className="w-full"
                 />
               </div>
               
@@ -967,7 +967,7 @@ export function ServicesTab() {
                   type="date" 
                   value={editingService.start_date.substring(0, 10)} 
                   onChange={e => setEditingService({ ...editingService, start_date: e.target.value })} 
-                  className="glass-card"
+                  className="w-full"
                 />
               </div>
               
@@ -977,17 +977,17 @@ export function ServicesTab() {
                   id="edit_company_name" 
                   value={editingService.company_name} 
                   onChange={e => setEditingService({ ...editingService, company_name: e.target.value })} 
-                  className="glass-card"
+                  className="w-full"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="edit_service_description">Descrição do Servi��o</Label>
+                <Label htmlFor="edit_service_description">Descrição do Serviço</Label>
                 <Input 
                   id="edit_service_description" 
                   value={editingService.service_description} 
                   onChange={e => setEditingService({ ...editingService, service_description: e.target.value })} 
-                  className="glass-card"
+                  className="w-full"
                 />
               </div>
               
@@ -997,7 +997,7 @@ export function ServicesTab() {
                   id="edit_stage" 
                   value={editingService.stage} 
                   onChange={e => setEditingService({ ...editingService, stage: e.target.value })} 
-                  className="glass-card"
+                  className="w-full"
                 />
               </div>
               
@@ -1007,7 +1007,7 @@ export function ServicesTab() {
                   id="edit_status" 
                   value={editingService.status} 
                   onChange={e => setEditingService({ ...editingService, status: e.target.value })} 
-                  className="glass-card"
+                  className="w-full"
                 />
               </div>
               
@@ -1018,7 +1018,7 @@ export function ServicesTab() {
                   type="number" 
                   value={editingService.amount} 
                   onChange={e => setEditingService({ ...editingService, amount: Number(e.target.value) })} 
-                  className="glass-card"
+                  className="w-full"
                 />
               </div>
               
@@ -1028,7 +1028,7 @@ export function ServicesTab() {
                   value={editingService.payment_status} 
                   onValueChange={handleEditingPaymentStatusChange}
                 >
-                  <SelectTrigger className="glass-card">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Status do pagamento" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1057,7 +1057,7 @@ export function ServicesTab() {
       
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="glass-card">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmar Exclusão</DialogTitle>
           </DialogHeader>
@@ -1080,7 +1080,7 @@ export function ServicesTab() {
 
       {/* Share Dialog */}
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="glass-card">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Compartilhar com cliente</DialogTitle>
           </DialogHeader>
@@ -1100,4 +1100,3 @@ export function ServicesTab() {
     </div>
   );
 }
-

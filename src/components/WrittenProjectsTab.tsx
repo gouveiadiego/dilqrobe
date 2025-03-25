@@ -51,7 +51,7 @@ export function WrittenProjectsTab() {
             </TabsTrigger>
           </TabsList>
           
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100/80 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100/80 overflow-hidden dark:bg-gray-900 dark:border-gray-800">
             <TabsContent value="companies" className="p-6 transition-all duration-300 animate-fade-in">
               <CompanyManager />
             </TabsContent>
