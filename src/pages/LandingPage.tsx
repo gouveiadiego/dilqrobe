@@ -6,24 +6,32 @@ import {
   Calendar, 
   CheckCircle, 
   CreditCard, 
+  Layers, 
   Settings2, 
   Shield, 
   Users, 
   Sparkles, 
+  Brain, 
   ArrowDown, 
   CheckSquare, 
   Wallet, 
   FileText,
   LayoutDashboard,
+  BarChart3,
   Rocket,
+  CircuitBoard,
+  Atom,
+  Infinity,
+  Globe,
+  Gem,
   Star,
-  BadgeDollarSign,
-  Check
+  ArrowUp
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -57,10 +65,6 @@ export default function LandingPage() {
 
   const handleGetStarted = () => {
     navigate("/login");
-  };
-
-  const handleSubscription = () => {
-    navigate("/subscription");
   };
 
   const getCurrentTimePeriod = () => {
@@ -186,6 +190,59 @@ export default function LandingPage() {
     }
   ];
   
+  const testimonials = [{
+    name: "Paulo Andrade",
+    role: "Empresário",
+    content: "Esta plataforma transformou completamente a maneira como gerencio meus projetos e finanças. A integração entre os módulos é simplesmente perfeita.",
+    avatar: "https://i.pravatar.cc/100?img=1"
+  }, {
+    name: "Aline Ferreira",
+    role: "Profissional Autônomo",
+    content: "Consegui aumentar minha produtividade em 40% usando o sistema de tarefas e hábitos. Os relatórios me ajudam a entender onde estou gastando meu tempo.",
+    avatar: "https://i.pravatar.cc/100?img=5"
+  }, {
+    name: "Ricardo Mendes",
+    role: "Consultor Financeiro",
+    content: "A funcionalidade de controle financeiro é excepcional. Consigo ter uma visão clara das minhas receitas e despesas, categorizadas automaticamente.",
+    avatar: "https://i.pravatar.cc/100?img=3"
+  }];
+  
+  interface StepProps {
+    number: number;
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+  }
+  
+  const Step = ({ number, title, description, icon }: StepProps) => (
+    <div className="flex items-start space-x-4 relative z-10 backdrop-blur-sm bg-white/10 p-6 rounded-xl border border-white/20 shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105">
+      <div className="flex-shrink-0 bg-gradient-to-br from-purple-600 to-blue-500 h-12 w-12 rounded-full flex items-center justify-center shadow-lg">
+        {icon}
+      </div>
+      <div>
+        <h3 className="text-xl font-semibold text-gray-100 mb-2">{title}</h3>
+        <p className="text-gray-300">{description}</p>
+      </div>
+    </div>
+  );
+  
+  const TestimonialCard = ({ testimonial }: { testimonial: typeof testimonials[0] }) => (
+    <Card className="bg-gradient-to-br from-gray-900/70 to-gray-800/70 backdrop-blur-lg border-gray-700 hover:border-dilq-accent hover:shadow-lg hover:shadow-dilq-accent/20 transition-all duration-300 text-white">
+      <CardContent className="p-6">
+        <div className="flex items-start space-x-4">
+          <img src={testimonial.avatar} alt={testimonial.name} className="w-16 h-16 rounded-full object-cover border-2 border-dilq-accent/50" />
+          <div>
+            <p className="italic text-gray-300 mb-4">"{testimonial.content}"</p>
+            <div>
+              <p className="font-semibold text-white">{testimonial.name}</p>
+              <p className="text-sm bg-gradient-to-r from-dilq-purple to-dilq-accent bg-clip-text text-transparent">{testimonial.role}</p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+  
   interface FeatureCardProps {
     icon: React.ReactNode;
     title: string;
@@ -254,13 +311,11 @@ export default function LandingPage() {
             <span className="text-xl font-bold text-white">DILQ ORBE</span>
           </div>
           <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={handleSubscription} 
-              className="hidden md:flex border-dilq-accent/30 hover:border-dilq-accent text-dilq-accent hover:bg-dilq-accent/10"
-            >
-              Ver preços
-            </Button>
+            <div className="hidden md:block">
+              <span className="px-4 py-2 bg-white/10 rounded-full text-sm font-medium">
+                Por apenas <span className="text-dilq-accent font-bold">R$19,90/mês</span>
+              </span>
+            </div>
             <Button onClick={handleGetStarted} className="bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all">
               Começar Agora
             </Button>
@@ -281,7 +336,7 @@ export default function LandingPage() {
         <div className="flex flex-col lg:flex-row items-center gap-12 relative z-10">
           <div className="lg:w-1/2 space-y-8 relative" style={{ transform: `translateY(${scrollY * 0.1}px)` }}>
             <div className="space-y-6">
-              <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="flex items-center space-x-2 mb-4">
                 <div className="px-3 py-1 bg-gradient-to-r from-dilq-accent/20 to-dilq-teal/20 backdrop-blur-sm rounded-full border border-white/10">
                   <span className="text-sm text-white flex items-center">
                     <Rocket className="h-3 w-3 mr-2" /> Tecnologia de ponta
@@ -289,7 +344,7 @@ export default function LandingPage() {
                 </div>
                 <div className="px-3 py-1 bg-gradient-to-r from-dilq-purple/20 to-dilq-accent/20 backdrop-blur-sm rounded-full border border-white/10">
                   <span className="text-sm text-white flex items-center">
-                    <Star className="h-3 w-3 mr-2" /> Acesso a todos recursos
+                    <Star className="h-3 w-3 mr-2" /> Apenas R$19,90/mês
                   </span>
                 </div>
               </div>
@@ -314,11 +369,11 @@ export default function LandingPage() {
             
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
-                onClick={handleSubscription}
+                onClick={handleGetStarted} 
                 className="text-lg relative overflow-hidden group bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white px-8 py-6 rounded-lg transition-all duration-300"
               >
                 <span className="relative z-10 flex items-center">
-                  Ver Preços <ArrowRight className="ml-2" />
+                  Começar Agora <ArrowRight className="ml-2" />
                 </span>
                 <span className="absolute inset-0 translate-y-[105%] bg-white/20 transition-transform duration-300 group-hover:translate-y-0"></span>
               </Button>
@@ -334,6 +389,14 @@ export default function LandingPage() {
                 Explorar Recursos <ArrowDown className="ml-2" />
               </Button>
             </div>
+            
+            <div className="inline-block mt-4 md:hidden">
+              <div className="px-4 py-2 bg-gradient-to-r from-dilq-accent/30 to-dilq-teal/30 backdrop-blur-md rounded-lg border border-white/10">
+                <span className="text-white">
+                  Por apenas <span className="text-white font-bold text-lg">R$19,90/mês</span>
+                </span>
+              </div>
+            </div>
           </div>
           
           <div className="lg:w-1/2 relative" style={{ transform: `translateY(${scrollY * -0.1}px)` }}>
@@ -345,37 +408,20 @@ export default function LandingPage() {
                 alt="DILQ ORBE Dashboard" 
                 className="w-full h-auto object-cover" 
               />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-white font-medium">Dashboard interativo</span>
-                  <Button 
-                    size="sm" 
-                    onClick={handleSubscription}
-                    className="bg-gradient-to-r from-dilq-accent to-dilq-teal text-white text-xs"
-                  >
-                    Ver preços
-                  </Button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Features Section */}
       <div id="features" className="relative container mx-auto px-4 py-24">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
             Um <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Sistema Completo</span> para sua Vida
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Gerencie todos os aspectos da sua vida pessoal e profissional em um só lugar.
+            Gerencie todos os aspectos da sua vida pessoal e profissional em um só lugar, por apenas <span className="text-dilq-accent font-bold">R$19,90 por mês</span>.
           </p>
-          <Button 
-            onClick={handleSubscription}
-            className="mt-6 bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all"
-          >
-            Ver planos e preços
-          </Button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -392,6 +438,44 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* Subscription CTA */}
+      <div className="relative py-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 opacity-90"></div>
+        <div className="container relative z-10 mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
+              Comece sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Transformação</span> Hoje
+            </h2>
+            <p className="text-xl text-gray-300 mb-10">
+              Por apenas <span className="text-dilq-accent font-bold text-2xl">R$19,90/mês</span>, tenha acesso a todas as funcionalidades premium e transforme sua vida pessoal e profissional.
+            </p>
+            <Button 
+              onClick={handleGetStarted} 
+              className="text-lg relative overflow-hidden group bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white px-8 py-6 rounded-lg transition-all duration-300"
+            >
+              <span className="relative z-10 flex items-center">
+                Começar Agora <ArrowRight className="ml-2" />
+              </span>
+              <span className="absolute inset-0 translate-y-[105%] bg-white/20 transition-transform duration-300 group-hover:translate-y-0"></span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Testimonials Section */}
+      <div className="relative container mx-auto px-4 py-24">
+        <h2 className="text-3xl md:text-5xl font-bold mb-16 text-center text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
+          O que Nossos <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Usuários</span> Dizem
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {testimonials.map((testimonial, idx) => (
+            <TestimonialCard key={idx} testimonial={testimonial} />
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
       <footer className="py-10 bg-gray-900/80 border-t border-white/10">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -406,10 +490,10 @@ export default function LandingPage() {
             
             <div>
               <Button 
-                onClick={handleSubscription} 
+                onClick={handleGetStarted} 
                 className="bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all"
               >
-                Ver Planos e Preços
+                Assinar por apenas R$19,90/mês
               </Button>
             </div>
           </div>
