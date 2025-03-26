@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -25,7 +24,9 @@ import {
   Globe,
   Gem,
   Star,
-  ArrowUp
+  ArrowUp,
+  BadgeDollarSign,
+  Check
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
@@ -190,23 +191,6 @@ export default function LandingPage() {
     }
   ];
   
-  const testimonials = [{
-    name: "Paulo Andrade",
-    role: "Empresário",
-    content: "Esta plataforma transformou completamente a maneira como gerencio meus projetos e finanças. A integração entre os módulos é simplesmente perfeita.",
-    avatar: "https://i.pravatar.cc/100?img=1"
-  }, {
-    name: "Aline Ferreira",
-    role: "Profissional Autônomo",
-    content: "Consegui aumentar minha produtividade em 40% usando o sistema de tarefas e hábitos. Os relatórios me ajudam a entender onde estou gastando meu tempo.",
-    avatar: "https://i.pravatar.cc/100?img=5"
-  }, {
-    name: "Ricardo Mendes",
-    role: "Consultor Financeiro",
-    content: "A funcionalidade de controle financeiro é excepcional. Consigo ter uma visão clara das minhas receitas e despesas, categorizadas automaticamente.",
-    avatar: "https://i.pravatar.cc/100?img=3"
-  }];
-  
   interface StepProps {
     number: number;
     title: string;
@@ -224,23 +208,6 @@ export default function LandingPage() {
         <p className="text-gray-300">{description}</p>
       </div>
     </div>
-  );
-  
-  const TestimonialCard = ({ testimonial }: { testimonial: typeof testimonials[0] }) => (
-    <Card className="bg-gradient-to-br from-gray-900/70 to-gray-800/70 backdrop-blur-lg border-gray-700 hover:border-dilq-accent hover:shadow-lg hover:shadow-dilq-accent/20 transition-all duration-300 text-white">
-      <CardContent className="p-6">
-        <div className="flex items-start space-x-4">
-          <img src={testimonial.avatar} alt={testimonial.name} className="w-16 h-16 rounded-full object-cover border-2 border-dilq-accent/50" />
-          <div>
-            <p className="italic text-gray-300 mb-4">"{testimonial.content}"</p>
-            <div>
-              <p className="font-semibold text-white">{testimonial.name}</p>
-              <p className="text-sm bg-gradient-to-r from-dilq-purple to-dilq-accent bg-clip-text text-transparent">{testimonial.role}</p>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
   
   interface FeatureCardProps {
@@ -311,9 +278,10 @@ export default function LandingPage() {
             <span className="text-xl font-bold text-white">DILQ ORBE</span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden md:block">
+            <div className="hidden md:flex items-center gap-2">
+              <BadgeDollarSign className="h-5 w-5 text-dilq-accent animate-pulse" />
               <span className="px-4 py-2 bg-white/10 rounded-full text-sm font-medium">
-                Por apenas <span className="text-dilq-accent font-bold">R$19,90/mês</span>
+                Apenas <span className="text-dilq-accent font-bold text-lg">R$19,90/mês</span>
               </span>
             </div>
             <Button onClick={handleGetStarted} className="bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all">
@@ -336,7 +304,7 @@ export default function LandingPage() {
         <div className="flex flex-col lg:flex-row items-center gap-12 relative z-10">
           <div className="lg:w-1/2 space-y-8 relative" style={{ transform: `translateY(${scrollY * 0.1}px)` }}>
             <div className="space-y-6">
-              <div className="flex items-center space-x-2 mb-4">
+              <div className="flex flex-wrap items-center gap-2 mb-4">
                 <div className="px-3 py-1 bg-gradient-to-r from-dilq-accent/20 to-dilq-teal/20 backdrop-blur-sm rounded-full border border-white/10">
                   <span className="text-sm text-white flex items-center">
                     <Rocket className="h-3 w-3 mr-2" /> Tecnologia de ponta
@@ -344,7 +312,12 @@ export default function LandingPage() {
                 </div>
                 <div className="px-3 py-1 bg-gradient-to-r from-dilq-purple/20 to-dilq-accent/20 backdrop-blur-sm rounded-full border border-white/10">
                   <span className="text-sm text-white flex items-center">
-                    <Star className="h-3 w-3 mr-2" /> Apenas R$19,90/mês
+                    <Star className="h-3 w-3 mr-2" /> Acesso ilimitado a todos recursos
+                  </span>
+                </div>
+                <div className="px-3 py-1 bg-gradient-to-r from-dilq-teal/20 to-dilq-purple/20 backdrop-blur-sm rounded-full border border-white/10">
+                  <span className="text-sm text-white flex items-center">
+                    <BadgeDollarSign className="h-3 w-3 mr-2" /> <span className="font-bold">R$19,90/mês</span>
                   </span>
                 </div>
               </div>
@@ -390,11 +363,13 @@ export default function LandingPage() {
               </Button>
             </div>
             
-            <div className="inline-block mt-4 md:hidden">
-              <div className="px-4 py-2 bg-gradient-to-r from-dilq-accent/30 to-dilq-teal/30 backdrop-blur-md rounded-lg border border-white/10">
-                <span className="text-white">
-                  Por apenas <span className="text-white font-bold text-lg">R$19,90/mês</span>
-                </span>
+            <div className="flex items-center px-6 py-4 bg-gradient-to-r from-dilq-accent/30 to-dilq-teal/30 backdrop-blur-md rounded-lg border border-white/10 mt-6">
+              <BadgeDollarSign className="h-8 w-8 text-white mr-4" />
+              <div>
+                <h3 className="text-xl font-bold text-white">Preço Promocional</h3>
+                <p className="text-gray-300">
+                  Por apenas <span className="text-white font-bold text-2xl">R$19,90/mês</span> - Acesso completo
+                </p>
               </div>
             </div>
           </div>
@@ -408,12 +383,76 @@ export default function LandingPage() {
                 alt="DILQ ORBE Dashboard" 
                 className="w-full h-auto object-cover" 
               />
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-white font-medium">Dashboard interativo</span>
+                  <span className="bg-dilq-accent/80 text-white px-3 py-1 rounded-full text-sm font-bold">
+                    R$19,90/mês
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Features Section */}
+      <div className="relative container mx-auto px-4 py-16">
+        <div className="max-w-5xl mx-auto bg-gradient-to-r from-dilq-purple/10 to-dilq-accent/10 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-dilq-accent to-dilq-teal"></div>
+          <div className="p-8 md:p-12">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="text-center md:text-left">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
+                  Transforme sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Produtividade</span>
+                </h2>
+                <p className="text-xl text-gray-300 mb-6">
+                  Sistema completo de gerenciamento para empreendedores e profissionais que buscam alto desempenho
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {[
+                    "Todos os recursos premium",
+                    "Atualizações constantes",
+                    "Suporte prioritário",
+                    "Acesso ilimitado"
+                  ].map((feature, idx) => (
+                    <div key={idx} className="flex items-center space-x-2">
+                      <div className="bg-dilq-accent/20 p-1 rounded-full">
+                        <Check className="h-4 w-4 text-dilq-accent" />
+                      </div>
+                      <span className="text-gray-200">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-gray-900/70 to-gray-800/70 rounded-xl border border-white/10 p-6 w-full md:w-auto">
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <BadgeDollarSign className="h-6 w-6 text-dilq-accent mr-2" />
+                    <h3 className="text-xl font-bold text-white">Preço Único</h3>
+                  </div>
+                  <div className="mb-4">
+                    <span className="text-4xl font-bold text-white">R$19,90</span>
+                    <span className="text-gray-400">/mês</span>
+                  </div>
+                  <p className="text-gray-300 mb-6">
+                    Cancele a qualquer momento. <br/>
+                    Sem taxas ocultas.
+                  </p>
+                  <Button 
+                    onClick={handleGetStarted} 
+                    className="w-full bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all"
+                  >
+                    Assinar Agora
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="features" className="relative container mx-auto px-4 py-24">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
@@ -438,44 +477,67 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Subscription CTA */}
-      <div className="relative py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 opacity-90"></div>
+      <div className="relative py-20 overflow-hidden bg-gradient-to-b from-gray-900/90 to-black/80">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_300px_at_80%_20%,rgba(139,92,246,0.3),transparent)]"></div>
+          <div className="absolute bottom-0 left-0 w-full h-full bg-[radial-gradient(circle_300px_at_20%_80%,rgba(32,178,170,0.3),transparent)]"></div>
+        </div>
         <div className="container relative z-10 mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
-              Comece sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Transformação</span> Hoje
-            </h2>
-            <p className="text-xl text-gray-300 mb-10">
-              Por apenas <span className="text-dilq-accent font-bold text-2xl">R$19,90/mês</span>, tenha acesso a todas as funcionalidades premium e transforme sua vida pessoal e profissional.
-            </p>
-            <Button 
-              onClick={handleGetStarted} 
-              className="text-lg relative overflow-hidden group bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white px-8 py-6 rounded-lg transition-all duration-300"
-            >
-              <span className="relative z-10 flex items-center">
-                Começar Agora <ArrowRight className="ml-2" />
-              </span>
-              <span className="absolute inset-0 translate-y-[105%] bg-white/20 transition-transform duration-300 group-hover:translate-y-0"></span>
-            </Button>
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 backdrop-blur-md rounded-3xl border border-white/10 p-10">
+              <div className="text-center mb-8">
+                <span className="inline-block px-4 py-1 bg-dilq-accent/20 text-dilq-accent rounded-full text-sm font-medium mb-4">
+                  Oferta Especial
+                </span>
+                <h2 className="text-3xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
+                  Comece sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Transformação</span> Hoje
+                </h2>
+                <div className="flex justify-center items-center mb-8">
+                  <div className="relative">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-dilq-accent to-dilq-teal rounded-lg blur-md opacity-50 animate-pulse"></div>
+                    <div className="relative bg-gradient-to-r from-dilq-accent/20 to-dilq-teal/20 backdrop-blur-md rounded-lg border border-white/20 px-6 py-3">
+                      <p className="text-2xl md:text-4xl font-bold text-white">
+                        R$<span className="text-dilq-accent">19</span>,90<span className="text-xl text-gray-300">/mês</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
+                  Por um valor mínimo, tenha acesso a todas as funcionalidades premium e transforme sua vida pessoal e profissional com nosso sistema completo.
+                </p>
+                <div className="flex flex-col md:flex-row justify-center gap-4">
+                  <Button 
+                    onClick={handleGetStarted} 
+                    className="text-lg relative overflow-hidden group bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white px-8 py-6 rounded-lg transition-all duration-300"
+                  >
+                    <span className="relative z-10 flex items-center">
+                      Assinar por apenas R$19,90/mês <ArrowRight className="ml-2" />
+                    </span>
+                    <span className="absolute inset-0 translate-y-[105%] bg-white/20 transition-transform duration-300 group-hover:translate-y-0"></span>
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-8 border-t border-white/10">
+                {[
+                  { icon: <Shield className="h-5 w-5" />, text: "Cancele a qualquer momento" },
+                  { icon: <CheckCircle className="h-5 w-5" />, text: "Suporte prioritário" },
+                  { icon: <Sparkles className="h-5 w-5" />, text: "Acesso completo" },
+                  { icon: <CreditCard className="h-5 w-5" />, text: "Pagamento seguro" }
+                ].map((item, idx) => (
+                  <div key={idx} className="flex flex-col items-center text-center">
+                    <div className="bg-gradient-to-br from-dilq-accent/30 to-dilq-teal/30 p-2 rounded-full mb-2">
+                      {item.icon}
+                    </div>
+                    <span className="text-sm text-gray-300">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Testimonials Section */}
-      <div className="relative container mx-auto px-4 py-24">
-        <h2 className="text-3xl md:text-5xl font-bold mb-16 text-center text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
-          O que Nossos <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Usuários</span> Dizem
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, idx) => (
-            <TestimonialCard key={idx} testimonial={testimonial} />
-          ))}
-        </div>
-      </div>
-
-      {/* Footer */}
       <footer className="py-10 bg-gray-900/80 border-t border-white/10">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
