@@ -1,6 +1,5 @@
-
 import { Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -14,11 +13,12 @@ import Subscription from "./pages/Subscription";
 import PaymentSuccess from "@/pages/payment/PaymentSuccess";
 import PaymentCanceled from "@/pages/payment/PaymentCanceled";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 function App() {
-  // Initialize dark mode based on user preference or system preference
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
   useEffect(() => {
-    // Check for saved preference
     const savedTheme = localStorage.getItem('theme');
     
     if (savedTheme === 'dark') {
@@ -26,13 +26,11 @@ function App() {
     } else if (savedTheme === 'light') {
       document.documentElement.classList.remove('dark');
     } else {
-      // If no saved preference, respect system preference
       if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.documentElement.classList.add('dark');
       }
     }
     
-    // Listen for system preference changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
       if (!localStorage.getItem('theme')) {
@@ -48,35 +46,73 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Ensure Supabase client is properly configured for auth persistency
   useEffect(() => {
-    // Verify that Supabase client is configured correctly
-    console.log("Verifying Supabase client configuration...");
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success("Conexão de internet restaurada");
+      supabase.auth.refreshSession().then(({ data, error }) => {
+        if (error) {
+          console.error("Erro ao atualizar sessão após reconexão:", error);
+        } else if (data.session) {
+          console.log("Sessão renovada após reconexão");
+        }
+      });
+    };
     
-    // Pre-fetch session to warm up auth state
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.error("Sem conexão com a internet", {
+        description: "Algumas funcionalidades podem estar indisponíveis"
+      });
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("Verificando configuração do Supabase client...");
+    
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) {
-        console.error("Error pre-fetching session:", error);
+        console.error("Erro ao pré-carregar sessão:", error);
       } else if (data.session) {
-        console.log("Session pre-fetched successfully:", data.session.user.id);
+        console.log("Sessão pré-carregada com sucesso:", data.session.user.id);
         
-        // Add a network event listener to refresh the token when coming back online
-        window.addEventListener('online', async () => {
-          console.log("Network connection restored, refreshing session...");
-          await supabase.auth.refreshSession();
-        });
+        const refreshInterval = setInterval(async () => {
+          console.log("Executando renovação programada de sessão...");
+          try {
+            const { data, error } = await supabase.auth.refreshSession();
+            if (error) {
+              console.error("Erro na renovação programada:", error);
+            } else if (data.session) {
+              console.log("Sessão renovada com sucesso:", data.session.user.id);
+            } else {
+              console.log("Não foi possível renovar a sessão");
+            }
+          } catch (e) {
+            console.error("Erro inesperado na renovação:", e);
+          }
+        }, 4 * 60 * 1000);
+        
+        return () => clearInterval(refreshInterval);
       } else {
-        console.log("No active session found during pre-fetch");
+        console.log("Nenhuma sessão ativa encontrada durante pré-carregamento");
       }
     });
     
-    // Listen for any auth state changes globally
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Global auth state change:", event);
-      if (event === 'SIGNED_OUT') {
-        console.log("User signed out, redirecting to login page");
-      } else if (event === 'TOKEN_REFRESHED') {
-        console.log("Token refreshed successfully");
+      console.log("Alteração global de estado de autenticação:", event);
+      
+      if (event === 'TOKEN_REFRESHED') {
+        console.log("Token renovado com sucesso");
+      } else if (event === 'SIGNED_OUT') {
+        console.log("Usuário desconectado, redirecionando para a página de login");
       }
     });
     
@@ -94,7 +130,6 @@ function App() {
         <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/canceled" element={<PaymentCanceled />} />
         
-        {/* Use a nested route for dashboard to handle refreshes better */}
         <Route 
           path="/dashboard/*" 
           element={
