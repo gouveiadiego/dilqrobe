@@ -402,5 +402,97 @@ export default function LandingPage() {
             <div className="absolute -inset-4 bg-gradient-to-r from-dilq-accent/20 to-dilq-teal/20 rounded-[30px] blur-xl opacity-70 animate-pulse-subtle" style={{ animationDuration: '8s' }}></div>
             
             <div className="relative rounded-2xl overflow-hidden border-[3px] border-white/20 transform hover:scale-105 transition-transform duration-500 bg-gray-800/50 backdrop-blur-md">
-              {
+              {currentTimeImage && (
+                <img 
+                  src={currentTimeImage} 
+                  alt={`Período do dia: ${getPeriodNamePt(currentPeriod)}`}
+                  className="w-full h-auto object-cover"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <section id="features" className="relative py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              Recursos Poderosos
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Uma suite completa de ferramentas para transformar sua organização pessoal e profissional.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <FeatureCard
+                key={index}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                isActive={index === activeFeature}
+                onClick={() => setActiveFeature(index)}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative py-20 bg-gray-900/50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              O Que Nossos Usuários Dizem
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Veja como o DILQ ORBE está transformando a organização e produtividade de nossos usuários.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <TestimonialCard key={index} testimonial={testimonial} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative py-24">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl border border-white/10 rounded-2xl p-8 md:p-12 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              Comece Sua Jornada de Transformação Hoje
+            </h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Por apenas <span className="text-dilq-accent font-bold text-2xl">R$19,90/mês</span>, desbloqueie todo o potencial do DILQ ORBE.
+            </p>
+            <Button 
+              onClick={handleGetStarted} 
+              className="text-lg bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white px-8 py-6 rounded-lg shadow-lg shadow-dilq-accent/20 transition-all duration-300"
+            >
+              <span className="flex items-center">
+                Começar Agora <ArrowRight className="ml-2" />
+              </span>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-white/10 py-12">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-2 mb-6 md:mb-0">
+              <img src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png" alt="DILQ ORBE" className="w-8 h-8 object-contain" />
+              <span className="text-lg font-bold text-white">DILQ ORBE</span>
+            </div>
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} DILQ ORBE. Todos os direitos reservados.
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
