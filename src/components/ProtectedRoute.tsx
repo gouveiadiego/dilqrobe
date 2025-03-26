@@ -1,10 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { SessionTimeoutModal } from "./SessionTimeoutModal";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,10 +17,15 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  
   const [lastActivity, setLastActivity] = useState<number>(Date.now());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showTimeoutModal, setShowTimeoutModal] = useState(false);
 
-  // Function to refresh the session
+  const INACTIVITY_TIMEOUT = 60 * 1000; // 1 minute of inactivity before session expires
+  const SESSION_CHECK_INTERVAL = 10 * 1000; // 10 seconds between checks
+  const SESSION_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes buffer before expiry
+
   const refreshSession = async () => {
     if (isRefreshing) return false;
     
@@ -48,13 +53,19 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     }
   };
 
-  // Monitor user activity
   useEffect(() => {
     const handleUserActivity = () => {
       setLastActivity(Date.now());
+      
+      if (showTimeoutModal) {
+        refreshSession().then(success => {
+          if (success) {
+            setShowTimeoutModal(false);
+          }
+        });
+      }
     };
 
-    // Add event listeners for user activity
     window.addEventListener('mousedown', handleUserActivity);
     window.addEventListener('keydown', handleUserActivity);
     window.addEventListener('touchstart', handleUserActivity);
@@ -68,45 +79,40 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       window.removeEventListener('scroll', handleUserActivity);
       window.removeEventListener('mousemove', handleUserActivity);
     };
-  }, []);
+  }, [showTimeoutModal]);
 
-  // Automatic session refresh based on activity
   useEffect(() => {
-    const INACTIVITY_THRESHOLD = 30 * 1000; // 30 seconds of inactivity before we start checking session
-    const SESSION_CHECK_INTERVAL = 15 * 1000; // 15 seconds between checks
-    const SESSION_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes buffer before expiry
-
     const intervalId = setInterval(async () => {
       const now = Date.now();
       const timeSinceLastActivity = now - lastActivity;
 
-      // If user has been active recently or inactive for less than threshold, ensure session is valid
-      if (timeSinceLastActivity < INACTIVITY_THRESHOLD || session) {
+      if (timeSinceLastActivity > INACTIVITY_TIMEOUT && session && !showTimeoutModal) {
+        console.log("User inactive for too long, showing timeout modal");
+        setShowTimeoutModal(true);
+        return;
+      }
+
+      if (timeSinceLastActivity < INACTIVITY_TIMEOUT && session && !showTimeoutModal) {
         try {
           const { data: { session: currentSession } } = await supabase.auth.getSession();
           
-          // If session exists but is close to expiry, refresh it
           if (currentSession) {
             const expiresAt = currentSession.expires_at;
             if (expiresAt) {
               const expiresAtMs = expiresAt * 1000;
               const timeToExpiry = expiresAtMs - now;
               
-              // If session expires soon, refresh it
               if (timeToExpiry < SESSION_EXPIRY_BUFFER) {
                 console.log(`Session nearing expiry (${Math.round(timeToExpiry/1000)}s remaining), refreshing...`);
                 await refreshSession();
               }
             }
           } else if (session) {
-            // If we think we have a session but supabase doesn't, refresh
             console.log("Session state mismatch, attempting refresh...");
             const success = await refreshSession();
             if (!success) {
-              console.log("Session refresh failed, redirecting to login");
-              toast.error("Sua sessão expirou. Por favor, faça login novamente.");
-              setSession(null);
-              navigate('/login', { replace: true });
+              console.log("Session refresh failed, showing timeout modal");
+              setShowTimeoutModal(true);
             }
           }
         } catch (error) {
@@ -116,9 +122,12 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     }, SESSION_CHECK_INTERVAL);
 
     return () => clearInterval(intervalId);
-  }, [lastActivity, session, navigate]);
+  }, [lastActivity, session, showTimeoutModal]);
 
-  // Initial session check and setup
+  const handleTimeoutModalClose = () => {
+    setShowTimeoutModal(false);
+  };
+
   useEffect(() => {
     let isMounted = true;
     
@@ -141,7 +150,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         
         if (isMounted) setSession(data.session);
         
-        // Verify subscription status if required
         if (requireSubscription && isMounted) {
           await checkSubscription(data.session.user.id);
         } else if (isMounted) {
@@ -163,14 +171,11 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     };
   }, [requireSubscription]);
 
-  // Set up auth state change listener
   useEffect(() => {
     let isMounted = true;
     
-    // Error boundary for auth state change listener
     try {
       console.log("Setting up auth state change listener...");
-      // Auth state change listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (_event, currentSession) => {
           console.log("Auth state changed:", _event);
@@ -178,6 +183,7 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
           
           if (currentSession) {
             setSession(currentSession);
+            setLastActivity(Date.now());
             
             if (requireSubscription) {
               await checkSubscription(currentSession.user.id);
@@ -192,12 +198,10 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         }
       );
       
-      // Handling post-payment redirect
       const searchParams = new URLSearchParams(location.search);
       if (searchParams.get("payment") === "success") {
         toast.success("Pagamento recebido! Processando assinatura...");
         
-        // Allow time for the webhook to process
         if (isMounted) setLoading(true);
         const timeoutId = setTimeout(async () => {
           try {
@@ -240,11 +244,9 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     try {
       console.log(`Verificando assinatura para usuário ${userId}`);
       
-      // Do not default to allowing access - only allow if we confirm subscription
       let foundValidSubscription = false;
       
       try {
-        // Check for active subscription
         const { data, error } = await supabase
           .from("subscriptions")
           .select("*")
@@ -255,12 +257,10 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
           console.error("Erro ao verificar assinatura:", error);
           foundValidSubscription = false;
         } else if (data) {
-          // If forceAccept is true, accept any status
           if (forceAccept) {
             console.log("Aceitando assinatura em qualquer estado devido a forceAccept");
             foundValidSubscription = true;
           } else {
-            // Otherwise, check status
             const isActive = data.status === 'active' || data.status === 'trialing';
             foundValidSubscription = isActive;
             console.log(`Status da assinatura: ${data.status}, isActive: ${isActive}`);
@@ -284,7 +284,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     }
   };
 
-  // Show loading
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -293,16 +292,21 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     );
   }
 
-  // Redirect to login if no session
   if (!session) {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect to subscription page if needed
   if (requireSubscription && hasSubscription === false) {
     return <Navigate to="/subscription" replace />;
   }
 
-  // Render protected content
-  return <>{children}</>;
+  return (
+    <>
+      <SessionTimeoutModal 
+        isOpen={showTimeoutModal} 
+        onClose={handleTimeoutModalClose} 
+      />
+      {children}
+    </>
+  );
 }

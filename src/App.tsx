@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -12,6 +13,7 @@ import LandingPage from "./pages/LandingPage";
 import Subscription from "./pages/Subscription";
 import PaymentSuccess from "@/pages/payment/PaymentSuccess";
 import PaymentCanceled from "@/pages/payment/PaymentCanceled";
+import { supabase } from "@/integrations/supabase/client";
 
 function App() {
   // Initialize dark mode based on user preference or system preference
@@ -44,6 +46,23 @@ function App() {
     
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  // Ensure Supabase client is properly configured for auth persistency
+  useEffect(() => {
+    // Verify that Supabase client is configured correctly
+    console.log("Verifying Supabase client configuration...");
+    
+    // Pre-fetch session to warm up auth state
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error("Error pre-fetching session:", error);
+      } else if (data.session) {
+        console.log("Session pre-fetched successfully:", data.session.user.id);
+      } else {
+        console.log("No active session found during pre-fetch");
+      }
+    });
   }, []);
 
   return (
