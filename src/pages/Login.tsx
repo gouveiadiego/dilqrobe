@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -91,9 +90,6 @@ export const Login = () => {
         }
 
         if (data?.session) {
-          // After successful login, redirect to dashboard
-          // Set last activity timestamp to ensure session timeout works correctly
-          localStorage.setItem('lastActivity', Date.now().toString());
           navigate("/dashboard", { replace: true });
         }
       }
@@ -106,10 +102,8 @@ export const Login = () => {
   };
 
   const formatCPF = (value: string) => {
-    // Remove all non-digits
     const digits = value.replace(/\D/g, '');
     
-    // Apply CPF format (xxx.xxx.xxx-xx)
     if (digits.length <= 3) {
       return digits;
     } else if (digits.length <= 6) {

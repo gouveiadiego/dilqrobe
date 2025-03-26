@@ -9,6 +9,7 @@ interface SessionTimeoutModalProps {
   onClose: () => void;
 }
 
+// This component is kept but will no longer be used actively in the application
 export function SessionTimeoutModal({ isOpen, onClose }: SessionTimeoutModalProps) {
   const navigate = useNavigate();
 

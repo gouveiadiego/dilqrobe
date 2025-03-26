@@ -1,10 +1,10 @@
+
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { SessionTimeoutModal } from "./SessionTimeoutModal";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,14 +17,7 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const [lastActivity, setLastActivity] = useState<number>(Date.now());
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showTimeoutModal, setShowTimeoutModal] = useState(false);
-
-  const INACTIVITY_TIMEOUT = 60 * 1000; // 1 minute of inactivity before session expires
-  const SESSION_CHECK_INTERVAL = 10 * 1000; // 10 seconds between checks
-  const SESSION_EXPIRY_BUFFER = 5 * 60 * 1000; // 5 minutes buffer before expiry
 
   const refreshSession = async () => {
     if (isRefreshing) return false;
@@ -51,81 +44,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     } finally {
       setIsRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    const handleUserActivity = () => {
-      setLastActivity(Date.now());
-      
-      if (showTimeoutModal) {
-        refreshSession().then(success => {
-          if (success) {
-            setShowTimeoutModal(false);
-          }
-        });
-      }
-    };
-
-    window.addEventListener('mousedown', handleUserActivity);
-    window.addEventListener('keydown', handleUserActivity);
-    window.addEventListener('touchstart', handleUserActivity);
-    window.addEventListener('scroll', handleUserActivity);
-    window.addEventListener('mousemove', handleUserActivity);
-
-    return () => {
-      window.removeEventListener('mousedown', handleUserActivity);
-      window.removeEventListener('keydown', handleUserActivity);
-      window.removeEventListener('touchstart', handleUserActivity);
-      window.removeEventListener('scroll', handleUserActivity);
-      window.removeEventListener('mousemove', handleUserActivity);
-    };
-  }, [showTimeoutModal]);
-
-  useEffect(() => {
-    const intervalId = setInterval(async () => {
-      const now = Date.now();
-      const timeSinceLastActivity = now - lastActivity;
-
-      if (timeSinceLastActivity > INACTIVITY_TIMEOUT && session && !showTimeoutModal) {
-        console.log("User inactive for too long, showing timeout modal");
-        setShowTimeoutModal(true);
-        return;
-      }
-
-      if (timeSinceLastActivity < INACTIVITY_TIMEOUT && session && !showTimeoutModal) {
-        try {
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-          
-          if (currentSession) {
-            const expiresAt = currentSession.expires_at;
-            if (expiresAt) {
-              const expiresAtMs = expiresAt * 1000;
-              const timeToExpiry = expiresAtMs - now;
-              
-              if (timeToExpiry < SESSION_EXPIRY_BUFFER) {
-                console.log(`Session nearing expiry (${Math.round(timeToExpiry/1000)}s remaining), refreshing...`);
-                await refreshSession();
-              }
-            }
-          } else if (session) {
-            console.log("Session state mismatch, attempting refresh...");
-            const success = await refreshSession();
-            if (!success) {
-              console.log("Session refresh failed, showing timeout modal");
-              setShowTimeoutModal(true);
-            }
-          }
-        } catch (error) {
-          console.error("Error checking session:", error);
-        }
-      }
-    }, SESSION_CHECK_INTERVAL);
-
-    return () => clearInterval(intervalId);
-  }, [lastActivity, session, showTimeoutModal]);
-
-  const handleTimeoutModalClose = () => {
-    setShowTimeoutModal(false);
   };
 
   useEffect(() => {
@@ -183,7 +101,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
           
           if (currentSession) {
             setSession(currentSession);
-            setLastActivity(Date.now());
             
             if (requireSubscription) {
               await checkSubscription(currentSession.user.id);
@@ -302,10 +219,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
   return (
     <>
-      <SessionTimeoutModal 
-        isOpen={showTimeoutModal} 
-        onClose={handleTimeoutModalClose} 
-      />
       {children}
     </>
   );
