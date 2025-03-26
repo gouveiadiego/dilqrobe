@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
@@ -17,116 +17,61 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // Usar ref para controlar o intervalo de renovação
-  const refreshIntervalRef = useRef<number | null>(null);
-  const lastTokenRefreshRef = useRef<number>(Date.now());
-  const isSessionCheckedRef = useRef<boolean>(false);
 
-  // Renovação de sessão aprimorada
-  const refreshSession = useCallback(async () => {
-    if (isRefreshing) return false;
-    
+  // Function to refresh the session
+  const refreshSession = async () => {
     try {
-      setIsRefreshing(true);
-      console.log("Tentando renovar sessão...");
-      
-      // Verificar se a última renovação foi há menos de 30 segundos
-      const now = Date.now();
-      if (now - lastTokenRefreshRef.current < 30000) {
-        console.log("Ignorando renovação de token (última renovação muito recente)");
-        return false;
-      }
-      
       const { data, error } = await supabase.auth.refreshSession();
-      
       if (error) {
-        console.error("Erro ao renovar sessão:", error);
-        
-        // Verificar se foi um erro de rede e tentar novamente mais tarde
-        if (error.message?.includes('network') || error.message?.includes('Failed to fetch')) {
-          console.log("Erro de rede detectado, nova tentativa será feita quando a conexão for restaurada");
-          return false;
-        }
-        
+        console.error("Error refreshing session:", error);
         return false;
       }
       
       if (data?.session) {
-        lastTokenRefreshRef.current = Date.now();
         setSession(data.session);
-        console.log("Sessão renovada com sucesso");
+        console.log("Session refreshed successfully");
         return true;
       }
-      
       return false;
     } catch (err) {
-      console.error("Erro em refreshSession:", err);
+      console.error("Error in refreshSession:", err);
       return false;
-    } finally {
-      setIsRefreshing(false);
     }
-  }, [isRefreshing]);
+  };
 
-  // Configurar renovação periódica de sessão
-  useEffect(() => {
-    let isMounted = true;
-    
-    // Configurar um intervalo para renovação a cada 10 minutos
-    if (session && !refreshIntervalRef.current) {
-      refreshIntervalRef.current = window.setInterval(async () => {
-        if (isMounted) {
-          console.log("Executando renovação programada de sessão...");
-          await refreshSession();
-        }
-      }, 10 * 60 * 1000); // 10 minutos em milissegundos
-    }
-    
-    return () => {
-      isMounted = false;
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-        refreshIntervalRef.current = null;
-      }
-    };
-  }, [session, refreshSession]);
-
-  // Verificação inicial de sessão
+  // Initial session check and setup
   useEffect(() => {
     let isMounted = true;
     
     const checkSession = async () => {
-      if (isSessionCheckedRef.current) return;
-      
       try {
-        console.log("Verificação inicial de sessão...");
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Erro ao obter sessão:", error);
+          console.error("Error getting session:", error);
           if (isMounted) setLoading(false);
           return;
         }
         
         if (!data?.session) {
-          console.log("Nenhuma sessão encontrada, redirecionando para login");
+          console.log("No session found, redirecting to login");
           if (isMounted) setLoading(false);
           return;
         }
         
-        isSessionCheckedRef.current = true;
         if (isMounted) setSession(data.session);
         
+        // Verify subscription status if required
         if (requireSubscription && isMounted) {
           await checkSubscription(data.session.user.id);
         } else if (isMounted) {
           setLoading(false);
         }
       } catch (err) {
-        console.error("Erro na verificação inicial de sessão:", err);
+        console.error("Error in initial session check:", err);
         if (isMounted) {
           setLoading(false);
+          // Don't default to allow access on error
           setHasSubscription(false);
         }
       }
@@ -139,15 +84,17 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     };
   }, [requireSubscription]);
 
-  // Monitor de alterações de estado de autenticação
+  // Set up auth state change listener and user activity monitoring
   useEffect(() => {
     let isMounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    let sessionRefreshInterval: number | null = null;
     
+    // Error boundary for auth state change listener
     try {
-      console.log("Configurando listener de alterações de estado de autenticação...");
+      // Auth state change listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (_event, currentSession) => {
-          console.log("Estado de autenticação alterado:", _event);
           if (!isMounted) return;
           
           if (currentSession) {
@@ -166,10 +113,14 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         }
       );
       
+      authSubscription = subscription;
+      
+      // Handling post-payment redirect
       const searchParams = new URLSearchParams(location.search);
       if (searchParams.get("payment") === "success") {
         toast.success("Pagamento recebido! Processando assinatura...");
         
+        // Allow time for the webhook to process
         if (isMounted) setLoading(true);
         const timeoutId = setTimeout(async () => {
           try {
@@ -181,9 +132,11 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
             }
             navigate("/dashboard", { replace: true });
           } catch (error) {
-            console.error("Erro ao processar sucesso de pagamento:", error);
+            console.error("Error processing payment success:", error);
+            // Don't block the user on error
             if (isMounted) {
               setLoading(false);
+              // Don't default to allowing access on error
               setHasSubscription(false);
             }
             navigate("/dashboard", { replace: true });
@@ -195,104 +148,86 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         };
       }
 
-      return () => {
-        isMounted = false;
-        subscription.unsubscribe();
-      };
+      // Set up less aggressive session refresh (only every 10 minutes)
+      sessionRefreshInterval = window.setInterval(async () => {
+        if (!isMounted) return;
+        const success = await refreshSession();
+        if (!success && sessionRefreshInterval !== null) {
+          window.clearInterval(sessionRefreshInterval);
+        }
+      }, 10 * 60 * 1000); // Every 10 minutes
     } catch (err) {
-      console.error("Erro ao configurar listeners de autenticação:", err);
+      console.error("Error setting up auth listeners:", err);
       if (isMounted) {
         setLoading(false);
+        // Don't default to allowing access on error
         setHasSubscription(false);
       }
     }
+
+    return () => {
+      isMounted = false;
+      if (authSubscription && typeof authSubscription.unsubscribe === 'function') {
+        authSubscription.unsubscribe();
+      }
+      if (sessionRefreshInterval !== null) {
+        window.clearInterval(sessionRefreshInterval);
+      }
+    };
   }, [navigate, requireSubscription, location]);
 
-  // Função de verificação de assinatura aprimorada com retentativas
   const checkSubscription = async (userId: string, forceAccept = false) => {
-    const maxRetries = 3;
-    let retryCount = 0;
-    let success = false;
-    
-    while (retryCount < maxRetries && !success) {
+    try {
+      console.log(`Verificando assinatura para usuário ${userId}`);
+      
+      // Do not default to allowing access - only allow if we confirm subscription
+      let foundValidSubscription = false;
+      
       try {
-        console.log(`Verificando assinatura para usuário ${userId} (tentativa ${retryCount + 1}/${maxRetries})`);
-        
-        let foundValidSubscription = false;
-        
-        try {
-          const { data, error } = await supabase
-            .from("subscriptions")
-            .select("*")
-            .eq("user_id", userId)
-            .maybeSingle();
+        // Check for active subscription
+        const { data, error } = await supabase
+          .from("subscriptions")
+          .select("*")
+          .eq("user_id", userId)
+          .maybeSingle();
 
-          if (error) {
-            // Tentar renovar sessão se houver erros de autenticação
-            if (error.message?.includes("JWT")) {
-              console.log("Problema de JWT detectado durante verificação de assinatura, tentando renovação...");
-              const refreshed = await refreshSession();
-              if (refreshed) {
-                // Continuar para a próxima tentativa após renovação bem-sucedida
-                retryCount++;
-                continue;
-              }
-            }
-            
-            console.error("Erro ao verificar assinatura:", error);
-            foundValidSubscription = false;
-          } else if (data) {
-            if (forceAccept) {
-              console.log("Aceitando assinatura em qualquer estado devido a forceAccept");
-              foundValidSubscription = true;
-            } else {
-              const isActive = data.status === 'active' || data.status === 'trialing';
-              foundValidSubscription = isActive;
-              console.log(`Status da assinatura: ${data.status}, isActive: ${isActive}`);
-            }
-            
-            // Assinatura verificada com sucesso
-            success = true;
-          } else {
-            console.log("Nenhuma assinatura encontrada para o usuário");
-            foundValidSubscription = false;
-            success = true; // Consideramos validado mesmo sem assinatura
-          }
-        } catch (err) {
-          console.error("Erro na verificação de assinatura:", err);
+        if (error) {
+          console.error("Erro ao verificar assinatura:", error);
+          // Don't default to success on error
           foundValidSubscription = false;
-        }
-        
-        console.log(`Resultado da verificação de assinatura: ${foundValidSubscription}`);
-        setHasSubscription(foundValidSubscription);
-        setLoading(false);
-        
-        // Se tivemos sucesso, não precisamos mais tentar
-        if (success) break;
-        
-        // Incrementar contador de tentativas
-        retryCount++;
-        
-        // Esperar um pouco antes da próxima tentativa
-        if (retryCount < maxRetries && !success) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        } else if (data) {
+          // If forceAccept is true, accept any status
+          if (forceAccept) {
+            console.log("Aceitando assinatura em qualquer estado devido a forceAccept");
+            foundValidSubscription = true;
+          } else {
+            // Otherwise, check status
+            const isActive = data.status === 'active' || data.status === 'trialing';
+            foundValidSubscription = isActive;
+            console.log(`Status da assinatura: ${data.status}, isActive: ${isActive}`);
+          }
+        } else {
+          console.log("Nenhuma assinatura encontrada para o usuário");
+          foundValidSubscription = false;
         }
       } catch (err) {
         console.error("Erro na verificação de assinatura:", err);
-        setHasSubscription(false);
-        setLoading(false);
-        
-        // Incrementar contador de tentativas
-        retryCount++;
-        
-        // Esperar um pouco antes da próxima tentativa
-        if (retryCount < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-        }
+        // Don't default to success on error
+        foundValidSubscription = false;
       }
+      
+      console.log(`Resultado da verificação de assinatura: ${foundValidSubscription}`);
+      setHasSubscription(foundValidSubscription);
+      setLoading(false);
+    } catch (err) {
+      console.error("Erro na verificação de assinatura:", err);
+      // Don't default to success
+      setHasSubscription(false);
+      setLoading(false);
     }
   };
 
+  // Show loading
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -301,17 +236,16 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     );
   }
 
+  // Redirect to login if no session
   if (!session) {
     return <Navigate to="/login" replace />;
   }
 
+  // Redirect to subscription page if needed
   if (requireSubscription && hasSubscription === false) {
     return <Navigate to="/subscription" replace />;
   }
 
-  return (
-    <>
-      {children}
-    </>
-  );
+  // Render protected content
+  return <>{children}</>;
 }

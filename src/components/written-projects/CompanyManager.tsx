@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, ExternalLink, Trash2, RefreshCw } from "lucide-react";
+import { Plus, ExternalLink, Trash2, Edit } from "lucide-react";
 import { toast } from "sonner";
 
 interface Company {
@@ -33,100 +34,25 @@ export function CompanyManager() {
     contact_phone: "",
   });
 
-  const handleAuthError = useCallback(async (error: any): Promise<boolean> => {
-    if (
-      error?.message?.includes('JWT expired') || 
-      error?.message?.includes('JWTExpired') || 
-      error?.message?.includes('Invalid JWT') ||
-      error?.code === 'PGRST301' ||
-      error?.status === 401
-    ) {
-      console.log("Erro de autenticação detectado, tentando renovar sessão");
-      
-      try {
-        const { data, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError) {
-          console.error("Erro ao renovar sessão:", refreshError);
-          toast.error("Sua sessão expirou, redirecionando para login", {
-            duration: 3000,
-          });
-          
-          setTimeout(() => {
-            navigate("/login");
-          }, 3000);
-          
-          return false;
-        }
-        
-        if (data.session) {
-          toast.success("Sessão renovada com sucesso! Recarregando dados...");
-          queryClient.invalidateQueries();
-          return true;
-        }
-        
-        return false;
-      } catch (err) {
-        console.error("Erro ao renovar sessão:", err);
-        return false;
-      }
-    }
-    return false;
-  }, [navigate, queryClient]);
-
-  const { 
-    data: companies = [], 
-    isLoading, 
-    isError,
-    error: queryError,
-    refetch
-  } = useQuery({
+  // Fetch companies
+  const { data: companies = [], isLoading } = useQuery({
     queryKey: ['project-companies'],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('project_companies')
-          .select('*')
-          .order('name', { ascending: true });
+      const { data, error } = await supabase
+        .from('project_companies')
+        .select('*')
+        .order('name', { ascending: true });
 
-        if (error) {
-          const refreshed = await handleAuthError(error);
-          if (refreshed) {
-            const { data: refreshedData, error: retryError } = await supabase
-              .from('project_companies')
-              .select('*')
-              .order('name', { ascending: true });
-              
-            if (retryError) {
-              throw retryError;
-            }
-            
-            return refreshedData as Company[];
-          }
-          
-          throw error;
-        }
-
-        return data as Company[];
-      } catch (error) {
-        console.error("Erro ao carregar empresas:", error);
-        toast.error("Erro ao carregar empresas");
+      if (error) {
+        toast.error('Erro ao carregar empresas');
         throw error;
       }
-    },
-    retry: (failureCount, error: any) => {
-      if (
-        error?.message?.includes('JWT expired') ||
-        error?.message?.includes('Invalid JWT') ||
-        error?.status === 401
-      ) {
-        return failureCount < 1;
-      }
-      
-      return failureCount < 3;
-    },
+
+      return data as Company[];
+    }
   });
 
+  // Add company mutation
   const addCompanyMutation = useMutation({
     mutationFn: async (company: Omit<Company, "id">) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -159,6 +85,7 @@ export function CompanyManager() {
     }
   });
 
+  // Delete company mutation
   const deleteCompanyMutation = useMutation({
     mutationFn: async (companyId: string) => {
       const { error } = await supabase
@@ -210,50 +137,8 @@ export function CompanyManager() {
     }));
   };
 
-  const forceRefreshSession = async () => {
-    try {
-      const { data, error } = await supabase.auth.refreshSession();
-      
-      if (error) {
-        console.error("Erro ao renovar sessão:", error);
-        toast.error("Não foi possível renovar a sessão, tente fazer login novamente");
-        setTimeout(() => navigate("/login"), 2000);
-        return;
-      }
-      
-      if (data.session) {
-        toast.success("Sessão renovada com sucesso");
-        queryClient.invalidateQueries();
-        refetch();
-      } else {
-        toast.error("Sessão expirada, faça login novamente");
-        navigate("/login");
-      }
-    } catch (e) {
-      console.error("Erro ao atualizar sessão:", e);
-    }
-  };
-
   if (isLoading) {
     return <div className="p-8 text-center">Carregando empresas...</div>;
-  }
-  
-  if (isError) {
-    return (
-      <div className="p-8 text-center">
-        <h3 className="text-lg font-medium mb-4">Erro ao carregar empresas</h3>
-        <p className="text-gray-500 mb-4">
-          Ocorreu um erro ao carregar as empresas. Isso pode ser devido a um problema de conexão ou sessão expirada.
-        </p>
-        <Button 
-          onClick={forceRefreshSession}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Reconectar e tentar novamente
-        </Button>
-      </div>
-    );
   }
 
   return (
@@ -333,6 +218,7 @@ export function CompanyManager() {
         </Dialog>
       </div>
 
+      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>

@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Mail, User, FileText } from "lucide-react";
+import { Lock, Mail, User, CreditCard, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -17,30 +17,6 @@ export const Login = () => {
     name: "",
     cpf: "",
   });
-
-  // Check for existing session on component mount
-  useEffect(() => {
-    const checkExistingSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Error checking session:", error);
-          return;
-        }
-        
-        // If user already has a valid session, redirect to dashboard
-        if (data.session) {
-          console.log("User already has an active session, redirecting to dashboard");
-          navigate("/dashboard", { replace: true });
-        }
-      } catch (err) {
-        console.error("Error in session check:", err);
-      }
-    };
-    
-    checkExistingSession();
-  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +66,8 @@ export const Login = () => {
         }
 
         if (data?.session) {
+          // After successful login, redirect to dashboard
+          // In the future, we may need to check subscription status here
           navigate("/dashboard", { replace: true });
         }
       }
@@ -102,8 +80,10 @@ export const Login = () => {
   };
 
   const formatCPF = (value: string) => {
+    // Remove all non-digits
     const digits = value.replace(/\D/g, '');
     
+    // Apply CPF format (xxx.xxx.xxx-xx)
     if (digits.length <= 3) {
       return digits;
     } else if (digits.length <= 6) {
