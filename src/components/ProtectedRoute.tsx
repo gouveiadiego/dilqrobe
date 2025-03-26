@@ -46,6 +46,30 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     }
   };
 
+  // Set up periodic session refresh
+  useEffect(() => {
+    let isMounted = true;
+    let refreshInterval: number | null = null;
+    
+    // Set up a session refresh every 4 minutes to prevent token expiration
+    // Supabase JWT tokens typically expire in 60 minutes, refresh well before that
+    if (session) {
+      refreshInterval = window.setInterval(async () => {
+        if (isMounted) {
+          console.log("Running scheduled session refresh...");
+          await refreshSession();
+        }
+      }, 4 * 60 * 1000); // 4 minutes in milliseconds
+    }
+    
+    return () => {
+      isMounted = false;
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
+  }, [session]);
+
   useEffect(() => {
     let isMounted = true;
     
@@ -171,6 +195,16 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
           .maybeSingle();
 
         if (error) {
+          // Try to refresh session if we get auth errors
+          if (error.message?.includes("JWT")) {
+            console.log("JWT issue detected during subscription check, attempting refresh...");
+            const refreshed = await refreshSession();
+            if (refreshed) {
+              // Retry the subscription check after successful refresh
+              return checkSubscription(userId, forceAccept);
+            }
+          }
+          
           console.error("Erro ao verificar assinatura:", error);
           foundValidSubscription = false;
         } else if (data) {

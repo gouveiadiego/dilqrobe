@@ -59,10 +59,30 @@ function App() {
         console.error("Error pre-fetching session:", error);
       } else if (data.session) {
         console.log("Session pre-fetched successfully:", data.session.user.id);
+        
+        // Add a network event listener to refresh the token when coming back online
+        window.addEventListener('online', async () => {
+          console.log("Network connection restored, refreshing session...");
+          await supabase.auth.refreshSession();
+        });
       } else {
         console.log("No active session found during pre-fetch");
       }
     });
+    
+    // Listen for any auth state changes globally
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Global auth state change:", event);
+      if (event === 'SIGNED_OUT') {
+        console.log("User signed out, redirecting to login page");
+      } else if (event === 'TOKEN_REFRESHED') {
+        console.log("Token refreshed successfully");
+      }
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
