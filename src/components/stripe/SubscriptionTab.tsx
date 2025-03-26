@@ -7,11 +7,13 @@ import { toast } from "sonner";
 import { PortalButton } from "@/components/stripe/PortalButton";
 import { CalendarDays, CreditCard, RefreshCw, Shield } from "lucide-react";
 import { getUserSubscription } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 export function SubscriptionTab() {
   const [user, setUser] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -134,7 +136,7 @@ export function SubscriptionTab() {
             <CreditCard className="h-12 w-12 mx-auto mb-3 text-gray-400" />
             <h3 className="text-lg font-medium mb-2">Sem assinatura ativa</h3>
             <p className="text-muted-foreground mb-4">Você não possui nenhuma assinatura ativa no momento.</p>
-            <Button variant="outline" onClick={() => window.location.href = '/subscription'}>
+            <Button variant="outline" onClick={() => navigate("/subscription")}>
               Ver planos disponíveis
             </Button>
           </div>
@@ -212,7 +214,7 @@ export function SubscriptionTab() {
                 
                 <Button 
                   variant="outline" 
-                  onClick={() => window.location.href = '/subscription'}
+                  onClick={() => navigate("/subscription")}
                 >
                   Ver planos disponíveis
                 </Button>

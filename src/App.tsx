@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";

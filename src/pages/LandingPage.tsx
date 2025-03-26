@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -5,26 +6,17 @@ import {
   Calendar, 
   CheckCircle, 
   CreditCard, 
-  Layers, 
   Settings2, 
   Shield, 
   Users, 
   Sparkles, 
-  Brain, 
   ArrowDown, 
   CheckSquare, 
   Wallet, 
   FileText,
   LayoutDashboard,
-  BarChart3,
   Rocket,
-  CircuitBoard,
-  Atom,
-  Infinity,
-  Globe,
-  Gem,
   Star,
-  ArrowUp,
   BadgeDollarSign,
   Check
 } from "lucide-react";
@@ -32,7 +24,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -66,6 +57,10 @@ export default function LandingPage() {
 
   const handleGetStarted = () => {
     navigate("/login");
+  };
+
+  const handleSubscription = () => {
+    navigate("/subscription");
   };
 
   const getCurrentTimePeriod = () => {
@@ -191,25 +186,6 @@ export default function LandingPage() {
     }
   ];
   
-  interface StepProps {
-    number: number;
-    title: string;
-    description: string;
-    icon: React.ReactNode;
-  }
-  
-  const Step = ({ number, title, description, icon }: StepProps) => (
-    <div className="flex items-start space-x-4 relative z-10 backdrop-blur-sm bg-white/10 p-6 rounded-xl border border-white/20 shadow-lg transition-all duration-300 hover:bg-white/20 hover:scale-105">
-      <div className="flex-shrink-0 bg-gradient-to-br from-purple-600 to-blue-500 h-12 w-12 rounded-full flex items-center justify-center shadow-lg">
-        {icon}
-      </div>
-      <div>
-        <h3 className="text-xl font-semibold text-gray-100 mb-2">{title}</h3>
-        <p className="text-gray-300">{description}</p>
-      </div>
-    </div>
-  );
-  
   interface FeatureCardProps {
     icon: React.ReactNode;
     title: string;
@@ -278,12 +254,13 @@ export default function LandingPage() {
             <span className="text-xl font-bold text-white">DILQ ORBE</span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2">
-              <BadgeDollarSign className="h-5 w-5 text-dilq-accent animate-pulse" />
-              <span className="px-4 py-2 bg-white/10 rounded-full text-sm font-medium">
-                Apenas <span className="text-dilq-accent font-bold text-lg">R$19,90/mês</span>
-              </span>
-            </div>
+            <Button 
+              variant="outline" 
+              onClick={handleSubscription} 
+              className="hidden md:flex border-dilq-accent/30 hover:border-dilq-accent text-dilq-accent hover:bg-dilq-accent/10"
+            >
+              Ver preços
+            </Button>
             <Button onClick={handleGetStarted} className="bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all">
               Começar Agora
             </Button>
@@ -312,12 +289,7 @@ export default function LandingPage() {
                 </div>
                 <div className="px-3 py-1 bg-gradient-to-r from-dilq-purple/20 to-dilq-accent/20 backdrop-blur-sm rounded-full border border-white/10">
                   <span className="text-sm text-white flex items-center">
-                    <Star className="h-3 w-3 mr-2" /> Acesso ilimitado a todos recursos
-                  </span>
-                </div>
-                <div className="px-3 py-1 bg-gradient-to-r from-dilq-teal/20 to-dilq-purple/20 backdrop-blur-sm rounded-full border border-white/10">
-                  <span className="text-sm text-white flex items-center">
-                    <BadgeDollarSign className="h-3 w-3 mr-2" /> <span className="font-bold">R$19,90/mês</span>
+                    <Star className="h-3 w-3 mr-2" /> Acesso a todos recursos
                   </span>
                 </div>
               </div>
@@ -342,11 +314,11 @@ export default function LandingPage() {
             
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
-                onClick={handleGetStarted} 
+                onClick={handleSubscription}
                 className="text-lg relative overflow-hidden group bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white px-8 py-6 rounded-lg transition-all duration-300"
               >
                 <span className="relative z-10 flex items-center">
-                  Começar Agora <ArrowRight className="ml-2" />
+                  Ver Preços <ArrowRight className="ml-2" />
                 </span>
                 <span className="absolute inset-0 translate-y-[105%] bg-white/20 transition-transform duration-300 group-hover:translate-y-0"></span>
               </Button>
@@ -362,16 +334,6 @@ export default function LandingPage() {
                 Explorar Recursos <ArrowDown className="ml-2" />
               </Button>
             </div>
-            
-            <div className="flex items-center px-6 py-4 bg-gradient-to-r from-dilq-accent/30 to-dilq-teal/30 backdrop-blur-md rounded-lg border border-white/10 mt-6">
-              <BadgeDollarSign className="h-8 w-8 text-white mr-4" />
-              <div>
-                <h3 className="text-xl font-bold text-white">Preço Promocional</h3>
-                <p className="text-gray-300">
-                  Por apenas <span className="text-white font-bold text-2xl">R$19,90/mês</span> - Acesso completo
-                </p>
-              </div>
-            </div>
           </div>
           
           <div className="lg:w-1/2 relative" style={{ transform: `translateY(${scrollY * -0.1}px)` }}>
@@ -386,65 +348,12 @@ export default function LandingPage() {
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-white font-medium">Dashboard interativo</span>
-                  <span className="bg-dilq-accent/80 text-white px-3 py-1 rounded-full text-sm font-bold">
-                    R$19,90/mês
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative container mx-auto px-4 py-16">
-        <div className="max-w-5xl mx-auto bg-gradient-to-r from-dilq-purple/10 to-dilq-accent/10 backdrop-blur-md rounded-3xl border border-white/10 overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-dilq-accent to-dilq-teal"></div>
-          <div className="p-8 md:p-12">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="text-center md:text-left">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
-                  Transforme sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Produtividade</span>
-                </h2>
-                <p className="text-xl text-gray-300 mb-6">
-                  Sistema completo de gerenciamento para empreendedores e profissionais que buscam alto desempenho
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {[
-                    "Todos os recursos premium",
-                    "Atualizações constantes",
-                    "Suporte prioritário",
-                    "Acesso ilimitado"
-                  ].map((feature, idx) => (
-                    <div key={idx} className="flex items-center space-x-2">
-                      <div className="bg-dilq-accent/20 p-1 rounded-full">
-                        <Check className="h-4 w-4 text-dilq-accent" />
-                      </div>
-                      <span className="text-gray-200">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-gray-900/70 to-gray-800/70 rounded-xl border border-white/10 p-6 w-full md:w-auto">
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <BadgeDollarSign className="h-6 w-6 text-dilq-accent mr-2" />
-                    <h3 className="text-xl font-bold text-white">Preço Único</h3>
-                  </div>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold text-white">R$19,90</span>
-                    <span className="text-gray-400">/mês</span>
-                  </div>
-                  <p className="text-gray-300 mb-6">
-                    Cancele a qualquer momento. <br/>
-                    Sem taxas ocultas.
-                  </p>
                   <Button 
-                    onClick={handleGetStarted} 
-                    className="w-full bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all"
+                    size="sm" 
+                    onClick={handleSubscription}
+                    className="bg-gradient-to-r from-dilq-accent to-dilq-teal text-white text-xs"
                   >
-                    Assinar Agora
+                    Ver preços
                   </Button>
                 </div>
               </div>
@@ -459,8 +368,14 @@ export default function LandingPage() {
             Um <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Sistema Completo</span> para sua Vida
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Gerencie todos os aspectos da sua vida pessoal e profissional em um só lugar, por apenas <span className="text-dilq-accent font-bold">R$19,90 por mês</span>.
+            Gerencie todos os aspectos da sua vida pessoal e profissional em um só lugar.
           </p>
+          <Button 
+            onClick={handleSubscription}
+            className="mt-6 bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all"
+          >
+            Ver planos e preços
+          </Button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -474,67 +389,6 @@ export default function LandingPage() {
               onClick={() => setActiveFeature(idx)}
             />
           ))}
-        </div>
-      </div>
-
-      <div className="relative py-20 overflow-hidden bg-gradient-to-b from-gray-900/90 to-black/80">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_300px_at_80%_20%,rgba(139,92,246,0.3),transparent)]"></div>
-          <div className="absolute bottom-0 left-0 w-full h-full bg-[radial-gradient(circle_300px_at_20%_80%,rgba(32,178,170,0.3),transparent)]"></div>
-        </div>
-        <div className="container relative z-10 mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 backdrop-blur-md rounded-3xl border border-white/10 p-10">
-              <div className="text-center mb-8">
-                <span className="inline-block px-4 py-1 bg-dilq-accent/20 text-dilq-accent rounded-full text-sm font-medium mb-4">
-                  Oferta Especial
-                </span>
-                <h2 className="text-3xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300">
-                  Comece sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-dilq-accent to-dilq-teal">Transformação</span> Hoje
-                </h2>
-                <div className="flex justify-center items-center mb-8">
-                  <div className="relative">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-dilq-accent to-dilq-teal rounded-lg blur-md opacity-50 animate-pulse"></div>
-                    <div className="relative bg-gradient-to-r from-dilq-accent/20 to-dilq-teal/20 backdrop-blur-md rounded-lg border border-white/20 px-6 py-3">
-                      <p className="text-2xl md:text-4xl font-bold text-white">
-                        R$<span className="text-dilq-accent">19</span>,90<span className="text-xl text-gray-300">/mês</span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-                  Por um valor mínimo, tenha acesso a todas as funcionalidades premium e transforme sua vida pessoal e profissional com nosso sistema completo.
-                </p>
-                <div className="flex flex-col md:flex-row justify-center gap-4">
-                  <Button 
-                    onClick={handleGetStarted} 
-                    className="text-lg relative overflow-hidden group bg-gradient-to-r from-dilq-accent to-dilq-teal hover:from-dilq-accent/90 hover:to-dilq-teal/90 text-white px-8 py-6 rounded-lg transition-all duration-300"
-                  >
-                    <span className="relative z-10 flex items-center">
-                      Assinar por apenas R$19,90/mês <ArrowRight className="ml-2" />
-                    </span>
-                    <span className="absolute inset-0 translate-y-[105%] bg-white/20 transition-transform duration-300 group-hover:translate-y-0"></span>
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-8 border-t border-white/10">
-                {[
-                  { icon: <Shield className="h-5 w-5" />, text: "Cancele a qualquer momento" },
-                  { icon: <CheckCircle className="h-5 w-5" />, text: "Suporte prioritário" },
-                  { icon: <Sparkles className="h-5 w-5" />, text: "Acesso completo" },
-                  { icon: <CreditCard className="h-5 w-5" />, text: "Pagamento seguro" }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex flex-col items-center text-center">
-                    <div className="bg-gradient-to-br from-dilq-accent/30 to-dilq-teal/30 p-2 rounded-full mb-2">
-                      {item.icon}
-                    </div>
-                    <span className="text-sm text-gray-300">{item.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -552,10 +406,10 @@ export default function LandingPage() {
             
             <div>
               <Button 
-                onClick={handleGetStarted} 
+                onClick={handleSubscription} 
                 className="bg-gradient-to-r from-dilq-accent to-dilq-teal hover:shadow-lg hover:shadow-dilq-accent/30 text-white transition-all"
               >
-                Assinar por apenas R$19,90/mês
+                Ver Planos e Preços
               </Button>
             </div>
           </div>
