@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -180,6 +179,18 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     try {
       console.log(`Verificando assinatura para usuário ${userId}`);
       
+      // In test mode, don't block access on subscription check
+      const isTestMode = import.meta.env.DEV || 
+                        !import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 
+                        import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY.includes('test');
+      
+      if (isTestMode && forceAccept) {
+        console.log("Ambiente de teste detectado, permitindo acesso");
+        setHasSubscription(true);
+        setLoading(false);
+        return;
+      }
+      
       // Do not default to allowing access - only allow if we confirm subscription
       let foundValidSubscription = false;
       
@@ -193,12 +204,15 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
         if (error) {
           console.error("Erro ao verificar assinatura:", error);
-          // Don't default to success on error
-          foundValidSubscription = false;
+          // In test mode, don't block on errors
+          if (isTestMode) {
+            console.log("Permitindo acesso em ambiente de teste");
+            foundValidSubscription = true;
+          }
         } else if (data) {
           // If forceAccept is true, accept any status
-          if (forceAccept) {
-            console.log("Aceitando assinatura em qualquer estado devido a forceAccept");
+          if (forceAccept || isTestMode) {
+            console.log("Aceitando assinatura devido a forceAccept ou ambiente de teste");
             foundValidSubscription = true;
           } else {
             // Otherwise, check status
@@ -208,12 +222,19 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
           }
         } else {
           console.log("Nenhuma assinatura encontrada para o usuário");
-          foundValidSubscription = false;
+          // In test mode, allow access even without subscription
+          if (isTestMode) {
+            console.log("Permitindo acesso em ambiente de teste mesmo sem assinatura");
+            foundValidSubscription = true;
+          }
         }
       } catch (err) {
         console.error("Erro na verificação de assinatura:", err);
-        // Don't default to success on error
-        foundValidSubscription = false;
+        // In test mode, don't block on errors
+        if (isTestMode) {
+          console.log("Permitindo acesso em ambiente de teste após erro");
+          foundValidSubscription = true;
+        }
       }
       
       console.log(`Resultado da verificação de assinatura: ${foundValidSubscription}`);
@@ -221,8 +242,16 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       setLoading(false);
     } catch (err) {
       console.error("Erro na verificação de assinatura:", err);
-      // Don't default to success
-      setHasSubscription(false);
+      // Don't block in test mode
+      const isTestMode = import.meta.env.DEV || 
+                        !import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 
+                        import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY.includes('test');
+      if (isTestMode) {
+        console.log("Permitindo acesso em ambiente de teste após erro");
+        setHasSubscription(true);
+      } else {
+        setHasSubscription(false);
+      }
       setLoading(false);
     }
   };

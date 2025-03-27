@@ -6,6 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Initialize Stripe Promise for frontend with proper error handling
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const isTestMode = !stripePublishableKey || stripePublishableKey.includes('test');
+
+console.log(`Stripe mode: ${isTestMode ? 'TEST' : 'PRODUCTION'}`);
 
 // Create a placeholder if the API key is missing
 export const stripePromise = stripePublishableKey 
