@@ -26,12 +26,12 @@ export function CheckoutButton({ priceId, customerId, children, className }: Che
       
       // Make sure we're calling the correct function
       const response = await createStripeCheckout(priceId);
-
+      
       if (response?.error) {
         console.error('Error response:', response.error)
         toast.error(response.error === 'Stripe is not configured' 
           ? "Sistema de pagamento não configurado" 
-          : "Não foi possível criar a sessão de checkout")
+          : "Não foi possível criar a sessão de checkout: " + response.error)
         return
       }
 

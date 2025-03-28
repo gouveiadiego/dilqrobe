@@ -19,6 +19,7 @@ interface PriceTier {
   priceId: string;
 }
 
+// Make sure to replace this with your actual live mode price ID from Stripe dashboard
 const priceTiers: PriceTier[] = [
   {
     id: "pro",
@@ -34,7 +35,7 @@ const priceTiers: PriceTier[] = [
       "Relatórios detalhados de progresso",
       "Integração com outros aplicativos",
     ],
-    priceId: "price_1R0nc2RooQphZ1dFnk4ZneeE", // You must replace this with your live mode price ID
+    priceId: import.meta.env.VITE_STRIPE_PRICE_ID || "price_1R0nc2RooQphZ1dFnk4ZneeE", // Replace this with your live mode price ID
   },
 ];
 
