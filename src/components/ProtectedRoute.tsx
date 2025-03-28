@@ -156,16 +156,22 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         if (isMounted) setLoading(false);
         
         if (requireSubscription) {
-          try {
-            const { data } = await supabase.auth.getUser();
-            if (data?.user) {
-              // Force subscription check but don't wait for it
-              setHasSubscription(true);
-              checkSubscription(data.user.id, true);
+          // Create a separate async function to handle the async operations
+          const processPaymentSuccess = async () => {
+            try {
+              const { data } = await supabase.auth.getUser();
+              if (data?.user) {
+                // Force subscription check but don't wait for it
+                setHasSubscription(true);
+                checkSubscription(data.user.id, true);
+              }
+            } catch (error) {
+              console.error("Error processing payment success:", error);
             }
-          } catch (error) {
-            console.error("Error processing payment success:", error);
-          }
+          };
+          
+          // Call the async function
+          processPaymentSuccess();
         }
       }
       else if (searchParams.get("payment") === "success") {
