@@ -18,7 +18,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Set up online/offline detection
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -32,7 +31,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     };
   }, []);
 
-  // Function to refresh the session
   const refreshSession = async (retryCount = 0) => {
     try {
       console.log("Attempting to refresh session...");
@@ -41,14 +39,12 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       if (error) {
         console.error("Error refreshing session:", error);
         
-        // If we're online and have a network error, retry a few times
         if (isOnline && retryCount < 3 && error.message.includes('network')) {
           console.log(`Retrying session refresh (attempt ${retryCount + 1}/3)...`);
           setTimeout(() => refreshSession(retryCount + 1), 1000);
           return false;
         }
         
-        // Handle JWT expiration by redirecting to login
         if (error.message.includes('JWT')) {
           console.log("JWT expired, redirecting to login");
           toast.error("Sua sessão expirou. Por favor, faça login novamente.");
@@ -72,7 +68,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     }
   };
 
-  // Initial session check and setup
   useEffect(() => {
     let isMounted = true;
     
@@ -95,7 +90,6 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
         
         if (isMounted) setSession(data.session);
         
-        // Verify subscription status if required
         if (requireSubscription && isMounted) {
           await checkSubscription(data.session.user.id);
         } else if (isMounted) {
@@ -117,16 +111,13 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     };
   }, [requireSubscription]);
 
-  // Set up auth state change listener and user activity monitoring
   useEffect(() => {
     let isMounted = true;
     let authSubscription: { unsubscribe: () => void } | null = null;
     let sessionRefreshInterval: number | null = null;
     let activityTimeout: number | null = null;
     
-    // Error boundary for auth state change listener
     try {
-      // Auth state change listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (_event, currentSession) => {
           if (!isMounted) return;
@@ -149,12 +140,10 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       
       authSubscription = subscription;
       
-      // Handling post-payment redirect
       const searchParams = new URLSearchParams(location.search);
       if (searchParams.get("payment") === "success") {
         toast.success("Pagamento recebido! Processando assinatura...");
         
-        // Allow time for the webhook to process
         if (isMounted) setLoading(true);
         const timeoutId = setTimeout(async () => {
           try {
@@ -162,9 +151,10 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
             
             const { data } = await supabase.auth.getUser();
             if (data?.user) {
+              setHasSubscription(true);
               await checkSubscription(data.user.id, true);
+              navigate("/dashboard", { replace: true });
             }
-            navigate("/dashboard", { replace: true });
           } catch (error) {
             console.error("Error processing payment success:", error);
             if (isMounted) {
@@ -173,37 +163,32 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
             }
             navigate("/dashboard", { replace: true });
           }
-        }, 8000);
+        }, 5000);
         
         return () => {
           clearTimeout(timeoutId);
         };
       }
 
-      // Set up more frequent session refresh (every 2 minutes)
       sessionRefreshInterval = window.setInterval(async () => {
         if (!isMounted) return;
         await refreshSession();
-      }, 2 * 60 * 1000); // Every 2 minutes
+      }, 2 * 60 * 1000);
 
-      // Set up activity tracking to refresh session
       const resetActivityTimeout = () => {
         if (activityTimeout) clearTimeout(activityTimeout);
         
-        // If inactive for 4 minutes, refresh the session
         activityTimeout = window.setTimeout(async () => {
           console.log("User inactive, refreshing session...");
           if (session) await refreshSession();
         }, 4 * 60 * 1000);
       };
 
-      // Track user activity
       const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll'];
       activityEvents.forEach(event => {
         window.addEventListener(event, resetActivityTimeout);
       });
 
-      // Initial activity timeout
       resetActivityTimeout();
 
       return () => {
@@ -235,13 +220,11 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     try {
       console.log(`Verificando assinatura para usuário ${userId}`);
       
-      // Note: In live mode, we're more strict with subscription checks
-      const isTestMode = false; // We're in live mode now
+      const isTestMode = false;
       
       let foundValidSubscription = false;
       
       try {
-        // Check for active subscription
         const { data, error } = await supabase
           .from("subscriptions")
           .select("*")
@@ -250,27 +233,22 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
         if (error) {
           console.error("Erro ao verificar assinatura:", error);
-          // In live mode, subscription errors are not accepted
           foundValidSubscription = false;
         } else if (data) {
-          // If forceAccept is true, accept any status
           if (forceAccept) {
             console.log("Aceitando assinatura em qualquer estado devido a forceAccept");
             foundValidSubscription = true;
           } else {
-            // Otherwise, check status
             const isActive = data.status === 'active' || data.status === 'trialing';
             foundValidSubscription = isActive;
             console.log(`Status da assinatura: ${data.status}, isActive: ${isActive}`);
           }
         } else {
           console.log("Nenhuma assinatura encontrada para o usuário");
-          // In live mode, missing subscriptions are not accepted
           foundValidSubscription = false;
         }
       } catch (err) {
         console.error("Erro na verificação de assinatura:", err);
-        // In live mode, subscription errors are not accepted
         foundValidSubscription = false;
       }
       
@@ -279,13 +257,11 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       setLoading(false);
     } catch (err) {
       console.error("Erro na verificação de assinatura:", err);
-      // In live mode, errors are not accepted
       setHasSubscription(false);
       setLoading(false);
     }
   };
 
-  // Show loading
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -294,16 +270,13 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     );
   }
 
-  // Redirect to login if no session
   if (!session) {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect to subscription page if needed
   if (requireSubscription && hasSubscription === false) {
     return <Navigate to="/subscription" replace />;
   }
 
-  // Render protected content
   return <>{children}</>;
 }

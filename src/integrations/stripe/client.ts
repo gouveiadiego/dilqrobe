@@ -1,4 +1,3 @@
-
 // Frontend Stripe client
 import { loadStripe } from '@stripe/stripe-js';
 import { CreateCheckoutSessionParams, CreatePortalSessionParams } from './types';
@@ -26,6 +25,8 @@ export const createCheckoutSession = async ({
     }
 
     console.log("Creating checkout session with priceId:", priceId);
+    console.log("Success URL:", successUrl);
+    console.log("Cancel URL:", cancelUrl);
 
     const { data, error } = await supabase.functions.invoke("create-checkout", {
       body: {

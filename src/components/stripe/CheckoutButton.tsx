@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button"
-import { createStripeCheckout } from "@/integrations/supabase/client"
+import { createCheckoutSession } from "@/integrations/stripe/client"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -24,7 +24,20 @@ export function CheckoutButton({ priceId, customerId, children, className }: Che
       setLoading(true)
       console.log("Iniciando checkout com priceId:", priceId);
       
-      const response = await createStripeCheckout(priceId);
+      // Define the origin once to ensure consistency
+      const origin = window.location.origin;
+      const successUrl = `${origin}/payment/success`;
+      const cancelUrl = `${origin}/payment/canceled`;
+      
+      console.log("Using success URL:", successUrl);
+      console.log("Using cancel URL:", cancelUrl);
+      
+      const response = await createCheckoutSession({
+        priceId,
+        successUrl,
+        cancelUrl,
+        customerId,
+      });
       
       if (response?.error) {
         console.error('Error response:', response.error)

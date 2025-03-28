@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 import Stripe from "https://esm.sh/stripe@13.9.0";
@@ -168,7 +167,7 @@ serve(async (req) => {
           },
         ],
         mode: "subscription",
-        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&payment=success`,
         cancel_url: cancelUrl,
         billing_address_collection: "auto",
         tax_id_collection: {
