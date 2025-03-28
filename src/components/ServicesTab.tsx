@@ -708,48 +708,14 @@ export function ServicesTab() {
                 Serviços
               </h2>
               <div className="flex gap-4">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700">
-                      <Link2 className="h-4 w-4 mr-2" />
-                      Compartilhar por Cliente
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl glass-card">
-                    <DialogHeader>
-                      <DialogTitle>Compartilhar Serviços por Cliente</DialogTitle>
-                      <DialogDescription>Selecione um cliente para compartilhar os serviços</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                      {Object.entries(groupedServices).map(([clientId, {
-                        clientName,
-                        services
-                      }]) => (
-                        <div key={clientId} className="glass-card p-4 transition-all duration-300 hover:translate-y-[-2px]">
-                          <div className="flex justify-between items-center mb-2">
-                            <h3 className="font-medium">{clientName}</h3>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="text-xs"
-                                onClick={() => handleSharePortalLink(clientId)}
-                              >
-                                <Link2 className="h-3 w-3 mr-1" /> Compartilhar
-                              </Button>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-500">{services.length} serviços</p>
-                        </div>
-                      ))}
-                    </div>
-                    <DialogFooter>
-                      <DialogClose asChild>
-                        <Button variant="outline">Fechar</Button>
-                      </DialogClose>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <Button 
+                  variant="outline" 
+                  className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700"
+                  onClick={() => setShowShareDialog(true)}
+                >
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Compartilhar por Cliente
+                </Button>
                 <Button 
                   variant="outline" 
                   className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700"
@@ -989,13 +955,46 @@ export function ServicesTab() {
           <DialogHeader>
             <DialogTitle>Compartilhar Portal do Cliente</DialogTitle>
             <DialogDescription>
-              Compartilhe o link do portal do cliente para que ele possa acompanhar os serviços.
+              Escolha um cliente para compartilhar o portal
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {Object.entries(groupedServices).map(([clientId, { clientName, services }]) => (
+              <div key={clientId} className="glass-card p-4 transition-all duration-300 hover:translate-y-[-2px]">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-medium">{clientName}</h3>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => handleSharePortalLink(clientId)}
+                    >
+                      <Link2 className="h-3 w-3 mr-1" /> Compartilhar
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500">{services.length} serviços</p>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowShareDialog(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={selectedClientId !== ""} onOpenChange={(open) => !open && setSelectedClientId("")}>
+        <DialogContent className="w-full max-w-md p-6">
+          <DialogHeader>
+            <DialogTitle>Link do Portal do Cliente</DialogTitle>
+            <DialogDescription>
+              Compartilhe este link com o cliente para que ele possa acessar os serviços sem necessidade de login.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm mb-4">
-              O link abaixo permite que o cliente acesse seus serviços sem necessidade de login:
-            </p>
             <div className="flex items-center gap-2">
               <Input 
                 value={`${window.location.origin}/client-portal?clientId=${selectedClientId}`}
@@ -1014,7 +1013,7 @@ export function ServicesTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => setShowShareDialog(false)}>
+            <Button onClick={() => setSelectedClientId("")}>
               Fechar
             </Button>
           </DialogFooter>
