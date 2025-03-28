@@ -34,7 +34,7 @@ const priceTiers: PriceTier[] = [
       "Relatórios detalhados de progresso",
       "Integração com outros aplicativos",
     ],
-    priceId: "price_1R0nc2RooQphZ1dFnk4ZneeE", // Note: You should replace this with your live mode price ID
+    priceId: "price_1R0nc2RooQphZ1dFnk4ZneeE", // You must replace this with your live mode price ID
   },
 ];
 
