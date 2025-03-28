@@ -31,6 +31,7 @@ export const createCheckoutSession = async ({
         successUrl,
         cancelUrl,
         customerId,
+        testMode: true, // Mark as using test mode
       },
     });
 
@@ -67,6 +68,7 @@ export const createPortalSession = async ({
       body: {
         customerId,
         returnUrl,
+        testMode: true, // Mark as using test mode
       },
     });
 

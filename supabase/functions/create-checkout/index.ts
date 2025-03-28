@@ -47,16 +47,16 @@ serve(async (req) => {
       );
     }
 
-    const { priceId, successUrl, cancelUrl } = await req.json();
+    const { priceId, successUrl, cancelUrl, testMode } = await req.json();
 
-    if (!priceId || !successUrl || !cancelUrl) {
+    if (!priceId) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Creating checkout session for user ${user.id} with priceId ${priceId}`);
+    console.log(`Creating checkout session for user ${user.id} with priceId ${priceId} in ${testMode ? 'test' : 'live'} mode`);
 
     // Get user profile to access name and email
     const { data: profile, error: profileError } = await supabaseClient
@@ -121,6 +121,10 @@ serve(async (req) => {
       console.log(`Pre-registered subscription for user ${user.id} with price_id ${priceId}`);
     }
 
+    // Default success and cancel URLs
+    const defaultSuccessUrl = `${req.headers.get("origin") || ""}/payment/success?session_id={CHECKOUT_SESSION_ID}`;
+    const defaultCancelUrl = `${req.headers.get("origin") || ""}/payment/canceled`;
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -131,8 +135,8 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl,
+      success_url: successUrl || defaultSuccessUrl,
+      cancel_url: cancelUrl || defaultCancelUrl,
       billing_address_collection: "auto",
       tax_id_collection: {
         enabled: true,
@@ -144,6 +148,7 @@ serve(async (req) => {
       metadata: {
         supabaseUserId: user.id,
         priceId: priceId,
+        testMode: testMode ? "true" : "false",
       },
     });
 

@@ -34,7 +34,8 @@ const priceTiers: PriceTier[] = [
       "Relatórios detalhados de progresso",
       "Integração com outros aplicativos",
     ],
-    priceId: "price_1R0nc2RooQphZ1dFnk4ZneeE",
+    // Use a test mode price ID for Stripe
+    priceId: "price_1OvcIyRooQphZ1dFd95f8Fnq", // Updated to test mode price ID
   },
 ];
 
