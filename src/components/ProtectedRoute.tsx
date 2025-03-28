@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -236,10 +235,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
     try {
       console.log(`Verificando assinatura para usuário ${userId}`);
       
-      // Allow more flexibility in test mode
-      const isTestMode = window.location.hostname.includes('localhost') || 
-                         window.location.hostname.includes('preview--') ||
-                         window.location.hostname.includes('lovable.app');
+      // Note: In live mode, we're more strict with subscription checks
+      const isTestMode = false; // We're in live mode now
       
       let foundValidSubscription = false;
       
@@ -253,8 +250,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
 
         if (error) {
           console.error("Erro ao verificar assinatura:", error);
-          // In test mode, be more lenient with subscription checks
-          foundValidSubscription = isTestMode;
+          // In live mode, subscription errors are not accepted
+          foundValidSubscription = false;
         } else if (data) {
           // If forceAccept is true, accept any status
           if (forceAccept) {
@@ -268,13 +265,13 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
           }
         } else {
           console.log("Nenhuma assinatura encontrada para o usuário");
-          // In test mode, be more lenient with missing subscriptions
-          foundValidSubscription = isTestMode;
+          // In live mode, missing subscriptions are not accepted
+          foundValidSubscription = false;
         }
       } catch (err) {
         console.error("Erro na verificação de assinatura:", err);
-        // In test mode, be more lenient with subscription errors
-        foundValidSubscription = isTestMode;
+        // In live mode, subscription errors are not accepted
+        foundValidSubscription = false;
       }
       
       console.log(`Resultado da verificação de assinatura: ${foundValidSubscription}`);
@@ -282,11 +279,8 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       setLoading(false);
     } catch (err) {
       console.error("Erro na verificação de assinatura:", err);
-      // In test mode, be more lenient with errors
-      const isTestMode = window.location.hostname.includes('localhost') || 
-                        window.location.hostname.includes('preview--') ||
-                        window.location.hostname.includes('lovable.app');
-      setHasSubscription(isTestMode);
+      // In live mode, errors are not accepted
+      setHasSubscription(false);
       setLoading(false);
     }
   };
