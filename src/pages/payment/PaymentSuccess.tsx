@@ -10,17 +10,13 @@ export default function PaymentSuccess() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set a timeout to automatically redirect to the dashboard
-    const redirectTimer = setTimeout(() => {
-      navigate('/dashboard', { replace: true });
-    }, 5000); // Auto-redirect after 5 seconds
-
     // Show a success toast
     toast.success("Pagamento confirmado! Redirecionando para o dashboard...");
 
-    return () => {
-      clearTimeout(redirectTimer);
-    };
+    // Immediately redirect to the dashboard
+    navigate('/dashboard', { replace: true });
+    
+    // No timeout needed - redirect immediately
   }, [navigate]);
 
   return (
@@ -37,7 +33,7 @@ export default function PaymentSuccess() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4 items-center">
           <p className="text-center text-sm text-muted-foreground mb-2">
-            Você será redirecionado automaticamente em 5 segundos...
+            Redirecionando para o dashboard...
           </p>
           <Button asChild className="w-full">
             <Link to="/dashboard">Ir para o Dashboard</Link>

@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 import Stripe from "https://esm.sh/stripe@13.9.0";
@@ -156,6 +157,13 @@ serve(async (req) => {
       console.log(`Pre-registered subscription for user ${user.id} with price_id ${priceId}`);
     }
 
+    // Extract base part of success URL without query params
+    let cleanSuccessUrl = successUrl;
+    // If there's a ? in the URL, remove it and everything after
+    if (successUrl.includes('?')) {
+      cleanSuccessUrl = successUrl.split('?')[0];
+    }
+    
     // Create checkout session
     try {
       const session = await stripe.checkout.sessions.create({
@@ -167,7 +175,8 @@ serve(async (req) => {
           },
         ],
         mode: "subscription",
-        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}&payment=success`,
+        // Use direct dashboard URL (bypass payment success page)
+        success_url: `${cleanSuccessUrl}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: cancelUrl,
         billing_address_collection: "auto",
         tax_id_collection: {
@@ -184,6 +193,7 @@ serve(async (req) => {
       });
 
       console.log(`Created checkout session: ${session.id} for user ${user.id}`);
+      console.log(`Success URL set to: ${session.success_url}`);
       
       return new Response(
         JSON.stringify({ url: session.url }),

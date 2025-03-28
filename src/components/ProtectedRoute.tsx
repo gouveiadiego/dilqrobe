@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -140,8 +141,34 @@ export function ProtectedRoute({ children, requireSubscription = false }: Protec
       
       authSubscription = subscription;
       
+      // Check for payment_success parameter in URL
       const searchParams = new URLSearchParams(location.search);
-      if (searchParams.get("payment") === "success") {
+      if (searchParams.get("payment_success") === "true") {
+        console.log("Payment success detected in URL, navigating to dashboard");
+        toast.success("Pagamento recebido! Assinatura ativada.");
+        
+        // Remove the payment_success parameter from the URL
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete("payment_success");
+        newUrl.searchParams.delete("session_id");
+        window.history.replaceState({}, document.title, newUrl.toString());
+        
+        if (isMounted) setLoading(false);
+        
+        if (requireSubscription) {
+          try {
+            const { data } = await supabase.auth.getUser();
+            if (data?.user) {
+              // Force subscription check but don't wait for it
+              setHasSubscription(true);
+              checkSubscription(data.user.id, true);
+            }
+          } catch (error) {
+            console.error("Error processing payment success:", error);
+          }
+        }
+      }
+      else if (searchParams.get("payment") === "success") {
         toast.success("Pagamento recebido! Processando assinatura...");
         
         if (isMounted) setLoading(true);

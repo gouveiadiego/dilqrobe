@@ -26,7 +26,9 @@ export function CheckoutButton({ priceId, customerId, children, className }: Che
       
       // Define the origin once to ensure consistency
       const origin = window.location.origin;
-      const successUrl = `${origin}/payment/success`;
+      
+      // Make success URL go directly to the dashboard to avoid any additional redirects
+      const successUrl = `${origin}/dashboard?payment=success`;
       const cancelUrl = `${origin}/payment/canceled`;
       
       console.log("Using success URL:", successUrl);
