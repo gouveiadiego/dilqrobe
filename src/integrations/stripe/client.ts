@@ -66,12 +66,16 @@ export const createPortalSession = async ({
       return { error: 'Customer ID is required' };
     }
     
+    console.log("Creating portal session with customerId:", customerId);
+    
     const { data, error } = await supabase.functions.invoke("create-portal-session", {
       body: {
         customerId,
         returnUrl,
       },
     });
+
+    console.log("Portal session response:", data, "Error:", error);
 
     if (error) {
       console.error('Error creating portal session:', error);
