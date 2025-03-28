@@ -97,6 +97,7 @@ serve(async (req) => {
       } catch (error) {
         console.log(`Error retrieving customer, will create a new one: ${error.message}`);
         // If there's an error retrieving the customer, we'll create a new one
+        shouldCreateCustomer = true;
       }
     }
 
@@ -115,6 +116,7 @@ serve(async (req) => {
         customerId = newCustomer.id;
         console.log(`Created new customer: ${customerId}`);
       } catch (error) {
+        console.error("Error creating customer:", error);
         return new Response(
           JSON.stringify({ error: `Error creating Stripe customer: ${error.message}` }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -189,6 +191,7 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     } catch (error) {
+      console.error("Stripe checkout error:", error);
       return new Response(
         JSON.stringify({ error: `Stripe checkout error: ${error.message}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

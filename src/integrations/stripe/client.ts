@@ -25,6 +25,8 @@ export const createCheckoutSession = async ({
       return { error: 'Stripe is not configured' };
     }
 
+    console.log("Creating checkout session with priceId:", priceId);
+
     const { data, error } = await supabase.functions.invoke("create-checkout", {
       body: {
         priceId,
@@ -39,6 +41,7 @@ export const createCheckoutSession = async ({
       return { error: error.message || 'Error creating checkout session' };
     }
     
+    console.log("Checkout session response:", data);
     return data || { error: 'No data returned from checkout session' };
   } catch (error) {
     console.error('Error creating checkout session:', error);

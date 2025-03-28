@@ -24,7 +24,6 @@ export function CheckoutButton({ priceId, customerId, children, className }: Che
       setLoading(true)
       console.log("Iniciando checkout com priceId:", priceId);
       
-      // Make sure we're calling the correct function
       const response = await createStripeCheckout(priceId);
       
       if (response?.error) {
