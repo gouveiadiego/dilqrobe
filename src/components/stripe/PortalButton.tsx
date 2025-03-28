@@ -32,7 +32,6 @@ export function PortalButton({
 
     try {
       setLoading(true)
-      console.log("Attempting to create portal session with customer ID:", customerId)
       
       // When in cancel mode, set returnUrl to the subscription page
       // This way, after cancellation they'll be redirected back to manage their subscription
@@ -44,15 +43,14 @@ export function PortalButton({
       })
 
       if (response?.error) {
-        console.error('Error response from portal session creation:', response.error)
+        console.error('Error response:', response.error)
         toast.error(response.error === 'Stripe is not configured' 
           ? "Sistema de pagamento não configurado" 
-          : "Não foi possível acessar o portal de gerenciamento: " + response.error)
+          : "Não foi possível acessar o portal de gerenciamento")
         return
       }
 
       if (response?.url) {
-        console.log("Redirecting to portal URL:", response.url)
         window.location.href = response.url
       } else {
         console.error('No URL returned from portal session')

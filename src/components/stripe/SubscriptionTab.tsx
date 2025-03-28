@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -203,7 +204,7 @@ export function SubscriptionTab() {
               <h4 className="font-medium mb-2">Ações</h4>
               <div className="flex flex-wrap gap-3">
                 <PortalButton 
-                  customerId={subscription.stripe_customer_id}
+                  customerId={user?.id}
                   className="bg-gradient-to-r from-dilq-blue to-dilq-purple hover:from-dilq-blue/90 hover:to-dilq-purple/90 transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   Gerenciar assinatura

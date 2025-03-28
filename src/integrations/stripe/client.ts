@@ -1,3 +1,4 @@
+
 // Frontend Stripe client
 import { loadStripe } from '@stripe/stripe-js';
 import { CreateCheckoutSessionParams, CreatePortalSessionParams } from './types';
@@ -24,10 +25,6 @@ export const createCheckoutSession = async ({
       return { error: 'Stripe is not configured' };
     }
 
-    console.log("Creating checkout session with priceId:", priceId);
-    console.log("Success URL:", successUrl);
-    console.log("Cancel URL:", cancelUrl);
-
     const { data, error } = await supabase.functions.invoke("create-checkout", {
       body: {
         priceId,
@@ -42,7 +39,6 @@ export const createCheckoutSession = async ({
       return { error: error.message || 'Error creating checkout session' };
     }
     
-    console.log("Checkout session response:", data);
     return data || { error: 'No data returned from checkout session' };
   } catch (error) {
     console.error('Error creating checkout session:', error);
@@ -67,16 +63,12 @@ export const createPortalSession = async ({
       return { error: 'Customer ID is required' };
     }
     
-    console.log("Creating portal session with customerId:", customerId);
-    
     const { data, error } = await supabase.functions.invoke("create-portal-session", {
       body: {
         customerId,
         returnUrl,
       },
     });
-
-    console.log("Portal session response:", data, "Error:", error);
 
     if (error) {
       console.error('Error creating portal session:', error);

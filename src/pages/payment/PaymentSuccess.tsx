@@ -1,24 +1,9 @@
-
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle2 } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
-import { useEffect } from "react"
-import { toast } from "sonner"
+import { Link } from "react-router-dom"
 
 export default function PaymentSuccess() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // Show a success toast
-    toast.success("Pagamento confirmado! Redirecionando para o dashboard...");
-
-    // Immediately redirect to the dashboard
-    navigate('/dashboard', { replace: true });
-    
-    // No timeout needed - redirect immediately
-  }, [navigate]);
-
   return (
     <div className="container flex items-center justify-center min-h-screen">
       <Card className="w-[420px]">
@@ -31,11 +16,8 @@ export default function PaymentSuccess() {
             Seu pagamento foi processado com sucesso
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4 items-center">
-          <p className="text-center text-sm text-muted-foreground mb-2">
-            Redirecionando para o dashboard...
-          </p>
-          <Button asChild className="w-full">
+        <CardContent className="flex justify-center">
+          <Button asChild>
             <Link to="/dashboard">Ir para o Dashboard</Link>
           </Button>
         </CardContent>

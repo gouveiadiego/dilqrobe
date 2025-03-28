@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button"
-import { createCheckoutSession } from "@/integrations/stripe/client"
+import { createStripeCheckout } from "@/integrations/supabase/client"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -24,28 +24,14 @@ export function CheckoutButton({ priceId, customerId, children, className }: Che
       setLoading(true)
       console.log("Iniciando checkout com priceId:", priceId);
       
-      // Define the origin once to ensure consistency
-      const origin = window.location.origin;
-      
-      // Make success URL go directly to the dashboard to avoid any additional redirects
-      const successUrl = `${origin}/dashboard?payment=success`;
-      const cancelUrl = `${origin}/payment/canceled`;
-      
-      console.log("Using success URL:", successUrl);
-      console.log("Using cancel URL:", cancelUrl);
-      
-      const response = await createCheckoutSession({
-        priceId,
-        successUrl,
-        cancelUrl,
-        customerId,
-      });
-      
+      // Make sure we're calling the correct function
+      const response = await createStripeCheckout(priceId);
+
       if (response?.error) {
         console.error('Error response:', response.error)
         toast.error(response.error === 'Stripe is not configured' 
           ? "Sistema de pagamento não configurado" 
-          : "Não foi possível criar a sessão de checkout: " + response.error)
+          : "Não foi possível criar a sessão de checkout")
         return
       }
 

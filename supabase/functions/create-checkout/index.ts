@@ -74,138 +74,85 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
 
-    // Check if subscription exists for this user
+    // Create or retrieve a customer
+    let customerId: string;
+    
+    // Check if user already has a Stripe customer ID
     const { data: existingSubscription } = await supabaseClient
       .from("subscriptions")
-      .select("stripe_customer_id, status")
+      .select("stripe_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    let customerId: string | null = null;
-    let shouldCreateCustomer = true;
-    
-    // If there's an existing subscription with a customer ID, we'll try to use it
     if (existingSubscription?.stripe_customer_id) {
-      try {
-        // Verify the customer exists in Stripe
-        const customer = await stripe.customers.retrieve(existingSubscription.stripe_customer_id);
-        if (customer && !customer.deleted) {
-          customerId = existingSubscription.stripe_customer_id;
-          shouldCreateCustomer = false;
-          console.log(`Using existing customer ID: ${customerId}`);
-        }
-      } catch (error) {
-        console.log(`Error retrieving customer, will create a new one: ${error.message}`);
-        // If there's an error retrieving the customer, we'll create a new one
-        shouldCreateCustomer = true;
-      }
-    }
-
-    // Create a new customer if needed
-    if (shouldCreateCustomer) {
-      try {
-        // Create a new customer
-        const newCustomer = await stripe.customers.create({
-          email: user.email,
-          name: profile?.full_name || user.email?.split("@")[0],
-          metadata: {
-            supabaseUserId: user.id,
-            cpf: profile?.cpf || "",
-          },
-        });
-        customerId = newCustomer.id;
-        console.log(`Created new customer: ${customerId}`);
-      } catch (error) {
-        console.error("Error creating customer:", error);
-        return new Response(
-          JSON.stringify({ error: `Error creating Stripe customer: ${error.message}` }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    if (!customerId) {
-      return new Response(
-        JSON.stringify({ error: "Failed to create or retrieve a Stripe customer" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Register or update subscription in database
-    const subscriptionData = {
-      user_id: user.id,
-      stripe_customer_id: customerId,
-      status: "incomplete",
-      plan_type: "pro",
-      price_id: priceId,
-    };
-
-    if (existingSubscription) {
-      // Update existing record
-      await supabaseClient
-        .from("subscriptions")
-        .update(subscriptionData)
-        .eq("user_id", user.id);
+      customerId = existingSubscription.stripe_customer_id;
+      console.log(`Using existing customer ID: ${customerId}`);
       
-      console.log(`Updated subscription record for user ${user.id} with price_id ${priceId}`);
-    } else {
-      // Insert new record
+      // Limpar qualquer registro de assinatura incompleta existente
       await supabaseClient
         .from("subscriptions")
-        .insert(subscriptionData);
+        .update({
+          price_id: priceId,
+          status: "incomplete",
+        })
+        .eq("user_id", user.id);
+    } else {
+      // Create a new customer
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: profile?.full_name || user.email?.split("@")[0],
+        metadata: {
+          supabaseUserId: user.id,
+          cpf: profile?.cpf || "",
+        },
+      });
+      customerId = customer.id;
+      console.log(`Created new customer: ${customerId}`);
+
+      // Register subscription in database with the price_id
+      await supabaseClient.from("subscriptions").insert({
+        user_id: user.id,
+        stripe_customer_id: customerId,
+        status: "incomplete",
+        plan_type: "trial",
+        price_id: priceId,
+      });
       
       console.log(`Pre-registered subscription for user ${user.id} with price_id ${priceId}`);
     }
 
-    // Extract base part of success URL without query params
-    let cleanSuccessUrl = successUrl;
-    // If there's a ? in the URL, remove it and everything after
-    if (successUrl.includes('?')) {
-      cleanSuccessUrl = successUrl.split('?')[0];
-    }
-    
     // Create checkout session
-    try {
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        mode: "subscription",
-        // Use direct dashboard URL (bypass payment success page)
-        success_url: `${cleanSuccessUrl}?payment_success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: cancelUrl,
-        billing_address_collection: "auto",
-        tax_id_collection: {
-          enabled: true,
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
         },
-        customer_update: {
-          address: "auto",
-          name: "auto",
-        },
-        metadata: {
-          supabaseUserId: user.id,
-          priceId: priceId,
-        },
-      });
+      ],
+      mode: "subscription",
+      success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl,
+      billing_address_collection: "auto",
+      tax_id_collection: {
+        enabled: true,
+      },
+      customer_update: {
+        address: "auto",
+        name: "auto",
+      },
+      metadata: {
+        supabaseUserId: user.id,
+        priceId: priceId,
+      },
+    });
 
-      console.log(`Created checkout session: ${session.id} for user ${user.id}`);
-      console.log(`Success URL set to: ${session.success_url}`);
-      
-      return new Response(
-        JSON.stringify({ url: session.url }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } catch (error) {
-      console.error("Stripe checkout error:", error);
-      return new Response(
-        JSON.stringify({ error: `Stripe checkout error: ${error.message}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    console.log(`Created checkout session: ${session.id} for user ${user.id}`);
+    
+    return new Response(
+      JSON.stringify({ url: session.url }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error) {
     console.error("Stripe checkout error:", error);
     return new Response(

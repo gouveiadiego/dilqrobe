@@ -19,7 +19,6 @@ interface PriceTier {
   priceId: string;
 }
 
-// Using the updated live mode price ID
 const priceTiers: PriceTier[] = [
   {
     id: "pro",
@@ -35,7 +34,7 @@ const priceTiers: PriceTier[] = [
       "Relatórios detalhados de progresso",
       "Integração com outros aplicativos",
     ],
-    priceId: "price_1R0TxHRooQphZ1dFcGEGu9ID", // Updated live mode price ID
+    priceId: "price_1R0nc2RooQphZ1dFnk4ZneeE",
   },
 ];
 
