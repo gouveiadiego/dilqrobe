@@ -1,22 +1,14 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { getUserSubscription } from "@/integrations/supabase/client";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Crown, Check, Loader2 } from "lucide-react";
-import { CheckoutButton } from "@/components/stripe/CheckoutButton";
-import { PortalButton } from "@/components/stripe/PortalButton";
-import { PaymentHistory } from "@/components/stripe/PaymentHistory";
+import { Crown, Check } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface PriceTier {
   id: string;
   name: string;
   price: string;
   features: string[];
-  priceId: string;
 }
 
 const priceTiers: PriceTier[] = [
@@ -34,77 +26,10 @@ const priceTiers: PriceTier[] = [
       "Relatórios detalhados de progresso",
       "Integração com outros aplicativos",
     ],
-    // Use a test mode price ID for Stripe
-    priceId: "price_1OvcIyRooQphZ1dFd95f8Fnq", // Updated to test mode price ID
   },
 ];
 
 export default function Subscription() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [subscription, setSubscription] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [checkoutLoading, setCheckoutLoading] = useState("");
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // First check URL params for payment status
-        const urlParams = new URLSearchParams(location.search);
-        const paymentStatus = urlParams.get("payment");
-        
-        if (paymentStatus === "success") {
-          // Set the subscription to active immediately for better UX
-          // The webhook will update the database
-          toast.success("Assinatura realizada com sucesso!");
-          console.log("Payment successful, redirecting to payment success page");
-          // Redirect to payment success page
-          navigate("/payment/success", { replace: true });
-          return;
-        } else if (paymentStatus === "canceled") {
-          toast.error("Pagamento cancelado");
-          console.log("Payment canceled, redirecting to payment canceled page");
-          // Redirect to payment canceled page
-          navigate("/payment/canceled", { replace: true });
-          return;
-        }
-        
-        // Then check user auth
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          navigate("/login");
-          return;
-        }
-        
-        setUser(user);
-        console.log("User authenticated:", user.id);
-        
-        // Get subscription data
-        const subscriptionData = await getUserSubscription();
-        console.log("Subscription data:", subscriptionData);
-        setSubscription(subscriptionData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("Erro ao carregar os dados da assinatura");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [navigate, location]);
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const isSubscribed = subscription?.status === "active";
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 text-center">
@@ -114,27 +39,17 @@ export default function Subscription() {
         </p>
       </div>
 
-      {isSubscribed && (
-        <div className="mb-8 rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
-          <div className="flex items-center gap-3">
-            <Crown className="h-6 w-6 text-amber-500" />
-            <div>
-              <h3 className="text-lg font-medium">Você tem uma assinatura ativa!</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Sua assinatura renova em{" "}
-                {subscription?.current_period_end
-                  ? new Date(subscription.current_period_end).toLocaleDateString("pt-BR")
-                  : "data não disponível"}
-              </p>
-              <div className="mt-4">
-                <PortalButton customerId={user?.id}>
-                  Gerenciar Assinatura
-                </PortalButton>
-              </div>
-            </div>
+      <div className="mb-8 rounded-lg bg-amber-50 p-4 dark:bg-amber-900/20">
+        <div className="flex items-center gap-3">
+          <Crown className="h-6 w-6 text-amber-500" />
+          <div>
+            <h3 className="text-lg font-medium">Pagamentos temporariamente indisponíveis</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Nosso sistema de pagamentos está em manutenção. Por favor, tente novamente mais tarde.
+            </p>
           </div>
         </div>
-      )}
+      </div>
 
       <div className="flex justify-center">
         <div className="w-full max-w-lg">
@@ -162,34 +77,15 @@ export default function Subscription() {
                   ))}
                 </ul>
               </CardContent>
-              <CardFooter>
-                {isSubscribed ? (
-                  <Button disabled variant="outline" className="w-full">
-                    Plano atual
-                  </Button>
-                ) : (
-                  <CheckoutButton
-                    priceId={tier.priceId}
-                    customerId={user?.id}
-                    className="w-full"
-                  >
-                    {checkoutLoading === tier.priceId ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Assinar agora
-                  </CheckoutButton>
-                )}
-              </CardFooter>
+              <div className="bg-muted/50 p-4 text-center">
+                <Button asChild variant="outline">
+                  <Link to="/dashboard">Voltar ao Dashboard</Link>
+                </Button>
+              </div>
             </Card>
           ))}
         </div>
       </div>
-
-      {user && (
-        <div className="mt-12">
-          <PaymentHistory />
-        </div>
-      )}
       
       <div className="mt-12 text-center">
         <p className="text-sm text-gray-500 dark:text-gray-400">
