@@ -834,4 +834,192 @@ export function ServicesTab() {
                 </div>
               </div>
               
-              <div className="
+              <div className="flex flex-wrap gap-2">
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="glass-card w-[150px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos</SelectItem>
+                    <SelectItem value="paid">Pagos</SelectItem>
+                    <SelectItem value="pending">Pendentes</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={filterClient} onValueChange={setFilterClient}>
+                  <SelectTrigger className="glass-card w-[150px]">
+                    <SelectValue placeholder="Cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos</SelectItem>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.name}>{client.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              {/* Services List */}
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+      
+      <Dialog open={!!editingService} onOpenChange={() => setEditingService(null)}>
+        <DialogContent className="w-full max-w-3xl p-6">
+          <DialogHeader>
+            <DialogTitle>Editar Serviço</DialogTitle>
+            <DialogDescription>Edite os detalhes do serviço</DialogDescription>
+          </DialogHeader>
+          {editingService && (
+            <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="client_name">Cliente</Label>
+                <Input 
+                  id="client_name" 
+                  value={editingService.client_name} 
+                  onChange={e => setEditingService({ ...editingService, client_name: e.target.value })} 
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="start_date">Data de Início</Label>
+                <Input 
+                  id="start_date" 
+                  type="date" 
+                  value={editingService.start_date} 
+                  onChange={e => setEditingService({ ...editingService, start_date: e.target.value })} 
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="company_name">Nome da Empresa</Label>
+                <Input 
+                  id="company_name" 
+                  value={editingService.company_name} 
+                  onChange={e => setEditingService({ ...editingService, company_name: e.target.value })} 
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="service_description">Descrição do Serviço</Label>
+                <Input 
+                  id="service_description" 
+                  value={editingService.service_description} 
+                  onChange={e => setEditingService({ ...editingService, service_description: e.target.value })} 
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="stage">Etapa</Label>
+                <Input 
+                  id="stage" 
+                  value={editingService.stage} 
+                  onChange={e => setEditingService({ ...editingService, stage: e.target.value })} 
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Input 
+                  id="status" 
+                  value={editingService.status} 
+                  onChange={e => setEditingService({ ...editingService, status: e.target.value })} 
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="amount">Valor</Label>
+                <Input 
+                  id="amount" 
+                  type="number" 
+                  value={editingService.amount} 
+                  onChange={e => setEditingService({ ...editingService, amount: Number(e.target.value) })} 
+                  className="w-full"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Status do Pagamento</Label>
+                <Select value={editingService.payment_status} onValueChange={handleEditingPaymentStatusChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Status do pagamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="paid">Pago</SelectItem>
+                    <SelectItem value="canceled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="w-full max-w-md p-6">
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+            <DialogDescription>
+              Você tem certeza que deseja deletar este serviço? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Deletar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="w-full max-w-md p-6">
+          <DialogHeader>
+            <DialogTitle>Compartilhar Portal do Cliente</DialogTitle>
+            <DialogDescription>
+              Compartilhe o link do portal do cliente para que ele possa acompanhar os serviços.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm mb-4">
+              O link abaixo permite que o cliente acesse seus serviços sem necessidade de login:
+            </p>
+            <div className="flex items-center gap-2">
+              <Input 
+                value={`${window.location.origin}/client-portal?clientId=${selectedClientId}`}
+                className="glass-card" 
+                readOnly
+              />
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/client-portal?clientId=${selectedClientId}`);
+                  toast.success("Link copiado para a área de transferência");
+                }}
+              >
+                Copiar
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowShareDialog(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
