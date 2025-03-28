@@ -45,7 +45,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { SubscriptionTab } from "./stripe/SubscriptionTab";
 
 export function SettingsTab() {
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -121,7 +120,7 @@ export function SettingsTab() {
       </div>
 
       <Tabs defaultValue="notifications" className="space-y-6">
-        <TabsList className="bg-gray-100 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700 w-full grid grid-cols-2 md:grid-cols-5 gap-1">
+        <TabsList className="bg-gray-100 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700 w-full grid grid-cols-2 md:grid-cols-4 gap-1">
           <TabsTrigger 
             value="notifications" 
             className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-purple"
@@ -152,14 +151,6 @@ export function SettingsTab() {
           >
             <Shield className="h-4 w-4 mr-2" />
             Privacidade
-          </TabsTrigger>
-          
-          <TabsTrigger 
-            value="subscription" 
-            className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-purple"
-          >
-            <CreditCard className="h-4 w-4 mr-2" />
-            Assinatura
           </TabsTrigger>
         </TabsList>
 
@@ -419,10 +410,6 @@ export function SettingsTab() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        <TabsContent value="subscription" className="space-y-4 animate-fade-in">
-          <SubscriptionTab />
         </TabsContent>
       </Tabs>
 

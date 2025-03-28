@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -10,8 +11,6 @@ import ClientPortal from "./pages/ClientPortal";
 import CompanyDetails from "./pages/CompanyDetails";
 import LandingPage from "./pages/LandingPage";
 import Subscription from "./pages/Subscription";
-import PaymentSuccess from "@/pages/payment/PaymentSuccess";
-import PaymentCanceled from "@/pages/payment/PaymentCanceled";
 
 function App() {
   // Initialize dark mode based on user preference or system preference
@@ -52,21 +51,19 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/subscription" element={<Subscription />} />
-        <Route path="/payment/success" element={<PaymentSuccess />} />
-        <Route path="/payment/canceled" element={<PaymentCanceled />} />
         
         {/* Use a nested route for dashboard to handle refreshes better */}
         <Route 
           path="/dashboard/*" 
           element={
-            <ProtectedRoute requireSubscription={true}>
+            <ProtectedRoute>
               <Index />
             </ProtectedRoute>
           } 
         />
         
         <Route path="/client-portal" element={
-          <ProtectedRoute requireSubscription={true}>
+          <ProtectedRoute>
             <ClientPortal />
           </ProtectedRoute>
         } />
@@ -74,7 +71,7 @@ function App() {
         <Route
           path="/company/:companyId"
           element={
-            <ProtectedRoute requireSubscription={true}>
+            <ProtectedRoute>
               <CompanyDetails />
             </ProtectedRoute>
           }
