@@ -564,7 +564,7 @@ export function ServicesTab() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="new_company_name">Nome da Empresa</Label>
+                <Label htmlFor="new_company_name">Nome da Empresa/Cliente</Label>
                 <Input id="new_company_name" value={newService.company_name} onChange={e => setNewService({
                 ...newService,
                 company_name: e.target.value
