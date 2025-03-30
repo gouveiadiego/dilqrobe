@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
 import { ClientManager } from "./ClientManager";
-import { Link2, Search, Pencil, Trash2, PlusCircle, BarChart3, PieChart as PieChartIcon, ChevronRight, CreditCard, Calendar as CalendarIcon, User } from "lucide-react";
+import { Link2, Search, Pencil, Trash2, PlusCircle, BarChart3, PieChart as PieChartIcon, ChevronRight, CreditCard, Calendar as CalendarIcon, User, Check, Users } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,6 +16,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Ba
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Service {
   id: string;
@@ -174,7 +175,8 @@ const renderDashboard = (services: Service[]) => {
 
 export function ServicesTab() {
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState("");
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const { clients } = useClients();
   const [services, setServices] = useState<Service[]>([]);
@@ -305,11 +307,6 @@ export function ServicesTab() {
     }
   };
 
-  const handleSharePortalLink = async (clientId: string) => {
-    setSelectedClientId(clientId);
-    setShowShareDialog(true);
-  };
-
   const togglePaymentStatus = async (id: string, currentStatus: 'pending' | 'paid' | 'canceled') => {
     try {
       const newStatus = currentStatus === 'pending' ? 'paid' : 'pending';
@@ -381,6 +378,33 @@ export function ServicesTab() {
       toast.success('Serviço atualizado com sucesso');
     } catch (error: any) {
       toast.error(error.message);
+    }
+  };
+
+  const handleSharePortalLink = () => {
+    if (selectedClientIds.length === 0) {
+      toast.error("Selecione pelo menos um cliente para compartilhar");
+      return;
+    }
+    setShowShareDialog(false);
+    setShowLinkDialog(true);
+  };
+
+  const handleToggleClientSelection = (clientId: string) => {
+    setSelectedClientIds(prevSelected => {
+      if (prevSelected.includes(clientId)) {
+        return prevSelected.filter(id => id !== clientId);
+      } else {
+        return [...prevSelected, clientId];
+      }
+    });
+  };
+
+  const handleSelectAllClients = () => {
+    if (selectedClientIds.length === clients.length) {
+      setSelectedClientIds([]);
+    } else {
+      setSelectedClientIds(clients.map(client => client.id));
     }
   };
 
@@ -812,213 +836,4 @@ export function ServicesTab() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={filterClient} onValueChange={setFilterClient}>
-                  <SelectTrigger className="glass-card w-[150px]">
-                    <SelectValue placeholder="Cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todos</SelectItem>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.name}>{client.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="space-y-6">
-              {/* Services List */}
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-      
-      <Dialog open={!!editingService} onOpenChange={() => setEditingService(null)}>
-        <DialogContent className="w-full max-w-3xl p-6">
-          <DialogHeader>
-            <DialogTitle>Editar Serviço</DialogTitle>
-            <DialogDescription>Edite os detalhes do serviço</DialogDescription>
-          </DialogHeader>
-          {editingService && (
-            <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="client_name">Cliente</Label>
-                <Input 
-                  id="client_name" 
-                  value={editingService.client_name} 
-                  onChange={e => setEditingService({ ...editingService, client_name: e.target.value })} 
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="start_date">Data de Início</Label>
-                <Input 
-                  id="start_date" 
-                  type="date" 
-                  value={editingService.start_date} 
-                  onChange={e => setEditingService({ ...editingService, start_date: e.target.value })} 
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="company_name">Nome da Empresa</Label>
-                <Input 
-                  id="company_name" 
-                  value={editingService.company_name} 
-                  onChange={e => setEditingService({ ...editingService, company_name: e.target.value })} 
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="service_description">Descrição do Serviço</Label>
-                <Input 
-                  id="service_description" 
-                  value={editingService.service_description} 
-                  onChange={e => setEditingService({ ...editingService, service_description: e.target.value })} 
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="stage">Etapa</Label>
-                <Input 
-                  id="stage" 
-                  value={editingService.stage} 
-                  onChange={e => setEditingService({ ...editingService, stage: e.target.value })} 
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Input 
-                  id="status" 
-                  value={editingService.status} 
-                  onChange={e => setEditingService({ ...editingService, status: e.target.value })} 
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="amount">Valor</Label>
-                <Input 
-                  id="amount" 
-                  type="number" 
-                  value={editingService.amount} 
-                  onChange={e => setEditingService({ ...editingService, amount: Number(e.target.value) })} 
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Status do Pagamento</Label>
-                <Select value={editingService.payment_status} onValueChange={handleEditingPaymentStatusChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Status do pagamento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pendente</SelectItem>
-                    <SelectItem value="paid">Pago</SelectItem>
-                    <SelectItem value="canceled">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="w-full max-w-md p-6">
-          <DialogHeader>
-            <DialogTitle>Confirmar Exclusão</DialogTitle>
-            <DialogDescription>
-              Você tem certeza que deseja deletar este serviço? Esta ação não pode ser desfeita.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Deletar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="w-full max-w-md p-6">
-          <DialogHeader>
-            <DialogTitle>Compartilhar Portal do Cliente</DialogTitle>
-            <DialogDescription>
-              Escolha um cliente para compartilhar o portal
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            {Object.entries(groupedServices).map(([clientId, { clientName, services }]) => (
-              <div key={clientId} className="glass-card p-4 transition-all duration-300 hover:translate-y-[-2px]">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-medium">{clientName}</h3>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="text-xs"
-                      onClick={() => handleSharePortalLink(clientId)}
-                    >
-                      <Link2 className="h-3 w-3 mr-1" /> Compartilhar
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-500">{services.length} serviços</p>
-              </div>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowShareDialog(false)}>
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={selectedClientId !== ""} onOpenChange={(open) => !open && setSelectedClientId("")}>
-        <DialogContent className="w-full max-w-md p-6">
-          <DialogHeader>
-            <DialogTitle>Link do Portal do Cliente</DialogTitle>
-            <DialogDescription>
-              Compartilhe este link com o cliente para que ele possa acessar os serviços sem necessidade de login.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="flex items-center gap-2">
-              <Input 
-                value={`${window.location.origin}/client-portal?clientId=${selectedClientId}`}
-                className="glass-card" 
-                readOnly
-              />
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/client-portal?clientId=${selectedClientId}`);
-                  toast.success("Link copiado para a área de transferência");
-                }}
-              >
-                Copiar
-              </Button>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setSelectedClientId("")}>
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+                <Select value={filterClient} onValueChange={setFilterClient
