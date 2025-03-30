@@ -17,10 +17,12 @@ interface ClientService {
   id: string;
   start_date: string;
   service_description: string;
+  company_name: string;
   stage: string;
   status: string;
   amount: number;
   payment_status: string;
+  client_id: string;
 }
 
 export default function ClientPortal() {
@@ -66,6 +68,7 @@ export default function ClientPortal() {
             <TableRow>
               <TableHead>Data</TableHead>
               <TableHead>Descrição</TableHead>
+              <TableHead>Nome da Empresa/Cliente</TableHead>
               <TableHead>Etapa</TableHead>
               <TableHead>Situação</TableHead>
               <TableHead>Valor</TableHead>
@@ -79,6 +82,7 @@ export default function ClientPortal() {
                   {format(new Date(service.start_date), "dd/MM/yyyy")}
                 </TableCell>
                 <TableCell>{service.service_description}</TableCell>
+                <TableCell>{service.company_name}</TableCell>
                 <TableCell>{service.stage}</TableCell>
                 <TableCell>{service.status}</TableCell>
                 <TableCell>
