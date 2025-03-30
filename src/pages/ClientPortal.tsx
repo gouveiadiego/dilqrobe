@@ -67,8 +67,8 @@ export default function ClientPortal() {
           <TableHeader>
             <TableRow>
               <TableHead>Data</TableHead>
-              <TableHead>Descrição</TableHead>
               <TableHead>Nome da Empresa/Cliente</TableHead>
+              <TableHead>Descrição</TableHead>
               <TableHead>Etapa</TableHead>
               <TableHead>Situação</TableHead>
               <TableHead>Valor</TableHead>
@@ -81,8 +81,8 @@ export default function ClientPortal() {
                 <TableCell>
                   {format(new Date(service.start_date), "dd/MM/yyyy")}
                 </TableCell>
-                <TableCell>{service.service_description}</TableCell>
                 <TableCell>{service.company_name}</TableCell>
+                <TableCell>{service.service_description}</TableCell>
                 <TableCell>{service.stage}</TableCell>
                 <TableCell>{service.status}</TableCell>
                 <TableCell>
