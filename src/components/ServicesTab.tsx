@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
 import { ClientManager } from "./ClientManager";
-import { Link2, Search, Pencil, Trash2, PlusCircle, BarChart3, PieChart as PieChartIcon, ChevronRight, CreditCard, Calendar as CalendarIcon, User, Check, Users } from "lucide-react";
+import { Link2, Search, Pencil, Trash2, PlusCircle, BarChart3, PieChart as PieChartIcon, ChevronRight, CreditCard, Calendar as CalendarIcon, Check } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -614,6 +615,7 @@ export function ServicesTab() {
                   value={newService.client_name} 
                   onChange={e => setNewService({ ...newService, client_name: e.target.value })} 
                   className="glass-card"
+                  placeholder="Nome do cliente"
                 />
               </div>
               
@@ -635,6 +637,7 @@ export function ServicesTab() {
                   value={newService.company_name} 
                   onChange={e => setNewService({ ...newService, company_name: e.target.value })} 
                   className="glass-card"
+                  placeholder="Nome da empresa"
                 />
               </div>
               
@@ -645,6 +648,7 @@ export function ServicesTab() {
                   value={newService.service_description} 
                   onChange={e => setNewService({ ...newService, service_description: e.target.value })} 
                   className="glass-card"
+                  placeholder="Descreva o serviço"
                 />
               </div>
               
@@ -655,6 +659,7 @@ export function ServicesTab() {
                   value={newService.stage} 
                   onChange={e => setNewService({ ...newService, stage: e.target.value })} 
                   className="glass-card"
+                  placeholder="Etapa atual do serviço"
                 />
               </div>
               
@@ -665,6 +670,7 @@ export function ServicesTab() {
                   value={newService.status} 
                   onChange={e => setNewService({ ...newService, status: e.target.value })} 
                   className="glass-card"
+                  placeholder="Status atual do serviço"
                 />
               </div>
               
@@ -676,6 +682,7 @@ export function ServicesTab() {
                   value={newService.amount} 
                   onChange={e => setNewService({ ...newService, amount: Number(e.target.value) })} 
                   className="glass-card"
+                  placeholder="0.00"
                 />
               </div>
               
@@ -844,7 +851,6 @@ export function ServicesTab() {
                 <div key={clientId} className="border border-gray-200 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
                   <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                       <h3 className="font-medium">{clientName}</h3>
                     </div>
                     <Button 
