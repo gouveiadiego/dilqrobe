@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +16,6 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Ba
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 
 interface Service {
   id: string;
@@ -61,21 +59,20 @@ interface ServiceStats {
 const calculateStats = (services: Service[]): ServiceStats => {
   const totalRevenue = services.reduce((sum, service) => sum + service.amount, 0);
   const servicesProvided = services.length;
-  const pendingRevenue = services.filter(s => s.payment_status === 'pending').reduce((sum, service) => sum + service.amount, 0);
-  const paidRevenue = services.filter(s => s.payment_status === 'paid').reduce((sum, service) => sum + service.amount, 0);
-  const canceledRevenue = services.filter(s => s.payment_status === 'canceled').reduce((sum, service) => sum + service.amount, 0);
+  const pendingRevenue = services.filter(service => service.payment_status === 'pending').reduce((sum, service) => sum + service.amount, 0);
+  const paidRevenue = services.filter(service => service.payment_status === 'paid').reduce((sum, service) => sum + service.amount, 0);
+  const canceledRevenue = services.filter(service => service.payment_status === 'canceled').reduce((sum, service) => sum + service.amount, 0);
 
-  const revenueByMonth: { [month: string]: number } = {};
-  services.forEach(service => {
-    const month = format(new Date(service.start_date), 'MMMM');
-    revenueByMonth[month] = (revenueByMonth[month] || 0) + service.amount;
-  });
+  const revenueByMonth: { [month: string]: number } = services.reduce((acc: { [month: string]: number }, service) => {
+    const month = format(new Date(service.start_date), 'MMMM yyyy');
+    acc[month] = (acc[month] || 0) + service.amount;
+    return acc;
+  }, {});
 
-  const revenueByStatus: { [status: string]: number } = {
-    pending: pendingRevenue,
-    paid: paidRevenue,
-    canceled: canceledRevenue,
-  };
+  const revenueByStatus: { [status: string]: number } = services.reduce((acc: { [status: string]: number }, service) => {
+    acc[service.payment_status] = (acc[service.payment_status] || 0) + service.amount;
+    return acc;
+  }, {});
 
   return {
     totalRevenue,
@@ -88,86 +85,95 @@ const calculateStats = (services: Service[]): ServiceStats => {
   };
 };
 
-const calculateDailyRevenue = (services: Service[], date: Date): number => {
-  const formattedDate = format(date, 'yyyy-MM-dd');
-  return services.reduce((sum, service) => {
-    const serviceDate = format(new Date(service.start_date), 'yyyy-MM-dd');
-    return serviceDate === formattedDate ? sum + service.amount : sum;
-  }, 0);
+const calculateDailyRevenue = (services: Service[]) => {
+  const dailyRevenue: { [date: string]: number } = {};
+  services.forEach(service => {
+    const date = format(new Date(service.start_date), 'yyyy-MM-dd');
+    dailyRevenue[date] = (dailyRevenue[date] || 0) + service.amount;
+  });
+
+  const chartData = Object.entries(dailyRevenue).map(([date, revenue]) => ({
+    date,
+    revenue,
+  }));
+
+  return chartData;
 };
 
 const renderDashboard = (services: Service[]) => {
   const stats = calculateStats(services);
-  const today = new Date();
-  const currentMonthStart = startOfMonth(today);
-  const currentMonthEnd = endOfMonth(today);
-  const daysInMonth = eachDayOfInterval({ start: currentMonthStart, end: currentMonthEnd });
+  const dailyRevenue = calculateDailyRevenue(services);
 
-  const dailyRevenueData = daysInMonth.map(day => ({
-    date: format(day, 'dd/MM'),
-    revenue: calculateDailyRevenue(services, day),
+  const pieChartData = Object.entries(stats.revenueByStatus).map(([status, revenue]) => ({
+    name: status,
+    value: revenue,
   }));
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#9cafff'];
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
+  const RADIAN = Math.PI / 180;
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    return (
+      <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold mb-2">Receita Total</h3>
-        <p className="text-3xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
+      <div className="glass-card p-4">
+        <h3 className="font-semibold text-lg">Receita Total</h3>
+        <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
+      </div>
+      <div className="glass-card p-4">
+        <h3 className="font-semibold text-lg">Serviços Prestados</h3>
+        <p className="text-2xl font-bold">{stats.servicesProvided}</p>
+      </div>
+      <div className="glass-card p-4">
+        <h3 className="font-semibold text-lg">Receita Pendente</h3>
+        <p className="text-2xl font-bold">{formatCurrency(stats.pendingRevenue)}</p>
       </div>
 
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold mb-2">Serviços Prestados</h3>
-        <p className="text-3xl font-bold">{stats.servicesProvided}</p>
-      </div>
-
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold mb-2">Receita Pendente</h3>
-        <p className="text-3xl font-bold">{formatCurrency(stats.pendingRevenue)}</p>
-      </div>
-
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold mb-2">Receita por Status</h3>
-        <ResponsiveContainer width="100%" height={250}>
-          <PieChart>
-            <Pie
-              data={[
-                { name: 'Pendente', value: stats.pendingRevenue },
-                { name: 'Pago', value: stats.paidRevenue },
-                { name: 'Cancelado', value: stats.canceledRevenue },
-              ]}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              fill="#8884d8"
-              label
-            >
-              {[{ name: 'Pendente', value: stats.pendingRevenue },
-                { name: 'Pago', value: stats.paidRevenue },
-                { name: 'Cancelado', value: stats.canceledRevenue }].map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+      <div className="glass-card p-4 col-span-2">
+        <h3 className="font-semibold text-lg">Receita por Mês</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={dailyRevenue}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip formatter={(value) => formatCurrency(value)} />
             <Legend />
-          </PieChart>
+            <Line type="monotone" dataKey="revenue" stroke="#8884d8" activeDot={{ r: 8 }} />
+          </LineChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="glass-card p-6 lg:col-span-2">
-        <h3 className="text-lg font-semibold mb-2">Receita Diária do Mês</h3>
+      <div className="glass-card p-4">
+        <h3 className="font-semibold text-lg">Receita por Status</h3>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={dailyRevenueData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis tickFormatter={(value: number) => formatCurrency(value)} />
-            <Tooltip formatter={(value: number) => formatCurrency(value)} />
+          <PieChart>
+            <Pie
+              data={pieChartData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={renderCustomizedLabel}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {pieChartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value) => formatCurrency(value)} />
             <Legend />
-            <Line type="monotone" dataKey="revenue" stroke="#82ca9d" name="Receita" />
-          </LineChart>
+          </PieChart>
         </ResponsiveContainer>
       </div>
     </div>
@@ -176,8 +182,8 @@ const renderDashboard = (services: Service[]) => {
 
 export function ServicesTab() {
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showLinkDialog, setShowLinkDialog] = useState(false);
-  const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+  const [shareableUrl, setShareableUrl] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState("");
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const { clients } = useClients();
   const [services, setServices] = useState<Service[]>([]);
@@ -208,7 +214,7 @@ export function ServicesTab() {
   const fetchServices = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) return;
 
       const { data, error } = await supabase
         .from('services')
@@ -217,35 +223,37 @@ export function ServicesTab() {
         .order('start_date', { ascending: false });
 
       if (error) {
+        console.error('Error fetching services:', error);
         toast.error('Erro ao carregar serviços');
-        throw error;
+        return;
       }
 
-      setServices(data as Service[]);
-    } catch (error: any) {
-      toast.error(error.message);
+      setServices(data || []);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      toast.error('Erro ao carregar serviços');
     }
   };
 
   const fetchCompanyLogo = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) return;
 
       const { data, error } = await supabase
-        .from('profiles')
-        .select('company_logo')
-        .eq('id', user.id)
+        .from('companies')
+        .select('logo_url')
+        .eq('user_id', user.id)
         .single();
 
       if (error) {
-        console.error('Erro ao carregar logo da empresa:', error);
+        console.error('Error fetching company logo:', error);
         return;
       }
 
-      setCompanyLogo(data?.company_logo || null);
-    } catch (error: any) {
-      console.error('Erro ao carregar logo da empresa:', error);
+      setCompanyLogo(data?.logo_url || null);
+    } catch (error) {
+      console.error('Error fetching company logo:', error);
     }
   };
 
@@ -258,25 +266,21 @@ export function ServicesTab() {
     e.preventDefault();
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) return;
 
-      const serviceToAdd: NewService = {
-        ...newService,
-        user_id: user.id,
-      };
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('services')
-        .insert([serviceToAdd])
-        .select()
-        .single();
+        .insert({
+          ...newService,
+          user_id: user.id,
+        });
 
       if (error) {
+        console.error('Error adding service:', error);
         toast.error('Erro ao adicionar serviço');
-        throw error;
+        return;
       }
 
-      setServices([...services, data as Service]);
       setNewService({
         start_date: format(new Date(), "yyyy-MM-dd"),
         client_name: "",
@@ -289,49 +293,48 @@ export function ServicesTab() {
         reference_month: format(new Date(), "yyyy-MM-dd"),
         client_id: ""
       });
-      toast.success('Serviço adicionado com sucesso');
-    } catch (error: any) {
-      toast.error(error.message);
+      fetchServices();
+      toast.success('Serviço adicionado com sucesso!');
+    } catch (error) {
+      console.error('Error adding service:', error);
+      toast.error('Erro ao adicionar serviço');
     }
   };
 
-  const handlePaymentStatusChange = (value: string) => {
-    if (value === 'pending' || value === 'paid' || value === 'canceled') {
-      setNewService({ ...newService, payment_status: value });
-    }
-  };
-
-  const handleEditingPaymentStatusChange = (value: string) => {
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!editingService) return;
-    if (value === 'pending' || value === 'paid' || value === 'canceled') {
-      setEditingService({ ...editingService, payment_status: value });
-    }
-  };
 
-  const togglePaymentStatus = async (id: string, currentStatus: 'pending' | 'paid' | 'canceled') => {
     try {
-      const newStatus = currentStatus === 'pending' ? 'paid' : 'pending';
       const { error } = await supabase
         .from('services')
-        .update({ payment_status: newStatus })
-        .eq('id', id);
+        .update({
+          start_date: editingService.start_date,
+          client_name: editingService.client_name,
+          company_name: editingService.company_name,
+          service_description: editingService.service_description,
+          stage: editingService.stage,
+          status: editingService.status,
+          amount: editingService.amount,
+          payment_status: editingService.payment_status,
+          reference_month: editingService.reference_month,
+          client_id: editingService.client_id
+        })
+        .eq('id', editingService.id);
 
       if (error) {
-        toast.error('Erro ao atualizar status do pagamento');
-        throw error;
+        console.error('Error updating service:', error);
+        toast.error('Erro ao atualizar serviço');
+        return;
       }
 
-      setServices(services.map(service =>
-        service.id === id ? { ...service, payment_status: newStatus } : service
-      ));
-      toast.success('Status do pagamento atualizado com sucesso');
-    } catch (error: any) {
-      toast.error(error.message);
+      setEditingService(null);
+      fetchServices();
+      toast.success('Serviço atualizado com sucesso!');
+    } catch (error) {
+      console.error('Error updating service:', error);
+      toast.error('Erro ao atualizar serviço');
     }
-  };
-
-  const handleEdit = (service: Service) => {
-    setEditingService(service);
   };
 
   const handleDelete = async () => {
@@ -344,69 +347,57 @@ export function ServicesTab() {
         .eq('id', serviceToDelete);
 
       if (error) {
-        toast.error('Erro ao deletar serviço');
-        throw error;
+        console.error('Error deleting service:', error);
+        toast.error('Erro ao excluir serviço');
+        return;
       }
 
-      setServices(services.filter(service => service.id !== serviceToDelete));
       setServiceToDelete(null);
       setShowDeleteDialog(false);
-      toast.success('Serviço removido com sucesso');
-    } catch (error: any) {
-      toast.error(error.message);
+      fetchServices();
+      toast.success('Serviço excluído com sucesso!');
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      toast.error('Erro ao excluir serviço');
     }
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingService) return;
+  const handleEdit = (service: Service) => {
+    setEditingService(service);
+  };
+
+  const handlePaymentStatusChange = async (id: string, currentStatus: 'pending' | 'paid' | 'canceled') => {
+    const newStatus =
+      currentStatus === 'pending' ? 'paid' :
+        currentStatus === 'paid' ? 'canceled' :
+          'pending';
 
     try {
       const { error } = await supabase
         .from('services')
-        .update(editingService)
-        .eq('id', editingService.id);
+        .update({ payment_status: newStatus })
+        .eq('id', id);
 
       if (error) {
-        toast.error('Erro ao atualizar serviço');
-        throw error;
+        console.error('Error updating payment status:', error);
+        toast.error('Erro ao atualizar status de pagamento');
+        return;
       }
 
-      setServices(services.map(service =>
-        service.id === editingService.id ? editingService : service
-      ));
-      setEditingService(null);
-      toast.success('Serviço atualizado com sucesso');
-    } catch (error: any) {
-      toast.error(error.message);
+      fetchServices();
+      toast.success('Status de pagamento atualizado com sucesso!');
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast.error('Erro ao atualizar status de pagamento');
     }
   };
 
-  const handleSharePortalLink = () => {
-    if (selectedClientIds.length === 0) {
-      toast.error("Selecione pelo menos um cliente para compartilhar");
-      return;
-    }
-    setShowShareDialog(false);
-    setShowLinkDialog(true);
-  };
-
-  const handleToggleClientSelection = (clientId: string) => {
-    setSelectedClientIds(prevSelected => {
-      if (prevSelected.includes(clientId)) {
-        return prevSelected.filter(id => id !== clientId);
-      } else {
-        return [...prevSelected, clientId];
-      }
-    });
-  };
-
-  const handleSelectAllClients = () => {
-    if (selectedClientIds.length === clients.length) {
-      setSelectedClientIds([]);
-    } else {
-      setSelectedClientIds(clients.map(client => client.id));
-    }
+  const handleSharePortalLink = (clientId: string) => {
+    const baseUrl = window.location.origin;
+    const portalUrl = `${baseUrl}/client-portal?client=${clientId}`;
+    setShareableUrl(portalUrl);
+    setSelectedClientId(clientId);
+    setShowShareDialog(true);
   };
 
   const filteredServices = services.filter(service => {
@@ -473,82 +464,80 @@ export function ServicesTab() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="client_name">Cliente</Label>
-                  <Input 
-                    id="client_name" 
-                    value={newService.client_name} 
-                    onChange={e => setNewService({ ...newService, client_name: e.target.value })} 
-                    className="w-full"
-                  />
-                </div>
-                
-                <div className="space-y-2">
                   <Label htmlFor="start_date">Data de Início</Label>
-                  <Input 
-                    id="start_date" 
-                    type="date" 
-                    value={newService.start_date} 
-                    onChange={e => setNewService({ ...newService, start_date: e.target.value })} 
-                    className="w-full"
+                  <Input
+                    type="date"
+                    id="start_date"
+                    value={newService.start_date}
+                    onChange={(e) => setNewService({ ...newService, start_date: e.target.value })}
+                    required
                   />
                 </div>
-                
+                <div className="space-y-2">
+                  <Label htmlFor="client_name">Nome do Cliente</Label>
+                  <Input
+                    type="text"
+                    id="client_name"
+                    value={newService.client_name}
+                    onChange={(e) => setNewService({ ...newService, client_name: e.target.value })}
+                    required
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="company_name">Nome da Empresa</Label>
-                  <Input 
-                    id="company_name" 
-                    value={newService.company_name} 
-                    onChange={e => setNewService({ ...newService, company_name: e.target.value })} 
-                    className="w-full"
+                  <Input
+                    type="text"
+                    id="company_name"
+                    value={newService.company_name}
+                    onChange={(e) => setNewService({ ...newService, company_name: e.target.value })}
+                    required
                   />
                 </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="service_description">Descrição do Serviço</Label>
-                  <Input 
-                    id="service_description" 
-                    value={newService.service_description} 
-                    onChange={e => setNewService({ ...newService, service_description: e.target.value })} 
-                    className="w-full"
+                  <Input
+                    type="text"
+                    id="service_description"
+                    value={newService.service_description}
+                    onChange={(e) => setNewService({ ...newService, service_description: e.target.value })}
+                    required
                   />
                 </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="stage">Etapa</Label>
-                  <Input 
-                    id="stage" 
-                    value={newService.stage} 
-                    onChange={e => setNewService({ ...newService, stage: e.target.value })} 
-                    className="w-full"
+                  <Input
+                    type="text"
+                    id="stage"
+                    value={newService.stage}
+                    onChange={(e) => setNewService({ ...newService, stage: e.target.value })}
+                    required
                   />
                 </div>
-                
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Input 
-                    id="status" 
-                    value={newService.status} 
-                    onChange={e => setNewService({ ...newService, status: e.target.value })} 
-                    className="w-full"
+                  <Label htmlFor="status">Situação</Label>
+                  <Input
+                    type="text"
+                    id="status"
+                    value={newService.status}
+                    onChange={(e) => setNewService({ ...newService, status: e.target.value })}
+                    required
                   />
                 </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="amount">Valor</Label>
-                  <Input 
-                    id="amount" 
-                    type="number" 
-                    value={newService.amount} 
-                    onChange={e => setNewService({ ...newService, amount: Number(e.target.value) })} 
-                    className="w-full"
+                  <Input
+                    type="number"
+                    id="amount"
+                    value={newService.amount}
+                    onChange={(e) => setNewService({ ...newService, amount: parseFloat(e.target.value) })}
+                    required
                   />
                 </div>
-                
                 <div className="space-y-2">
-                  <Label>Status do Pagamento</Label>
-                  <Select value={newService.payment_status} onValueChange={handlePaymentStatusChange}>
+                  <Label htmlFor="payment_status">Status do Pagamento</Label>
+                  <Select value={newService.payment_status} onValueChange={(value) => setNewService({ ...newService, payment_status: value as "pending" | "paid" | "canceled" })}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Status do pagamento" />
+                      <SelectValue placeholder="Selecione o status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Pendente</SelectItem>
@@ -557,32 +546,34 @@ export function ServicesTab() {
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="client_id">Cliente</Label>
-                  <Select value={newService.client_id} onValueChange={value => setNewService({ ...newService, client_id: value })}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione o cliente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map(client => (
-                        <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="reference_month">Mês de Referência</Label>
+                  <Input
+                    type="date"
+                    id="reference_month"
+                    value={newService.reference_month}
+                    onChange={(e) => setNewService({ ...newService, reference_month: e.target.value })}
+                    required
+                  />
                 </div>
-                
-                <div className="col-span-1 md:col-span-2 flex justify-end gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="client_id">ID do Cliente</Label>
+                  <Input
+                    type="text"
+                    id="client_id"
+                    value={newService.client_id}
+                    onChange={(e) => setNewService({ ...newService, client_id: e.target.value })}
+                    required
+                  />
+                </div>
+                <DialogFooter>
                   <DialogClose asChild>
-                    <Button variant="outline" type="button">Cancelar</Button>
+                    <Button type="button" variant="secondary">
+                      Cancelar
+                    </Button>
                   </DialogClose>
-                  <Button 
-                    type="submit" 
-                    className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700"
-                  >
-                    Adicionar Serviço
-                  </Button>
-                </div>
+                  <Button type="submit">Adicionar</Button>
+                </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
@@ -609,82 +600,80 @@ export function ServicesTab() {
             </h2>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="new_client_name">Cliente</Label>
-                <Input 
-                  id="new_client_name" 
-                  value={newService.client_name} 
-                  onChange={e => setNewService({ ...newService, client_name: e.target.value })} 
-                  className="glass-card"
+                <Label htmlFor="start_date">Data de Início</Label>
+                <Input
+                  type="date"
+                  id="start_date"
+                  value={newService.start_date}
+                  onChange={(e) => setNewService({ ...newService, start_date: e.target.value })}
+                  required
                 />
               </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="new_start_date">Data de Início</Label>
-                <Input 
-                  id="new_start_date" 
-                  type="date" 
-                  value={newService.start_date} 
-                  onChange={e => setNewService({ ...newService, start_date: e.target.value })} 
-                  className="glass-card"
+                <Label htmlFor="client_name">Nome do Cliente</Label>
+                <Input
+                  type="text"
+                  id="client_name"
+                  value={newService.client_name}
+                  onChange={(e) => setNewService({ ...newService, client_name: e.target.value })}
+                  required
                 />
               </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="new_company_name">Nome da Empresa</Label>
-                <Input 
-                  id="new_company_name" 
-                  value={newService.company_name} 
-                  onChange={e => setNewService({ ...newService, company_name: e.target.value })} 
-                  className="glass-card"
+                <Label htmlFor="company_name">Nome da Empresa</Label>
+                <Input
+                  type="text"
+                  id="company_name"
+                  value={newService.company_name}
+                  onChange={(e) => setNewService({ ...newService, company_name: e.target.value })}
+                  required
                 />
               </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="new_service_description">Descrição do Serviço</Label>
-                <Input 
-                  id="new_service_description" 
-                  value={newService.service_description} 
-                  onChange={e => setNewService({ ...newService, service_description: e.target.value })} 
-                  className="glass-card"
+                <Label htmlFor="service_description">Descrição do Serviço</Label>
+                <Input
+                  type="text"
+                  id="service_description"
+                  value={newService.service_description}
+                  onChange={(e) => setNewService({ ...newService, service_description: e.target.value })}
+                  required
                 />
               </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="new_stage">Etapa</Label>
-                <Input 
-                  id="new_stage" 
-                  value={newService.stage} 
-                  onChange={e => setNewService({ ...newService, stage: e.target.value })} 
-                  className="glass-card"
+                <Label htmlFor="stage">Etapa</Label>
+                <Input
+                  type="text"
+                  id="stage"
+                  value={newService.stage}
+                  onChange={(e) => setNewService({ ...newService, stage: e.target.value })}
+                  required
                 />
               </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="new_status">Status</Label>
-                <Input 
-                  id="new_status" 
-                  value={newService.status} 
-                  onChange={e => setNewService({ ...newService, status: e.target.value })} 
-                  className="glass-card"
+                <Label htmlFor="status">Situação</Label>
+                <Input
+                  type="text"
+                  id="status"
+                  value={newService.status}
+                  onChange={(e) => setNewService({ ...newService, status: e.target.value })}
+                  required
                 />
               </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="new_amount">Valor</Label>
-                <Input 
-                  id="new_amount" 
-                  type="number" 
-                  value={newService.amount} 
-                  onChange={e => setNewService({ ...newService, amount: Number(e.target.value) })} 
-                  className="glass-card"
+                <Label htmlFor="amount">Valor</Label>
+                <Input
+                  type="number"
+                  id="amount"
+                  value={newService.amount}
+                  onChange={(e) => setNewService({ ...newService, amount: parseFloat(e.target.value) })}
+                  required
                 />
               </div>
-              
               <div className="space-y-2">
-                <Label>Status do Pagamento</Label>
-                <Select value={newService.payment_status} onValueChange={handlePaymentStatusChange}>
-                  <SelectTrigger className="glass-card">
-                    <SelectValue placeholder="Status do pagamento" />
+                <Label htmlFor="payment_status">Status do Pagamento</Label>
+                <Select value={newService.payment_status} onValueChange={(value) => setNewService({ ...newService, payment_status: value as "pending" | "paid" | "canceled" })}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pendente</SelectItem>
@@ -693,30 +682,34 @@ export function ServicesTab() {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="new_client_id">Cliente</Label>
-                <Select value={newService.client_id} onValueChange={value => setNewService({ ...newService, client_id: value })}>
-                  <SelectTrigger className="glass-card">
-                    <SelectValue placeholder="Selecione o cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="reference_month">Mês de Referência</Label>
+                <Input
+                  type="date"
+                  id="reference_month"
+                  value={newService.reference_month}
+                  onChange={(e) => setNewService({ ...newService, reference_month: e.target.value })}
+                  required
+                />
               </div>
-              
-              <div className="col-span-1 md:col-span-2 flex justify-end gap-2">
-                <Button variant="outline" type="button">Cancelar</Button>
-                <Button 
-                  type="submit" 
-                  className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700"
-                >
-                  Adicionar Serviço
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor="client_id">ID do Cliente</Label>
+                <Input
+                  type="text"
+                  id="client_id"
+                  value={newService.client_id}
+                  onChange={(e) => setNewService({ ...newService, client_id: e.target.value })}
+                  required
+                />
               </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                    Cancelar
+                  </Button>
+                </DialogClose>
+                <Button type="submit">Adicionar</Button>
+              </DialogFooter>
             </form>
           </div>
         </TabsContent>
@@ -733,14 +726,6 @@ export function ServicesTab() {
                 Serviços
               </h2>
               <div className="flex gap-4">
-                <Button 
-                  variant="outline" 
-                  className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700"
-                  onClick={() => setShowShareDialog(true)}
-                >
-                  <Link2 className="h-4 w-4 mr-2" />
-                  Compartilhar por Cliente
-                </Button>
                 <Button 
                   variant="outline" 
                   className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700"
@@ -836,286 +821,27 @@ export function ServicesTab() {
                     <SelectItem value="pending">Pendentes</SelectItem>
                   </SelectContent>
                 </Select>
-                
-                <Select value={filterClient} onValueChange={setFilterClient}>
-                  <SelectTrigger className="glass-card w-[180px]">
-                    <SelectValue placeholder="Cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todos os clientes</SelectItem>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.name}>{client.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
             
-            <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Compartilhar por Cliente</DialogTitle>
-                  <DialogDescription>
-                    Selecione os clientes para os quais deseja gerar links de compartilhamento.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Checkbox 
-                      id="selectAll" 
-                      checked={selectedClientIds.length === clients.length && clients.length > 0} 
-                      onCheckedChange={handleSelectAllClients}
-                    />
-                    <label
-                      htmlFor="selectAll"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            {/* Client grouped services */}
+            <div className="space-y-6">
+              {Object.entries(groupedServices).map(([clientId, { clientName, services }]) => (
+                <div key={clientId} className="border border-gray-200 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
+                  <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                      <h3 className="font-medium">{clientName}</h3>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-gray-500 hover:text-indigo-600"
+                      onClick={() => handleSharePortalLink(clientId)}
                     >
-                      Selecionar todos
-                    </label>
+                      <Link2 className="h-4 w-4 mr-1" />
+                      Compartilhar
+                    </Button>
                   </div>
                   
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {clients.map(client => (
-                      <div key={client.id} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={client.id} 
-                          checked={selectedClientIds.includes(client.id)} 
-                          onCheckedChange={() => handleToggleClientSelection(client.id)}
-                        />
-                        <label
-                          htmlFor={client.id}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          {client.name}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <DialogFooter className="sm:justify-end">
-                  <DialogClose asChild>
-                    <Button type="button" variant="outline">
-                      Cancelar
-                    </Button>
-                  </DialogClose>
-                  <Button type="button" onClick={handleSharePortalLink}>
-                    Gerar Links
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            
-            <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Links de Compartilhamento</DialogTitle>
-                  <DialogDescription>
-                    Links gerados para os clientes selecionados. Clique para copiar.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                    {selectedClientIds.map(clientId => {
-                      const client = clients.find(c => c.id === clientId);
-                      const portalLink = `${window.location.origin}/client-portal?id=${clientId}`;
-                      
-                      return (
-                        <div key={clientId} className="flex flex-col gap-2 p-3 border rounded-md">
-                          <div className="font-medium">{client?.name}</div>
-                          <div className="flex items-center gap-2">
-                            <Input 
-                              value={portalLink} 
-                              readOnly 
-                              className="bg-gray-50 dark:bg-gray-900"
-                            />
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                navigator.clipboard.writeText(portalLink);
-                                toast.success(`Link para ${client?.name} copiado!`);
-                              }}
-                            >
-                              Copiar
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <DialogFooter className="sm:justify-end">
-                  <Button type="button" onClick={() => setShowLinkDialog(false)}>
-                    Fechar
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            
-            {Object.entries(groupedServices).length > 0 ? (
-              <div className="space-y-6">
-                {Object.entries(groupedServices).map(([clientId, { clientName, services }]) => (
-                  <div key={clientId} className="border rounded-lg p-4 dark:border-gray-700">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xl font-semibold flex items-center gap-2">
-                        <User className="h-5 w-5 text-indigo-500" />
-                        {clientName}
-                      </h3>
-                      <Button variant="outline" size="sm">
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Data</TableHead>
-                          <TableHead>Serviço</TableHead>
-                          <TableHead>Valor</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {services.map(service => (
-                          <TableRow key={service.id}>
-                            <TableCell>{format(new Date(service.start_date), 'dd/MM/yyyy')}</TableCell>
-                            <TableCell>{service.service_description}</TableCell>
-                            <TableCell>{formatCurrency(service.amount)}</TableCell>
-                            <TableCell>
-                              <div 
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  service.payment_status === 'paid' 
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
-                                    : service.payment_status === 'canceled'
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                                }`}
-                              >
-                                {service.payment_status === 'paid' ? 'Pago' : service.payment_status === 'canceled' ? 'Cancelado' : 'Pendente'}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="icon" 
-                                  onClick={() => togglePaymentStatus(service.id, service.payment_status)}
-                                >
-                                  <CreditCard className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="icon" 
-                                  onClick={() => handleEdit(service)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="icon" 
-                                  className="text-red-500"
-                                  onClick={() => {
-                                    setServiceToDelete(service.id);
-                                    setShowDeleteDialog(true);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10">
-                <p className="text-muted-foreground">Nenhum serviço encontrado com os filtros atuais.</p>
-              </div>
-            )}
-            
-            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Confirmar Exclusão</DialogTitle>
-                </DialogHeader>
-                <p>Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.</p>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
-                  <Button variant="destructive" onClick={handleDelete}>Excluir</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            
-            <Dialog open={editingService !== null} onOpenChange={(open) => !open && setEditingService(null)}>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Editar Serviço</DialogTitle>
-                </DialogHeader>
-                {editingService && (
-                  <form onSubmit={handleUpdate} className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit_client_name">Cliente</Label>
-                      <Input 
-                        id="edit_client_name" 
-                        value={editingService.client_name} 
-                        onChange={e => setEditingService({ ...editingService, client_name: e.target.value })}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="edit_description">Descrição</Label>
-                      <Input 
-                        id="edit_description" 
-                        value={editingService.service_description} 
-                        onChange={e => setEditingService({ ...editingService, service_description: e.target.value })}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="edit_amount">Valor</Label>
-                      <Input 
-                        id="edit_amount" 
-                        type="number" 
-                        value={editingService.amount} 
-                        onChange={e => setEditingService({ ...editingService, amount: Number(e.target.value) })}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Status do Pagamento</Label>
-                      <Select 
-                        value={editingService.payment_status} 
-                        onValueChange={handleEditingPaymentStatusChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Status do pagamento" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pendente</SelectItem>
-                          <SelectItem value="paid">Pago</SelectItem>
-                          <SelectItem value="canceled">Cancelado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <DialogFooter>
-                      <Button variant="outline" type="button" onClick={() => setEditingService(null)}>
-                        Cancelar
-                      </Button>
-                      <Button type="submit">Salvar Alterações</Button>
-                    </DialogFooter>
-                  </form>
-                )}
-              </DialogContent>
-            </Dialog>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+                  <Table
