@@ -25,32 +25,53 @@ interface ClientService {
   client_id: string;
 }
 
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export default function ClientPortal() {
   const [services, setServices] = useState<ClientService[]>([]);
+  const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const clientId = searchParams.get('client');
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchData = async () => {
       if (!clientId) return;
 
-      const { data, error } = await supabase
+      // Fetch client information
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('id, name, email')
+        .eq('id', clientId)
+        .single();
+
+      if (clientError) {
+        console.error('Error fetching client info:', clientError);
+      } else {
+        setClient(clientData as Client);
+      }
+
+      // Fetch services
+      const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select('*')
         .eq('client_id', clientId)
         .order('start_date', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching services:', error);
+      if (servicesError) {
+        console.error('Error fetching services:', servicesError);
         return;
       }
 
-      setServices(data || []);
+      setServices(servicesData || []);
       setLoading(false);
     };
 
-    fetchServices();
+    fetchData();
   }, [clientId]);
 
   if (loading) {
@@ -62,7 +83,11 @@ export default function ClientPortal() {
       <h1 className="text-3xl font-bold">Portal do Cliente</h1>
       
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">Seus Serviços</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">
+            {client?.name && `${client.name}`}
+          </h2>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
