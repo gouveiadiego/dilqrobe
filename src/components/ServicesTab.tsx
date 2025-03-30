@@ -17,7 +17,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-
 interface Service {
   id: string;
   start_date: string;
@@ -32,7 +31,6 @@ interface Service {
   reference_month: string;
   client_id: string;
 }
-
 interface NewService {
   start_date: string;
   client_name: string;
@@ -46,36 +44,39 @@ interface NewService {
   reference_month: string;
   client_id: string;
 }
-
 interface ServiceStats {
   totalRevenue: number;
   servicesProvided: number;
   pendingRevenue: number;
   paidRevenue: number;
   canceledRevenue: number;
-  revenueByMonth: { [month: string]: number };
-  revenueByStatus: { [status: string]: number };
+  revenueByMonth: {
+    [month: string]: number;
+  };
+  revenueByStatus: {
+    [status: string]: number;
+  };
 }
-
 const calculateStats = (services: Service[]): ServiceStats => {
   const totalRevenue = services.reduce((sum, service) => sum + service.amount, 0);
   const servicesProvided = services.length;
   const pendingRevenue = services.filter(s => s.payment_status === 'pending').reduce((sum, service) => sum + service.amount, 0);
   const paidRevenue = services.filter(s => s.payment_status === 'paid').reduce((sum, service) => sum + service.amount, 0);
   const canceledRevenue = services.filter(s => s.payment_status === 'canceled').reduce((sum, service) => sum + service.amount, 0);
-
-  const revenueByMonth: { [month: string]: number } = {};
+  const revenueByMonth: {
+    [month: string]: number;
+  } = {};
   services.forEach(service => {
     const month = format(new Date(service.start_date), 'MMMM');
     revenueByMonth[month] = (revenueByMonth[month] || 0) + service.amount;
   });
-
-  const revenueByStatus: { [status: string]: number } = {
+  const revenueByStatus: {
+    [status: string]: number;
+  } = {
     pending: pendingRevenue,
     paid: paidRevenue,
-    canceled: canceledRevenue,
+    canceled: canceledRevenue
   };
-
   return {
     totalRevenue,
     servicesProvided,
@@ -83,10 +84,9 @@ const calculateStats = (services: Service[]): ServiceStats => {
     paidRevenue,
     canceledRevenue,
     revenueByMonth,
-    revenueByStatus,
+    revenueByStatus
   };
 };
-
 const calculateDailyRevenue = (services: Service[], date: Date): number => {
   const formattedDate = format(date, 'yyyy-MM-dd');
   return services.reduce((sum, service) => {
@@ -94,23 +94,21 @@ const calculateDailyRevenue = (services: Service[], date: Date): number => {
     return serviceDate === formattedDate ? sum + service.amount : sum;
   }, 0);
 };
-
 const renderDashboard = (services: Service[]) => {
   const stats = calculateStats(services);
   const today = new Date();
   const currentMonthStart = startOfMonth(today);
   const currentMonthEnd = endOfMonth(today);
-  const daysInMonth = eachDayOfInterval({ start: currentMonthStart, end: currentMonthEnd });
-
+  const daysInMonth = eachDayOfInterval({
+    start: currentMonthStart,
+    end: currentMonthEnd
+  });
   const dailyRevenueData = daysInMonth.map(day => ({
     date: format(day, 'dd/MM'),
-    revenue: calculateDailyRevenue(services, day),
+    revenue: calculateDailyRevenue(services, day)
   }));
-
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#9cafff'];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div className="glass-card p-6">
         <h3 className="text-lg font-semibold mb-2">Receita Total</h3>
         <p className="text-3xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
@@ -130,25 +128,26 @@ const renderDashboard = (services: Service[]) => {
         <h3 className="text-lg font-semibold mb-2">Receita por Status</h3>
         <ResponsiveContainer width="100%" height={250}>
           <PieChart>
-            <Pie
-              data={[
-                { name: 'Pendente', value: stats.pendingRevenue },
-                { name: 'Pago', value: stats.paidRevenue },
-                { name: 'Cancelado', value: stats.canceledRevenue },
-              ]}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              fill="#8884d8"
-              label
-            >
-              {[{ name: 'Pendente', value: stats.pendingRevenue },
-                { name: 'Pago', value: stats.paidRevenue },
-                { name: 'Cancelado', value: stats.canceledRevenue }].map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
+            <Pie data={[{
+            name: 'Pendente',
+            value: stats.pendingRevenue
+          }, {
+            name: 'Pago',
+            value: stats.paidRevenue
+          }, {
+            name: 'Cancelado',
+            value: stats.canceledRevenue
+          }]} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8" label>
+              {[{
+              name: 'Pendente',
+              value: stats.pendingRevenue
+            }, {
+              name: 'Pago',
+              value: stats.paidRevenue
+            }, {
+              name: 'Cancelado',
+              value: stats.canceledRevenue
+            }].map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
             </Pie>
             <Tooltip formatter={(value: number) => formatCurrency(value)} />
             <Legend />
@@ -169,16 +168,16 @@ const renderDashboard = (services: Service[]) => {
           </LineChart>
         </ResponsiveContainer>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export function ServicesTab() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
-  const { clients } = useClients();
+  const {
+    clients
+  } = useClients();
   const [services, setServices] = useState<Service[]>([]);
   const [newService, setNewService] = useState<Omit<NewService, 'user_id'>>({
     start_date: format(new Date(), "yyyy-MM-dd"),
@@ -203,78 +202,75 @@ export function ServicesTab() {
   const [activeTab, setActiveTab] = useState("overview");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [showCurrentMonth, setShowCurrentMonth] = useState(false);
-
   const fetchServices = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: false });
-
+      const {
+        data,
+        error
+      } = await supabase.from('services').select('*').eq('user_id', user.id).order('start_date', {
+        ascending: false
+      });
       if (error) {
         toast.error('Erro ao carregar serviços');
         throw error;
       }
-
       setServices(data as Service[]);
     } catch (error: any) {
       toast.error(error.message);
     }
   };
-
   const fetchCompanyLogo = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('company_logo')
-        .eq('id', user.id)
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from('profiles').select('company_logo').eq('id', user.id).single();
       if (error) {
         console.error('Erro ao carregar logo da empresa:', error);
         return;
       }
-
       setCompanyLogo(data?.company_logo || null);
     } catch (error: any) {
       console.error('Erro ao carregar logo da empresa:', error);
     }
   };
-
   useEffect(() => {
     fetchServices();
     fetchCompanyLogo();
   }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
-
       const serviceToAdd: NewService = {
         ...newService,
-        user_id: user.id,
+        user_id: user.id
       };
-
-      const { data, error } = await supabase
-        .from('services')
-        .insert([serviceToAdd])
-        .select()
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from('services').insert([serviceToAdd]).select().single();
       if (error) {
         toast.error('Erro ao adicionar serviço');
         throw error;
       }
-
       setServices([...services, data as Service]);
       setNewService({
         start_date: format(new Date(), "yyyy-MM-dd"),
@@ -293,60 +289,57 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
-
   const handlePaymentStatusChange = (value: string) => {
     if (value === 'pending' || value === 'paid' || value === 'canceled') {
-      setNewService({ ...newService, payment_status: value });
+      setNewService({
+        ...newService,
+        payment_status: value
+      });
     }
   };
-
   const handleEditingPaymentStatusChange = (value: string) => {
     if (!editingService) return;
     if (value === 'pending' || value === 'paid' || value === 'canceled') {
-      setEditingService({ ...editingService, payment_status: value });
+      setEditingService({
+        ...editingService,
+        payment_status: value
+      });
     }
   };
-
   const togglePaymentStatus = async (id: string, currentStatus: 'pending' | 'paid' | 'canceled') => {
     try {
       const newStatus = currentStatus === 'pending' ? 'paid' : 'pending';
-      const { error } = await supabase
-        .from('services')
-        .update({ payment_status: newStatus })
-        .eq('id', id);
-
+      const {
+        error
+      } = await supabase.from('services').update({
+        payment_status: newStatus
+      }).eq('id', id);
       if (error) {
         toast.error('Erro ao atualizar status do pagamento');
         throw error;
       }
-
-      setServices(services.map(service =>
-        service.id === id ? { ...service, payment_status: newStatus } : service
-      ));
+      setServices(services.map(service => service.id === id ? {
+        ...service,
+        payment_status: newStatus
+      } : service));
       toast.success('Status do pagamento atualizado com sucesso');
     } catch (error: any) {
       toast.error(error.message);
     }
   };
-
   const handleEdit = (service: Service) => {
     setEditingService(service);
   };
-
   const handleDelete = async () => {
     if (!serviceToDelete) return;
-
     try {
-      const { error } = await supabase
-        .from('services')
-        .delete()
-        .eq('id', serviceToDelete);
-
+      const {
+        error
+      } = await supabase.from('services').delete().eq('id', serviceToDelete);
       if (error) {
         toast.error('Erro ao deletar serviço');
         throw error;
       }
-
       setServices(services.filter(service => service.id !== serviceToDelete));
       setServiceToDelete(null);
       setShowDeleteDialog(false);
@@ -355,32 +348,24 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
-
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingService) return;
-
     try {
-      const { error } = await supabase
-        .from('services')
-        .update(editingService)
-        .eq('id', editingService.id);
-
+      const {
+        error
+      } = await supabase.from('services').update(editingService).eq('id', editingService.id);
       if (error) {
         toast.error('Erro ao atualizar serviço');
         throw error;
       }
-
-      setServices(services.map(service =>
-        service.id === editingService.id ? editingService : service
-      ));
+      setServices(services.map(service => service.id === editingService.id ? editingService : service));
       setEditingService(null);
       toast.success('Serviço atualizado com sucesso');
     } catch (error: any) {
       toast.error(error.message);
     }
   };
-
   const handleSharePortalLink = () => {
     if (selectedClientIds.length === 0) {
       toast.error("Selecione pelo menos um cliente para compartilhar");
@@ -389,7 +374,6 @@ export function ServicesTab() {
     setShowShareDialog(false);
     setShowLinkDialog(true);
   };
-
   const handleToggleClientSelection = (clientId: string) => {
     setSelectedClientIds(prevSelected => {
       if (prevSelected.includes(clientId)) {
@@ -399,7 +383,6 @@ export function ServicesTab() {
       }
     });
   };
-
   const handleSelectAllClients = () => {
     if (selectedClientIds.length === clients.length) {
       setSelectedClientIds([]);
@@ -407,57 +390,38 @@ export function ServicesTab() {
       setSelectedClientIds(clients.map(client => client.id));
     }
   };
-
   const filteredServices = services.filter(service => {
     const searchText = filterText.toLowerCase();
-    const matchesFilter = !filterText || 
-      service.client_name.toLowerCase().includes(searchText) || 
-      service.company_name.toLowerCase().includes(searchText) || 
-      service.service_description.toLowerCase().includes(searchText) || 
-      service.stage.toLowerCase().includes(searchText) || 
-      service.status.toLowerCase().includes(searchText);
-    
-    const matchesClient = !filterClient || 
-      service.client_name.toLowerCase().includes(filterClient.toLowerCase());
-    
-    const matchesSelectedMonth = !filterDate || 
-      (isValid(filterDate) && isSameMonth(new Date(service.start_date), filterDate));
-    
+    const matchesFilter = !filterText || service.client_name.toLowerCase().includes(searchText) || service.company_name.toLowerCase().includes(searchText) || service.service_description.toLowerCase().includes(searchText) || service.stage.toLowerCase().includes(searchText) || service.status.toLowerCase().includes(searchText);
+    const matchesClient = !filterClient || service.client_name.toLowerCase().includes(filterClient.toLowerCase());
+    const matchesSelectedMonth = !filterDate || isValid(filterDate) && isSameMonth(new Date(service.start_date), filterDate);
     const today = new Date();
-    const isCurrentMonth = getMonth(new Date(service.start_date)) === getMonth(today) && 
-                          getYear(new Date(service.start_date)) === getYear(today);
+    const isCurrentMonth = getMonth(new Date(service.start_date)) === getMonth(today) && getYear(new Date(service.start_date)) === getYear(today);
     const matchesCurrentMonth = !showCurrentMonth || isCurrentMonth;
-    
-    const matchesStatus = !filterStatus || 
-      (filterStatus === 'paid' && service.payment_status === 'paid') || 
-      (filterStatus === 'pending' && service.payment_status === 'pending');
-    
-    return matchesFilter && matchesClient && 
-           ((showCurrentMonth && matchesCurrentMonth) || (!showCurrentMonth && matchesSelectedMonth)) && 
-           matchesStatus;
+    const matchesStatus = !filterStatus || filterStatus === 'paid' && service.payment_status === 'paid' || filterStatus === 'pending' && service.payment_status === 'pending';
+    return matchesFilter && matchesClient && (showCurrentMonth && matchesCurrentMonth || !showCurrentMonth && matchesSelectedMonth) && matchesStatus;
   });
-
-  const groupedServices = filteredServices.reduce((acc: { [key: string]: { clientName: string; services: Service[] } }, service) => {
+  const groupedServices = filteredServices.reduce((acc: {
+    [key: string]: {
+      clientName: string;
+      services: Service[];
+    };
+  }, service) => {
     if (!acc[service.client_id]) {
       acc[service.client_id] = {
         clientName: service.client_name,
-        services: [],
+        services: []
       };
     }
     acc[service.client_id].services.push(service);
     return acc;
   }, {});
-
   const currentMonth = format(new Date(), 'MMMM yyyy');
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Serviços</h1>
         <div className="flex items-center gap-2">
-          {companyLogo && (
-            <img src={companyLogo} alt="Logo da Empresa" className="h-8 w-auto rounded-full" />
-          )}
+          {companyLogo && <img src={companyLogo} alt="Logo da Empresa" className="h-8 w-auto rounded-full" />}
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline" className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700">
@@ -473,74 +437,58 @@ export function ServicesTab() {
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="client_name">Cliente</Label>
-                  <Input 
-                    id="client_name" 
-                    value={newService.client_name} 
-                    onChange={e => setNewService({ ...newService, client_name: e.target.value })} 
-                    className="w-full"
-                  />
+                  <Input id="client_name" value={newService.client_name} onChange={e => setNewService({
+                  ...newService,
+                  client_name: e.target.value
+                })} className="w-full" />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="start_date">Data de Início</Label>
-                  <Input 
-                    id="start_date" 
-                    type="date" 
-                    value={newService.start_date} 
-                    onChange={e => setNewService({ ...newService, start_date: e.target.value })} 
-                    className="w-full"
-                  />
+                  <Input id="start_date" type="date" value={newService.start_date} onChange={e => setNewService({
+                  ...newService,
+                  start_date: e.target.value
+                })} className="w-full" />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="company_name">Nome da Empresa</Label>
-                  <Input 
-                    id="company_name" 
-                    value={newService.company_name} 
-                    onChange={e => setNewService({ ...newService, company_name: e.target.value })} 
-                    className="w-full"
-                  />
+                  <Input id="company_name" value={newService.company_name} onChange={e => setNewService({
+                  ...newService,
+                  company_name: e.target.value
+                })} className="w-full" />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="service_description">Descrição do Serviço</Label>
-                  <Input 
-                    id="service_description" 
-                    value={newService.service_description} 
-                    onChange={e => setNewService({ ...newService, service_description: e.target.value })} 
-                    className="w-full"
-                  />
+                  <Input id="service_description" value={newService.service_description} onChange={e => setNewService({
+                  ...newService,
+                  service_description: e.target.value
+                })} className="w-full" />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="stage">Etapa</Label>
-                  <Input 
-                    id="stage" 
-                    value={newService.stage} 
-                    onChange={e => setNewService({ ...newService, stage: e.target.value })} 
-                    className="w-full"
-                  />
+                  <Input id="stage" value={newService.stage} onChange={e => setNewService({
+                  ...newService,
+                  stage: e.target.value
+                })} className="w-full" />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
-                  <Input 
-                    id="status" 
-                    value={newService.status} 
-                    onChange={e => setNewService({ ...newService, status: e.target.value })} 
-                    className="w-full"
-                  />
+                  <Input id="status" value={newService.status} onChange={e => setNewService({
+                  ...newService,
+                  status: e.target.value
+                })} className="w-full" />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="amount">Valor</Label>
-                  <Input 
-                    id="amount" 
-                    type="number" 
-                    value={newService.amount} 
-                    onChange={e => setNewService({ ...newService, amount: Number(e.target.value) })} 
-                    className="w-full"
-                  />
+                  <Input id="amount" type="number" value={newService.amount} onChange={e => setNewService({
+                  ...newService,
+                  amount: Number(e.target.value)
+                })} className="w-full" />
                 </div>
                 
                 <div className="space-y-2">
@@ -559,14 +507,15 @@ export function ServicesTab() {
 
                 <div className="space-y-2">
                   <Label htmlFor="client_id">Cliente</Label>
-                  <Select value={newService.client_id} onValueChange={value => setNewService({ ...newService, client_id: value })}>
+                  <Select value={newService.client_id} onValueChange={value => setNewService({
+                  ...newService,
+                  client_id: value
+                })}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecione o cliente" />
                     </SelectTrigger>
                     <SelectContent>
-                      {clients.map(client => (
-                        <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                      ))}
+                      {clients.map(client => <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -575,10 +524,7 @@ export function ServicesTab() {
                   <DialogClose asChild>
                     <Button variant="outline" type="button">Cancelar</Button>
                   </DialogClose>
-                  <Button 
-                    type="submit" 
-                    className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700"
-                  >
+                  <Button type="submit" className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700">
                     Adicionar Serviço
                   </Button>
                 </div>
@@ -607,76 +553,54 @@ export function ServicesTab() {
               Adicionar Novo Serviço
             </h2>
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="new_client_name">Cliente</Label>
-                <Input 
-                  id="new_client_name" 
-                  value={newService.client_name} 
-                  onChange={e => setNewService({ ...newService, client_name: e.target.value })} 
-                  className="glass-card"
-                />
-              </div>
+              
               
               <div className="space-y-2">
                 <Label htmlFor="new_start_date">Data de Início</Label>
-                <Input 
-                  id="new_start_date" 
-                  type="date" 
-                  value={newService.start_date} 
-                  onChange={e => setNewService({ ...newService, start_date: e.target.value })} 
-                  className="glass-card"
-                />
+                <Input id="new_start_date" type="date" value={newService.start_date} onChange={e => setNewService({
+                ...newService,
+                start_date: e.target.value
+              })} className="glass-card" />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="new_company_name">Nome da Empresa</Label>
-                <Input 
-                  id="new_company_name" 
-                  value={newService.company_name} 
-                  onChange={e => setNewService({ ...newService, company_name: e.target.value })} 
-                  className="glass-card"
-                />
+                <Input id="new_company_name" value={newService.company_name} onChange={e => setNewService({
+                ...newService,
+                company_name: e.target.value
+              })} className="glass-card" />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="new_service_description">Descrição do Serviço</Label>
-                <Input 
-                  id="new_service_description" 
-                  value={newService.service_description} 
-                  onChange={e => setNewService({ ...newService, service_description: e.target.value })} 
-                  className="glass-card"
-                />
+                <Input id="new_service_description" value={newService.service_description} onChange={e => setNewService({
+                ...newService,
+                service_description: e.target.value
+              })} className="glass-card" />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="new_stage">Etapa</Label>
-                <Input 
-                  id="new_stage" 
-                  value={newService.stage} 
-                  onChange={e => setNewService({ ...newService, stage: e.target.value })} 
-                  className="glass-card"
-                />
+                <Input id="new_stage" value={newService.stage} onChange={e => setNewService({
+                ...newService,
+                stage: e.target.value
+              })} className="glass-card" />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="new_status">Status</Label>
-                <Input 
-                  id="new_status" 
-                  value={newService.status} 
-                  onChange={e => setNewService({ ...newService, status: e.target.value })} 
-                  className="glass-card"
-                />
+                <Input id="new_status" value={newService.status} onChange={e => setNewService({
+                ...newService,
+                status: e.target.value
+              })} className="glass-card" />
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="new_amount">Valor</Label>
-                <Input 
-                  id="new_amount" 
-                  type="number" 
-                  value={newService.amount} 
-                  onChange={e => setNewService({ ...newService, amount: Number(e.target.value) })} 
-                  className="glass-card"
-                />
+                <Input id="new_amount" type="number" value={newService.amount} onChange={e => setNewService({
+                ...newService,
+                amount: Number(e.target.value)
+              })} className="glass-card" />
               </div>
               
               <div className="space-y-2">
@@ -695,24 +619,22 @@ export function ServicesTab() {
 
               <div className="space-y-2">
                 <Label htmlFor="new_client_id">Cliente</Label>
-                <Select value={newService.client_id} onValueChange={value => setNewService({ ...newService, client_id: value })}>
+                <Select value={newService.client_id} onValueChange={value => setNewService({
+                ...newService,
+                client_id: value
+              })}>
                   <SelectTrigger className="glass-card">
                     <SelectValue placeholder="Selecione o cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                    ))}
+                    {clients.map(client => <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="col-span-1 md:col-span-2 flex justify-end gap-2">
                 <Button variant="outline" type="button">Cancelar</Button>
-                <Button 
-                  type="submit" 
-                  className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700"
-                >
+                <Button type="submit" className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700">
                   Adicionar Serviço
                 </Button>
               </div>
@@ -732,90 +654,58 @@ export function ServicesTab() {
                 Serviços
               </h2>
               <div className="flex gap-4">
-                <Button 
-                  variant="outline" 
-                  className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700"
-                  onClick={() => setShowShareDialog(true)}
-                >
+                <Button variant="outline" className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700" onClick={() => setShowShareDialog(true)}>
                   <Link2 className="h-4 w-4 mr-2" />
                   Compartilhar por Cliente
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700"
-                  onClick={() => setShowStatsCard(!showStatsCard)}
-                >
+                <Button variant="outline" className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700" onClick={() => setShowStatsCard(!showStatsCard)}>
                   {showStatsCard ? "Ocultar estatísticas" : "Mostrar estatísticas"}
                 </Button>
               </div>
             </div>
             
-            {showStatsCard && (
-              <div className="mb-6">
+            {showStatsCard && <div className="mb-6">
                 {renderDashboard(filteredServices)}
-              </div>
-            )}
+              </div>}
             
             <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
               <div className="flex flex-col sm:flex-row gap-2 flex-grow">
                 <div className="relative flex-grow">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                  <Input 
-                    placeholder="Pesquisar serviços..." 
-                    className="pl-9 glass-card" 
-                    value={filterText} 
-                    onChange={e => setFilterText(e.target.value)} 
-                  />
+                  <Input placeholder="Pesquisar serviços..." className="pl-9 glass-card" value={filterText} onChange={e => setFilterText(e.target.value)} />
                 </div>
                 
                 <div className="flex gap-2">
                   <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                     <PopoverTrigger asChild>
-                      <Button
-                        variant={showCurrentMonth ? "default" : "outline"}
-                        className={`gap-2 ${showCurrentMonth ? "bg-indigo-600 text-white" : "bg-white dark:bg-gray-800"}`}
-                      >
+                      <Button variant={showCurrentMonth ? "default" : "outline"} className={`gap-2 ${showCurrentMonth ? "bg-indigo-600 text-white" : "bg-white dark:bg-gray-800"}`}>
                         <CalendarIcon className="h-4 w-4" />
-                        {showCurrentMonth ? currentMonth : (filterDate ? format(filterDate, "MMMM yyyy") : "Selecione o mês")}
+                        {showCurrentMonth ? currentMonth : filterDate ? format(filterDate, "MMMM yyyy") : "Selecione o mês"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 glass-card" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={filterDate}
-                        onSelect={(date) => {
-                          if (date) {
-                            setFilterDate(date);
-                            setShowCurrentMonth(false);
-                          } else {
-                            setShowCurrentMonth(true);
-                          }
-                          setCalendarOpen(false);
-                        }}
-                        initialFocus
-                        className="bg-white dark:bg-gray-800 pointer-events-auto"
-                      />
+                      <Calendar mode="single" selected={filterDate} onSelect={date => {
+                      if (date) {
+                        setFilterDate(date);
+                        setShowCurrentMonth(false);
+                      } else {
+                        setShowCurrentMonth(true);
+                      }
+                      setCalendarOpen(false);
+                    }} initialFocus className="bg-white dark:bg-gray-800 pointer-events-auto" />
                       <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex justify-between">
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => {
-                            setShowCurrentMonth(true);
-                            setFilterDate(undefined);
-                            setCalendarOpen(false);
-                          }}
-                          className="text-xs h-8"
-                        >
+                        <Button variant="ghost" onClick={() => {
+                        setShowCurrentMonth(true);
+                        setFilterDate(undefined);
+                        setCalendarOpen(false);
+                      }} className="text-xs h-8">
                           Mês atual
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          onClick={() => {
-                            setFilterDate(undefined);
-                            setShowCurrentMonth(false);
-                            setCalendarOpen(false);
-                          }}
-                          className="text-xs h-8"
-                        >
+                        <Button variant="ghost" onClick={() => {
+                        setFilterDate(undefined);
+                        setShowCurrentMonth(false);
+                        setCalendarOpen(false);
+                      }} className="text-xs h-8">
                           Limpar filtro
                         </Button>
                       </div>
@@ -840,19 +730,16 @@ export function ServicesTab() {
             
             {/* Client grouped services */}
             <div className="space-y-6">
-              {Object.entries(groupedServices).map(([clientId, { clientName, services }]) => (
-                <div key={clientId} className="border border-gray-200 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
+              {Object.entries(groupedServices).map(([clientId, {
+              clientName,
+              services
+            }]) => <div key={clientId} className="border border-gray-200 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
                   <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
                     <div className="flex items-center gap-2">
                       <User className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                       <h3 className="font-medium">{clientName}</h3>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-gray-500 hover:text-indigo-600"
-                      onClick={() => handleToggleClientSelection(clientId)}
-                    >
+                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-indigo-600" onClick={() => handleToggleClientSelection(clientId)}>
                       <Link2 className="h-4 w-4 mr-1" />
                       Compartilhar
                     </Button>
@@ -871,8 +758,7 @@ export function ServicesTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {services.map(service => (
-                        <TableRow key={service.id}>
+                      {services.map(service => <TableRow key={service.id}>
                           <TableCell className="font-medium">
                             {format(new Date(service.start_date), "dd/MM/yyyy")}
                           </TableCell>
@@ -883,50 +769,27 @@ export function ServicesTab() {
                             {formatCurrency(service.amount)}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => togglePaymentStatus(service.id, service.payment_status)}
-                              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                                service.payment_status === 'paid' 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
-                                  : service.payment_status === 'canceled'
-                                  ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-                              }`}
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => togglePaymentStatus(service.id, service.payment_status)} className={`rounded-full px-3 py-1 text-xs font-medium ${service.payment_status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : service.payment_status === 'canceled' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'}`}>
                               {service.payment_status === 'paid' && 'Pago'}
                               {service.payment_status === 'pending' && 'Pendente'}
                               {service.payment_status === 'canceled' && 'Cancelado'}
                             </Button>
                           </TableCell>
                           <TableCell className="text-right space-x-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(service)}
-                              className="h-8 w-8"
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(service)} className="h-8 w-8">
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setServiceToDelete(service.id);
-                                setShowDeleteDialog(true);
-                              }}
-                              className="h-8 w-8 text-red-500 hover:text-red-600"
-                            >
+                            <Button variant="ghost" size="icon" onClick={() => {
+                        setServiceToDelete(service.id);
+                        setShowDeleteDialog(true);
+                      }} className="h-8 w-8 text-red-500 hover:text-red-600">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </TableCell>
-                        </TableRow>
-                      ))}
+                        </TableRow>)}
                     </TableBody>
                   </Table>
-                </div>
-              ))}
+                </div>)}
             </div>
           </div>
         </TabsContent>
@@ -943,28 +806,18 @@ export function ServicesTab() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="selectAll"
-                checked={selectedClientIds.length === clients.length && clients.length > 0}
-                onCheckedChange={handleSelectAllClients}
-              />
+              <Checkbox id="selectAll" checked={selectedClientIds.length === clients.length && clients.length > 0} onCheckedChange={handleSelectAllClients} />
               <Label htmlFor="selectAll" className="text-sm font-medium">
                 Selecionar todos
               </Label>
             </div>
             <div className="border rounded-md p-4 space-y-2 max-h-[200px] overflow-y-auto">
-              {clients.map(client => (
-                <div key={client.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`client-${client.id}`}
-                    checked={selectedClientIds.includes(client.id)}
-                    onCheckedChange={() => handleToggleClientSelection(client.id)}
-                  />
+              {clients.map(client => <div key={client.id} className="flex items-center space-x-2">
+                  <Checkbox id={`client-${client.id}`} checked={selectedClientIds.includes(client.id)} onCheckedChange={() => handleToggleClientSelection(client.id)} />
                   <Label htmlFor={`client-${client.id}`} className="text-sm font-medium">
                     {client.name}
                   </Label>
-                </div>
-              ))}
+                </div>)}
             </div>
           </div>
           <DialogFooter className="sm:justify-end">
@@ -990,32 +843,21 @@ export function ServicesTab() {
           </DialogHeader>
           <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto">
             {selectedClientIds.map(clientId => {
-              const client = clients.find(c => c.id === clientId);
-              const portalUrl = `${window.location.origin}/client-portal?client=${clientId}`;
-              
-              return (
-                <div key={clientId} className="space-y-2">
+            const client = clients.find(c => c.id === clientId);
+            const portalUrl = `${window.location.origin}/client-portal?client=${clientId}`;
+            return <div key={clientId} className="space-y-2">
                   <div className="font-medium">{client?.name}</div>
                   <div className="flex space-x-2">
-                    <Input
-                      value={portalUrl}
-                      readOnly
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(portalUrl);
-                        toast.success(`Link para ${client?.name} copiado!`);
-                      }}
-                    >
+                    <Input value={portalUrl} readOnly className="flex-1" />
+                    <Button type="button" size="sm" onClick={() => {
+                  navigator.clipboard.writeText(portalUrl);
+                  toast.success(`Link para ${client?.name} copiado!`);
+                }}>
                       Copiar
                     </Button>
                   </div>
-                </div>
-              );
-            })}
+                </div>;
+          })}
           </div>
           <DialogFooter className="sm:justify-end">
             <Button type="button" onClick={() => setShowLinkDialog(false)}>
@@ -1026,8 +868,7 @@ export function ServicesTab() {
       </Dialog>
       
       {/* Edit Dialog */}
-      {editingService && (
-        <Dialog open={!!editingService} onOpenChange={(open) => !open && setEditingService(null)}>
+      {editingService && <Dialog open={!!editingService} onOpenChange={open => !open && setEditingService(null)}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Editar Serviço</DialogTitle>
@@ -1035,60 +876,49 @@ export function ServicesTab() {
             <form onSubmit={handleUpdate} className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="edit_client_name">Cliente</Label>
-                <Input
-                  id="edit_client_name"
-                  value={editingService.client_name}
-                  onChange={e => setEditingService({ ...editingService, client_name: e.target.value })}
-                />
+                <Input id="edit_client_name" value={editingService.client_name} onChange={e => setEditingService({
+              ...editingService,
+              client_name: e.target.value
+            })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_start_date">Data de Início</Label>
-                <Input
-                  id="edit_start_date"
-                  type="date"
-                  value={editingService.start_date}
-                  onChange={e => setEditingService({ ...editingService, start_date: e.target.value })}
-                />
+                <Input id="edit_start_date" type="date" value={editingService.start_date} onChange={e => setEditingService({
+              ...editingService,
+              start_date: e.target.value
+            })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_service_description">Descrição</Label>
-                <Input
-                  id="edit_service_description"
-                  value={editingService.service_description}
-                  onChange={e => setEditingService({ ...editingService, service_description: e.target.value })}
-                />
+                <Input id="edit_service_description" value={editingService.service_description} onChange={e => setEditingService({
+              ...editingService,
+              service_description: e.target.value
+            })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_stage">Etapa</Label>
-                <Input
-                  id="edit_stage"
-                  value={editingService.stage}
-                  onChange={e => setEditingService({ ...editingService, stage: e.target.value })}
-                />
+                <Input id="edit_stage" value={editingService.stage} onChange={e => setEditingService({
+              ...editingService,
+              stage: e.target.value
+            })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_status">Status</Label>
-                <Input
-                  id="edit_status"
-                  value={editingService.status}
-                  onChange={e => setEditingService({ ...editingService, status: e.target.value })}
-                />
+                <Input id="edit_status" value={editingService.status} onChange={e => setEditingService({
+              ...editingService,
+              status: e.target.value
+            })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_amount">Valor</Label>
-                <Input
-                  id="edit_amount"
-                  type="number"
-                  value={editingService.amount}
-                  onChange={e => setEditingService({ ...editingService, amount: Number(e.target.value) })}
-                />
+                <Input id="edit_amount" type="number" value={editingService.amount} onChange={e => setEditingService({
+              ...editingService,
+              amount: Number(e.target.value)
+            })} />
               </div>
               <div className="space-y-2">
                 <Label>Status do Pagamento</Label>
-                <Select 
-                  value={editingService.payment_status} 
-                  onValueChange={handleEditingPaymentStatusChange}
-                >
+                <Select value={editingService.payment_status} onValueChange={handleEditingPaymentStatusChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Status do pagamento" />
                   </SelectTrigger>
@@ -1107,8 +937,7 @@ export function ServicesTab() {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
-      )}
+        </Dialog>}
       
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -1129,6 +958,5 @@ export function ServicesTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 }
