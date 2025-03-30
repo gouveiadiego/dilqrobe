@@ -12,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 
 interface ClientService {
   id: string;
@@ -66,7 +65,7 @@ export default function ClientPortal() {
           <TableHeader>
             <TableRow>
               <TableHead>Data</TableHead>
-              <TableHead>Serviço</TableHead>
+              <TableHead>Descrição</TableHead>
               <TableHead>Etapa</TableHead>
               <TableHead>Situação</TableHead>
               <TableHead>Valor</TableHead>
