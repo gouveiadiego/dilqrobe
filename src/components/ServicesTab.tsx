@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -836,4 +837,285 @@ export function ServicesTab() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={filterClient} onValueChange={setFilterClient
+                <Select value={filterClient} onValueChange={setFilterClient}>
+                  <SelectTrigger className="glass-card w-[180px]">
+                    <SelectValue placeholder="Cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos os clientes</SelectItem>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.name}>{client.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Compartilhar por Cliente</DialogTitle>
+                  <DialogDescription>
+                    Selecione os clientes para os quais deseja gerar links de compartilhamento.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Checkbox 
+                      id="selectAll" 
+                      checked={selectedClientIds.length === clients.length && clients.length > 0} 
+                      onCheckedChange={handleSelectAllClients}
+                    />
+                    <label
+                      htmlFor="selectAll"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Selecionar todos
+                    </label>
+                  </div>
+                  
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {clients.map(client => (
+                      <div key={client.id} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={client.id} 
+                          checked={selectedClientIds.includes(client.id)} 
+                          onCheckedChange={() => handleToggleClientSelection(client.id)}
+                        />
+                        <label
+                          htmlFor={client.id}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {client.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <DialogFooter className="sm:justify-end">
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Cancelar
+                    </Button>
+                  </DialogClose>
+                  <Button type="button" onClick={handleSharePortalLink}>
+                    Gerar Links
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
+            <Dialog open={showLinkDialog} onOpenChange={setShowLinkDialog}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Links de Compartilhamento</DialogTitle>
+                  <DialogDescription>
+                    Links gerados para os clientes selecionados. Clique para copiar.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                    {selectedClientIds.map(clientId => {
+                      const client = clients.find(c => c.id === clientId);
+                      const portalLink = `${window.location.origin}/client-portal?id=${clientId}`;
+                      
+                      return (
+                        <div key={clientId} className="flex flex-col gap-2 p-3 border rounded-md">
+                          <div className="font-medium">{client?.name}</div>
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              value={portalLink} 
+                              readOnly 
+                              className="bg-gray-50 dark:bg-gray-900"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                navigator.clipboard.writeText(portalLink);
+                                toast.success(`Link para ${client?.name} copiado!`);
+                              }}
+                            >
+                              Copiar
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <DialogFooter className="sm:justify-end">
+                  <Button type="button" onClick={() => setShowLinkDialog(false)}>
+                    Fechar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
+            {Object.entries(groupedServices).length > 0 ? (
+              <div className="space-y-6">
+                {Object.entries(groupedServices).map(([clientId, { clientName, services }]) => (
+                  <div key={clientId} className="border rounded-lg p-4 dark:border-gray-700">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-xl font-semibold flex items-center gap-2">
+                        <User className="h-5 w-5 text-indigo-500" />
+                        {clientName}
+                      </h3>
+                      <Button variant="outline" size="sm">
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Serviço</TableHead>
+                          <TableHead>Valor</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {services.map(service => (
+                          <TableRow key={service.id}>
+                            <TableCell>{format(new Date(service.start_date), 'dd/MM/yyyy')}</TableCell>
+                            <TableCell>{service.service_description}</TableCell>
+                            <TableCell>{formatCurrency(service.amount)}</TableCell>
+                            <TableCell>
+                              <div 
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  service.payment_status === 'paid' 
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
+                                    : service.payment_status === 'canceled'
+                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                                }`}
+                              >
+                                {service.payment_status === 'paid' ? 'Pago' : service.payment_status === 'canceled' ? 'Cancelado' : 'Pendente'}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="icon" 
+                                  onClick={() => togglePaymentStatus(service.id, service.payment_status)}
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="icon" 
+                                  onClick={() => handleEdit(service)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="icon" 
+                                  className="text-red-500"
+                                  onClick={() => {
+                                    setServiceToDelete(service.id);
+                                    setShowDeleteDialog(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <p className="text-muted-foreground">Nenhum serviço encontrado com os filtros atuais.</p>
+              </div>
+            )}
+            
+            <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirmar Exclusão</DialogTitle>
+                </DialogHeader>
+                <p>Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita.</p>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancelar</Button>
+                  <Button variant="destructive" onClick={handleDelete}>Excluir</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
+            <Dialog open={editingService !== null} onOpenChange={(open) => !open && setEditingService(null)}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Editar Serviço</DialogTitle>
+                </DialogHeader>
+                {editingService && (
+                  <form onSubmit={handleUpdate} className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_client_name">Cliente</Label>
+                      <Input 
+                        id="edit_client_name" 
+                        value={editingService.client_name} 
+                        onChange={e => setEditingService({ ...editingService, client_name: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_description">Descrição</Label>
+                      <Input 
+                        id="edit_description" 
+                        value={editingService.service_description} 
+                        onChange={e => setEditingService({ ...editingService, service_description: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_amount">Valor</Label>
+                      <Input 
+                        id="edit_amount" 
+                        type="number" 
+                        value={editingService.amount} 
+                        onChange={e => setEditingService({ ...editingService, amount: Number(e.target.value) })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Status do Pagamento</Label>
+                      <Select 
+                        value={editingService.payment_status} 
+                        onValueChange={handleEditingPaymentStatusChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Status do pagamento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pendente</SelectItem>
+                          <SelectItem value="paid">Pago</SelectItem>
+                          <SelectItem value="canceled">Cancelado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <DialogFooter>
+                      <Button variant="outline" type="button" onClick={() => setEditingService(null)}>
+                        Cancelar
+                      </Button>
+                      <Button type="submit">Salvar Alterações</Button>
+                    </DialogFooter>
+                  </form>
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
