@@ -17,7 +17,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-
 interface Service {
   id: string;
   start_date: string;
@@ -32,7 +31,6 @@ interface Service {
   reference_month: string;
   client_id: string;
 }
-
 interface NewService {
   start_date: string;
   client_name: string;
@@ -46,7 +44,6 @@ interface NewService {
   reference_month: string;
   client_id: string;
 }
-
 interface ServiceStats {
   totalRevenue: number;
   servicesProvided: number;
@@ -60,7 +57,6 @@ interface ServiceStats {
     [status: string]: number;
   };
 }
-
 const calculateStats = (services: Service[]): ServiceStats => {
   const totalRevenue = services.reduce((sum, service) => sum + service.amount, 0);
   const servicesProvided = services.length;
@@ -91,7 +87,6 @@ const calculateStats = (services: Service[]): ServiceStats => {
     revenueByStatus
   };
 };
-
 const calculateDailyRevenue = (services: Service[], date: Date): number => {
   const formattedDate = format(date, 'yyyy-MM-dd');
   return services.reduce((sum, service) => {
@@ -99,7 +94,6 @@ const calculateDailyRevenue = (services: Service[], date: Date): number => {
     return serviceDate === formattedDate ? sum + service.amount : sum;
   }, 0);
 };
-
 const renderDashboard = (services: Service[]) => {
   const stats = calculateStats(services);
   const today = new Date();
@@ -176,7 +170,6 @@ const renderDashboard = (services: Service[]) => {
       </div>
     </div>;
 };
-
 export function ServicesTab() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
@@ -209,7 +202,6 @@ export function ServicesTab() {
   const [activeTab, setActiveTab] = useState("overview");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [showCurrentMonth, setShowCurrentMonth] = useState(false);
-
   const fetchServices = async () => {
     try {
       const {
@@ -233,7 +225,6 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
-
   const fetchCompanyLogo = async () => {
     try {
       const {
@@ -255,12 +246,10 @@ export function ServicesTab() {
       console.error('Erro ao carregar logo da empresa:', error);
     }
   };
-
   useEffect(() => {
     fetchServices();
     fetchCompanyLogo();
   }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -300,7 +289,6 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
-
   const handlePaymentStatusChange = (value: string) => {
     if (value === 'pending' || value === 'paid' || value === 'canceled') {
       setNewService({
@@ -309,7 +297,6 @@ export function ServicesTab() {
       });
     }
   };
-
   const handleEditingPaymentStatusChange = (value: string) => {
     if (!editingService) return;
     if (value === 'pending' || value === 'paid' || value === 'canceled') {
@@ -319,7 +306,6 @@ export function ServicesTab() {
       });
     }
   };
-
   const togglePaymentStatus = async (id: string, currentStatus: 'pending' | 'paid' | 'canceled') => {
     try {
       const newStatus = currentStatus === 'pending' ? 'paid' : 'pending';
@@ -341,11 +327,9 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
-
   const handleEdit = (service: Service) => {
     setEditingService(service);
   };
-
   const handleDelete = async () => {
     if (!serviceToDelete) return;
     try {
@@ -364,7 +348,6 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
-
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingService) return;
@@ -383,7 +366,6 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
-
   const handleSharePortalLink = () => {
     if (selectedClientIds.length === 0) {
       toast.error("Selecione pelo menos um cliente para compartilhar");
@@ -392,7 +374,6 @@ export function ServicesTab() {
     setShowShareDialog(false);
     setShowLinkDialog(true);
   };
-
   const handleToggleClientSelection = (clientId: string) => {
     setSelectedClientIds(prevSelected => {
       if (prevSelected.includes(clientId)) {
@@ -402,7 +383,6 @@ export function ServicesTab() {
       }
     });
   };
-
   const handleSelectAllClients = () => {
     if (selectedClientIds.length === clients.length) {
       setSelectedClientIds([]);
@@ -410,7 +390,6 @@ export function ServicesTab() {
       setSelectedClientIds(clients.map(client => client.id));
     }
   };
-
   const filteredServices = services.filter(service => {
     const searchText = filterText.toLowerCase();
     const matchesFilter = !filterText || service.client_name.toLowerCase().includes(searchText) || service.company_name.toLowerCase().includes(searchText) || service.service_description.toLowerCase().includes(searchText) || service.stage.toLowerCase().includes(searchText) || service.status.toLowerCase().includes(searchText);
@@ -422,7 +401,6 @@ export function ServicesTab() {
     const matchesStatus = !filterStatus || filterStatus === 'paid' && service.payment_status === 'paid' || filterStatus === 'pending' && service.payment_status === 'pending';
     return matchesFilter && matchesClient && (showCurrentMonth && matchesCurrentMonth || !showCurrentMonth && matchesSelectedMonth) && matchesStatus;
   });
-
   const groupedServices = filteredServices.reduce((acc: {
     [key: string]: {
       clientName: string;
@@ -438,20 +416,15 @@ export function ServicesTab() {
     acc[service.client_id].services.push(service);
     return acc;
   }, {});
-
   const currentMonth = format(new Date(), 'MMMM yyyy');
-
   return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Serviços</h1>
         <div className="flex items-center gap-2">
-          {companyLogo && <img src={companyLogo} alt="Logo da Empresa" className="h-8 w-auto rounded-full" />}
+          {companyLogo}
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700">
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Adicionar Serviço
-              </Button>
+              
             </DialogTrigger>
             <DialogContent className="w-full max-w-3xl p-6">
               <DialogHeader>
