@@ -30,6 +30,8 @@ export function CompanyNotes({ companyId }: CompanyNotesProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
+      console.log("Fetching notes for company:", companyId, "and user:", user.id);
+      
       const { data, error } = await supabase
         .from('project_notes')
         .select('*')
@@ -42,18 +44,23 @@ export function CompanyNotes({ companyId }: CompanyNotesProps) {
         return null;
       }
       
+      console.log("Notes data received:", data);
       return data as Note | null;
-    }
+    },
+    refetchOnWindowFocus: false
   });
 
   useEffect(() => {
     if (note) {
-      console.log("Nota carregada:", note);
+      console.log("Note loaded:", note);
       setContent(note.content);
       setNoteId(note.id);
     } else {
-      console.log("Nenhuma nota encontrada");
-      setContent("");
+      console.log("No note found, resetting form");
+      // Don't clear content if already editing but no existing note
+      if (!content) {
+        setContent("");
+      }
       setNoteId(null);
     }
   }, [note]);
@@ -63,18 +70,30 @@ export function CompanyNotes({ companyId }: CompanyNotesProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
+      console.log("Saving note for company:", companyId);
+      console.log("Current content:", content);
+      console.log("Note ID:", noteId);
+
       if (noteId) {
         // Update existing note
-        console.log("Atualizando nota existente:", noteId);
-        const { error } = await supabase
+        console.log("Updating existing note:", noteId);
+        const { data, error } = await supabase
           .from('project_notes')
           .update({ content })
-          .eq('id', noteId);
+          .eq('id', noteId)
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error updating note:", error);
+          throw error;
+        }
+        
+        console.log("Note updated successfully:", data);
+        return data;
       } else {
         // Create new note
-        console.log("Criando nova nota para empresa:", companyId);
+        console.log("Creating new note for company:", companyId);
         const { data, error } = await supabase
           .from('project_notes')
           .insert([{
@@ -85,25 +104,38 @@ export function CompanyNotes({ companyId }: CompanyNotesProps) {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error creating note:", error);
+          throw error;
+        }
+        
+        console.log("Note created successfully:", data);
         setNoteId(data.id);
+        return data;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Mutation successful, invalidating queries");
       queryClient.invalidateQueries({ queryKey: ['company-note', companyId] });
       toast.success('Anotações salvas com sucesso');
     },
     onError: (error) => {
+      console.error("Mutation error:", error);
       toast.error('Erro ao salvar anotações');
-      console.error(error);
     }
   });
 
   const handleSave = () => {
+    if (!content.trim()) {
+      toast.error('As anotações não podem estar vazias');
+      return;
+    }
+    
+    console.log("Saving note...");
     saveNoteMutation.mutate();
   };
 
-  if (isLoading) return <div>Carregando anotações...</div>;
+  if (isLoading) return <div className="py-4 text-gray-500">Carregando anotações...</div>;
 
   return (
     <div className="space-y-4">
@@ -113,10 +145,14 @@ export function CompanyNotes({ companyId }: CompanyNotesProps) {
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="Adicione aqui suas anotações, links, observações ou qualquer informação relevante para este projeto..."
-        className="min-h-[200px]"
+        className="min-h-[200px] resize-none"
       />
       
-      <Button onClick={handleSave} disabled={saveNoteMutation.isPending}>
+      <Button 
+        onClick={handleSave} 
+        disabled={saveNoteMutation.isPending || !content.trim()}
+        className="w-full md:w-auto"
+      >
         <Save className="h-4 w-4 mr-2" />
         {saveNoteMutation.isPending ? 'Salvando...' : 'Salvar Anotações'}
       </Button>
