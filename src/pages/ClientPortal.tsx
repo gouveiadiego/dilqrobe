@@ -87,7 +87,7 @@ export default function ClientPortal() {
       <Card className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
-            {client?.name}
+            {client?.name || "Cliente"}
           </h2>
           <Button variant="outline" size="sm">
             <Share className="h-4 w-4 mr-2" />
