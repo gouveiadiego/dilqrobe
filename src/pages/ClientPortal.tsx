@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -13,7 +13,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Share } from "lucide-react";
+import { Share, Check, Copy, Link } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface ClientService {
   id: string;
@@ -39,6 +49,10 @@ export default function ClientPortal() {
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const clientId = searchParams.get('client');
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isPublic] = useState(searchParams.get('public') === 'true');
+  const shareUrlRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,72 +90,168 @@ export default function ClientPortal() {
     fetchData();
   }, [clientId]);
 
+  const handleShare = () => {
+    setShowShareDialog(true);
+  };
+
+  const handleCopyLink = () => {
+    if (shareUrlRef.current) {
+      shareUrlRef.current.select();
+      navigator.clipboard.writeText(shareUrlRef.current.value);
+      setCopied(true);
+      toast.success("Link copiado para a área de transferência!");
+      
+      setTimeout(() => {
+        setCopied(false);
+      }, 3000);
+    }
+  };
+
+  const getShareableUrl = () => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/client-portal?client=${clientId}&public=true`;
+  };
+
   if (loading) {
-    return <div>Carregando...</div>;
+    return (
+      <div className="container mx-auto p-6 flex justify-center items-center min-h-[50vh]">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
+          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded w-full max-w-3xl"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Portal do Cliente</h1>
-      
-      <Card className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">
-            {client?.name || "Cliente"}
-          </h2>
-          <Button variant="outline" size="sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Portal do Cliente</h1>
+          {!isPublic && (
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Gerencie e compartilhe informações com seu cliente
+            </p>
+          )}
+        </div>
+        {!isPublic && (
+          <Button variant="outline" size="sm" onClick={handleShare}>
             <Share className="h-4 w-4 mr-2" />
             Compartilhar
           </Button>
+        )}
+      </div>
+      
+      <Card className="p-6 border shadow-sm dark:bg-gray-900/60 backdrop-blur-sm">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold">
+            {client?.name || "Cliente"}
+          </h2>
+          {isPublic && (
+            <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-medium">
+              Visualização pública
+            </div>
+          )}
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Nome da Empresa/Cliente</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Etapa</TableHead>
-              <TableHead>Situação</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {services.map((service) => (
-              <TableRow key={service.id}>
-                <TableCell>
-                  {format(new Date(service.start_date), "dd/MM/yyyy")}
-                </TableCell>
-                <TableCell>{service.company_name}</TableCell>
-                <TableCell>{service.service_description}</TableCell>
-                <TableCell>{service.stage}</TableCell>
-                <TableCell>{service.status}</TableCell>
-                <TableCell>
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }).format(service.amount)}
-                </TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded text-sm ${
-                    service.payment_status === 'paid' 
-                      ? 'bg-green-100 text-green-800' 
-                      : service.payment_status === 'canceled'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-orange-100 text-orange-800'
-                  }`}>
-                    {service.payment_status === 'paid' 
-                      ? 'Pago' 
-                      : service.payment_status === 'canceled'
-                      ? 'Cancelado'
-                      : 'Pendente'}
-                  </span>
-                </TableCell>
+        
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data</TableHead>
+                <TableHead>Nome da Empresa/Cliente</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Etapa</TableHead>
+                <TableHead>Situação</TableHead>
+                <TableHead>Valor</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {services.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-6 text-gray-500">
+                    Nenhum serviço encontrado para este cliente
+                  </TableCell>
+                </TableRow>
+              ) : (
+                services.map((service) => (
+                  <TableRow key={service.id}>
+                    <TableCell>
+                      {format(new Date(service.start_date), "dd/MM/yyyy")}
+                    </TableCell>
+                    <TableCell>{service.company_name}</TableCell>
+                    <TableCell>{service.service_description}</TableCell>
+                    <TableCell>{service.stage}</TableCell>
+                    <TableCell>{service.status}</TableCell>
+                    <TableCell>
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(service.amount)}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        service.payment_status === 'paid' 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                          : service.payment_status === 'canceled'
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                          : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                      }`}>
+                        {service.payment_status === 'paid' 
+                          ? 'Pago' 
+                          : service.payment_status === 'canceled'
+                          ? 'Cancelado'
+                          : 'Pendente'}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        
+        {isPublic && (
+          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Esta é uma visualização pública compartilhada por {client?.email}. Quaisquer atualizações 
+              feitas pelo profissional serão refletidas automaticamente nesta página.
+            </p>
+          </div>
+        )}
       </Card>
+
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Compartilhar portal do cliente</DialogTitle>
+            <DialogDescription>
+              Qualquer pessoa com o link abaixo poderá visualizar os serviços deste cliente sem precisar fazer login.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2 mt-2">
+            <div className="grid flex-1 gap-2">
+              <Input
+                ref={shareUrlRef}
+                readOnly
+                className="w-full"
+                value={getShareableUrl()}
+              />
+            </div>
+            <Button size="sm" className="px-3" onClick={handleCopyLink}>
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              <span className="sr-only">Copiar</span>
+            </Button>
+          </div>
+          <DialogFooter className="flex items-center border-t pt-4 mt-4">
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Link className="h-4 w-4 mr-2" />
+              O link será atualizado automaticamente quando houver novas informações
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

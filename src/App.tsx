@@ -1,4 +1,3 @@
-
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -62,11 +61,8 @@ function App() {
           } 
         />
         
-        <Route path="/client-portal" element={
-          <ProtectedRoute>
-            <ClientPortal />
-          </ProtectedRoute>
-        } />
+        {/* Modified ClientPortal route - no longer wrapped in ProtectedRoute */}
+        <Route path="/client-portal" element={<ClientPortal />} />
         
         <Route
           path="/company/:companyId"
