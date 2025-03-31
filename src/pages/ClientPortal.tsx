@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Share } from "lucide-react";
 
 interface ClientService {
   id: string;
@@ -87,6 +89,10 @@ export default function ClientPortal() {
           <h2 className="text-xl font-semibold">
             {client?.name}
           </h2>
+          <Button variant="outline" size="sm">
+            <Share className="h-4 w-4 mr-2" />
+            Compartilhar
+          </Button>
         </div>
         <Table>
           <TableHeader>
