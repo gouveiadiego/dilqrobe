@@ -85,7 +85,7 @@ export default function ClientPortal() {
       <Card className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
-            {client?.name && `${client.name}`}
+            {client?.name}
           </h2>
         </div>
         <Table>
