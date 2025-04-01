@@ -87,21 +87,21 @@ export function Achievements({ achievements }: AchievementsProps) {
                 <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center">
                   <Trophy className="h-6 w-6 text-amber-600" />
                 </div>
-                <span className="text-xs text-amber-600 mt-2">Distance</span>
+                <span className="text-xs text-amber-600 mt-2">Distância</span>
               </div>
               
               <div className="flex flex-col items-center">
                 <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
                   <Zap className="h-6 w-6 text-purple-600" />
                 </div>
-                <span className="text-xs text-purple-600 mt-2">Streak</span>
+                <span className="text-xs text-purple-600 mt-2">Sequência</span>
               </div>
               
               <div className="flex flex-col items-center">
                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
                   <Clock className="h-6 w-6 text-blue-600" />
                 </div>
-                <span className="text-xs text-blue-600 mt-2">Speed</span>
+                <span className="text-xs text-blue-600 mt-2">Velocidade</span>
               </div>
             </div>
           </div>
