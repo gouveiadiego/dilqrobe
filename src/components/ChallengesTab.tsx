@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Trophy, PersonStanding, ChevronDown, Plus, Calendar, Award, Medal, Target, ChartLine } from "lucide-react";
@@ -17,7 +16,7 @@ import { ChallengesList } from "./challenges/ChallengesList";
 import { ChallengeStats } from "./challenges/ChallengeStats";
 import { WeeklyProgress } from "./challenges/WeeklyProgress";
 import { MonthlyProgress } from "./challenges/MonthlyProgress";
-import { Achievements } from "./challenges/Achievements";
+import { RunningMotivation } from "./challenges/RunningMotivation";
 import { NewChallengeForm } from "./challenges/NewChallengeForm";
 import { NewRunForm } from "./challenges/NewRunForm";
 import { RunningRecordsList } from "./challenges/RunningRecordsList";
@@ -38,7 +37,6 @@ export function ChallengesTab() {
   const [userHasRecords, setUserHasRecords] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -52,7 +50,6 @@ export function ChallengesTab() {
 
     checkAuth();
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         console.log("Auth state changed: no session, redirecting to login");
@@ -68,7 +65,6 @@ export function ChallengesTab() {
     };
   }, [navigate]);
 
-  // Fetch all challenges
   const { data: challenges, isLoading, refetch } = useQuery({
     queryKey: ['running-challenges'],
     queryFn: async () => {
@@ -139,7 +135,6 @@ export function ChallengesTab() {
     }
   });
 
-  // Check if current user has any records
   useEffect(() => {
     if (records && currentUserId) {
       const userRecords = records.filter(record => record.user_id === currentUserId);
@@ -153,7 +148,6 @@ export function ChallengesTab() {
     if (challenges?.length > 0 && records && currentUserId) {
       const latestChallenge = challenges[0];
       
-      // Only count records for the current user
       const challengeRecords = records.filter(
         r => r.challenge_id === latestChallenge.id && r.user_id === currentUserId
       );
@@ -240,12 +234,10 @@ export function ChallengesTab() {
     refetch();
   };
 
-  // Filter records for current user only
   const userRecords = records ? records.filter(record => record.user_id === currentUserId) : [];
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header with parallax effect */}
       <div className="relative overflow-hidden bg-gradient-to-r from-dilq-indigo via-dilq-purple to-dilq-vibrant rounded-2xl shadow-lg transition-all duration-300 transform hover:shadow-xl">
         <div className="absolute inset-0 bg-[url('/public/lovable-uploads/e5c52c62-67c0-4d6c-8b97-6b0b3771a57f1.png')] bg-cover bg-center opacity-10"></div>
         <div className="relative z-10 p-8">
@@ -311,10 +303,8 @@ export function ChallengesTab() {
         </div>
       </div>
 
-      {/* Stats - Only show for users who have records */}
       {userHasRecords && <ChallengeStats currentStats={currentStats} />}
 
-      {/* Content Tabs */}
       <Tabs defaultValue="overview" className="w-full" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4 mb-8 bg-gray-100/50 backdrop-blur-sm p-1 rounded-xl">
           <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-md transition-all duration-300 rounded-lg flex items-center justify-center py-3">
@@ -342,7 +332,7 @@ export function ChallengesTab() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <WeeklyProgress weeklyStats={weeklyStats || []} />
-                <Achievements achievements={achievements || []} />
+                <RunningMotivation />
               </div>
               
               <div className="grid grid-cols-1 gap-6">
