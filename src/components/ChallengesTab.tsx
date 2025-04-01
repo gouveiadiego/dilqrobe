@@ -16,6 +16,7 @@ import {
 import { ChallengesList } from "./challenges/ChallengesList";
 import { ChallengeStats } from "./challenges/ChallengeStats";
 import { WeeklyProgress } from "./challenges/WeeklyProgress";
+import { MonthlyProgress } from "./challenges/MonthlyProgress";
 import { Achievements } from "./challenges/Achievements";
 import { NewChallengeForm } from "./challenges/NewChallengeForm";
 import { NewRunForm } from "./challenges/NewRunForm";
@@ -338,9 +339,15 @@ export function ChallengesTab() {
         
         <TabsContent value="overview" className="space-y-6 animate-fade-in">
           {userHasRecords ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <WeeklyProgress weeklyStats={weeklyStats || []} />
-              <Achievements achievements={achievements || []} />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <WeeklyProgress weeklyStats={weeklyStats || []} />
+                <Achievements achievements={achievements || []} />
+              </div>
+              
+              <div className="grid grid-cols-1 gap-6">
+                <MonthlyProgress />
+              </div>
             </div>
           ) : (
             <div className="bg-white/60 backdrop-blur-sm p-6 rounded-xl border border-gray-100 shadow-sm text-center">
