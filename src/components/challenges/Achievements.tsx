@@ -176,7 +176,7 @@ export function Achievements({ achievements }: AchievementsProps) {
           {latestChallenge ? (
             <div className="bg-amber-100/70 rounded-lg p-3">
               <div className="text-sm font-medium text-amber-800 mb-1 text-center">
-                Próxima conquista: {nextAchievement.distance}km no
+                Próxima conquista:
               </div>
               <div className="text-sm font-medium text-amber-800 mb-2 text-center">
                 {latestChallenge.title}
