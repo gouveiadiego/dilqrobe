@@ -181,12 +181,6 @@ export function Achievements({ achievements }: AchievementsProps) {
               <div className="text-sm font-medium text-amber-800 mb-2 text-center">
                 {latestChallenge.title}
               </div>
-              <div className="w-full h-2 bg-amber-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-amber-500 rounded-full transition-all duration-700"
-                  style={{ width: `${nextAchievement.progress}%` }}
-                ></div>
-              </div>
               <div className="text-xs text-amber-700 mt-1 text-center">
                 {totalDistance}km de {nextAchievement.distance}km ({nextAchievement.progress}%)
               </div>
