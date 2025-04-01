@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { format, parse } from "date-fns";
 
 interface NewRunFormProps {
   onSuccess: () => void;
@@ -15,10 +16,13 @@ interface NewRunFormProps {
 
 export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
   const navigate = useNavigate();
+  const today = new Date();
+  const formattedToday = format(today, "yyyy-MM-dd");
+  
   const [newRun, setNewRun] = useState({
     distance: "",
     duration: "",
-    date: new Date().toISOString().split('T')[0],
+    date: formattedToday,
     notes: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,13 +64,18 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
 
       console.log("Latest challenge found:", latestChallenge);
 
+      // The date string is in format 'YYYY-MM-DD' and should be used directly
+      // without any timezone conversion
+      const runDate = newRun.date;
+      console.log("Run date to be saved:", runDate);
+
       // Create run record
       const { error: runError } = await supabase.from('running_records').insert({
         user_id: session.user.id,
         challenge_id: latestChallenge.id,
         distance: parseFloat(newRun.distance),
         duration: newRun.duration ? parseInt(newRun.duration) : null,
-        date: newRun.date,
+        date: runDate,
         notes: newRun.notes
       });
 
@@ -89,7 +98,7 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
       await updateWeeklyStats(session.user.id, latestChallenge.id, {
         distance: parseFloat(newRun.distance),
         duration: newRun.duration ? parseInt(newRun.duration) : 0,
-        date: newRun.date
+        date: runDate
       });
 
       console.log("Run record created successfully");
@@ -99,7 +108,7 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
       setNewRun({
         distance: "",
         duration: "",
-        date: new Date().toISOString().split('T')[0],
+        date: formattedToday,
         notes: ""
       });
     } catch (error) {
@@ -117,10 +126,12 @@ export function NewRunForm({ onSuccess, onClose }: NewRunFormProps) {
   ) => {
     try {
       // Get the start of the week (Sunday)
-      const recordDate = new Date(record.date);
+      // We need to parse the date string to a Date object,
+      // but we need to ensure it's parsed in a timezone-safe way
+      const recordDate = parse(record.date, "yyyy-MM-dd", new Date());
       const weekStart = new Date(recordDate);
       weekStart.setDate(recordDate.getDate() - recordDate.getDay());
-      const weekStartString = weekStart.toISOString().split('T')[0];
+      const weekStartString = format(weekStart, "yyyy-MM-dd");
 
       // Check if a weekly stats record already exists for this week
       const { data: existingStats, error: statsCheckError } = await supabase

@@ -10,9 +10,9 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Plus, Calendar } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -73,7 +73,7 @@ export function RunningRecordsList({ records, onUpdate, showEmptyState = true }:
     setEditedRecord({
       distance: record.distance.toString(),
       duration: record.duration ? record.duration.toString() : "",
-      date: record.date,
+      date: record.date, // Use the date string directly
       notes: record.notes || ""
     });
     setEditDialogOpen(true);
@@ -88,12 +88,14 @@ export function RunningRecordsList({ records, onUpdate, showEmptyState = true }:
     if (!currentRecord) return;
     
     try {
+      console.log("Updating record, date:", editedRecord.date);
+      
       const { error } = await supabase
         .from('running_records')
         .update({
           distance: parseFloat(editedRecord.distance),
           duration: editedRecord.duration ? parseInt(editedRecord.duration) : null,
-          date: editedRecord.date,
+          date: editedRecord.date, // Use the date string directly
           notes: editedRecord.notes
         })
         .eq('id', currentRecord.id);
@@ -168,6 +170,18 @@ export function RunningRecordsList({ records, onUpdate, showEmptyState = true }:
     return `${minutes}:${seconds.toString().padStart(2, '0')} min/km`;
   };
 
+  // Format date for display - use 'dd/MM/yyyy' format
+  const formatDate = (dateString: string) => {
+    // Since the date is stored as 'YYYY-MM-DD', we can parse it safely
+    try {
+      const parsedDate = parse(dateString, 'yyyy-MM-dd', new Date());
+      return format(parsedDate, 'dd/MM/yyyy');
+    } catch (error) {
+      console.error("Error formatting date:", error, dateString);
+      return dateString;
+    }
+  };
+
   // If we're not supposed to show empty state and there are no records, return nothing
   if (!showEmptyState && records.length === 0) {
     return null;
@@ -200,7 +214,7 @@ export function RunningRecordsList({ records, onUpdate, showEmptyState = true }:
             <TableBody>
               {records.map((record) => (
                 <TableRow key={record.id}>
-                  <TableCell>{format(new Date(record.date), 'dd/MM/yyyy')}</TableCell>
+                  <TableCell>{formatDate(record.date)}</TableCell>
                   <TableCell>{record.distance.toFixed(2)}</TableCell>
                   <TableCell>{record.duration || '-'}</TableCell>
                   <TableCell>{formatPace(record.distance, record.duration)}</TableCell>
