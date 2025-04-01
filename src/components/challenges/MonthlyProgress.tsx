@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar as CalendarIcon, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -128,10 +128,11 @@ export function MonthlyProgress() {
         };
       });
 
+      // First set the monthly data
       setMonthlyData(mergedData);
       
-      // Count days with running activity
-      const daysWithActivity = mergedData.filter(day => day.distance > 0).length;
+      // Calculate days with activity - do this AFTER setting data
+      const activeDays = mergedData.filter(day => day.distance > 0).length;
       
       // Calculate month stats
       setMonthStats({
@@ -157,11 +158,12 @@ export function MonthlyProgress() {
     );
   };
 
+  // Calculate metrics AFTER data is available
   // Count days with running activity
   const daysWithActivity = monthlyData.filter(day => day.distance > 0).length;
 
-  // Get average distance for the month
-  const averageDistance = monthlyData.length > 0 && daysWithActivity > 0
+  // Get average distance for the month - ensure we don't divide by zero
+  const averageDistance = (monthStats.totalDistance > 0 && daysWithActivity > 0)
     ? Number((monthStats.totalDistance / daysWithActivity).toFixed(1))
     : 0;
 
@@ -196,6 +198,7 @@ export function MonthlyProgress() {
             <PopoverContent className="w-auto p-0" align="center">
               <Calendar
                 mode="single"
+                selected={currentMonth}
                 onSelect={(date) => {
                   if (date) {
                     setCurrentMonth(date);
@@ -258,7 +261,7 @@ export function MonthlyProgress() {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                     }}
                   />
-                  {daysWithActivity > 0 && (
+                  {daysWithActivity > 0 && averageDistance > 0 && (
                     <ReferenceLine 
                       y={averageDistance} 
                       stroke="#6366F1" 
