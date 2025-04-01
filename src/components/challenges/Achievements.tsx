@@ -78,16 +78,16 @@ export function Achievements({ achievements }: AchievementsProps) {
       setTotalDistance(Number(distance.toFixed(1)));
       
       // Calculate progress towards next achievement
-      const nextMilestone = 5; // 5km for beginner marathon
+      const nextMilestone = latestChallenge ? Math.min(5, Number(latestChallenge.yearly_goal) * 0.1) : 5;
       const progress = Math.min((distance / nextMilestone) * 100, 100);
       
       setNextAchievement({
-        name: "Maratonista Iniciante",
-        distance: 5,
+        name: latestChallenge ? `${latestChallenge.title} - Iniciante` : "Maratonista Iniciante",
+        distance: nextMilestone,
         progress: Number(progress.toFixed(0))
       });
     }
-  }, [records]);
+  }, [records, latestChallenge]);
 
   // Set latest challenge
   useEffect(() => {

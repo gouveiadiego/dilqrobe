@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface NewChallengeFormProps {
   onSuccess: () => void;
@@ -20,6 +21,7 @@ interface NewChallengeFormProps {
 }
 
 export function NewChallengeForm({ onSuccess, onClose }: NewChallengeFormProps) {
+  const queryClient = useQueryClient();
   const [newChallenge, setNewChallenge] = useState({
     title: "",
     yearlyGoal: "",
@@ -57,6 +59,10 @@ export function NewChallengeForm({ onSuccess, onClose }: NewChallengeFormProps) 
 
       if (error) throw error;
 
+      // Invalidate challenges queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['running-challenges'] });
+      queryClient.invalidateQueries({ queryKey: ['challenges-for-achievements'] });
+      
       toast.success("Desafio criado com sucesso!");
       onSuccess();
       onClose();
