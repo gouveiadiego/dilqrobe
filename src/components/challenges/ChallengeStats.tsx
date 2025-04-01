@@ -1,8 +1,6 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, PersonStanding, Medal, Target, Calendar, Flame } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-
 interface ChallengeStatsProps {
   currentStats: {
     totalDistance: number;
@@ -10,10 +8,10 @@ interface ChallengeStatsProps {
     currentChallenge: any | null;
   };
 }
-
-export function ChallengeStats({ currentStats }: ChallengeStatsProps) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+export function ChallengeStats({
+  currentStats
+}: ChallengeStatsProps) {
+  return <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       <Card className="border-none bg-gradient-to-br from-indigo-50 to-purple-50 overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group">
         <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-600 to-purple-600"></div>
         <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
@@ -28,24 +26,14 @@ export function ChallengeStats({ currentStats }: ChallengeStatsProps) {
             {currentStats.currentChallenge?.description || "Meta para o ano"}
           </p>
           <div className="mt-2 space-x-2">
-            {currentStats.currentChallenge?.difficulty && (
-              <span className={`text-xs px-2 py-1 rounded-full inline-flex items-center ${
-                currentStats.currentChallenge.difficulty === 'fácil' 
-                  ? 'bg-green-100 text-green-700'
-                  : currentStats.currentChallenge.difficulty === 'médio'
-                  ? 'bg-amber-100 text-amber-700'
-                  : 'bg-red-100 text-red-700'
-              }`}>
+            {currentStats.currentChallenge?.difficulty && <span className={`text-xs px-2 py-1 rounded-full inline-flex items-center ${currentStats.currentChallenge.difficulty === 'fácil' ? 'bg-green-100 text-green-700' : currentStats.currentChallenge.difficulty === 'médio' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                 <Flame className="h-3 w-3 mr-1" />
                 {currentStats.currentChallenge.difficulty}
-              </span>
-            )}
-            {currentStats.currentChallenge?.visibility && (
-              <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 inline-flex items-center">
+              </span>}
+            {currentStats.currentChallenge?.visibility && <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 inline-flex items-center">
                 <Calendar className="h-3 w-3 mr-1" />
                 {currentStats.currentChallenge.visibility}
-              </span>
-            )}
+              </span>}
           </div>
         </CardContent>
       </Card>
@@ -59,10 +47,9 @@ export function ChallengeStats({ currentStats }: ChallengeStatsProps) {
         <CardContent className="pt-4">
           <div className="text-2xl font-bold text-green-800">{currentStats.totalDistance.toFixed(1)} <span className="text-lg font-medium">km</span></div>
           <div className="mt-3 h-2.5 bg-gradient-to-r from-green-100 to-emerald-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-700 ease-out shimmer-effect"
-              style={{ width: `${Math.min(currentStats.percentageComplete, 100)}%` }}
-            />
+            <div className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full transition-all duration-700 ease-out shimmer-effect" style={{
+            width: `${Math.min(currentStats.percentageComplete, 100)}%`
+          }} />
           </div>
           <div className="flex justify-between mt-2">
             <p className="text-xs text-green-700">
@@ -101,14 +88,8 @@ export function ChallengeStats({ currentStats }: ChallengeStatsProps) {
               Continue correndo para ganhar mais conquistas!
             </div>
           </div>
-          <div className="bg-gradient-to-r from-amber-100/50 to-amber-200/50 p-2 rounded-lg text-xs text-amber-800 mt-2 backdrop-blur-sm">
-            <div className="flex items-center">
-              <Target className="h-3 w-3 mr-1 text-amber-600" />
-              <div>Próxima conquista: <span className="font-medium">Maratonista Iniciante</span> (5km)</div>
-            </div>
-          </div>
+          
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }
