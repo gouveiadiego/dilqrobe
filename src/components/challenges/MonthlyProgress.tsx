@@ -130,6 +130,9 @@ export function MonthlyProgress() {
 
       setMonthlyData(mergedData);
       
+      // Count days with running activity
+      const daysWithActivity = mergedData.filter(day => day.distance > 0).length;
+      
       // Calculate month stats
       setMonthStats({
         totalDistance: Number(totalDistance.toFixed(1)),
@@ -154,13 +157,13 @@ export function MonthlyProgress() {
     );
   };
 
-  // Get average distance for the month
-  const averageDistance = monthlyData.length > 0
-    ? Number((monthStats.totalDistance / daysWithActivity).toFixed(1))
-    : 0;
-
   // Count days with running activity
   const daysWithActivity = monthlyData.filter(day => day.distance > 0).length;
+
+  // Get average distance for the month
+  const averageDistance = monthlyData.length > 0 && daysWithActivity > 0
+    ? Number((monthStats.totalDistance / daysWithActivity).toFixed(1))
+    : 0;
 
   return (
     <Card className="col-span-2 border-none bg-gradient-to-br from-indigo-50 to-purple-50 overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg group">
@@ -192,7 +195,7 @@ export function MonthlyProgress() {
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="center">
               <Calendar
-                mode="month"
+                mode="single"
                 onSelect={(date) => {
                   if (date) {
                     setCurrentMonth(date);
