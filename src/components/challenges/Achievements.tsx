@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Award, Trophy, Zap, Clock } from "lucide-react";
+import { Award, Trophy, Zap, Clock, Check, Star, Medal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface Achievement {
   badge_type: string;
@@ -15,28 +16,49 @@ interface AchievementsProps {
 export function Achievements({ achievements }: AchievementsProps) {
   // Get badge icon and color based on type
   const getBadgeConfig = (type: string) => {
-    const configs: Record<string, { icon: React.ReactNode, color: string, bgColor: string }> = {
+    const configs: Record<string, { 
+      icon: React.ReactNode, 
+      color: string, 
+      bgColor: string,
+      badgeColor: string
+    }> = {
       'distance': { 
         icon: <Trophy className="h-4 w-4 text-amber-600" />, 
         color: 'text-amber-700',
-        bgColor: 'bg-amber-100'
+        bgColor: 'bg-amber-100',
+        badgeColor: 'bg-amber-500 text-white'
       },
       'streak': { 
         icon: <Zap className="h-4 w-4 text-purple-600" />, 
         color: 'text-purple-700',
-        bgColor: 'bg-purple-100'
+        bgColor: 'bg-purple-100',
+        badgeColor: 'bg-purple-500 text-white'
       },
       'speed': { 
         icon: <Clock className="h-4 w-4 text-blue-600" />, 
         color: 'text-blue-700',
-        bgColor: 'bg-blue-100'
+        bgColor: 'bg-blue-100',
+        badgeColor: 'bg-blue-500 text-white'
       },
+      'completion': {
+        icon: <Check className="h-4 w-4 text-green-600" />,
+        color: 'text-green-700',
+        bgColor: 'bg-green-100',
+        badgeColor: 'bg-green-500 text-white'
+      },
+      'special': {
+        icon: <Medal className="h-4 w-4 text-indigo-600" />,
+        color: 'text-indigo-700',
+        bgColor: 'bg-indigo-100',
+        badgeColor: 'bg-indigo-500 text-white'
+      }
     };
     
     return configs[type.toLowerCase()] || { 
       icon: <Award className="h-4 w-4 text-indigo-600" />, 
       color: 'text-indigo-700',
-      bgColor: 'bg-indigo-100'
+      bgColor: 'bg-indigo-100',
+      badgeColor: 'bg-indigo-500 text-white'
     };
   };
 
@@ -86,7 +108,7 @@ export function Achievements({ achievements }: AchievementsProps) {
         ) : (
           <div className="space-y-3">
             {achievements.map((achievement, index) => {
-              const { icon, color, bgColor } = getBadgeConfig(achievement.badge_type);
+              const { icon, color, bgColor, badgeColor } = getBadgeConfig(achievement.badge_type);
               return (
                 <div 
                   key={index} 
@@ -96,8 +118,11 @@ export function Achievements({ achievements }: AchievementsProps) {
                     {icon}
                   </div>
                   <div className="flex-1">
-                    <div className={`font-medium ${color}`}>{achievement.badge_type}</div>
-                    <div className="text-sm text-amber-700">
+                    <div className="flex items-center gap-2">
+                      <div className={`font-medium ${color}`}>{achievement.badge_type}</div>
+                      <Badge className={badgeColor}>Conquistado!</Badge>
+                    </div>
+                    <div className="text-sm text-amber-700 font-medium">
                       {achievement.description}
                     </div>
                     <div className="text-xs text-amber-600 mt-0.5">
