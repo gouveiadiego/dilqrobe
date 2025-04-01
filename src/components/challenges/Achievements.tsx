@@ -24,6 +24,7 @@ export function Achievements({ achievements }: AchievementsProps) {
     distance: 5,
     progress: 0
   });
+  const [latestChallenge, setLatestChallenge] = useState<any>(null);
 
   // Fetch total distance for the current user
   const { data: records } = useQuery({
@@ -40,6 +41,29 @@ export function Achievements({ achievements }: AchievementsProps) {
 
       if (error) {
         console.error("Error fetching records for achievements:", error);
+        throw error;
+      }
+
+      return data || [];
+    }
+  });
+
+  // Fetch the latest challenge
+  const { data: challenges } = useQuery({
+    queryKey: ['challenges-for-achievements'],
+    queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) throw new Error("No active session");
+
+      const { data, error } = await supabase
+        .from('running_challenges')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error("Error fetching latest challenge:", error);
         throw error;
       }
 
@@ -64,6 +88,13 @@ export function Achievements({ achievements }: AchievementsProps) {
       });
     }
   }, [records]);
+
+  // Set latest challenge
+  useEffect(() => {
+    if (challenges && challenges.length > 0) {
+      setLatestChallenge(challenges[0]);
+    }
+  }, [challenges]);
 
   // Get badge icon based on type
   const getBadgeIcon = (type: string) => {
@@ -130,25 +161,36 @@ export function Achievements({ achievements }: AchievementsProps) {
             Continue correndo para ganhar mais conquistas!
           </p>
 
-          <div className="bg-amber-100/70 rounded-lg p-3 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
-              <Target className="h-4 w-4 text-amber-700" />
+          {latestChallenge ? (
+            <div className="bg-amber-100/70 rounded-lg p-3 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
+                <Target className="h-4 w-4 text-amber-700" />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-amber-800">
+                  Próxima conquista: {nextAchievement.name} ({nextAchievement.distance}km)
+                </div>
+                <div className="w-full h-2 bg-amber-200 rounded-full mt-1 overflow-hidden">
+                  <div 
+                    className="h-full bg-amber-500 rounded-full transition-all duration-700"
+                    style={{ width: `${nextAchievement.progress}%` }}
+                  ></div>
+                </div>
+                <div className="text-xs text-amber-700 mt-1">
+                  {totalDistance}km de {nextAchievement.distance}km ({nextAchievement.progress}%)
+                </div>
+              </div>
             </div>
-            <div className="flex-1">
-              <div className="text-sm font-medium text-amber-800">
-                Próxima conquista: {nextAchievement.name} ({nextAchievement.distance}km)
+          ) : (
+            <div className="bg-amber-100/70 rounded-lg p-3">
+              <div className="text-sm font-medium text-amber-800 mb-1">
+                Próxima conquista: Maratonista Iniciante (5km)
               </div>
-              <div className="w-full h-2 bg-amber-200 rounded-full mt-1 overflow-hidden">
-                <div 
-                  className="h-full bg-amber-500 rounded-full transition-all duration-700"
-                  style={{ width: `${nextAchievement.progress}%` }}
-                ></div>
-              </div>
-              <div className="text-xs text-amber-700 mt-1">
-                {totalDistance}km de {nextAchievement.distance}km ({nextAchievement.progress}%)
+              <div className="text-xs text-amber-700">
+                Crie um desafio para começar a acumular conquistas!
               </div>
             </div>
-          </div>
+          )}
 
           {achievements.length > 0 && (
             <div className="mt-3 pt-3 border-t border-amber-200">
