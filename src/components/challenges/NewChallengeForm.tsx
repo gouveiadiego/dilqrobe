@@ -62,6 +62,7 @@ export function NewChallengeForm({ onSuccess, onClose }: NewChallengeFormProps) 
       // Invalidate challenges queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['running-challenges'] });
       queryClient.invalidateQueries({ queryKey: ['challenges-for-achievements'] });
+      queryClient.invalidateQueries({ queryKey: ['running-records-for-achievements'] });
       
       toast.success("Desafio criado com sucesso!");
       onSuccess();

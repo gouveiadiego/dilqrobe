@@ -22,7 +22,8 @@ export function Achievements({ achievements }: AchievementsProps) {
   const [nextAchievement, setNextAchievement] = useState({
     name: "Maratonista Iniciante",
     distance: 5,
-    progress: 0
+    progress: 0,
+    month: "" // Add month for display
   });
   const [latestChallenge, setLatestChallenge] = useState<any>(null);
 
@@ -77,15 +78,30 @@ export function Achievements({ achievements }: AchievementsProps) {
       const distance = records.reduce((total, record) => total + Number(record.distance), 0);
       setTotalDistance(Number(distance.toFixed(1)));
       
-      // Calculate progress towards next achievement
-      const nextMilestone = latestChallenge ? Math.min(5, Number(latestChallenge.yearly_goal) * 0.1) : 5;
-      const progress = Math.min((distance / nextMilestone) * 100, 100);
-      
-      setNextAchievement({
-        name: latestChallenge ? `${latestChallenge.title} - Iniciante` : "Maratonista Iniciante",
-        distance: nextMilestone,
-        progress: Number(progress.toFixed(0))
-      });
+      // Calculate progress towards next achievement based on challenge
+      if (latestChallenge) {
+        const nextMilestone = Math.min(5, Number(latestChallenge.yearly_goal) * 0.1);
+        const progress = Math.min((distance / nextMilestone) * 100, 100);
+        
+        // Get month name from challenge start date
+        const startDate = new Date(latestChallenge.start_date);
+        const monthName = startDate.toLocaleString('pt-BR', { month: 'long' });
+        
+        setNextAchievement({
+          name: `${latestChallenge.title} - Iniciante`,
+          distance: nextMilestone,
+          progress: Number(progress.toFixed(0)),
+          month: monthName.charAt(0).toUpperCase() + monthName.slice(1) // Capitalize first letter
+        });
+      } else {
+        // Default if no challenge is available
+        setNextAchievement({
+          name: "Maratonista Iniciante",
+          distance: 5,
+          progress: Math.min((distance / 5) * 100, 100),
+          month: ""
+        });
+      }
     }
   }, [records, latestChallenge]);
 
@@ -143,17 +159,9 @@ export function Achievements({ achievements }: AchievementsProps) {
               ))
             ) : (
               // Show sample achievement icons if no achievements yet
-              <>
-                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                  <Trophy className="h-6 w-6 text-amber-400" />
-                </div>
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-purple-400" />
-                </div>
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <Target className="h-6 w-6 text-green-400" />
-                </div>
-              </>
+              <div className="w-12 h-12 rounded-full bg-amber-200 flex items-center justify-center">
+                <Trophy className="h-7 w-7 text-amber-600" />
+              </div>
             )}
           </div>
 
@@ -162,23 +170,21 @@ export function Achievements({ achievements }: AchievementsProps) {
           </p>
 
           {latestChallenge ? (
-            <div className="bg-amber-100/70 rounded-lg p-3 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
-                <Target className="h-4 w-4 text-amber-700" />
+            <div className="bg-amber-100/70 rounded-lg p-3">
+              <div className="text-sm font-medium text-amber-800 mb-1 text-center">
+                Próxima conquista: {nextAchievement.distance}km no
               </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-amber-800">
-                  Próxima conquista: {nextAchievement.name} ({nextAchievement.distance}km)
-                </div>
-                <div className="w-full h-2 bg-amber-200 rounded-full mt-1 overflow-hidden">
-                  <div 
-                    className="h-full bg-amber-500 rounded-full transition-all duration-700"
-                    style={{ width: `${nextAchievement.progress}%` }}
-                  ></div>
-                </div>
-                <div className="text-xs text-amber-700 mt-1">
-                  {totalDistance}km de {nextAchievement.distance}km ({nextAchievement.progress}%)
-                </div>
+              <div className="text-sm font-medium text-amber-800 mb-2 text-center">
+                {latestChallenge.title} - Iniciante
+              </div>
+              <div className="w-full h-2 bg-amber-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-amber-500 rounded-full transition-all duration-700"
+                  style={{ width: `${nextAchievement.progress}%` }}
+                ></div>
+              </div>
+              <div className="text-xs text-amber-700 mt-1 text-center">
+                {totalDistance}km de {nextAchievement.distance}km ({nextAchievement.progress}%)
               </div>
             </div>
           ) : (
