@@ -90,7 +90,7 @@ export function NewChallengeForm({ onSuccess, onClose }: NewChallengeFormProps) 
           id="title"
           value={newChallenge.title}
           onChange={(e) => setNewChallenge(prev => ({ ...prev, title: e.target.value }))}
-          placeholder="Ex: Desafio 2024"
+          placeholder="Ex: 60 Km em Abril"
         />
       </div>
       <div>
@@ -109,7 +109,7 @@ export function NewChallengeForm({ onSuccess, onClose }: NewChallengeFormProps) 
           type="number"
           value={newChallenge.yearlyGoal}
           onChange={(e) => setNewChallenge(prev => ({ ...prev, yearlyGoal: e.target.value }))}
-          placeholder="Ex: 2025"
+          placeholder="Ex: 60"
         />
       </div>
       <div>

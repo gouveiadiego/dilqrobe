@@ -23,7 +23,8 @@ export function Achievements({ achievements }: AchievementsProps) {
     name: "Maratonista Iniciante",
     distance: 5,
     progress: 0,
-    month: "" // Add month for display
+    month: "", // Add month for display
+    challengeTitle: ""
   });
   const [latestChallenge, setLatestChallenge] = useState<any>(null);
 
@@ -80,7 +81,8 @@ export function Achievements({ achievements }: AchievementsProps) {
       
       // Calculate progress towards next achievement based on challenge
       if (latestChallenge) {
-        const nextMilestone = Math.min(5, Number(latestChallenge.yearly_goal) * 0.1);
+        const title = latestChallenge.title;
+        const nextMilestone = Math.min(6, Number(latestChallenge.yearly_goal) * 0.1);
         const progress = Math.min((distance / nextMilestone) * 100, 100);
         
         // Get month name from challenge start date
@@ -91,7 +93,8 @@ export function Achievements({ achievements }: AchievementsProps) {
           name: `${latestChallenge.title} - Iniciante`,
           distance: nextMilestone,
           progress: Number(progress.toFixed(0)),
-          month: monthName.charAt(0).toUpperCase() + monthName.slice(1) // Capitalize first letter
+          month: monthName.charAt(0).toUpperCase() + monthName.slice(1), // Capitalize first letter
+          challengeTitle: latestChallenge.title
         });
       } else {
         // Default if no challenge is available
@@ -99,7 +102,8 @@ export function Achievements({ achievements }: AchievementsProps) {
           name: "Maratonista Iniciante",
           distance: 5,
           progress: Math.min((distance / 5) * 100, 100),
-          month: ""
+          month: "",
+          challengeTitle: ""
         });
       }
     }
@@ -175,7 +179,7 @@ export function Achievements({ achievements }: AchievementsProps) {
                 Próxima conquista: {nextAchievement.distance}km no
               </div>
               <div className="text-sm font-medium text-amber-800 mb-2 text-center">
-                {latestChallenge.title} - Iniciante
+                {latestChallenge.title}
               </div>
               <div className="w-full h-2 bg-amber-200 rounded-full overflow-hidden">
                 <div 
