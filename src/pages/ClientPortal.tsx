@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,6 +59,7 @@ export default function ClientPortal() {
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const clientId = searchParams.get('client');
+  const clientSlug = searchParams.get('name');
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isPublic] = useState(searchParams.get('public') === 'true');
@@ -74,12 +76,28 @@ export default function ClientPortal() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!clientId) return;
+      // Try to get client ID from the slug if no direct client ID is provided
+      let effectiveClientId = clientId;
+      
+      if (!effectiveClientId && clientSlug) {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('id')
+          .ilike('name', `%${decodeURIComponent(clientSlug)}%`)
+          .limit(1)
+          .single();
+          
+        if (!error && data) {
+          effectiveClientId = data.id;
+        }
+      }
+      
+      if (!effectiveClientId) return;
 
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .select('id, name, email')
-        .eq('id', clientId)
+        .eq('id', effectiveClientId)
         .single();
 
       if (clientError) {
@@ -91,7 +109,7 @@ export default function ClientPortal() {
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select('*')
-        .eq('client_id', clientId)
+        .eq('client_id', effectiveClientId)
         .order('start_date', { ascending: false });
 
       if (servicesError) {
@@ -108,7 +126,7 @@ export default function ClientPortal() {
     };
 
     fetchData();
-  }, [clientId]);
+  }, [clientId, clientSlug]);
 
   const calculatePaymentSummary = (services: ClientService[]): PaymentSummary => {
     const summary = {
@@ -159,7 +177,20 @@ export default function ClientPortal() {
 
   const getShareableUrl = () => {
     const baseUrl = window.location.origin;
-    return `${baseUrl}/client-portal?client=${clientId}&public=true`;
+    const clientNameSlug = client?.name 
+      ? encodeURIComponent(client.name.toLowerCase().replace(/\s+/g, '-')) 
+      : '';
+      
+    return `${baseUrl}/client-portal?client=${clientId}&public=true&name=${clientNameSlug}`;
+  };
+
+  const getFriendlyUrl = () => {
+    const baseUrl = window.location.origin;
+    const clientNameSlug = client?.name 
+      ? encodeURIComponent(client.name.toLowerCase().replace(/\s+/g, '-')) 
+      : '';
+      
+    return `${baseUrl}/client-portal?name=${clientNameSlug}&public=true`;
   };
 
   const ServiceCard = ({ service }: { service: ClientService }) => {
@@ -382,19 +413,51 @@ export default function ClientPortal() {
               Qualquer pessoa com o link abaixo poderá visualizar os serviços deste cliente sem precisar fazer login.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center space-x-2 mt-2">
-            <div className="grid flex-1 gap-2">
-              <Input
-                ref={shareUrlRef}
-                readOnly
-                className="w-full"
-                value={getShareableUrl()}
-              />
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="text-sm font-medium mb-2">Link com ID do cliente:</p>
+              <div className="flex items-center space-x-2">
+                <div className="grid flex-1 gap-2">
+                  <Input
+                    ref={shareUrlRef}
+                    readOnly
+                    className="w-full"
+                    value={getShareableUrl()}
+                  />
+                </div>
+                <Button size="sm" className="px-3" onClick={handleCopyLink}>
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  <span className="sr-only">Copiar</span>
+                </Button>
+              </div>
             </div>
-            <Button size="sm" className="px-3" onClick={handleCopyLink}>
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              <span className="sr-only">Copiar</span>
-            </Button>
+            
+            <div>
+              <p className="text-sm font-medium mb-2">Link amigável (com nome do cliente):</p>
+              <div className="flex items-center space-x-2">
+                <div className="grid flex-1 gap-2">
+                  <Input
+                    readOnly
+                    className="w-full"
+                    value={getFriendlyUrl()}
+                  />
+                </div>
+                <Button 
+                  size="sm" 
+                  className="px-3" 
+                  onClick={() => {
+                    navigator.clipboard.writeText(getFriendlyUrl());
+                    toast.success("Link amigável copiado!");
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                  <span className="sr-only">Copiar</span>
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Este link usa o nome do cliente em vez do ID, ficando mais amigável e legível.
+              </p>
+            </div>
           </div>
           <DialogFooter className="flex items-center border-t pt-4 mt-4">
             <div className="flex items-center text-sm text-muted-foreground">
