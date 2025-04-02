@@ -838,7 +838,7 @@ export function ServicesTab() {
             <DialogHeader>
               <DialogTitle>Editar Serviço</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleUpdate} className="space-y-4 py-4">
+            <form onSubmit={handleUpdate} className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
               <div className="space-y-2">
                 <Label htmlFor="edit_client_name">Cliente</Label>
                 <Input id="edit_client_name" value={editingService.client_name} onChange={e => setEditingService({
@@ -901,13 +901,13 @@ export function ServicesTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <DialogFooter>
-                <Button type="button" variant="secondary" onClick={() => setEditingService(null)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">Salvar Alterações</Button>
-              </DialogFooter>
             </form>
+            <DialogFooter className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setEditingService(null)}>
+                Cancelar
+              </Button>
+              <Button type="button" onClick={handleUpdate}>Salvar Alterações</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>}
       
