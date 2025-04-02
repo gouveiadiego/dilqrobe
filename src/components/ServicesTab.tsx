@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parse, isValid, isSameMonth, getMonth, getYear } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
@@ -71,7 +73,7 @@ const calculateStats = (services: Service[]): ServiceStats => {
     [month: string]: number;
   } = {};
   services.forEach(service => {
-    const month = format(new Date(service.start_date), 'MMMM');
+    const month = format(new Date(service.start_date), 'MMMM', { locale: ptBR });
     revenueByMonth[month] = (revenueByMonth[month] || 0) + service.amount;
   });
   const revenueByStatus: {
@@ -218,7 +220,7 @@ export function ServicesTab() {
           user
         }
       } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) throw new Error('Usuário não autenticado');
       const {
         data,
         error
@@ -242,7 +244,7 @@ export function ServicesTab() {
           user
         }
       } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) throw new Error('Usuário não autenticado');
       const {
         data,
         error
@@ -270,7 +272,7 @@ export function ServicesTab() {
           user
         }
       } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!user) throw new Error('Usuário não autenticado');
       const serviceToAdd: NewService = {
         ...newService,
         user_id: user.id
@@ -397,16 +399,11 @@ export function ServicesTab() {
   const handleToggleClientSelection = (clientId: string) => {
     setSelectedClientIds(prevSelected => {
       if (prevSelected.includes(clientId)) {
-        if (prevSelected.length === 1 && prevSelected[0] === clientId) {
-          setSelectedClient("");
-        }
         return prevSelected.filter(id => id !== clientId);
       } else {
-        if (prevSelected.length === 0) {
-          const client = clients.find(c => c.id === clientId);
-          if (client) {
-            setSelectedClient(client.name);
-          }
+        const client = clients.find(c => c.id === clientId);
+        if (client) {
+          setSelectedClient(client.name);
         }
         return [...prevSelected, clientId];
       }
@@ -423,6 +420,25 @@ export function ServicesTab() {
         setSelectedClient("Todos os clientes");
       }
     }
+  };
+
+  // Importante: Não modificar o selectedClient durante as mudanças de mês
+  const handleMonthChange = (date: Date | undefined) => {
+    setFilterDate(date);
+    setShowCurrentMonth(false);
+    setCalendarOpen(false);
+  };
+
+  const toggleCurrentMonth = () => {
+    setShowCurrentMonth(true);
+    setFilterDate(undefined);
+    setCalendarOpen(false);
+  };
+
+  const clearMonthFilter = () => {
+    setFilterDate(undefined);
+    setShowCurrentMonth(false);
+    setCalendarOpen(false);
   };
 
   const filteredServices = services.filter(service => {
@@ -453,49 +469,7 @@ export function ServicesTab() {
     return acc;
   }, {});
 
-  const handleMonthChange = (date: Date | undefined) => {
-    setFilterDate(date);
-    if (selectedClientIds.length === 1) {
-      const client = clients.find(c => c.id === selectedClientIds[0]);
-      if (client) {
-        setSelectedClient(client.name);
-      }
-    } else if (selectedClientIds.length > 1) {
-      setSelectedClient("Vários clientes");
-    }
-    setShowCurrentMonth(false);
-    setCalendarOpen(false);
-  };
-
-  const toggleCurrentMonth = () => {
-    setShowCurrentMonth(true);
-    setFilterDate(undefined);
-    setCalendarOpen(false);
-    if (selectedClientIds.length === 1) {
-      const client = clients.find(c => c.id === selectedClientIds[0]);
-      if (client) {
-        setSelectedClient(client.name);
-      }
-    } else if (selectedClientIds.length > 1) {
-      setSelectedClient("Vários clientes");
-    }
-  };
-
-  const clearMonthFilter = () => {
-    setFilterDate(undefined);
-    setShowCurrentMonth(false);
-    setCalendarOpen(false);
-    if (selectedClientIds.length === 1) {
-      const client = clients.find(c => c.id === selectedClientIds[0]);
-      if (client) {
-        setSelectedClient(client.name);
-      }
-    } else if (selectedClientIds.length > 1) {
-      setSelectedClient("Vários clientes");
-    }
-  };
-
-  const currentMonth = format(new Date(), 'MMMM yyyy');
+  const currentMonth = format(new Date(), 'MMMM yyyy', { locale: ptBR });
 
   return <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -652,7 +626,7 @@ export function ServicesTab() {
                     <PopoverTrigger asChild>
                       <Button variant={showCurrentMonth ? "default" : "outline"} className={`gap-2 ${showCurrentMonth ? "bg-indigo-600 text-white" : "bg-white dark:bg-gray-800"}`}>
                         <CalendarIcon className="h-4 w-4" />
-                        {showCurrentMonth ? currentMonth : filterDate ? format(filterDate, "MMMM yyyy") : "Selecione o mês"}
+                        {showCurrentMonth ? currentMonth : filterDate ? format(filterDate, "MMMM yyyy", { locale: ptBR }) : "Selecione o mês"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 glass-card" align="start">
@@ -662,6 +636,7 @@ export function ServicesTab() {
                         onSelect={handleMonthChange} 
                         initialFocus 
                         className="bg-white dark:bg-gray-800 pointer-events-auto" 
+                        locale={ptBR}
                       />
                       <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex justify-between">
                         <Button variant="ghost" onClick={toggleCurrentMonth} className="text-xs h-8">
@@ -682,7 +657,7 @@ export function ServicesTab() {
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="">Todos</SelectItem>
                     <SelectItem value="paid">Pagos</SelectItem>
                     <SelectItem value="pending">Pendentes</SelectItem>
                   </SelectContent>
@@ -701,10 +676,6 @@ export function ServicesTab() {
                     </div>
                     <Button variant="ghost" size="sm" className="text-gray-500 hover:text-indigo-600" onClick={() => {
                       handleToggleClientSelection(clientId);
-                      const client = clients.find(c => c.id === clientId);
-                      if (client) {
-                        setSelectedClient(client.name);
-                      }
                     }}>
                       <Link2 className="h-4 w-4 mr-1" />
                       Compartilhar
