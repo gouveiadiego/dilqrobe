@@ -43,6 +43,15 @@ interface Client {
   email: string;
 }
 
+interface PaymentSummary {
+  paid: number;
+  pending: number;
+  canceled: number;
+  paidTotal: number;
+  pendingTotal: number;
+  canceledTotal: number;
+}
+
 export default function ClientPortal() {
   const [services, setServices] = useState<ClientService[]>([]);
   const [client, setClient] = useState<Client | null>(null);
@@ -53,6 +62,14 @@ export default function ClientPortal() {
   const [copied, setCopied] = useState(false);
   const [isPublic] = useState(searchParams.get('public') === 'true');
   const shareUrlRef = useRef<HTMLInputElement>(null);
+  const [paymentSummary, setPaymentSummary] = useState<PaymentSummary>({
+    paid: 0,
+    pending: 0,
+    canceled: 0,
+    paidTotal: 0,
+    pendingTotal: 0,
+    canceledTotal: 0
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -84,11 +101,46 @@ export default function ClientPortal() {
       }
 
       setServices(servicesData || []);
+      
+      // Calculate payment summary
+      const summary = calculatePaymentSummary(servicesData || []);
+      setPaymentSummary(summary);
+      
       setLoading(false);
     };
 
     fetchData();
   }, [clientId]);
+
+  const calculatePaymentSummary = (services: ClientService[]): PaymentSummary => {
+    const summary = {
+      paid: 0,
+      pending: 0,
+      canceled: 0,
+      paidTotal: 0,
+      pendingTotal: 0,
+      canceledTotal: 0
+    };
+
+    services.forEach(service => {
+      switch (service.payment_status) {
+        case 'paid':
+          summary.paid++;
+          summary.paidTotal += service.amount;
+          break;
+        case 'pending':
+          summary.pending++;
+          summary.pendingTotal += service.amount;
+          break;
+        case 'canceled':
+          summary.canceled++;
+          summary.canceledTotal += service.amount;
+          break;
+      }
+    });
+
+    return summary;
+  };
 
   const handleShare = () => {
     setShowShareDialog(true);
@@ -144,9 +196,43 @@ export default function ClientPortal() {
       
       <Card className="p-6 border shadow-sm dark:bg-gray-900/60 backdrop-blur-sm">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">
-            {client?.name || "Cliente"}
-          </h2>
+          <div>
+            <h2 className="text-xl font-semibold">
+              {client?.name || "Cliente"}
+            </h2>
+            <div className="flex flex-wrap gap-3 mt-3">
+              <div className="bg-green-100 dark:bg-green-900/30 px-3 py-1.5 rounded-lg">
+                <span className="text-xs text-green-800 dark:text-green-300 font-medium">Pagos:</span> 
+                <span className="ml-1 text-sm font-bold text-green-800 dark:text-green-300">{paymentSummary.paid}</span>
+                <span className="ml-2 text-xs text-green-800 dark:text-green-300">
+                  ({new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }).format(paymentSummary.paidTotal)})
+                </span>
+              </div>
+              <div className="bg-orange-100 dark:bg-orange-900/30 px-3 py-1.5 rounded-lg">
+                <span className="text-xs text-orange-800 dark:text-orange-300 font-medium">Pendentes:</span> 
+                <span className="ml-1 text-sm font-bold text-orange-800 dark:text-orange-300">{paymentSummary.pending}</span>
+                <span className="ml-2 text-xs text-orange-800 dark:text-orange-300">
+                  ({new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }).format(paymentSummary.pendingTotal)})
+                </span>
+              </div>
+              <div className="bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1.5 rounded-lg">
+                <span className="text-xs text-yellow-800 dark:text-yellow-300 font-medium">Cancelados:</span> 
+                <span className="ml-1 text-sm font-bold text-yellow-800 dark:text-yellow-300">{paymentSummary.canceled}</span>
+                <span className="ml-2 text-xs text-yellow-800 dark:text-yellow-300">
+                  ({new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }).format(paymentSummary.canceledTotal)})
+                </span>
+              </div>
+            </div>
+          </div>
           {isPublic && (
             <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-medium">
               Visualização pública

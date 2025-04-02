@@ -14,6 +14,15 @@ export interface Client {
   stripe_customer_id?: string;
 }
 
+export interface ServiceSummary {
+  paidCount: number;
+  pendingCount: number;
+  canceledCount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  canceledAmount: number;
+}
+
 export const useClients = () => {
   const queryClient = useQueryClient();
 
@@ -33,6 +42,65 @@ export const useClients = () => {
       return data as Client[];
     }
   });
+
+  const getClientServiceSummary = async (clientId: string): Promise<ServiceSummary> => {
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('payment_status, amount')
+        .eq('client_id', clientId);
+
+      if (error) {
+        console.error('Erro ao carregar resumo de serviços:', error);
+        return {
+          paidCount: 0,
+          pendingCount: 0,
+          canceledCount: 0,
+          paidAmount: 0,
+          pendingAmount: 0,
+          canceledAmount: 0
+        };
+      }
+
+      const summary: ServiceSummary = {
+        paidCount: 0,
+        pendingCount: 0,
+        canceledCount: 0,
+        paidAmount: 0,
+        pendingAmount: 0,
+        canceledAmount: 0
+      };
+
+      data.forEach(service => {
+        switch (service.payment_status) {
+          case 'paid':
+            summary.paidCount++;
+            summary.paidAmount += service.amount || 0;
+            break;
+          case 'pending':
+            summary.pendingCount++;
+            summary.pendingAmount += service.amount || 0;
+            break;
+          case 'canceled':
+            summary.canceledCount++;
+            summary.canceledAmount += service.amount || 0;
+            break;
+        }
+      });
+
+      return summary;
+    } catch (error) {
+      console.error('Erro ao calcular resumo:', error);
+      return {
+        paidCount: 0,
+        pendingCount: 0,
+        canceledCount: 0,
+        paidAmount: 0,
+        pendingAmount: 0,
+        canceledAmount: 0
+      };
+    }
+  };
 
   const addClientMutation = useMutation({
     mutationFn: async (newClient: Omit<Client, "id" | "created_at">) => {
@@ -111,6 +179,7 @@ export const useClients = () => {
     isLoading,
     addClient: addClientMutation.mutate,
     updateClient: updateClientMutation.mutate,
-    deleteClient: deleteClientMutation.mutate
+    deleteClient: deleteClientMutation.mutate,
+    getClientServiceSummary
   };
 };

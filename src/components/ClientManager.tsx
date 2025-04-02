@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useClients, Client } from "@/hooks/useClients";
+import { useClients, Client, ServiceSummary } from "@/hooks/useClients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,12 +21,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, UserPlus } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Pencil, Trash2, UserPlus, ExternalLink } from "lucide-react";
 
 export function ClientManager() {
-  const { clients, addClient, updateClient, deleteClient } = useClients();
+  const { clients, addClient, updateClient, deleteClient, getClientServiceSummary } = useClients();
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [showNewClientDialog, setShowNewClientDialog] = useState(false);
+  const [clientSummaries, setClientSummaries] = useState<{[key: string]: ServiceSummary}>({});
   const [newClient, setNewClient] = useState({
     name: "",
     email: "",
@@ -50,6 +52,20 @@ export function ClientManager() {
     if (!editingClient || !editingClient.name.trim()) return;
     updateClient({ id: editingClient.id, updates: editingClient });
     setEditingClient(null);
+  };
+
+  const loadClientSummary = async (clientId: string) => {
+    if (clientSummaries[clientId]) return;
+    
+    try {
+      const summary = await getClientServiceSummary(clientId);
+      setClientSummaries(prev => ({
+        ...prev,
+        [clientId]: summary
+      }));
+    } catch (error) {
+      console.error("Erro ao carregar resumo do cliente:", error);
+    }
   };
 
   return (
@@ -135,17 +151,48 @@ export function ClientManager() {
             <TableHead>Documento</TableHead>
             <TableHead>Telefone</TableHead>
             <TableHead>Endereço</TableHead>
+            <TableHead>Resumo</TableHead>
             <TableHead>Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {clients.map((client) => (
-            <TableRow key={client.id}>
+            <TableRow 
+              key={client.id}
+              onMouseEnter={() => loadClientSummary(client.id)}
+            >
               <TableCell>{client.name}</TableCell>
               <TableCell>{client.email}</TableCell>
               <TableCell>{client.document}</TableCell>
               <TableCell>{client.phone}</TableCell>
               <TableCell>{client.address}</TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-1">
+                  {clientSummaries[client.id] ? (
+                    <>
+                      <div className="flex gap-2 text-xs">
+                        <span className="px-1 py-0.5 bg-green-100 text-green-800 rounded">
+                          {clientSummaries[client.id].paidCount} pagos
+                        </span>
+                        <span className="px-1 py-0.5 bg-orange-100 text-orange-800 rounded">
+                          {clientSummaries[client.id].pendingCount} pendentes
+                        </span>
+                        <span className="px-1 py-0.5 bg-yellow-100 text-yellow-800 rounded">
+                          {clientSummaries[client.id].canceledCount} cancelados
+                        </span>
+                      </div>
+                      <Link 
+                        to={`/client-portal?client=${client.id}`}
+                        className="text-xs flex items-center text-blue-600 hover:text-blue-800 mt-1"
+                      >
+                        Ver portal <ExternalLink className="h-3 w-3 ml-1" />
+                      </Link>
+                    </>
+                  ) : (
+                    <span className="text-xs text-gray-500">Carregando...</span>
+                  )}
+                </div>
+              </TableCell>
               <TableCell>
                 <div className="flex gap-2">
                   <Dialog>
