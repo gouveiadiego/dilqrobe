@@ -1,17 +1,21 @@
 
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, MonthChangeEventHandler } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>;
+export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+  // Add custom mode property that can include "month"
+  mode?: "default" | "single" | "multiple" | "range" | "month";
+};
 
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  mode,
   ...props
 }: CalendarProps) {
   // Log month days for debugging
@@ -25,15 +29,21 @@ function Calendar({
     }
   }, [props.month]);
 
+  // For month selection mode, we only need to display month view
+  const isMonthSelectionMode = mode === "month";
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={cn("p-3 pointer-events-auto", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
+        caption_label: cn(
+          "text-sm font-medium",
+          isMonthSelectionMode && "text-base"
+        ),
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
@@ -67,6 +77,14 @@ function Calendar({
         IconLeft: () => <ChevronLeft className="h-4 w-4" />,
         IconRight: () => <ChevronRight className="h-4 w-4" />,
       }}
+      // If it's month selection mode, hide the day buttons
+      hidden={isMonthSelectionMode ? true : undefined}
+      // Additional props specific to month selection mode
+      {...(isMonthSelectionMode ? {
+        captionLayout: "dropdown",
+        fromYear: new Date().getFullYear() - 2,
+        toYear: new Date().getFullYear() + 2,
+      } : {})}
       {...props}
     />
   );

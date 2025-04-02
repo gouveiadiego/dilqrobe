@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
+import { format, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -85,7 +85,6 @@ export default function ClientPortal() {
 
   useEffect(() => {
     const fetchData = async () => {
-      // Try to get client ID from the slug if no direct client ID is provided
       let effectiveClientId = clientId;
       
       if (!effectiveClientId && clientSlug) {
@@ -138,7 +137,6 @@ export default function ClientPortal() {
   }, [clientId, clientSlug]);
 
   const calculatePaymentSummary = (services: ClientService[]): PaymentSummary => {
-    // Filter services by selected month if a month is selected
     const filteredServices = selectedMonth 
       ? services.filter(service => isSameMonth(new Date(service.start_date), selectedMonth))
       : services;
@@ -260,12 +258,10 @@ export default function ClientPortal() {
     setSelectedMonth(undefined);
   };
 
-  // Filter services based on selected month
   const filteredServices = selectedMonth
     ? services.filter(service => isSameMonth(new Date(service.start_date), selectedMonth))
     : services;
 
-  // Update summary when month changes
   useEffect(() => {
     const summary = calculatePaymentSummary(services);
     setPaymentSummary(summary);
@@ -370,12 +366,17 @@ export default function ClientPortal() {
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <Calendar
-                  mode="month"
+                  mode="single"
                   selected={selectedMonth}
                   onSelect={handleMonthSelect}
                   initialFocus
                   className="pointer-events-auto"
                   locale={ptBR}
+                  captionLayout="dropdown-buttons"
+                  fromYear={2020}
+                  toYear={2030}
+                  modifiers={{ disabled: [{ before: new Date(2020, 0) }] }}
+                  modifiersStyles={{ disabled: { display: 'none' } }}
                 />
                 {selectedMonth && (
                   <div className="p-2 border-t border-gray-100 dark:border-gray-800 flex justify-end">
