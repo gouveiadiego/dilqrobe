@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+
 interface Service {
   id: string;
   start_date: string;
@@ -31,6 +32,7 @@ interface Service {
   reference_month: string;
   client_id: string;
 }
+
 interface NewService {
   start_date: string;
   client_name: string;
@@ -44,6 +46,7 @@ interface NewService {
   reference_month: string;
   client_id: string;
 }
+
 interface ServiceStats {
   totalRevenue: number;
   servicesProvided: number;
@@ -57,6 +60,7 @@ interface ServiceStats {
     [status: string]: number;
   };
 }
+
 const calculateStats = (services: Service[]): ServiceStats => {
   const totalRevenue = services.reduce((sum, service) => sum + service.amount, 0);
   const servicesProvided = services.length;
@@ -87,6 +91,7 @@ const calculateStats = (services: Service[]): ServiceStats => {
     revenueByStatus
   };
 };
+
 const calculateDailyRevenue = (services: Service[], date: Date): number => {
   const formattedDate = format(date, 'yyyy-MM-dd');
   return services.reduce((sum, service) => {
@@ -94,6 +99,7 @@ const calculateDailyRevenue = (services: Service[], date: Date): number => {
     return serviceDate === formattedDate ? sum + service.amount : sum;
   }, 0);
 };
+
 const renderDashboard = (services: Service[]) => {
   const stats = calculateStats(services);
   const today = new Date();
@@ -170,11 +176,13 @@ const renderDashboard = (services: Service[]) => {
       </div>
     </div>;
 };
+
 export function ServicesTab() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [selectedClient, setSelectedClient] = useState<string>("");
   const {
     clients
   } = useClients();
@@ -202,6 +210,7 @@ export function ServicesTab() {
   const [activeTab, setActiveTab] = useState("overview");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [showCurrentMonth, setShowCurrentMonth] = useState(false);
+
   const fetchServices = async () => {
     try {
       const {
@@ -225,6 +234,7 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
+
   const fetchCompanyLogo = async () => {
     try {
       const {
@@ -246,10 +256,12 @@ export function ServicesTab() {
       console.error('Erro ao carregar logo da empresa:', error);
     }
   };
+
   useEffect(() => {
     fetchServices();
     fetchCompanyLogo();
   }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -289,6 +301,7 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
+
   const handlePaymentStatusChange = (value: string) => {
     if (value === 'pending' || value === 'paid' || value === 'canceled') {
       setNewService({
@@ -297,6 +310,7 @@ export function ServicesTab() {
       });
     }
   };
+
   const handleEditingPaymentStatusChange = (value: string) => {
     if (!editingService) return;
     if (value === 'pending' || value === 'paid' || value === 'canceled') {
@@ -306,6 +320,7 @@ export function ServicesTab() {
       });
     }
   };
+
   const togglePaymentStatus = async (id: string, currentStatus: 'pending' | 'paid' | 'canceled') => {
     try {
       const newStatus = currentStatus === 'pending' ? 'paid' : 'pending';
@@ -327,9 +342,11 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
+
   const handleEdit = (service: Service) => {
     setEditingService(service);
   };
+
   const handleDelete = async () => {
     if (!serviceToDelete) return;
     try {
@@ -348,6 +365,7 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingService) return;
@@ -366,6 +384,7 @@ export function ServicesTab() {
       toast.error(error.message);
     }
   };
+
   const handleSharePortalLink = () => {
     if (selectedClientIds.length === 0) {
       toast.error("Selecione pelo menos um cliente para compartilhar");
@@ -374,22 +393,38 @@ export function ServicesTab() {
     setShowShareDialog(false);
     setShowLinkDialog(true);
   };
+
   const handleToggleClientSelection = (clientId: string) => {
     setSelectedClientIds(prevSelected => {
       if (prevSelected.includes(clientId)) {
+        if (prevSelected.length === 1 && prevSelected[0] === clientId) {
+          setSelectedClient("");
+        }
         return prevSelected.filter(id => id !== clientId);
       } else {
+        if (prevSelected.length === 0) {
+          const client = clients.find(c => c.id === clientId);
+          if (client) {
+            setSelectedClient(client.name);
+          }
+        }
         return [...prevSelected, clientId];
       }
     });
   };
+
   const handleSelectAllClients = () => {
     if (selectedClientIds.length === clients.length) {
       setSelectedClientIds([]);
+      setSelectedClient("");
     } else {
       setSelectedClientIds(clients.map(client => client.id));
+      if (clients.length > 0) {
+        setSelectedClient("Todos os clientes");
+      }
     }
   };
+
   const filteredServices = services.filter(service => {
     const searchText = filterText.toLowerCase();
     const matchesFilter = !filterText || service.client_name.toLowerCase().includes(searchText) || service.company_name.toLowerCase().includes(searchText) || service.service_description.toLowerCase().includes(searchText) || service.stage.toLowerCase().includes(searchText) || service.status.toLowerCase().includes(searchText);
@@ -401,6 +436,7 @@ export function ServicesTab() {
     const matchesStatus = !filterStatus || filterStatus === 'paid' && service.payment_status === 'paid' || filterStatus === 'pending' && service.payment_status === 'pending';
     return matchesFilter && matchesClient && (showCurrentMonth && matchesCurrentMonth || !showCurrentMonth && matchesSelectedMonth) && matchesStatus;
   });
+
   const groupedServices = filteredServices.reduce((acc: {
     [key: string]: {
       clientName: string;
@@ -416,7 +452,51 @@ export function ServicesTab() {
     acc[service.client_id].services.push(service);
     return acc;
   }, {});
+
+  const handleMonthChange = (date: Date | undefined) => {
+    setFilterDate(date);
+    if (selectedClientIds.length === 1) {
+      const client = clients.find(c => c.id === selectedClientIds[0]);
+      if (client) {
+        setSelectedClient(client.name);
+      }
+    } else if (selectedClientIds.length > 1) {
+      setSelectedClient("Vários clientes");
+    }
+    setShowCurrentMonth(false);
+    setCalendarOpen(false);
+  };
+
+  const toggleCurrentMonth = () => {
+    setShowCurrentMonth(true);
+    setFilterDate(undefined);
+    setCalendarOpen(false);
+    if (selectedClientIds.length === 1) {
+      const client = clients.find(c => c.id === selectedClientIds[0]);
+      if (client) {
+        setSelectedClient(client.name);
+      }
+    } else if (selectedClientIds.length > 1) {
+      setSelectedClient("Vários clientes");
+    }
+  };
+
+  const clearMonthFilter = () => {
+    setFilterDate(undefined);
+    setShowCurrentMonth(false);
+    setCalendarOpen(false);
+    if (selectedClientIds.length === 1) {
+      const client = clients.find(c => c.id === selectedClientIds[0]);
+      if (client) {
+        setSelectedClient(client.name);
+      }
+    } else if (selectedClientIds.length > 1) {
+      setSelectedClient("Vários clientes");
+    }
+  };
+
   const currentMonth = format(new Date(), 'MMMM yyyy');
+
   return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Serviços</h1>
@@ -540,7 +620,12 @@ export function ServicesTab() {
                 <BarChart3 className="h-6 w-6 text-indigo-600" />
                 Serviços
               </h2>
-              <div className="flex gap-4">
+              <div className="flex gap-4 items-center">
+                {selectedClient && (
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Cliente: {selectedClient}
+                  </div>
+                )}
                 <Button variant="outline" className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700" onClick={() => setShowShareDialog(true)}>
                   <Link2 className="h-4 w-4 mr-2" />
                   Compartilhar por Cliente
@@ -571,28 +656,18 @@ export function ServicesTab() {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 glass-card" align="start">
-                      <Calendar mode="single" selected={filterDate} onSelect={date => {
-                      if (date) {
-                        setFilterDate(date);
-                        setShowCurrentMonth(false);
-                      } else {
-                        setShowCurrentMonth(true);
-                      }
-                      setCalendarOpen(false);
-                    }} initialFocus className="bg-white dark:bg-gray-800 pointer-events-auto" />
+                      <Calendar 
+                        mode="single" 
+                        selected={filterDate} 
+                        onSelect={handleMonthChange} 
+                        initialFocus 
+                        className="bg-white dark:bg-gray-800 pointer-events-auto" 
+                      />
                       <div className="p-3 border-t border-gray-100 dark:border-gray-700 flex justify-between">
-                        <Button variant="ghost" onClick={() => {
-                        setShowCurrentMonth(true);
-                        setFilterDate(undefined);
-                        setCalendarOpen(false);
-                      }} className="text-xs h-8">
+                        <Button variant="ghost" onClick={toggleCurrentMonth} className="text-xs h-8">
                           Mês atual
                         </Button>
-                        <Button variant="ghost" onClick={() => {
-                        setFilterDate(undefined);
-                        setShowCurrentMonth(false);
-                        setCalendarOpen(false);
-                      }} className="text-xs h-8">
+                        <Button variant="ghost" onClick={clearMonthFilter} className="text-xs h-8">
                           Limpar filtro
                         </Button>
                       </div>
@@ -624,7 +699,13 @@ export function ServicesTab() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium">{clientName}</h3>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-indigo-600" onClick={() => handleToggleClientSelection(clientId)}>
+                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-indigo-600" onClick={() => {
+                      handleToggleClientSelection(clientId);
+                      const client = clients.find(c => c.id === clientId);
+                      if (client) {
+                        setSelectedClient(client.name);
+                      }
+                    }}>
                       <Link2 className="h-4 w-4 mr-1" />
                       Compartilhar
                     </Button>

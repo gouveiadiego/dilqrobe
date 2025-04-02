@@ -66,7 +66,7 @@ export default function ClientPortal() {
         .single();
 
       if (clientError) {
-        console.error('Error fetching client info:', clientError);
+        console.error('Erro ao buscar informações do cliente:', clientError);
       } else {
         setClient(clientData as Client);
       }
@@ -79,7 +79,7 @@ export default function ClientPortal() {
         .order('start_date', { ascending: false });
 
       if (servicesError) {
-        console.error('Error fetching services:', servicesError);
+        console.error('Erro ao buscar serviços:', servicesError);
         return;
       }
 
