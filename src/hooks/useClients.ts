@@ -6,7 +6,7 @@ import { toast } from "sonner";
 export interface Client {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   document?: string;
   phone?: string;
   address?: string;
@@ -38,6 +38,11 @@ export const useClients = () => {
     mutationFn: async (newClient: Omit<Client, "id" | "created_at">) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
+
+      // Garantir que name esteja presente, os outros campos são opcionais
+      if (!newClient.name) {
+        throw new Error('Nome do cliente é obrigatório');
+      }
 
       const { data, error } = await supabase
         .from('clients')

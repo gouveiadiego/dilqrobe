@@ -36,13 +36,17 @@ export function ClientManager() {
   });
 
   const handleSubmit = () => {
+    // Verificar apenas se o nome foi preenchido
+    if (!newClient.name.trim()) {
+      return;
+    }
     addClient(newClient);
     setNewClient({ name: "", email: "", document: "", phone: "", address: "" });
     setShowNewClientDialog(false);
   };
 
   const handleSaveEdit = () => {
-    if (!editingClient) return;
+    if (!editingClient || !editingClient.name.trim()) return;
     updateClient({ id: editingClient.id, updates: editingClient });
     setEditingClient(null);
   };
@@ -81,7 +85,6 @@ export function ClientManager() {
                   value={newClient.email}
                   onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
                   className="col-span-3"
-                  required
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
