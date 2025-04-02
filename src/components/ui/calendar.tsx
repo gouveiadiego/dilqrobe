@@ -6,9 +6,12 @@ import { DayPicker, MonthChangeEventHandler } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
+// Explicitly define our custom mode type to include "month"
+type CalendarMode = "default" | "single" | "multiple" | "range" | "month";
+
+export type CalendarProps = Omit<React.ComponentProps<typeof DayPicker>, "mode"> & {
   // Add custom mode property that can include "month"
-  mode?: "default" | "single" | "multiple" | "range" | "month";
+  mode?: CalendarMode;
 };
 
 function Calendar({
@@ -77,6 +80,9 @@ function Calendar({
         IconLeft: () => <ChevronLeft className="h-4 w-4" />,
         IconRight: () => <ChevronRight className="h-4 w-4" />,
       }}
+      // Pass the mode down to DayPicker, but only if it's a standard mode
+      // If it's a custom "month" mode, don't pass it
+      mode={mode !== "month" ? mode as any : undefined}
       // If it's month selection mode, hide the day buttons
       hidden={isMonthSelectionMode ? true : undefined}
       // Additional props specific to month selection mode
