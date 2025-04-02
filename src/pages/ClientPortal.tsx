@@ -76,7 +76,6 @@ export default function ClientPortal() {
     const fetchData = async () => {
       if (!clientId) return;
 
-      // Fetch client information
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .select('id, name, email')
@@ -89,7 +88,6 @@ export default function ClientPortal() {
         setClient(clientData as Client);
       }
 
-      // Fetch services
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select('*')
@@ -103,7 +101,6 @@ export default function ClientPortal() {
 
       setServices(servicesData || []);
       
-      // Calculate payment summary
       const summary = calculatePaymentSummary(servicesData || []);
       setPaymentSummary(summary);
       
@@ -228,6 +225,11 @@ export default function ClientPortal() {
           {!isPublic && (
             <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-1">
               Gerencie e compartilhe informações com seu cliente
+            </p>
+          )}
+          {isPublic && (
+            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-1">
+              Sistema para gerenciamento eficiente com produtividade e propósito
             </p>
           )}
         </div>
@@ -364,6 +366,9 @@ export default function ClientPortal() {
             <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
               Esta é uma visualização pública compartilhada por {client?.email}. Quaisquer atualizações 
               feitas pelo profissional serão refletidas automaticamente nesta página.
+            </p>
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-2">
+              DilQ Orbe - Sistema para gerenciamento eficiente com produtividade e propósito
             </p>
           </div>
         )}

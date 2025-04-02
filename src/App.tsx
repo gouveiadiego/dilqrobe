@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import Index from "./pages/Index";
@@ -10,6 +11,9 @@ import ClientPortal from "./pages/ClientPortal";
 import CompanyDetails from "./pages/CompanyDetails";
 import LandingPage from "./pages/LandingPage";
 import Subscription from "./pages/Subscription";
+
+// Add title for the application
+document.title = "DilQ Orbe - Sistema para gerenciamento eficiente com produtividade e propósito";
 
 function App() {
   // Initialize dark mode based on user preference or system preference
