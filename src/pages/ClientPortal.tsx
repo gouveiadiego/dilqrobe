@@ -1,8 +1,8 @@
-
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, isSameMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Share, Check, Copy, Link } from "lucide-react";
+import { Share, Check, Copy, Link, Calendar as CalendarIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -25,6 +25,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface ClientService {
   id: string;
@@ -73,6 +80,8 @@ export default function ClientPortal() {
     canceledTotal: 0
   });
   const isMobile = useIsMobile();
+  const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(undefined);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -129,6 +138,11 @@ export default function ClientPortal() {
   }, [clientId, clientSlug]);
 
   const calculatePaymentSummary = (services: ClientService[]): PaymentSummary => {
+    // Filter services by selected month if a month is selected
+    const filteredServices = selectedMonth 
+      ? services.filter(service => isSameMonth(new Date(service.start_date), selectedMonth))
+      : services;
+    
     const summary = {
       paid: 0,
       pending: 0,
@@ -138,7 +152,7 @@ export default function ClientPortal() {
       canceledTotal: 0
     };
 
-    services.forEach(service => {
+    filteredServices.forEach(service => {
       switch (service.payment_status) {
         case 'paid':
           summary.paid++;
@@ -237,6 +251,26 @@ export default function ClientPortal() {
     );
   };
 
+  const handleMonthSelect = (date: Date | undefined) => {
+    setSelectedMonth(date);
+    setCalendarOpen(false);
+  };
+
+  const clearMonthFilter = () => {
+    setSelectedMonth(undefined);
+  };
+
+  // Filter services based on selected month
+  const filteredServices = selectedMonth
+    ? services.filter(service => isSameMonth(new Date(service.start_date), selectedMonth))
+    : services;
+
+  // Update summary when month changes
+  useEffect(() => {
+    const summary = calculatePaymentSummary(services);
+    setPaymentSummary(summary);
+  }, [selectedMonth, services]);
+
   if (loading) {
     return (
       <div className="container mx-auto p-4 md:p-6 flex justify-center items-center min-h-[50vh]">
@@ -311,21 +345,84 @@ export default function ClientPortal() {
               </div>
             </div>
           </div>
-          {isPublic && (
-            <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-medium">
-              Visualização pública
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {isPublic && (
+              <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-medium">
+                Visualização pública
+              </div>
+            )}
+            
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className={cn(
+                    selectedMonth ? "border-indigo-500 text-indigo-600 dark:text-indigo-400" : "",
+                    "gap-2"
+                  )}
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  {selectedMonth 
+                    ? format(selectedMonth, "MMMM yyyy", { locale: ptBR }) 
+                    : "Filtrar por mês"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="month"
+                  selected={selectedMonth}
+                  onSelect={handleMonthSelect}
+                  initialFocus
+                  className="pointer-events-auto"
+                  locale={ptBR}
+                />
+                {selectedMonth && (
+                  <div className="p-2 border-t border-gray-100 dark:border-gray-800 flex justify-end">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={clearMonthFilter}
+                      className="text-xs"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Limpar filtro
+                    </Button>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
+        
+        {selectedMonth && (
+          <div className="mb-4 p-2 bg-indigo-50 dark:bg-indigo-950/30 rounded-md flex items-center justify-between">
+            <div className="text-sm text-indigo-600 dark:text-indigo-300">
+              Mostrando serviços de {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={clearMonthFilter}
+              className="h-7 px-2 text-indigo-600 dark:text-indigo-300 hover:text-indigo-700"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Limpar
+            </Button>
+          </div>
+        )}
         
         {isMobile && (
           <div className="md:hidden space-y-4">
-            {services.length === 0 ? (
+            {filteredServices.length === 0 ? (
               <div className="text-center py-6 text-gray-500">
-                Nenhum serviço encontrado para este cliente
+                {selectedMonth 
+                  ? `Nenhum serviço encontrado para ${format(selectedMonth, "MMMM yyyy", { locale: ptBR })}`
+                  : "Nenhum serviço encontrado para este cliente"
+                }
               </div>
             ) : (
-              services.map((service) => (
+              filteredServices.map((service) => (
                 <ServiceCard key={service.id} service={service} />
               ))
             )}
@@ -347,14 +444,17 @@ export default function ClientPortal() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {services.length === 0 ? (
+                {filteredServices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-6 text-gray-500">
-                      Nenhum serviço encontrado para este cliente
+                      {selectedMonth 
+                        ? `Nenhum serviço encontrado para ${format(selectedMonth, "MMMM yyyy", { locale: ptBR })}`
+                        : "Nenhum serviço encontrado para este cliente"
+                      }
                     </TableCell>
                   </TableRow>
                 ) : (
-                  services.map((service) => (
+                  filteredServices.map((service) => (
                     <TableRow key={service.id}>
                       <TableCell>
                         {format(new Date(service.start_date), "dd/MM/yyyy")}
