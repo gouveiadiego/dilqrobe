@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ClientService {
   id: string;
@@ -70,6 +70,7 @@ export default function ClientPortal() {
     pendingTotal: 0,
     canceledTotal: 0
   });
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -164,10 +165,54 @@ export default function ClientPortal() {
     return `${baseUrl}/client-portal?client=${clientId}&public=true`;
   };
 
+  const ServiceCard = ({ service }: { service: ClientService }) => {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-4">
+        <div className="flex justify-between items-start mb-2">
+          <div className="font-medium">{service.company_name}</div>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            service.payment_status === 'paid' 
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+              : service.payment_status === 'canceled'
+              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+          }`}>
+            {service.payment_status === 'paid' 
+              ? 'Pago' 
+              : service.payment_status === 'canceled'
+              ? 'Cancelado'
+              : 'Pendente'}
+          </span>
+        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          {format(new Date(service.start_date), "dd/MM/yyyy")}
+        </div>
+        <div className="mb-2">{service.service_description}</div>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <span className="text-gray-500 dark:text-gray-400">Etapa:</span> {service.stage}
+          </div>
+          <div>
+            <span className="text-gray-500 dark:text-gray-400">Situação:</span> {service.status}
+          </div>
+          <div className="col-span-2">
+            <span className="text-gray-500 dark:text-gray-400">Valor:</span>{' '}
+            <span className="font-semibold">
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+              }).format(service.amount)}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
-      <div className="container mx-auto p-6 flex justify-center items-center min-h-[50vh]">
-        <div className="animate-pulse flex flex-col items-center">
+      <div className="container mx-auto p-4 md:p-6 flex justify-center items-center min-h-[50vh]">
+        <div className="animate-pulse flex flex-col items-center w-full">
           <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
           <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded w-full max-w-3xl"></div>
         </div>
@@ -176,12 +221,12 @@ export default function ClientPortal() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <div className="container mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Portal do Cliente</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Portal do Cliente</h1>
           {!isPublic && (
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-1">
               Gerencie e compartilhe informações com seu cliente
             </p>
           )}
@@ -194,37 +239,37 @@ export default function ClientPortal() {
         )}
       </div>
       
-      <Card className="p-6 border shadow-sm dark:bg-gray-900/60 backdrop-blur-sm">
-        <div className="flex justify-between items-center mb-6">
+      <Card className="p-4 md:p-6 border shadow-sm dark:bg-gray-900/60 backdrop-blur-sm">
+        <div className="flex justify-between items-center mb-4 md:mb-6">
           <div>
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-lg md:text-xl font-semibold">
               {client?.name || "Cliente"}
             </h2>
-            <div className="flex flex-wrap gap-3 mt-3">
-              <div className="bg-green-100 dark:bg-green-900/30 px-3 py-1.5 rounded-lg">
+            <div className="flex flex-wrap gap-2 md:gap-3 mt-2 md:mt-3">
+              <div className="bg-green-100 dark:bg-green-900/30 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs">
                 <span className="text-xs text-green-800 dark:text-green-300 font-medium">Pagos:</span> 
-                <span className="ml-1 text-sm font-bold text-green-800 dark:text-green-300">{paymentSummary.paid}</span>
-                <span className="ml-2 text-xs text-green-800 dark:text-green-300">
+                <span className="ml-1 text-xs md:text-sm font-bold text-green-800 dark:text-green-300">{paymentSummary.paid}</span>
+                <span className="md:ml-2 ml-1 text-xs text-green-800 dark:text-green-300">
                   ({new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
                     currency: 'BRL'
                   }).format(paymentSummary.paidTotal)})
                 </span>
               </div>
-              <div className="bg-orange-100 dark:bg-orange-900/30 px-3 py-1.5 rounded-lg">
+              <div className="bg-orange-100 dark:bg-orange-900/30 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs">
                 <span className="text-xs text-orange-800 dark:text-orange-300 font-medium">Pendentes:</span> 
-                <span className="ml-1 text-sm font-bold text-orange-800 dark:text-orange-300">{paymentSummary.pending}</span>
-                <span className="ml-2 text-xs text-orange-800 dark:text-orange-300">
+                <span className="ml-1 text-xs md:text-sm font-bold text-orange-800 dark:text-orange-300">{paymentSummary.pending}</span>
+                <span className="md:ml-2 ml-1 text-xs text-orange-800 dark:text-orange-300">
                   ({new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
                     currency: 'BRL'
                   }).format(paymentSummary.pendingTotal)})
                 </span>
               </div>
-              <div className="bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1.5 rounded-lg">
+              <div className="bg-yellow-100 dark:bg-yellow-900/30 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs">
                 <span className="text-xs text-yellow-800 dark:text-yellow-300 font-medium">Cancelados:</span> 
-                <span className="ml-1 text-sm font-bold text-yellow-800 dark:text-yellow-300">{paymentSummary.canceled}</span>
-                <span className="ml-2 text-xs text-yellow-800 dark:text-yellow-300">
+                <span className="ml-1 text-xs md:text-sm font-bold text-yellow-800 dark:text-yellow-300">{paymentSummary.canceled}</span>
+                <span className="md:ml-2 ml-1 text-xs text-yellow-800 dark:text-yellow-300">
                   ({new Intl.NumberFormat('pt-BR', {
                     style: 'currency',
                     currency: 'BRL'
@@ -240,67 +285,83 @@ export default function ClientPortal() {
           )}
         </div>
         
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Nome da Empresa/Cliente</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Etapa</TableHead>
-                <TableHead>Situação</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {services.length === 0 ? (
+        {isMobile && (
+          <div className="md:hidden space-y-4">
+            {services.length === 0 ? (
+              <div className="text-center py-6 text-gray-500">
+                Nenhum serviço encontrado para este cliente
+              </div>
+            ) : (
+              services.map((service) => (
+                <ServiceCard key={service.id} service={service} />
+              ))
+            )}
+          </div>
+        )}
+        
+        {!isMobile && (
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-gray-500">
-                    Nenhum serviço encontrado para este cliente
-                  </TableCell>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Nome da Empresa/Cliente</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Etapa</TableHead>
+                  <TableHead>Situação</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ) : (
-                services.map((service) => (
-                  <TableRow key={service.id}>
-                    <TableCell>
-                      {format(new Date(service.start_date), "dd/MM/yyyy")}
-                    </TableCell>
-                    <TableCell>{service.company_name}</TableCell>
-                    <TableCell>{service.service_description}</TableCell>
-                    <TableCell>{service.stage}</TableCell>
-                    <TableCell>{service.status}</TableCell>
-                    <TableCell>
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      }).format(service.amount)}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        service.payment_status === 'paid' 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                          : service.payment_status === 'canceled'
-                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                          : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-                      }`}>
-                        {service.payment_status === 'paid' 
-                          ? 'Pago' 
-                          : service.payment_status === 'canceled'
-                          ? 'Cancelado'
-                          : 'Pendente'}
-                      </span>
+              </TableHeader>
+              <TableBody>
+                {services.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-6 text-gray-500">
+                      Nenhum serviço encontrado para este cliente
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ) : (
+                  services.map((service) => (
+                    <TableRow key={service.id}>
+                      <TableCell>
+                        {format(new Date(service.start_date), "dd/MM/yyyy")}
+                      </TableCell>
+                      <TableCell>{service.company_name}</TableCell>
+                      <TableCell>{service.service_description}</TableCell>
+                      <TableCell>{service.stage}</TableCell>
+                      <TableCell>{service.status}</TableCell>
+                      <TableCell>
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL'
+                        }).format(service.amount)}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          service.payment_status === 'paid' 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                            : service.payment_status === 'canceled'
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                            : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+                        }`}>
+                          {service.payment_status === 'paid' 
+                            ? 'Pago' 
+                            : service.payment_status === 'canceled'
+                            ? 'Cancelado'
+                            : 'Pendente'}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
         
         {isPublic && (
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
               Esta é uma visualização pública compartilhada por {client?.email}. Quaisquer atualizações 
               feitas pelo profissional serão refletidas automaticamente nesta página.
             </p>
@@ -309,7 +370,7 @@ export default function ClientPortal() {
       </Card>
 
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-[90vw] rounded-lg">
           <DialogHeader>
             <DialogTitle>Compartilhar portal do cliente</DialogTitle>
             <DialogDescription>
