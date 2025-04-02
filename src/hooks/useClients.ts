@@ -6,7 +6,7 @@ import { toast } from "sonner";
 export interface Client {
   id: string;
   name: string;
-  email?: string;
+  email: string; // We're keeping this as required to match the database schema
   document?: string;
   phone?: string;
   address?: string;
@@ -44,9 +44,16 @@ export const useClients = () => {
         throw new Error('Nome do cliente é obrigatório');
       }
 
+      // Fornecer um valor padrão para email se estiver vazio, para satisfazer a validação do banco de dados
+      const clientToInsert = {
+        ...newClient,
+        user_id: user.id,
+        email: newClient.email || `${newClient.name.toLowerCase().replace(/\s+/g, '.')}@exemplo.com` // Gera um email fictício baseado no nome se não fornecido
+      };
+
       const { data, error } = await supabase
         .from('clients')
-        .insert([{ ...newClient, user_id: user.id }])
+        .insert([clientToInsert])
         .select()
         .single();
 

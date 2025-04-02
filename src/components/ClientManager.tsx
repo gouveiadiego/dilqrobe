@@ -40,6 +40,7 @@ export function ClientManager() {
     if (!newClient.name.trim()) {
       return;
     }
+    // O email vazio será substituído por um valor padrão na função addClient
     addClient(newClient);
     setNewClient({ name: "", email: "", document: "", phone: "", address: "" });
     setShowNewClientDialog(false);
@@ -85,6 +86,7 @@ export function ClientManager() {
                   value={newClient.email}
                   onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
                   className="col-span-3"
+                  placeholder="Deixe em branco para gerar automaticamente"
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
