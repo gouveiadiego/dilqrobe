@@ -1,15 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, parse, isValid, isSameMonth, getMonth, getYear } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, parse, isValid, isSameMonth, getMonth, getYear, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useClients } from "@/hooks/useClients";
 import { ClientManager } from "./ClientManager";
-import { Link2, Search, Pencil, Trash2, PlusCircle, BarChart3, PieChart as PieChartIcon, ChevronRight, CreditCard, Calendar as CalendarIcon, Check, Users } from "lucide-react";
+import { Link2, Search, Pencil, Trash2, PlusCircle, BarChart3, PieChart as PieChartIcon, ChevronRight, CreditCard, Calendar as CalendarIcon, Check, Users, ChevronLeft, ChevronDown, X } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 
 interface Service {
   id: string;
@@ -102,20 +102,28 @@ const calculateDailyRevenue = (services: Service[], date: Date): number => {
   }, 0);
 };
 
-const renderDashboard = (services: Service[]) => {
+const renderDashboard = (services: Service[], selectedMonth: Date | undefined) => {
   const stats = calculateStats(services);
-  const today = new Date();
+  
+  const today = selectedMonth || new Date();
   const currentMonthStart = startOfMonth(today);
   const currentMonthEnd = endOfMonth(today);
+  
   const daysInMonth = eachDayOfInterval({
     start: currentMonthStart,
     end: currentMonthEnd
   });
+  
   const dailyRevenueData = daysInMonth.map(day => ({
     date: format(day, 'dd/MM'),
     revenue: calculateDailyRevenue(services, day)
   }));
+  
+  const formattedMonth = format(today, "MMMM 'de' yyyy", { locale: ptBR })
+    .replace(/^\w/, (c) => c.toUpperCase());
+  
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#9cafff'];
+  
   return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div className="glass-card p-6">
         <h3 className="text-lg font-semibold mb-2">Receita Total</h3>
@@ -164,7 +172,12 @@ const renderDashboard = (services: Service[]) => {
       </div>
 
       <div className="glass-card p-6 lg:col-span-2">
-        <h3 className="text-lg font-semibold mb-2">Receita Diária do Mês</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Receita Diária do Mês</h3>
+          <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+            {formattedMonth}
+          </span>
+        </div>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={dailyRevenueData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -210,8 +223,8 @@ export function ServicesTab() {
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
   const [showStatsCard, setShowStatsCard] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [showCurrentMonth, setShowCurrentMonth] = useState(false);
+  const [dashboardMonth, setDashboardMonth] = useState<Date | undefined>(new Date());
+  const [dashboardCalendarOpen, setDashboardCalendarOpen] = useState(false);
 
   const fetchServices = async () => {
     try {
@@ -422,11 +435,9 @@ export function ServicesTab() {
     }
   };
 
-  // Importante: Não modificar o selectedClient durante as mudanças de mês
-  const handleMonthChange = (date: Date | undefined) => {
-    setFilterDate(date);
-    setShowCurrentMonth(false);
-    setCalendarOpen(false);
+  const handleDashboardMonthSelect = (date: Date | undefined) => {
+    setDashboardMonth(date);
+    setDashboardCalendarOpen(false);
   };
 
   const toggleCurrentMonth = () => {
@@ -486,7 +497,75 @@ export function ServicesTab() {
         </TabsList>
         
         <TabsContent value="overview" className="mt-0">
-          {renderDashboard(services)}
+          <div className="mb-4 flex justify-end">
+            <Popover open={dashboardCalendarOpen} onOpenChange={setDashboardCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {dashboardMonth 
+                    ? format(dashboardMonth, "MMMM yyyy", { locale: ptBR }) 
+                    : "Selecione o mês"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="month"
+                  selected={dashboardMonth}
+                  onSelect={handleDashboardMonthSelect}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                  locale={ptBR}
+                  captionLayout="dropdown-buttons"
+                  fromYear={2020}
+                  toYear={2030}
+                />
+                <div className="p-3 border-t flex justify-between">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      const prevMonth = new Date(dashboardMonth || new Date());
+                      prevMonth.setMonth(prevMonth.getMonth() - 1);
+                      setDashboardMonth(prevMonth);
+                    }}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Mês anterior
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      setDashboardMonth(new Date());
+                      setDashboardCalendarOpen(false);
+                    }}
+                  >
+                    Mês atual
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      const nextMonth = new Date(dashboardMonth || new Date());
+                      nextMonth.setMonth(nextMonth.getMonth() + 1);
+                      setDashboardMonth(nextMonth);
+                    }}
+                  >
+                    Próximo mês
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          {renderDashboard(dashboardMonth 
+            ? services.filter(service => {
+                const serviceDate = parseISO(service.start_date);
+                return isSameMonth(serviceDate, dashboardMonth);
+              }) 
+            : services, 
+            dashboardMonth
+          )}
         </TabsContent>
         
         <TabsContent value="new" className="mt-0">
