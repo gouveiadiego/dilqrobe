@@ -225,6 +225,8 @@ export function ServicesTab() {
   const [activeTab, setActiveTab] = useState("overview");
   const [dashboardMonth, setDashboardMonth] = useState<Date | undefined>(new Date());
   const [dashboardCalendarOpen, setDashboardCalendarOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [showCurrentMonth, setShowCurrentMonth] = useState(false);
 
   const fetchServices = async () => {
     try {
@@ -448,6 +450,12 @@ export function ServicesTab() {
 
   const clearMonthFilter = () => {
     setFilterDate(undefined);
+    setShowCurrentMonth(false);
+    setCalendarOpen(false);
+  };
+
+  const handleMonthChange = (date: Date | undefined) => {
+    setFilterDate(date);
     setShowCurrentMonth(false);
     setCalendarOpen(false);
   };
@@ -690,7 +698,7 @@ export function ServicesTab() {
             </div>
             
             {showStatsCard && <div className="mb-6">
-                {renderDashboard(filteredServices)}
+                {renderDashboard(filteredServices, filterDate)}
               </div>}
             
             <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
