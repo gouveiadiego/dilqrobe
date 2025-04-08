@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -42,7 +41,7 @@ import {
   Users,
   PieChart,
   Briefcase,
-  LayoutGrid as Rows,
+  LayoutGrid,
   Table 
 } from "lucide-react";
 import { toast } from "sonner";
@@ -124,21 +123,18 @@ type StreakProgressType = {
   visualLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'master';
 };
 
-// Color schemes for different impact levels
 const impactColors = {
   low: { bg: "from-blue-100 to-cyan-50", text: "text-blue-600", border: "border-blue-200", progress: "bg-blue-400" },
   medium: { bg: "from-purple-100 to-fuchsia-50", text: "text-purple-600", border: "border-purple-200", progress: "bg-purple-400" },
   high: { bg: "from-amber-100 to-yellow-50", text: "text-amber-600", border: "border-amber-200", progress: "bg-amber-400" }
 };
 
-// Difficulty badges
 const difficultyBadges = {
   easy: { color: "bg-green-100 text-green-700 border-green-200", icon: <Shield className="h-3 w-3 mr-1" /> },
   medium: { color: "bg-blue-100 text-blue-700 border-blue-200", icon: <Target className="h-3 w-3 mr-1" /> },
   hard: { color: "bg-purple-100 text-purple-700 border-purple-200", icon: <Award className="h-3 w-3 mr-1" /> }
 };
 
-// Categorias de hábitos com ícones
 const habitCategories = [
   { value: "saude", label: "Saúde", icon: <Heart className="h-4 w-4 text-red-500" /> },
   { value: "fitness", label: "Fitness", icon: <Activity className="h-4 w-4 text-green-500" /> },
@@ -149,7 +145,6 @@ const habitCategories = [
   { value: "social", label: "Social", icon: <Users className="h-4 w-4 text-indigo-500" /> }
 ];
 
-// Motivational messages for different occasions
 const motivationalMessages = [
   "Você está construindo um futuro melhor, um hábito de cada vez! 💪",
   "Manter a consistência é a chave do sucesso! 🔑",
@@ -163,7 +158,6 @@ const motivationalMessages = [
   "Você está 1% melhor hoje do que ontem. Isso é poderoso! 📈"
 ];
 
-// Anti-procrastination tips
 const antiProcrastinationTips = [
   "Divida a tarefa em passos menores e mais gerenciáveis.",
   "Use a técnica Pomodoro: 25 minutos de foco, 5 de descanso.",
@@ -182,7 +176,6 @@ const antiProcrastinationTips = [
   "Pratique auto-compaixão quando falhar; recomeçar é parte do processo."
 ];
 
-// Rewards for streaks
 const streakRewards = [
   { days: 3, message: "3 dias consecutivos! Você está criando momentum!", badge: "Iniciante" },
   { days: 7, message: "Uma semana completa! Você está no caminho certo!", badge: "Consistente" },
@@ -195,7 +188,6 @@ const streakRewards = [
   { days: 365, message: "Um ano inteiro! Você é extraordinário!", badge: "Lendário" }
 ];
 
-// Componente de Impacto de Hábito
 const HabitImpactBadge = ({ impact }: { impact?: string }) => {
   if (!impact) return null;
   const level = impact as "low" | "medium" | "high";
@@ -220,7 +212,6 @@ const HabitImpactBadge = ({ impact }: { impact?: string }) => {
   );
 };
 
-// Componente de Visualização de Calendário
 const HabitCalendarView = ({ habit, habitLogs }: { habit: Habit, habitLogs: HabitLog[] }) => {
   const today = new Date();
   const startOfCurrentMonth = startOfMonth(today);
@@ -266,7 +257,6 @@ const HabitCalendarView = ({ habit, habitLogs }: { habit: Habit, habitLogs: Habi
   );
 };
 
-// Componente de Nível Visual
 const VisualLevel = ({ streak }: { streak: number }) => {
   let level = 'beginner';
   let color = 'bg-blue-400';
@@ -305,9 +295,7 @@ const VisualLevel = ({ streak }: { streak: number }) => {
   );
 };
 
-// Componente de Estatísticas de Hábito
 const HabitStats = ({ habits, habitLogs }: { habits: Habit[], habitLogs: HabitLog[] }) => {
-  // Prepare data for charts
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = addDays(new Date(), -i);
     return {
@@ -331,7 +319,6 @@ const HabitStats = ({ habits, habitLogs }: { habits: Habit[], habitLogs: HabitLo
     value: categoryCounts[category]
   }));
   
-  // Calculate overall stats
   const totalHabits = habits.length;
   const completedToday = habits.filter(h => h.completed).length;
   const completionRate = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
@@ -341,7 +328,6 @@ const HabitStats = ({ habits, habitLogs }: { habits: Habit[], habitLogs: HabitLo
     
   return (
     <div className="space-y-6">
-      {/* Estatísticas Principais */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
           <CardHeader className="pb-2">
@@ -381,7 +367,6 @@ const HabitStats = ({ habits, habitLogs }: { habits: Habit[], habitLogs: HabitLo
         </Card>
       </div>
       
-      {/* Gráficos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -499,7 +484,6 @@ export function HabitsTab() {
       let nextMilestone = 3;
       let visualLevel: StreakProgressType['visualLevel'] = 'beginner';
       
-      // Determinar próximo marco
       for (const reward of streakRewards) {
         if (reward.days > currentStreak) {
           nextMilestone = reward.days;
@@ -507,7 +491,6 @@ export function HabitsTab() {
         }
       }
       
-      // Determinar nível visual baseado no streak
       if (currentStreak >= 100) visualLevel = 'master';
       else if (currentStreak >= 60) visualLevel = 'expert';
       else if (currentStreak >= 30) visualLevel = 'advanced';
@@ -611,14 +594,12 @@ export function HabitsTab() {
             .from("habit_logs")
             .insert(newLog);
           
-          // Adicionar o novo log à lista local
           setHabitLogs(prev => [...prev, {
             ...newLog,
             id: crypto.randomUUID(),
             habit_title: habitData.title
           }]);
 
-          // Verificar marcos de sequência para recompensas
           for (const reward of streakRewards) {
             if (newStreak === reward.days) {
               setEarnedReward(reward.message);
@@ -628,7 +609,6 @@ export function HabitsTab() {
             }
           }
 
-          // Atualizar o estado dos hábitos com a nova sequência
           setHabits(prevHabits =>
             prevHabits.map(h =>
               h.id === habitId ? { ...h, streak: newStreak, best_streak: newBestStreak } : h
@@ -774,7 +754,6 @@ export function HabitsTab() {
     setViewMode(viewMode === 'grid' ? 'table' : 'grid');
   };
 
-  // Filter habits by category if a filter is selected
   const filteredHabits = filterCategory 
     ? habits.filter(habit => habit.category === filterCategory)
     : habits;
@@ -1005,7 +984,7 @@ export function HabitsTab() {
               <Button variant="outline" onClick={toggleViewMode} className="gap-2">
                 {viewMode === 'grid' ? 
                   <><Table className="h-4 w-4" /> Tabela</> : 
-                  <><Rows className="h-4 w-4" /> Grade</>
+                  <><LayoutGrid className="h-4 w-4" /> Grade</>
                 }
               </Button>
             </div>
@@ -1014,7 +993,7 @@ export function HabitsTab() {
           <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:w-[400px]">
               <TabsTrigger value="dashboard">
-                <LayoutGrid as={Rows} className="h-4 w-4 mr-2" />
+                <LayoutGrid className="h-4 w-4 mr-2" />
                 Dashboard
               </TabsTrigger>
               <TabsTrigger value="all">
@@ -1245,7 +1224,7 @@ export function HabitsTab() {
                           </div>
                           
                           <div className="space-y-3">
-                            <div className="flex justify-between items-center text-sm">
+                            <div className="flex justify-between text-sm">
                               <div className="flex items-center gap-1">
                                 <Flame className="h-4 w-4 text-amber-500" />
                                 <span>Sequência: <strong>{habit.streak} dias</strong></span>
@@ -1375,7 +1354,7 @@ export function HabitsTab() {
                                 className="h-8 w-8 p-0"
                                 onClick={() => handleFocusMode(habit)}
                               >
-                                <Zap className="h-4 w-4 text-amber-500" />
+                                <Zap className="h-3.5 w-3.5 text-amber-500" />
                               </Button>
                               <Button 
                                 variant="ghost" 
