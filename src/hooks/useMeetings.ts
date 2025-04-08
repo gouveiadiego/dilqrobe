@@ -45,7 +45,8 @@ export const useMeetings = () => {
         throw error;
       }
 
-      return data as Meeting[];
+      // Cast the data to the Meeting type after converting it to unknown first
+      return (data as unknown) as Meeting[];
     }
   });
 
