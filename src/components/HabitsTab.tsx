@@ -12,19 +12,23 @@ import {
   Edit, 
   Plus, 
   Clock, 
-  Flame, 
+  Flame,
   ArrowLeft,
   ArrowRight,
   XCircle,
   Target,
   List,
-  Trash2
+  Trash2,
+  Trophy,
+  Timer,
+  Zap,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { HabitForm } from "./HabitForm";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { format, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
+import { format, startOfWeek, endOfWeek, isWithinInterval, addDays, isSameDay, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
   AlertDialog,
@@ -37,6 +41,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 type Habit = {
   id: string;
@@ -49,6 +61,7 @@ type Habit = {
   schedule_days: string[];
   schedule_time?: string;
   status: "pending" | "completed" | "missed";
+  best_streak?: number;
 };
 
 type HabitLog = {
@@ -85,6 +98,31 @@ const motivationalMessages = [
   "Cada hábito completado é uma vitória! Parabéns! 🏆"
 ];
 
+// Anti-procrastination tips
+const antiProcrastinationTips = [
+  "Divida a tarefa em passos menores e mais gerenciáveis.",
+  "Use a técnica Pomodoro: 25 minutos de foco, 5 de descanso.",
+  "Elimine distrações do seu ambiente antes de começar.",
+  "Estabeleça um horário específico para o hábito todos os dias.",
+  "Visualize os benefícios de longo prazo do seu hábito.",
+  "Recompense-se após completar seu hábito hoje.",
+  "Comprometa-se publicamente com seus objetivos.",
+  "Use a regra dos 2 minutos: comece apenas por 2 minutos."
+];
+
+// Rewards for streaks
+const streakRewards = [
+  { days: 3, message: "3 dias consecutivos! Você está criando momentum!" },
+  { days: 7, message: "Uma semana completa! Você está no caminho certo!" },
+  { days: 14, message: "Duas semanas! Seu hábito está começando a se formar!" },
+  { days: 21, message: "21 dias! Você está próximo de automatizar este hábito!" },
+  { days: 30, message: "Um mês inteiro! Que consistência impressionante!" },
+  { days: 60, message: "Dois meses! Você é imparável!" },
+  { days: 90, message: "Três meses! Este hábito agora faz parte de quem você é!" },
+  { days: 180, message: "Seis meses! Você é uma verdadeira inspiração!" },
+  { days: 365, message: "Um ano inteiro! Você é extraordinário!" }
+];
+
 export function HabitsTab() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,15 +135,24 @@ export function HabitsTab() {
   const [showWeeklyHabits, setShowWeeklyHabits] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [focusHabit, setFocusHabit] = useState<Habit | null>(null);
+  const [showRewardDialog, setShowRewardDialog] = useState(false);
+  const [earnedReward, setEarnedReward] = useState<string>("");
+  const [showTipDialog, setShowTipDialog] = useState(false);
+  const [currentTip, setCurrentTip] = useState<string>("");
+  const [streakProgress, setStreakProgress] = useState<{[key: string]: {current: number, next: number, nextMilestone: number}>>({}); 
 
   useEffect(() => {
     fetchHabits();
     requestNotificationPermission();
+    checkShowDailyTip();
   }, []);
 
   useEffect(() => {
     if (habits.length > 0) {
       calculateStats();
+      calculateStreakProgress();
     }
   }, [habits]);
 
@@ -117,6 +164,43 @@ export function HabitsTab() {
     // Encontra o hábito com a maior sequência
     const maxStreak = Math.max(...habits.map(habit => habit.streak));
     setLongestStreak(maxStreak);
+  };
+
+  const calculateStreakProgress = () => {
+    const progress: {[key: string]: {current: number, next: number, nextMilestone: number}} = {};
+    
+    habits.forEach(habit => {
+      // Find next milestone
+      const currentStreak = habit.streak;
+      let nextMilestone = 3; // Default first milestone
+      
+      for (const reward of streakRewards) {
+        if (reward.days > currentStreak) {
+          nextMilestone = reward.days;
+          break;
+        }
+      }
+      
+      progress[habit.id] = {
+        current: currentStreak,
+        next: nextMilestone,
+        nextMilestone: Math.round((currentStreak / nextMilestone) * 100)
+      };
+    });
+    
+    setStreakProgress(progress);
+  };
+
+  const checkShowDailyTip = () => {
+    const lastTipDate = localStorage.getItem('lastTipDate');
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (!lastTipDate || lastTipDate !== today) {
+      const randomTipIndex = Math.floor(Math.random() * antiProcrastinationTips.length);
+      setCurrentTip(antiProcrastinationTips[randomTipIndex]);
+      setShowTipDialog(true);
+      localStorage.setItem('lastTipDate', today);
+    }
   };
 
   const requestNotificationPermission = async () => {
@@ -135,6 +219,7 @@ export function HabitsTab() {
       description: dbHabit.description,
       frequency: "daily",
       streak: dbHabit.streak,
+      best_streak: dbHabit.best_streak,
       completed: false,
       progress: 0,
       schedule_days: dbHabit.schedule_days,
@@ -188,6 +273,22 @@ export function HabitsTab() {
               notes: null,
               mood: 'good'
             });
+
+          // Check if streak reached a milestone for rewards
+          for (const reward of streakRewards) {
+            if (newStreak === reward.days) {
+              setEarnedReward(reward.message);
+              setShowRewardDialog(true);
+              break;
+            }
+          }
+
+          // Update the habits state with the new streak
+          setHabits(prevHabits =>
+            prevHabits.map(h =>
+              h.id === habitId ? { ...h, streak: newStreak, best_streak: newBestStreak } : h
+            )
+          );
         }
 
         const randomIndex = Math.floor(Math.random() * motivationalMessages.length);
@@ -345,6 +446,22 @@ export function HabitsTab() {
     setDeleteDialogOpen(true);
   };
 
+  const enterFocusMode = (habit: Habit) => {
+    setFocusHabit(habit);
+    setFocusMode(true);
+  };
+
+  const exitFocusMode = () => {
+    setFocusMode(false);
+    setFocusHabit(null);
+  };
+
+  const getAntiProcrastinationTip = () => {
+    const randomIndex = Math.floor(Math.random() * antiProcrastinationTips.length);
+    setCurrentTip(antiProcrastinationTips[randomIndex]);
+    setShowTipDialog(true);
+  };
+
   const getDayLabel = (day: string) => {
     const days: Record<string, string> = {
       "sun": "Dom",
@@ -375,6 +492,37 @@ export function HabitsTab() {
     return Math.round((completed / habits.length) * 100);
   };
 
+  const renderStreakCalendar = (habit: Habit) => {
+    const today = new Date();
+    const days = [];
+    
+    for (let i = 6; i >= 0; i--) {
+      days.push(addDays(today, -i));
+    }
+    
+    return (
+      <div className="flex items-center justify-center gap-1 mt-2">
+        {days.map((day, index) => {
+          // This is a placeholder - in a real app, you'd check against actual completion data
+          const isCompleted = isSameDay(day, today) && habit.completed;
+          const isToday = isSameDay(day, today);
+          
+          return (
+            <div 
+              key={index} 
+              className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-medium
+                ${isCompleted ? 'bg-green-100 text-green-800 border-2 border-green-400' : 
+                  isToday ? 'bg-blue-50 border border-blue-200 text-blue-800' : 
+                  'bg-gray-50 text-gray-500 border border-gray-200'}`}
+            >
+              {format(day, "d")}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (showForm) {
     return (
       <div className="max-w-2xl mx-auto bg-gradient-to-br from-violet-50 to-blue-50 p-6 rounded-2xl shadow-lg animate-fade-in">
@@ -386,6 +534,134 @@ export function HabitsTab() {
           onSuccess={handleFormSuccess}
           onCancel={handleFormCancel}
         />
+      </div>
+    );
+  }
+
+  if (focusMode && focusHabit) {
+    return (
+      <div className="max-w-3xl mx-auto animate-fade-in">
+        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-8 rounded-xl text-white shadow-xl mb-6">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">Modo Foco</h1>
+            <Button 
+              onClick={exitFocusMode}
+              variant="outline" 
+              className="bg-white/20 text-white hover:bg-white/30 border-white/30"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+          </div>
+          
+          <div className="text-center mb-8">
+            <h2 className="text-4xl font-bold mb-2">{focusHabit.title}</h2>
+            {focusHabit.description && (
+              <p className="text-xl text-blue-100 mb-4">{focusHabit.description}</p>
+            )}
+            
+            <div className="flex justify-center items-center gap-4 mt-6">
+              <div className="text-center">
+                <div className="text-5xl font-bold mb-1">{focusHabit.streak}</div>
+                <div className="text-sm text-blue-100">Dias seguidos</div>
+              </div>
+              
+              {focusHabit.best_streak && focusHabit.best_streak > 0 && (
+                <div className="text-center">
+                  <div className="text-3xl font-semibold mb-1">{focusHabit.best_streak}</div>
+                  <div className="text-sm text-blue-100">Recorde</div>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-8">
+              {streakProgress[focusHabit.id] && (
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>Progresso para próximo marco ({streakProgress[focusHabit.id].next} dias)</span>
+                    <span>{streakProgress[focusHabit.id].current}/{streakProgress[focusHabit.id].next}</span>
+                  </div>
+                  <Progress value={streakProgress[focusHabit.id].nextMilestone} className="h-3 bg-white/20" />
+                </div>
+              )}
+              
+              {!focusHabit.completed ? (
+                <Button 
+                  className="bg-white text-indigo-700 hover:bg-blue-50 mt-4 h-16 text-xl font-bold w-full"
+                  onClick={() => updateHabitStatus(focusHabit.id, 'completed')}
+                >
+                  <Check className="h-6 w-6 mr-2" />
+                  Concluir Hoje
+                </Button>
+              ) : (
+                <div className="bg-green-400 text-green-800 rounded-lg p-4 mt-4 flex items-center justify-center">
+                  <Check className="h-6 w-6 mr-2" />
+                  <span className="text-xl font-bold">Concluído hoje!</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Calendar className="h-5 w-5 mr-2" />
+                Calendário da Sequência
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {renderStreakCalendar(focusHabit)}
+              <div className="mt-6 space-y-3">
+                <h3 className="font-medium">Dias programados:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {focusHabit.schedule_days.map(day => (
+                    <span 
+                      key={day} 
+                      className="inline-flex items-center bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm"
+                    >
+                      {getDayLabel(day)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Zap className="h-5 w-5 mr-2 text-amber-500" />
+                Dicas Anti-Procrastinação
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+                  <p className="text-amber-800 italic">"{currentTip}"</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={getAntiProcrastinationTip}
+                >
+                  <Zap className="h-4 w-4 mr-2 text-amber-500" />
+                  Nova Dica
+                </Button>
+                
+                <div className="pt-4 border-t border-gray-100">
+                  <h3 className="font-medium mb-2">Por que este hábito é importante?</h3>
+                  <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg text-blue-800">
+                    <p className="text-sm">
+                      Escreva aqui por que este hábito é importante para você e visualize isso quando sentir vontade de procrastinar.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -520,6 +796,51 @@ export function HabitsTab() {
         </Card>
       </div>
 
+      {/* Anti-Procrastination Card */}
+      <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 overflow-hidden shadow-md">
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <Zap className="h-5 w-5 mr-2 text-amber-500" />
+            Sistema Anti-Procrastinação
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-white/70 rounded-lg p-4 mb-4 border border-indigo-100">
+            <h3 className="font-medium text-indigo-900 mb-2 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2 text-indigo-500" />
+              Dica do dia para vencer a procrastinação
+            </h3>
+            <p className="text-indigo-700 italic">"{currentTip}"</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button 
+              variant="outline" 
+              className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+              onClick={getAntiProcrastinationTip}
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Nova Dica Anti-Procrastinação
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+              onClick={() => {
+                if (habits.length > 0) {
+                  enterFocusMode(habits[0]);
+                } else {
+                  toast.info("Crie um hábito primeiro para usar o modo foco");
+                }
+              }}
+            >
+              <Target className="h-4 w-4 mr-2" />
+              Ativar Modo Foco
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Tabs for habit view */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-2 mb-4">
@@ -587,9 +908,29 @@ export function HabitsTab() {
                                 </span>
                               )}
                             </div>
+                            
+                            {/* Streak progress bar */}
+                            {streakProgress[habit.id] && (
+                              <div className="mt-3">
+                                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                  <span>Próximo marco: {streakProgress[habit.id].next} dias</span>
+                                  <span>{habit.streak}/{streakProgress[habit.id].next}</span>
+                                </div>
+                                <Progress value={streakProgress[habit.id].nextMilestone} className="h-1.5" />
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => enterFocusMode(habit)}
+                          >
+                            <Target className="h-4 w-4 text-indigo-500" />
+                            <span className="sr-only">Modo Foco</span>
+                          </Button>
                           <Button 
                             size="sm" 
                             variant="ghost" 
@@ -686,7 +1027,83 @@ export function HabitsTab() {
                     <p className="text-gray-600">Reconheça e celebre cada vez que você completar seu hábito.</p>
                   </div>
                 </li>
+                <li className="flex items-start gap-3">
+                  <div className="bg-red-100 p-2 rounded-full">
+                    <Check className="h-4 w-4 text-red-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium">Combata a procrastinação</h4>
+                    <p className="text-gray-600">Use a técnica dos 2 minutos: prometa fazer o hábito por apenas 2 minutos. Uma vez iniciado, é mais fácil continuar.</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="bg-indigo-100 p-2 rounded-full">
+                    <Check className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium">Elimine distrações</h4>
+                    <p className="text-gray-600">Identifique e elimine distrações que podem impedir você de realizar seu hábito diariamente.</p>
+                  </div>
+                </li>
               </ul>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <Trophy className="h-5 w-5 mr-2 text-amber-500" />
+                Vencendo a Procrastinação
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-indigo-900 mb-2">Por que procrastinamos?</h4>
+                  <p className="text-gray-700">A procrastinação geralmente ocorre quando enfrentamos tarefas que parecem difíceis, entediantes ou intimidadoras. Nosso cérebro prefere a gratificação imediata em vez do trabalho difícil.</p>
+                </div>
+                
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <div className="bg-amber-100 p-2 rounded-full">
+                      <Timer className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">Técnica Pomodoro</h4>
+                      <p className="text-gray-600">Trabalhe focado por 25 minutos e depois descanse por 5 minutos. Repita o ciclo.</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="bg-green-100 p-2 rounded-full">
+                      <Target className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">Divida em tarefas menores</h4>
+                      <p className="text-gray-600">Decomponha hábitos grandes em passos menores e mais gerenciáveis.</p>
+                    </div>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="bg-purple-100 p-2 rounded-full">
+                      <Zap className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">Elimine distrações</h4>
+                      <p className="text-gray-600">Desligue notificações e crie um ambiente propício ao foco.</p>
+                    </div>
+                  </li>
+                </ul>
+                
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={getAntiProcrastinationTip}
+                  >
+                    <Zap className="h-4 w-4 mr-2 text-amber-500" />
+                    Obter Nova Dica Anti-Procrastinação
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -712,6 +1129,58 @@ export function HabitsTab() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reward Dialog */}
+      <Dialog open={showRewardDialog} onOpenChange={setShowRewardDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl font-bold text-amber-600">
+              🏆 Conquista Desbloqueada!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-6">
+            <div className="w-24 h-24 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4">
+              <Trophy className="h-12 w-12" />
+            </div>
+            <p className="text-lg font-medium mb-2">{earnedReward}</p>
+            <p className="text-gray-600">Continue mantendo a consistência!</p>
+          </div>
+          <DialogFooter>
+            <Button 
+              className="w-full" 
+              onClick={() => setShowRewardDialog(false)}
+            >
+              Continuar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tip Dialog */}
+      <Dialog open={showTipDialog} onOpenChange={setShowTipDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-blue-600 flex items-center">
+              <Zap className="h-5 w-5 mr-2" />
+              Dica Anti-Procrastinação
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-blue-800">
+              <p className="italic">"{currentTip}"</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              className="w-full" 
+              onClick={() => setShowTipDialog(false)}
+            >
+              Aplicar hoje
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
