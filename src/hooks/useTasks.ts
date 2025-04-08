@@ -8,6 +8,13 @@ import { toast } from "sonner";
 type TaskResponse = Database['public']['Tables']['tasks']['Row'];
 type Json = Database['public']['Tables']['tasks']['Insert']['subtasks'];
 
+export type StreakProgressType = {
+  current: number;
+  next: number;
+  nextMilestone: number;
+  visualLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'master';
+};
+
 export const useTasks = () => {
   const queryClient = useQueryClient();
 
