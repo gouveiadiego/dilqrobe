@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,6 +88,12 @@ type DBHabit = {
   positive_reinforcement?: string[];
 };
 
+type StreakProgressType = {
+  current: number;
+  next: number;
+  nextMilestone: number;
+};
+
 // Motivational messages for different occasions
 const motivationalMessages = [
   "Você está construindo um futuro melhor, um hábito de cada vez! 💪",
@@ -123,12 +128,6 @@ const streakRewards = [
   { days: 365, message: "Um ano inteiro! Você é extraordinário!" }
 ];
 
-type StreakProgressType = {
-  current: number;
-  next: number;
-  nextMilestone: number;
-};
-
 export function HabitsTab() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -147,7 +146,7 @@ export function HabitsTab() {
   const [earnedReward, setEarnedReward] = useState<string>("");
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [currentTip, setCurrentTip] = useState<string>("");
-  const [streakProgress, setStreakProgress] = useState<Record<string, StreakProgressType>>({});
+  const [streakProgress, setStreakProgress] = useState<{[id: string]: StreakProgressType}>({});
 
   useEffect(() => {
     fetchHabits();
@@ -171,7 +170,7 @@ export function HabitsTab() {
   };
 
   const calculateStreakProgress = () => {
-    const progress: Record<string, StreakProgressType> = {};
+    const progress: {[id: string]: StreakProgressType} = {};
     
     habits.forEach(habit => {
       const currentStreak = habit.streak;
@@ -457,7 +456,7 @@ export function HabitsTab() {
   };
 
   const getDayLabel = (day: string) => {
-    const days: Record<string, string> = {
+    const days: {[key: string]: string} = {
       "sun": "Dom",
       "mon": "Seg",
       "tue": "Ter",
@@ -706,7 +705,7 @@ export function HabitsTab() {
                 <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
                   <ListCheck className="h-6 w-6 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">Nenhum hábito concluído</h3>
+                <h3 className="text-lg font-medium text-center mb-2">Nenhum hábito concluído</h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-4">
                   Você ainda não concluiu nenhum hábito esta semana.
                 </p>
