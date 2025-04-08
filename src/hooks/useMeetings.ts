@@ -32,7 +32,7 @@ export const useMeetings = () => {
       if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
-        .from('client_meetings')
+        .from('client_meetings' as any)
         .select(`
           *,
           client:clients(*)
@@ -55,7 +55,7 @@ export const useMeetings = () => {
       if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
-        .from('client_meetings')
+        .from('client_meetings' as any)
         .insert({
           ...newMeeting,
           user_id: user.id
@@ -79,7 +79,7 @@ export const useMeetings = () => {
   const updateMeeting = useMutation({
     mutationFn: async ({ id, updates }: { id: string, updates: Partial<NewMeeting> }) => {
       const { error } = await supabase
-        .from('client_meetings')
+        .from('client_meetings' as any)
         .update(updates)
         .eq('id', id);
 
@@ -97,7 +97,7 @@ export const useMeetings = () => {
   const deleteMeeting = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('client_meetings')
+        .from('client_meetings' as any)
         .delete()
         .eq('id', id);
 
@@ -115,7 +115,7 @@ export const useMeetings = () => {
   const updateMeetingStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: Meeting['status'] }) => {
       const { error } = await supabase
-        .from('client_meetings')
+        .from('client_meetings' as any)
         .update({ status })
         .eq('id', id);
 
