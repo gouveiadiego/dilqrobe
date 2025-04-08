@@ -17,7 +17,8 @@ import {
   ArrowRight,
   XCircle,
   Target,
-  List
+  List,
+  Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,17 @@ import { HabitForm } from "./HabitForm";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { format, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Habit = {
   id: string;
@@ -83,6 +95,8 @@ export function HabitsTab() {
   const [longestStreak, setLongestStreak] = useState(0);
   const [weeklyHabits, setWeeklyHabits] = useState<HabitLog[]>([]);
   const [showWeeklyHabits, setShowWeeklyHabits] = useState(false);
+  const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchHabits();
@@ -279,6 +293,56 @@ export function HabitsTab() {
   const handleFormCancel = () => {
     setShowForm(false);
     setSelectedHabit(null);
+  };
+
+  const handleDeleteHabit = async () => {
+    if (!habitToDelete) return;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+
+      // Delete habit logs first
+      const { error: logsError } = await supabase
+        .from("habit_logs")
+        .delete()
+        .eq("habit_id", habitToDelete);
+
+      if (logsError) {
+        console.error("Erro ao excluir registros do hábito:", logsError);
+        toast.error("Erro ao excluir o hábito");
+        return;
+      }
+
+      // Then delete the habit
+      const { error } = await supabase
+        .from("habits")
+        .delete()
+        .eq("id", habitToDelete)
+        .eq("user_id", session.user.id);
+
+      if (error) {
+        console.error("Erro ao excluir hábito:", error);
+        toast.error("Erro ao excluir o hábito");
+        return;
+      }
+
+      toast.success("Hábito excluído com sucesso!");
+      setHabits(prevHabits => prevHabits.filter(h => h.id !== habitToDelete));
+      setHabitToDelete(null);
+      setDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Erro ao excluir hábito:", error);
+      toast.error("Erro ao excluir o hábito");
+    }
+  };
+
+  const openDeleteDialog = (habitId: string) => {
+    setHabitToDelete(habitId);
+    setDeleteDialogOpen(true);
   };
 
   const getDayLabel = (day: string) => {
@@ -525,15 +589,26 @@ export function HabitsTab() {
                             </div>
                           </div>
                         </div>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleEditHabit(habit)}
-                        >
-                          <Edit className="h-4 w-4 text-gray-500" />
-                          <span className="sr-only">Editar</span>
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleEditHabit(habit)}
+                          >
+                            <Edit className="h-4 w-4 text-gray-500" />
+                            <span className="sr-only">Editar</span>
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => openDeleteDialog(habit.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Excluir</span>
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -616,6 +691,27 @@ export function HabitsTab() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este hábito? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setHabitToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteHabit}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
