@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -122,6 +123,12 @@ const streakRewards = [
   { days: 365, message: "Um ano inteiro! Você é extraordinário!" }
 ];
 
+type StreakProgressType = {
+  current: number;
+  next: number;
+  nextMilestone: number;
+};
+
 export function HabitsTab() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -140,7 +147,7 @@ export function HabitsTab() {
   const [earnedReward, setEarnedReward] = useState<string>("");
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [currentTip, setCurrentTip] = useState<string>("");
-  const [streakProgress, setStreakProgress] = useState<Record<string, {current: number, next: number, nextMilestone: number}>({});
+  const [streakProgress, setStreakProgress] = useState<Record<string, StreakProgressType>>({});
 
   useEffect(() => {
     fetchHabits();
@@ -164,7 +171,7 @@ export function HabitsTab() {
   };
 
   const calculateStreakProgress = () => {
-    const progress: Record<string, {current: number, next: number, nextMilestone: number}> = {};
+    const progress: Record<string, StreakProgressType> = {};
     
     habits.forEach(habit => {
       const currentStreak = habit.streak;
