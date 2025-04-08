@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -141,7 +140,7 @@ export function HabitsTab() {
   const [earnedReward, setEarnedReward] = useState<string>("");
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [currentTip, setCurrentTip] = useState<string>("");
-  const [streakProgress, setStreakProgress] = useState<{[key: string]: {current: number, next: number, nextMilestone: number}>>({}); 
+  const [streakProgress, setStreakProgress] = useState<Record<string, {current: number, next: number, nextMilestone: number}>({});
 
   useEffect(() => {
     fetchHabits();
@@ -157,22 +156,19 @@ export function HabitsTab() {
   }, [habits]);
 
   const calculateStats = () => {
-    // Calcula o número total de hábitos completados
     const completed = habits.filter(habit => habit.completed).length;
     setTotalCompletedHabits(completed);
 
-    // Encontra o hábito com a maior sequência
     const maxStreak = Math.max(...habits.map(habit => habit.streak));
     setLongestStreak(maxStreak);
   };
 
   const calculateStreakProgress = () => {
-    const progress: {[key: string]: {current: number, next: number, nextMilestone: number}} = {};
+    const progress: Record<string, {current: number, next: number, nextMilestone: number}> = {};
     
     habits.forEach(habit => {
-      // Find next milestone
       const currentStreak = habit.streak;
-      let nextMilestone = 3; // Default first milestone
+      let nextMilestone = 3;
       
       for (const reward of streakRewards) {
         if (reward.days > currentStreak) {
@@ -236,7 +232,6 @@ export function HabitsTab() {
     );
 
     if (status === 'completed') {
-      // Incrementar a sequência no banco de dados
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user?.id) {
@@ -263,7 +258,6 @@ export function HabitsTab() {
             })
             .eq("id", habitId);
             
-          // Log the habit completion
           await supabase
             .from("habit_logs")
             .insert({
@@ -274,7 +268,6 @@ export function HabitsTab() {
               mood: 'good'
             });
 
-          // Check if streak reached a milestone for rewards
           for (const reward of streakRewards) {
             if (newStreak === reward.days) {
               setEarnedReward(reward.message);
@@ -283,7 +276,6 @@ export function HabitsTab() {
             }
           }
 
-          // Update the habits state with the new streak
           setHabits(prevHabits =>
             prevHabits.map(h =>
               h.id === habitId ? { ...h, streak: newStreak, best_streak: newBestStreak } : h
@@ -339,7 +331,6 @@ export function HabitsTab() {
       const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Segunda-feira
       const weekEnd = endOfWeek(today, { weekStartsOn: 1 }); // Domingo
       
-      // Get habit logs for the current week
       const { data: logs, error } = await supabase
         .from("habit_logs")
         .select("id, habit_id, user_id, date, notes, mood")
@@ -350,7 +341,6 @@ export function HabitsTab() {
       if (error) throw error;
       
       if (logs && logs.length > 0) {
-        // Get habit titles for each log
         const habitIds = [...new Set(logs.map(log => log.habit_id))];
         const { data: habitsData } = await supabase
           .from("habits")
@@ -362,7 +352,6 @@ export function HabitsTab() {
           return acc;
         }, {} as Record<string, string>) || {};
         
-        // Combine logs with habit titles
         const logsWithTitles = logs.map(log => ({
           ...log,
           habit_title: habitsMap[log.habit_id]
@@ -406,7 +395,6 @@ export function HabitsTab() {
         return;
       }
 
-      // Delete habit logs first
       const { error: logsError } = await supabase
         .from("habit_logs")
         .delete()
@@ -418,7 +406,6 @@ export function HabitsTab() {
         return;
       }
 
-      // Then delete the habit
       const { error } = await supabase
         .from("habits")
         .delete()
@@ -503,7 +490,6 @@ export function HabitsTab() {
     return (
       <div className="flex items-center justify-center gap-1 mt-2">
         {days.map((day, index) => {
-          // This is a placeholder - in a real app, you'd check against actual completion data
           const isCompleted = isSameDay(day, today) && habit.completed;
           const isToday = isSameDay(day, today);
           
@@ -909,7 +895,6 @@ export function HabitsTab() {
                               )}
                             </div>
                             
-                            {/* Streak progress bar */}
                             {streakProgress[habit.id] && (
                               <div className="mt-3">
                                 <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -1183,4 +1168,3 @@ export function HabitsTab() {
     </div>
   );
 }
-
