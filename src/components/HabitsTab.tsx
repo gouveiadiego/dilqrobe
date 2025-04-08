@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -711,3 +712,793 @@ export function HabitsTab() {
     } catch (error) {
       console.error("Erro ao carregar logs de hábitos:", error);
     }
+  };
+
+  const handleCreateHabit = () => {
+    setSelectedHabit(null);
+    setShowForm(true);
+  };
+
+  const handleEditHabit = (habit: Habit) => {
+    setSelectedHabit(habit);
+    setShowForm(true);
+  };
+
+  const handleHabitFormSuccess = () => {
+    setShowForm(false);
+    fetchHabits();
+  };
+
+  const handleDeleteHabit = (habitId: string) => {
+    setHabitToDelete(habitId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteHabit = async () => {
+    if (!habitToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from("habits")
+        .update({ active: false })
+        .eq("id", habitToDelete);
+
+      if (error) throw error;
+
+      setHabits(habits.filter(h => h.id !== habitToDelete));
+      toast.success("Hábito removido com sucesso");
+    } catch (error) {
+      console.error("Erro ao remover hábito:", error);
+      toast.error("Erro ao remover hábito");
+    } finally {
+      setDeleteDialogOpen(false);
+      setHabitToDelete(null);
+    }
+  };
+
+  const handleFocusMode = (habit: Habit) => {
+    setFocusMode(true);
+    setFocusHabit(habit);
+  };
+
+  const exitFocusMode = () => {
+    setFocusMode(false);
+    setFocusHabit(null);
+  };
+
+  const handleCategoryFilter = (category: string | null) => {
+    setFilterCategory(category);
+  };
+
+  const toggleViewMode = () => {
+    setViewMode(viewMode === 'grid' ? 'table' : 'grid');
+  };
+
+  // Filter habits by category if a filter is selected
+  const filteredHabits = filterCategory 
+    ? habits.filter(habit => habit.category === filterCategory)
+    : habits;
+
+  return (
+    <div className="container mx-auto p-4 space-y-6">
+      {showTipDialog && (
+        <Dialog open={showTipDialog} onOpenChange={setShowTipDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-amber-500" />
+                Dica do Dia
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-lg font-medium text-muted-foreground">{currentTip}</p>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowTipDialog(false)}>Entendi</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {showRewardDialog && (
+        <Dialog open={showRewardDialog} onOpenChange={setShowRewardDialog}>
+          <DialogContent className="bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-200">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-amber-800">
+                <Trophy className="h-5 w-5 text-amber-500" />
+                Conquista Desbloqueada!
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4 text-center">
+              <div className="w-16 h-16 bg-amber-400 rounded-full mx-auto flex items-center justify-center mb-4">
+                <Award className="h-10 w-10 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-amber-800 mb-2">{earnedBadge}</h3>
+              <p className="text-lg text-amber-700">{earnedReward}</p>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowRewardDialog(false)} 
+                className="bg-amber-500 hover:bg-amber-600">
+                Continuar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {deleteDialogOpen && (
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover Hábito</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja remover este hábito? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteHabit} className="bg-red-500 hover:bg-red-600">
+                Remover
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {showForm && (
+        <Card className="mb-6 border border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
+          <CardHeader>
+            <CardTitle>{selectedHabit ? "Editar Hábito" : "Novo Hábito"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <HabitForm
+              onSuccess={handleHabitFormSuccess}
+              onCancel={() => setShowForm(false)}
+              initialData={selectedHabit || undefined}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {focusMode && focusHabit ? (
+        <div className="space-y-4">
+          <Button variant="outline" onClick={exitFocusMode} className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          
+          <Card className="border-2 border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-50">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-2xl text-blue-800">{focusHabit.title}</CardTitle>
+                <VisualLevel streak={focusHabit.streak} />
+              </div>
+              {focusHabit.description && (
+                <CardDescription className="text-blue-600">{focusHabit.description}</CardDescription>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col md:flex-row justify-between gap-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-5 w-5 text-amber-500" />
+                    <span className="font-medium">Sequência Atual: </span>
+                    <span className="font-bold text-lg">{focusHabit.streak} dias</span>
+                  </div>
+                  
+                  {focusHabit.best_streak && (
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-purple-500" />
+                      <span className="font-medium">Melhor Sequência: </span>
+                      <span className="font-bold text-lg">{focusHabit.best_streak} dias</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {focusHabit.category && (
+                      <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+                        {habitCategories.find(c => c.value === focusHabit.category)?.icon}
+                        {habitCategories.find(c => c.value === focusHabit.category)?.label}
+                      </Badge>
+                    )}
+                    
+                    {focusHabit.difficulty && (
+                      <Badge variant="outline" className={difficultyBadges[focusHabit.difficulty].color}>
+                        {difficultyBadges[focusHabit.difficulty].icon}
+                        {focusHabit.difficulty === 'easy' ? 'Fácil' : 
+                          focusHabit.difficulty === 'medium' ? 'Médio' : 'Difícil'}
+                      </Badge>
+                    )}
+                    
+                    {focusHabit.impact && <HabitImpactBadge impact={focusHabit.impact} />}
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                  <h3 className="font-medium text-gray-700 mb-2 flex items-center">
+                    <Calendar className="h-4 w-4 mr-2 text-blue-500" />
+                    Programação
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {focusHabit.schedule_days.map(day => {
+                      const dayLabels: Record<string, string> = {
+                        monday: 'Seg',
+                        tuesday: 'Ter',
+                        wednesday: 'Qua',
+                        thursday: 'Qui',
+                        friday: 'Sex',
+                        saturday: 'Sáb',
+                        sunday: 'Dom'
+                      };
+                      return (
+                        <Badge key={day} variant="outline" className="bg-gray-100">
+                          {dayLabels[day]}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                  {focusHabit.schedule_time && (
+                    <div className="mt-2 flex items-center text-sm text-gray-600">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {focusHabit.schedule_time}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-medium text-gray-700 mb-2 flex items-center">
+                  <Target className="h-4 w-4 mr-2 text-purple-500" />
+                  Progresso para o próximo marco
+                </h3>
+                {streakProgress[focusHabit.id] && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>{streakProgress[focusHabit.id].current} dias</span>
+                      <span>{streakProgress[focusHabit.id].next} dias</span>
+                    </div>
+                    <Progress value={streakProgress[focusHabit.id].nextMilestone} className="h-2" />
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <h3 className="font-medium text-gray-700 mb-2 flex items-center">
+                  <CalendarDays className="h-4 w-4 mr-2 text-green-500" />
+                  Calendário de Completude
+                </h3>
+                <HabitCalendarView habit={focusHabit} habitLogs={habitLogs} />
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-center border-t border-blue-100 bg-blue-50 rounded-b-lg">
+              {!focusHabit.completed ? (
+                <Button 
+                  className="w-full bg-green-500 hover:bg-green-600 gap-2" 
+                  onClick={() => updateHabitStatus(focusHabit.id, 'completed')}
+                >
+                  <Check className="h-5 w-5" />
+                  Completar Hoje
+                </Button>
+              ) : (
+                <div className="w-full text-center py-2 rounded-md bg-green-100 text-green-700 flex items-center justify-center">
+                  <Check className="h-5 w-5 mr-2" />
+                  Hábito já completo hoje!
+                </div>
+              )}
+            </CardFooter>
+          </Card>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 className="text-3xl font-bold text-blue-900 dark:text-blue-100">Meus Hábitos</h2>
+              <p className="text-gray-600 dark:text-gray-400">Gerencie seus hábitos e acompanhe seu progresso</p>
+            </div>
+            
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={handleCreateHabit} className="gap-2 bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4" />
+                Novo Hábito
+              </Button>
+              
+              <Button variant="outline" onClick={toggleViewMode} className="gap-2">
+                {viewMode === 'grid' ? 
+                  <><Table className="h-4 w-4" /> Tabela</> : 
+                  <><Rows className="h-4 w-4" /> Grade</>
+                }
+              </Button>
+            </div>
+          </div>
+          
+          <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:w-[400px]">
+              <TabsTrigger value="dashboard">
+                <LayoutGrid as={Rows} className="h-4 w-4 mr-2" />
+                Dashboard
+              </TabsTrigger>
+              <TabsTrigger value="all">
+                <ListCheck className="h-4 w-4 mr-2" />
+                Hábitos
+              </TabsTrigger>
+              <TabsTrigger value="categories">
+                <List className="h-4 w-4 mr-2" />
+                Categorias
+              </TabsTrigger>
+              <TabsTrigger value="stats">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Estatísticas
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="dashboard" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-green-700">Hábitos Completados</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center">
+                      <Check className="h-5 w-5 text-green-500 mr-2" />
+                      <span className="text-2xl font-bold text-green-700">{totalCompletedHabits} / {habits.length}</span>
+                    </div>
+                    <Progress 
+                      value={habits.length > 0 ? (totalCompletedHabits / habits.length) * 100 : 0} 
+                      className="h-2 mt-2 bg-green-100" 
+                    />
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-100">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-amber-700">Sequência Mais Longa</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center">
+                      <Flame className="h-5 w-5 text-amber-500 mr-2" />
+                      <span className="text-2xl font-bold text-amber-700">{longestStreak} dias</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm text-purple-700">Total de Hábitos</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center">
+                      <ListCheck className="h-5 w-5 text-purple-500 mr-2" />
+                      <span className="text-2xl font-bold text-purple-700">{habits.length}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-amber-500" />
+                      Hábitos Diários
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {habits.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 mb-4">Você ainda não possui hábitos cadastrados</p>
+                        <Button onClick={handleCreateHabit}>Criar Primeiro Hábito</Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {habits.slice(0, 5).map(habit => (
+                          <div key={habit.id} className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:border-blue-100 hover:bg-blue-50 transition-colors">
+                            <div className="flex items-center space-x-4">
+                              <Checkbox
+                                checked={habit.completed}
+                                onCheckedChange={() => updateHabitStatus(habit.id, habit.completed ? 'pending' : 'completed')}
+                              />
+                              <div>
+                                <div className="font-medium">{habit.title}</div>
+                                <div className="text-sm text-gray-500 flex items-center gap-1">
+                                  <Flame className="h-3 w-3 text-amber-500" />
+                                  {habit.streak} dias
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleFocusMode(habit)}
+                              >
+                                <Zap className="h-4 w-4 text-amber-500" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleEditHabit(habit)}
+                              >
+                                <Edit className="h-4 w-4 text-blue-500" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleDeleteHabit(habit.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {habits.length > 5 && (
+                          <div className="text-center mt-4">
+                            <Button variant="outline" onClick={() => setActiveTab("all")}>
+                              Ver Todos os Hábitos
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-purple-500" />
+                      Próximos Marcos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {Object.entries(streakProgress)
+                        .sort((a, b) => (b[1].current / b[1].next) - (a[1].current / a[1].next))
+                        .slice(0, 3)
+                        .map(([habitId, progress]) => {
+                          const habit = habits.find(h => h.id === habitId);
+                          if (!habit) return null;
+                          
+                          return (
+                            <div key={habitId} className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium">{habit.title}</span>
+                                <span className="text-sm text-gray-500">{progress.current}/{progress.next} dias</span>
+                              </div>
+                              <Progress 
+                                value={progress.nextMilestone} 
+                                className="h-2" 
+                                indicatorClassName={
+                                  progress.visualLevel === 'master' ? "bg-amber-400" :
+                                  progress.visualLevel === 'expert' ? "bg-purple-400" :
+                                  progress.visualLevel === 'advanced' ? "bg-green-400" :
+                                  progress.visualLevel === 'intermediate' ? "bg-cyan-400" :
+                                  "bg-blue-400"
+                                }
+                              />
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="all">
+              {isLoading ? (
+                <div className="flex justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : habits.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                    <ListCheck className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <h3 className="text-xl font-medium text-gray-900 mb-2">Nenhum hábito encontrado</h3>
+                  <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                    Comece criando seu primeiro hábito para acompanhar seu progresso e construir uma rotina mais produtiva.
+                  </p>
+                  <Button onClick={handleCreateHabit}>Criar Primeiro Hábito</Button>
+                </div>
+              ) : viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredHabits.map(habit => {
+                    const habitProgress = streakProgress[habit.id];
+                    
+                    return (
+                      <Card key={habit.id} className={`overflow-hidden border ${
+                        habit.impact ? `border-${habit.impact}-200` : 'border-gray-200'
+                      } hover:shadow-md transition-all duration-200`}>
+                        <div className={`h-2 w-full ${
+                          habit.impact === 'high' ? 'bg-gradient-to-r from-amber-400 to-orange-400' :
+                          habit.impact === 'medium' ? 'bg-gradient-to-r from-purple-400 to-pink-400' :
+                          'bg-gradient-to-r from-blue-400 to-cyan-400'
+                        }`}></div>
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <CardTitle>{habit.title}</CardTitle>
+                            <VisualLevel streak={habit.streak} />
+                          </div>
+                          {habit.description && (
+                            <CardDescription>{habit.description}</CardDescription>
+                          )}
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {habit.category && (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                {habitCategories.find(c => c.value === habit.category)?.icon}
+                                {habitCategories.find(c => c.value === habit.category)?.label}
+                              </Badge>
+                            )}
+                            
+                            {habit.difficulty && (
+                              <Badge variant="outline" className={difficultyBadges[habit.difficulty].color}>
+                                {difficultyBadges[habit.difficulty].icon}
+                                {habit.difficulty === 'easy' ? 'Fácil' : 
+                                  habit.difficulty === 'medium' ? 'Médio' : 'Difícil'}
+                              </Badge>
+                            )}
+                            
+                            {habit.impact && <HabitImpactBadge impact={habit.impact} />}
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center text-sm">
+                              <div className="flex items-center gap-1">
+                                <Flame className="h-4 w-4 text-amber-500" />
+                                <span>Sequência: <strong>{habit.streak} dias</strong></span>
+                              </div>
+                              
+                              {habit.best_streak && habit.best_streak > 0 && (
+                                <div className="flex items-center gap-1">
+                                  <Trophy className="h-4 w-4 text-purple-500" />
+                                  <span>Melhor: <strong>{habit.best_streak}</strong></span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {habitProgress && (
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-xs text-gray-500">
+                                  <span>Próximo marco: {habitProgress.next} dias</span>
+                                  <span>{habitProgress.current}/{habitProgress.next}</span>
+                                </div>
+                                <Progress value={habitProgress.nextMilestone} className="h-1.5" />
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                        <CardFooter className="flex justify-between border-t pt-4">
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleFocusMode(habit)}
+                            >
+                              <Zap className="h-4 w-4 text-amber-500" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleEditHabit(habit)}
+                            >
+                              <Edit className="h-4 w-4 text-blue-500" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleDeleteHabit(habit.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                          
+                          <Button 
+                            variant={habit.completed ? "outline" : "default"}
+                            size="sm"
+                            disabled={habit.completed}
+                            onClick={() => updateHabitStatus(habit.id, 'completed')}
+                            className={`transition-all ${habit.completed ? 'bg-green-50 text-green-700 border-green-200' : ''}`}
+                          >
+                            {habit.completed ? (
+                              <>
+                                <Check className="h-4 w-4 mr-1" />
+                                Completo
+                              </>
+                            ) : "Completar"}
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-lg border overflow-hidden">
+                  <table className="w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hábito</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sequência</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredHabits.map(habit => (
+                        <tr key={habit.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div>
+                                <div className="font-medium text-gray-900">{habit.title}</div>
+                                {habit.description && (
+                                  <div className="text-sm text-gray-500 truncate max-w-xs">{habit.description}</div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {habit.category ? (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 flex items-center">
+                                {habitCategories.find(c => c.value === habit.category)?.icon}
+                                {habitCategories.find(c => c.value === habit.category)?.label}
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <Flame className="h-4 w-4 text-amber-500 mr-1" />
+                              <span className="text-gray-900">{habit.streak} dias</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            {habit.completed ? (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                <Check className="h-3 w-3 mr-1" />
+                                Completo
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                Pendente
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0"
+                                onClick={() => handleFocusMode(habit)}
+                              >
+                                <Zap className="h-4 w-4 text-amber-500" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0"
+                                onClick={() => updateHabitStatus(habit.id, habit.completed ? 'pending' : 'completed')}
+                              >
+                                <Check className="h-4 w-4 text-green-500" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0"
+                                onClick={() => handleEditHabit(habit)}
+                              >
+                                <Edit className="h-4 w-4 text-blue-500" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0"
+                                onClick={() => handleDeleteHabit(habit.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="categories">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {habitCategories.map(category => {
+                  const categoryHabits = habits.filter(h => h.category === category.value);
+                  const completedCount = categoryHabits.filter(h => h.completed).length;
+                  const progress = categoryHabits.length > 0 
+                    ? Math.round((completedCount / categoryHabits.length) * 100) 
+                    : 0;
+                    
+                  return (
+                    <Card key={category.value} className="overflow-hidden">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center gap-2">
+                          {category.icon}
+                          {category.label}
+                        </CardTitle>
+                        <CardDescription>
+                          {categoryHabits.length} hábitos
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pb-2">
+                        <div className="space-y-4">
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span>Progresso de hoje</span>
+                              <span>{completedCount}/{categoryHabits.length}</span>
+                            </div>
+                            <Progress value={progress} className="h-2" />
+                          </div>
+                          
+                          {categoryHabits.length > 0 ? (
+                            <div className="space-y-2">
+                              {categoryHabits.slice(0, 3).map(habit => (
+                                <div 
+                                  key={habit.id} 
+                                  className="flex items-center justify-between p-2 rounded border border-gray-100 hover:bg-gray-50"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox 
+                                      checked={habit.completed}
+                                      onCheckedChange={() => updateHabitStatus(habit.id, habit.completed ? 'pending' : 'completed')}
+                                    />
+                                    <span className="text-sm font-medium">{habit.title}</span>
+                                  </div>
+                                  
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 w-7 p-0"
+                                    onClick={() => handleFocusMode(habit)}
+                                  >
+                                    <Zap className="h-3.5 w-3.5 text-amber-500" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4 text-sm text-gray-500">
+                              Nenhum hábito nesta categoria
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Button 
+                          variant="outline" 
+                          className="w-full" 
+                          size="sm"
+                          onClick={() => {
+                            handleCategoryFilter(category.value);
+                            setActiveTab("all");
+                          }}
+                        >
+                          Ver Todos
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  );
+                })}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="stats">
+              <HabitStats habits={habits} habitLogs={habitLogs} />
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
+    </div>
+  );
+}
