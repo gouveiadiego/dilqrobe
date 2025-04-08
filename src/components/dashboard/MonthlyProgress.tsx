@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, Target, Calendar } from "lucide-react";
@@ -8,8 +8,9 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { endOfMonth, format, startOfMonth } from "date-fns";
 
 export const MonthlyProgress = () => {
+  const [currentDate] = useState(new Date());
   const { tasks } = useTasks();
-  const { transactions } = useTransactions();
+  const { transactions } = useTransactions({ currentDate });
   const [progress, setProgress] = useState({
     tasks: { total: 0, completed: 0, percent: 0 },
     income: { target: 5000, current: 0, percent: 0 },

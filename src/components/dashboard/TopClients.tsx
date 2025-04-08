@@ -16,7 +16,8 @@ interface ClientScore {
 }
 
 export const TopClients = () => {
-  const { transactions } = useTransactions();
+  const [currentDate] = useState(new Date());
+  const { transactions } = useTransactions({ currentDate });
   const { clients } = useClients();
   const { meetings } = useMeetings();
   const [topClients, setTopClients] = useState<ClientScore[]>([]);
