@@ -1,11 +1,14 @@
+
 import React from "react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Activity, Wallet, BookText, Target, CheckCircle2, Calendar, TrendingUp, ChevronUp, ChevronDown, CircleDollarSign, List, FileBarChart } from "lucide-react";
+import { Activity, Wallet, Target, CheckCircle2, Calendar, TrendingUp, ChevronUp, ChevronDown, CircleDollarSign, List } from "lucide-react";
 import { useTasks } from "@/hooks/useTasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { UpcomingMeetings } from "@/components/dashboard/UpcomingMeetings";
+import { MonthlyProgress } from "@/components/dashboard/MonthlyProgress";
+import { TopClients } from "@/components/dashboard/TopClients";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -68,31 +71,13 @@ const DashboardTab = () => {
   const activeChallenge = challenges?.[0];
   const totalChallenges = challenges?.length || 0;
 
-  // Calculate completion rate for pie chart
-  const habitosData = [
-    { name: "Concluídos", value: Number(taskCompletionRate), color: "#10b981" },
-    { name: "Pendentes", value: 100 - Number(taskCompletionRate), color: "#f43f5e" },
-  ];
-
-  // Calculate activity data based on last 7 days
+  // Financial trend data for line chart
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() - i);
     return date.toISOString().split('T')[0];
   });
 
-  const activityData = last7Days.reverse().map(date => {
-    const dayTasks = tasks?.filter(t => t.created_at?.startsWith(date)).length || 0;
-    const dayTransactions = transactions?.filter(t => t.date === date).length || 0;
-    
-    return {
-      name: new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' }),
-      tarefas: dayTasks,
-      financeiro: dayTransactions,
-    };
-  });
-
-  // Financial trend data for line chart
   const financialTrendData = last7Days.map(date => {
     const dayIncome = transactions?.filter(t => t.date === date && t.amount > 0).reduce((sum, t) => sum + t.amount, 0) || 0;
     const dayExpenses = transactions?.filter(t => t.date === date && t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0;
@@ -229,54 +214,12 @@ const DashboardTab = () => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-2 space-y-6">
-          <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10 dark-hover-glow">
-            <CardHeader className="bg-gradient-to-r from-indigo-50/50 to-indigo-100/50 dark:from-indigo-900/20 dark:to-purple-900/20 border-b dark:border-gray-800">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Atividades por Área</CardTitle>
-                  <CardDescription>Visão geral das atividades diárias</CardDescription>
-                </div>
-                <div className="h-10 w-10 rounded-lg bg-white/80 dark:bg-gray-800/80 shadow-sm flex items-center justify-center">
-                  <FileBarChart className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={activityData}>
-                    <defs>
-                      <linearGradient id="tarefasGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0.2}/>
-                      </linearGradient>
-                      <linearGradient id="financeiroGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#82ca9d" stopOpacity={0.2}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                    <XAxis 
-                      dataKey="name" 
-                      className="text-xs" 
-                      tick={{ fill: 'var(--foreground)' }}
-                      axisLine={{ stroke: 'var(--muted-foreground)' }}
-                    />
-                    <YAxis 
-                      className="text-xs" 
-                      tick={{ fill: 'var(--foreground)' }}
-                      axisLine={{ stroke: 'var(--muted-foreground)' }}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="tarefas" name="Tarefas" fill="url(#tarefasGradient)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="financeiro" name="Financeiro" fill="url(#financeiroGradient)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="md:col-span-1 space-y-6">
+          <MonthlyProgress />
+          <TopClients />
+        </div>
 
+        <div className="md:col-span-2 space-y-6">
           <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10 dark-hover-glow">
             <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-100/50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b dark:border-gray-800">
               <div className="flex items-center justify-between">
@@ -308,17 +251,6 @@ const DashboardTab = () => {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                    <XAxis 
-                      dataKey="name" 
-                      className="text-xs" 
-                      tick={{ fill: 'var(--foreground)' }}
-                      axisLine={{ stroke: 'var(--muted-foreground)' }}
-                    />
-                    <YAxis 
-                      className="text-xs" 
-                      tick={{ fill: 'var(--foreground)' }}
-                      axisLine={{ stroke: 'var(--muted-foreground)' }}
-                    />
                     <Tooltip content={<CustomTooltip />} />
                     <Line 
                       type="monotone" 
@@ -349,72 +281,6 @@ const DashboardTab = () => {
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10 dark-hover-glow">
-            <CardHeader className="bg-gradient-to-r from-teal-50/50 to-green-100/50 dark:from-teal-900/20 dark:to-green-900/20 border-b dark:border-gray-800">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Taxa de Conclusão</CardTitle>
-                  <CardDescription>Distribuição de tarefas concluídas</CardDescription>
-                </div>
-                <div className="h-10 w-10 rounded-lg bg-white/80 dark:bg-gray-800/80 shadow-sm flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="h-[200px] flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <defs>
-                      <filter id="glow" height="300%" width="300%" x="-100%" y="-100%">
-                        <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
-                        <feMerge>
-                          <feMergeNode in="coloredBlur"/>
-                          <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                      </filter>
-                    </defs>
-                    <Pie
-                      data={habitosData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={90}
-                      paddingAngle={5}
-                      dataKey="value"
-                      filter="url(#glow)"
-                      strokeWidth={1}
-                      stroke="rgba(255,255,255,0.2)"
-                    >
-                      {habitosData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={entry.color}
-                          className="transition-all duration-300 hover:opacity-80"
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex justify-center gap-6 mt-4">
-                {habitosData.map((entry, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div 
-                      className="w-4 h-4 rounded-full" 
-                      style={{ backgroundColor: entry.color, boxShadow: `0 0 10px ${entry.color}40` }}
-                    />
-                    <span className="text-sm">{entry.name}: {entry.value}%</span>
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
