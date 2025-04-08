@@ -25,8 +25,9 @@ import { ServicesTab } from "@/components/ServicesTab";
 import { WrittenProjectsTab } from "@/components/WrittenProjectsTab";
 import { HabitsTab } from "@/components/HabitsTab";
 import { HabitReminder } from "@/components/HabitReminder";
+import { MeetingsTab } from "@/components/MeetingsTab";
 
-type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects';
+type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -220,6 +221,8 @@ const Index = () => {
                 </div>
               </div>
             </div>
+          ) : activeTab === 'meetings' ? (
+            <MeetingsTab />
           ) : activeTab === 'finance' ? (
             <FinanceTab />
           ) : activeTab === 'habits' ? (

@@ -12,6 +12,7 @@ import {
   LogOut,
   Briefcase,
   BarChart3,
+  CalendarClock,
 } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
 
@@ -78,6 +79,14 @@ export function Sidebar({ activeTab, setActiveTab, onLogout }: SidebarProps) {
               >
                 <CheckSquare size={20} />
                 Execução
+              </Button>
+              <Button 
+                variant={activeTab === 'meetings' ? "secondary" : "ghost"} 
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('meetings')}
+              >
+                <CalendarClock size={20} />
+                Reuniões
               </Button>
               <Button 
                 variant={activeTab === 'finance' ? "secondary" : "ghost"} 
