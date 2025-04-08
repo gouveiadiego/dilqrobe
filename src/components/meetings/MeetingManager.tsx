@@ -5,7 +5,7 @@ import { MeetingForm } from "./MeetingForm";
 import { MeetingList } from "./MeetingList";
 import { MeetingCalendar } from "./MeetingCalendar";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar as CalendarIcon, List } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, List, Search, Filter } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 
 export const MeetingManager = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -21,11 +28,30 @@ export const MeetingManager = () => {
   const [view, setView] = useState<"list" | "calendar">("list");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "scheduled" | "completed" | "canceled">("all");
 
   const { meetings, isLoading, addMeeting, updateMeeting, deleteMeeting, updateMeetingStatus } = useMeetings();
 
-  // Filter meetings based on search query
+  // Filter meetings based on search query and status
   const filteredMeetings = meetings.filter(meeting => {
+    // Status filter
+    if (statusFilter !== "all" && meeting.status !== statusFilter) {
+      return false;
+    }
+    
+    // Date filter
+    if (selectedDate) {
+      const meetingDate = new Date(meeting.meeting_date);
+      if (
+        meetingDate.getDate() !== selectedDate.getDate() ||
+        meetingDate.getMonth() !== selectedDate.getMonth() ||
+        meetingDate.getFullYear() !== selectedDate.getFullYear()
+      ) {
+        return false;
+      }
+    }
+    
+    // Search query filter
     if (!searchQuery) return true;
     
     const query = searchQuery.toLowerCase();
@@ -80,9 +106,17 @@ export const MeetingManager = () => {
     }
   };
 
+  const clearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setSelectedDate(null);
+  };
+
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || selectedDate;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
         <h2 className="text-2xl font-bold">Reuniões</h2>
         <Button onClick={() => setIsFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -92,34 +126,74 @@ export const MeetingManager = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Buscar reuniões..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+          <Card className="p-4">
+            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+              <div className="relative flex-1 w-full max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar reuniões..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-3 items-center">
+                <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+                  <SelectTrigger className="w-[160px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="scheduled">Agendadas</SelectItem>
+                    <SelectItem value="completed">Concluídas</SelectItem>
+                    <SelectItem value="canceled">Canceladas</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    Limpar filtros
+                  </Button>
+                )}
+
+                <div className="flex space-x-2">
+                  <Button
+                    variant={view === "list" ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setView("list")}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={view === "calendar" ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setView("calendar")}
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
 
-            <div className="flex space-x-2">
-              <Button
-                variant={view === "list" ? "default" : "outline"}
-                size="icon"
-                onClick={() => setView("list")}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={view === "calendar" ? "default" : "outline"}
-                size="icon"
-                onClick={() => setView("calendar")}
-              >
-                <CalendarIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+            {selectedDate && (
+              <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md flex justify-between items-center">
+                <div className="text-sm flex items-center">
+                  <CalendarIcon className="h-4 w-4 mr-1 text-blue-500" />
+                  <span>Filtrando por data: <strong>{selectedDate.toLocaleDateString()}</strong></span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setSelectedDate(null)}
+                  className="text-xs h-7 px-2"
+                >
+                  Remover filtro
+                </Button>
+              </div>
+            )}
+          </Card>
 
           {view === "list" ? (
             <MeetingList

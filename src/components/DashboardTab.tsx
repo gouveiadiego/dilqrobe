@@ -1,4 +1,3 @@
-
 import React from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Activity, Wallet, BookText, Target, CheckCircle2, Calendar, TrendingUp,
 import { useTasks } from "@/hooks/useTasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { UpcomingMeetings } from "@/components/dashboard/UpcomingMeetings";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -228,195 +228,199 @@ const DashboardTab = () => {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10 dark-hover-glow">
-          <CardHeader className="bg-gradient-to-r from-indigo-50/50 to-indigo-100/50 dark:from-indigo-900/20 dark:to-purple-900/20 border-b dark:border-gray-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Atividades por Área</CardTitle>
-                <CardDescription>Visão geral das atividades diárias</CardDescription>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-white/80 dark:bg-gray-800/80 shadow-sm flex items-center justify-center">
-                <FileBarChart className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activityData}>
-                  <defs>
-                    <linearGradient id="tarefasGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#8884d8" stopOpacity={0.2}/>
-                    </linearGradient>
-                    <linearGradient id="financeiroGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#82ca9d" stopOpacity={0.2}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                  <XAxis 
-                    dataKey="name" 
-                    className="text-xs" 
-                    tick={{ fill: 'var(--foreground)' }}
-                    axisLine={{ stroke: 'var(--muted-foreground)' }}
-                  />
-                  <YAxis 
-                    className="text-xs" 
-                    tick={{ fill: 'var(--foreground)' }}
-                    axisLine={{ stroke: 'var(--muted-foreground)' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="tarefas" name="Tarefas" fill="url(#tarefasGradient)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="financeiro" name="Financeiro" fill="url(#financeiroGradient)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10 dark-hover-glow">
-          <CardHeader className="bg-gradient-to-r from-teal-50/50 to-green-100/50 dark:from-teal-900/20 dark:to-green-900/20 border-b dark:border-gray-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Taxa de Conclusão</CardTitle>
-                <CardDescription>Distribuição de tarefas concluídas</CardDescription>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-white/80 dark:bg-gray-800/80 shadow-sm flex items-center justify-center">
-                <CheckCircle2 className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="h-[300px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <defs>
-                    <filter id="glow" height="300%" width="300%" x="-100%" y="-100%">
-                      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
-                      <feMerge>
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <Pie
-                    data={habitosData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={90}
-                    paddingAngle={5}
-                    dataKey="value"
-                    filter="url(#glow)"
-                    strokeWidth={1}
-                    stroke="rgba(255,255,255,0.2)"
-                  >
-                    {habitosData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.color}
-                        className="transition-all duration-300 hover:opacity-80"
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex justify-center gap-6 mt-4">
-              {habitosData.map((entry, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div 
-                    className="w-4 h-4 rounded-full" 
-                    style={{ backgroundColor: entry.color, boxShadow: `0 0 10px ${entry.color}40` }}
-                  />
-                  <span className="text-sm">{entry.name}: {entry.value}%</span>
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="md:col-span-2 space-y-6">
+          <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10 dark-hover-glow">
+            <CardHeader className="bg-gradient-to-r from-indigo-50/50 to-indigo-100/50 dark:from-indigo-900/20 dark:to-purple-900/20 border-b dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Atividades por Área</CardTitle>
+                  <CardDescription>Visão geral das atividades diárias</CardDescription>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                <div className="h-10 w-10 rounded-lg bg-white/80 dark:bg-gray-800/80 shadow-sm flex items-center justify-center">
+                  <FileBarChart className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={activityData}>
+                    <defs>
+                      <linearGradient id="tarefasGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0.2}/>
+                      </linearGradient>
+                      <linearGradient id="financeiroGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#82ca9d" stopOpacity={0.2}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                    <XAxis 
+                      dataKey="name" 
+                      className="text-xs" 
+                      tick={{ fill: 'var(--foreground)' }}
+                      axisLine={{ stroke: 'var(--muted-foreground)' }}
+                    />
+                    <YAxis 
+                      className="text-xs" 
+                      tick={{ fill: 'var(--foreground)' }}
+                      axisLine={{ stroke: 'var(--muted-foreground)' }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="tarefas" name="Tarefas" fill="url(#tarefasGradient)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="financeiro" name="Financeiro" fill="url(#financeiroGradient)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
-      <div className="grid gap-6 md:grid-cols-1">
-        <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10 dark-hover-glow">
-          <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-100/50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b dark:border-gray-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Resumo Financeiro</CardTitle>
-                <CardDescription>Visão de receitas e despesas</CardDescription>
+          <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10 dark-hover-glow">
+            <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-100/50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Resumo Financeiro</CardTitle>
+                  <CardDescription>Visão de receitas e despesas</CardDescription>
+                </div>
+                <div className="h-10 w-10 rounded-lg bg-white/80 dark:bg-gray-800/80 shadow-sm flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
               </div>
-              <div className="h-10 w-10 rounded-lg bg-white/80 dark:bg-gray-800/80 shadow-sm flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={financialTrendData}>
+                    <defs>
+                      <linearGradient id="receitasGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="despesasGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.1}/>
+                      </linearGradient>
+                      <linearGradient id="saldoGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                    <XAxis 
+                      dataKey="name" 
+                      className="text-xs" 
+                      tick={{ fill: 'var(--foreground)' }}
+                      axisLine={{ stroke: 'var(--muted-foreground)' }}
+                    />
+                    <YAxis 
+                      className="text-xs" 
+                      tick={{ fill: 'var(--foreground)' }}
+                      axisLine={{ stroke: 'var(--muted-foreground)' }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="receitas" 
+                      name="Receitas" 
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: "#10b981", strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: "#10b981", stroke: "#fff", strokeWidth: 2 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="despesas" 
+                      name="Despesas" 
+                      stroke="#f43f5e"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: "#f43f5e", strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: "#f43f5e", stroke: "#fff", strokeWidth: 2 }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="saldo" 
+                      name="Saldo" 
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={financialTrendData}>
-                  <defs>
-                    <linearGradient id="receitasGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
-                    </linearGradient>
-                    <linearGradient id="despesasGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.1}/>
-                    </linearGradient>
-                    <linearGradient id="saldoGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                  <XAxis 
-                    dataKey="name" 
-                    className="text-xs" 
-                    tick={{ fill: 'var(--foreground)' }}
-                    axisLine={{ stroke: 'var(--muted-foreground)' }}
-                  />
-                  <YAxis 
-                    className="text-xs" 
-                    tick={{ fill: 'var(--foreground)' }}
-                    axisLine={{ stroke: 'var(--muted-foreground)' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="receitas" 
-                    name="Receitas" 
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: "#10b981", strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: "#10b981", stroke: "#fff", strokeWidth: 2 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="despesas" 
-                    name="Despesas" 
-                    stroke="#f43f5e"
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: "#f43f5e", strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: "#f43f5e", stroke: "#fff", strokeWidth: 2 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="saldo" 
-                    name="Saldo" 
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    dot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10 dark-hover-glow">
+            <CardHeader className="bg-gradient-to-r from-teal-50/50 to-green-100/50 dark:from-teal-900/20 dark:to-green-900/20 border-b dark:border-gray-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Taxa de Conclusão</CardTitle>
+                  <CardDescription>Distribuição de tarefas concluídas</CardDescription>
+                </div>
+                <div className="h-10 w-10 rounded-lg bg-white/80 dark:bg-gray-800/80 shadow-sm flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="h-[200px] flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <defs>
+                      <filter id="glow" height="300%" width="300%" x="-100%" y="-100%">
+                        <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+                        <feMerge>
+                          <feMergeNode in="coloredBlur"/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    <Pie
+                      data={habitosData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={90}
+                      paddingAngle={5}
+                      dataKey="value"
+                      filter="url(#glow)"
+                      strokeWidth={1}
+                      stroke="rgba(255,255,255,0.2)"
+                    >
+                      {habitosData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.color}
+                          className="transition-all duration-300 hover:opacity-80"
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center gap-6 mt-4">
+                {habitosData.map((entry, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded-full" 
+                      style={{ backgroundColor: entry.color, boxShadow: `0 0 10px ${entry.color}40` }}
+                    />
+                    <span className="text-sm">{entry.name}: {entry.value}%</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <UpcomingMeetings />
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
