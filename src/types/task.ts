@@ -1,4 +1,3 @@
-
 import { Database } from "@/integrations/supabase/types";
 
 type Json = Database['public']['Tables']['tasks']['Insert']['subtasks'];
@@ -21,9 +20,11 @@ export interface Task {
   updated_at?: string;
   subtasks: SubTask[];
   section: string;
+  is_recurring: boolean;
+  recurrence_count?: number | null; // null means infinite
+  recurrence_completed?: number;
 }
 
-// Type for database operations to ensure compatibility with Supabase
 export type TaskUpdate = Omit<Partial<Task>, 'subtasks'> & {
   subtasks?: Json;
 };

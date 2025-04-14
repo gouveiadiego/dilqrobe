@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskUpdate } from "@/types/task";
@@ -62,6 +61,9 @@ export const useTasks = () => {
           due_date: newTask.due_date,
           category: newTask.category,
           section: newTask.section,
+          is_recurring: newTask.is_recurring,
+          recurrence_count: newTask.recurrence_count,
+          recurrence_completed: 0,
           user_id: user.id,
           subtasks: []
         }])
@@ -134,16 +136,42 @@ export const useTasks = () => {
     }
   });
 
+  const toggleTask = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      const isCompleting = !task.completed;
+
+      if (task.is_recurring && isCompleting) {
+        // Se a tarefa está sendo marcada como concluída e é recorrente
+        const newRecurrenceCompleted = (task.recurrence_completed || 0) + 1;
+        const updates: any = { completed: false }; // Reset completion
+
+        // Se tem um número limitado de recorrências e atingiu o limite
+        if (task.recurrence_count !== null && newRecurrenceCompleted >= task.recurrence_count) {
+          updates.completed = true; // Marca como concluída definitivamente
+        }
+
+        // Atualiza o contador de recorrências
+        updates.recurrence_completed = newRecurrenceCompleted;
+        updateTaskMutation.mutate({ id, updates });
+
+        if (updates.completed) {
+          toast.success('Todas as recorrências foram concluídas!');
+        } else {
+          toast.success('Tarefa concluída! Próxima recorrência disponível.');
+        }
+      } else {
+        // Comportamento normal para tarefas não recorrentes
+        toggleTaskMutation.mutate({ id, completed: !task.completed });
+      }
+    }
+  };
+
   return {
     tasks,
     isLoading,
     addTask: addTaskMutation.mutate,
-    toggleTask: (id: string) => {
-      const task = tasks.find(t => t.id === id);
-      if (task) {
-        toggleTaskMutation.mutate({ id, completed: !task.completed });
-      }
-    },
+    toggleTask,
     deleteTask: deleteTaskMutation.mutate,
     updateTask: updateTaskMutation.mutate,
   };
