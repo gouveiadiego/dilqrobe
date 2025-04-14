@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Task } from "@/types/task";
 import { 
@@ -13,11 +12,20 @@ import {
   startOfWeek,
   addDays,
   addMonths,
+  subMonths,
   getDay
 } from "date-fns";
 import { pt } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Card } from "./ui/card";
+import { Button } from "./ui/button";
+import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 interface KanbanCalendarProps {
   tasks: Task[];
@@ -28,8 +36,9 @@ export function KanbanCalendar({
   tasks,
   onTaskDrop
 }: KanbanCalendarProps) {
-  const [currentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Get days of the current month
   const monthStart = startOfMonth(currentMonth);
@@ -49,7 +58,17 @@ export function KanbanCalendar({
     end: extendedEndDate
   });
 
-  console.log("KanbanCalendar - Month days:", monthDays.map(d => d.toISOString().split('T')[0]));
+  const handlePrevMonth = () => {
+    setCurrentMonth(prev => subMonths(prev, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(prev => addMonths(prev, 1));
+  };
+
+  // Format month name with first letter capitalized
+  const formattedMonth = format(currentMonth, "MMMM 'de' yyyy", { locale: pt })
+    .replace(/^\w/, (c) => c.toUpperCase());
 
   const handleDragStart = (taskId: string) => {
     setDraggingTaskId(taskId);
@@ -117,10 +136,50 @@ export function KanbanCalendar({
   return (
     <Card className="w-full mt-8 p-6 bg-white shadow-sm">
       <div className="space-y-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {format(currentMonth, "MMMM yyyy", { locale: pt })}
-          </h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handlePrevMonth}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="min-w-[200px] justify-start text-left font-normal"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formattedMonth}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={currentMonth}
+                  onSelect={(date) => {
+                    if (date) {
+                      setCurrentMonth(date);
+                      setCalendarOpen(false);
+                    }
+                  }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handleNextMonth}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-7 gap-2">
