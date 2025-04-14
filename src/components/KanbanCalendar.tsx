@@ -16,7 +16,6 @@ import {
   getDay,
   isSameMonth,
   isWithinInterval,
-  addWeeks
 } from "date-fns";
 import { pt } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -59,7 +58,7 @@ const generateRecurringInstances = (
     : Infinity;
   
   const baseDate = task.original_due_date ? new Date(task.original_due_date) : new Date(task.due_date);
-  let instanceDate = new Date(baseDate);
+  let instanceDate = addMonths(baseDate, 1); // Start with next month
   
   const maxDate = task.recurrence_count !== null
     ? addMonths(baseDate, task.recurrence_count)
@@ -68,22 +67,17 @@ const generateRecurringInstances = (
   let count = 0;
   
   while (instanceDate <= maxDate && count < remainingInstances) {
-    if (!isEqual(
-      new Date(instanceDate.getFullYear(), instanceDate.getMonth(), instanceDate.getDate()),
-      new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate())
-    )) {
-      if (isWithinInterval(instanceDate, { start: startOfMonth(startMonth), end: endOfMonth(maxDate) })) {
-        instances.push({
-          ...task,
-          due_date: instanceDate.toISOString(),
-          original_due_date: task.original_due_date || task.due_date,
-          _isRecurringInstance: true,
-          id: `${task.id}_instance_${count}`
-        } as Task);
-      }
+    if (isWithinInterval(instanceDate, { start: startOfMonth(startMonth), end: endOfMonth(maxDate) })) {
+      instances.push({
+        ...task,
+        due_date: instanceDate.toISOString(),
+        original_due_date: task.original_due_date || task.due_date,
+        _isRecurringInstance: true,
+        id: `${task.id}_instance_${count}`
+      } as Task);
     }
     
-    instanceDate = addWeeks(instanceDate, 1);
+    instanceDate = addMonths(instanceDate, 1); // Increment by one month
     count++;
   }
   
