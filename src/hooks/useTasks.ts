@@ -38,8 +38,8 @@ export const useTasks = () => {
         category: task.category || null,
         priority: (task.priority as Task['priority']) || 'medium',
         section: task.section || 'inbox',
-        is_recurring: task.is_recurring || false,
-        recurrence_count: task.recurrence_count || null,
+        is_recurring: Boolean(task.is_recurring),
+        recurrence_count: task.recurrence_count !== undefined ? task.recurrence_count : null,
         recurrence_completed: task.recurrence_completed || 0,
         subtasks: Array.isArray(task.subtasks) 
           ? (task.subtasks as any[]).map(st => ({
