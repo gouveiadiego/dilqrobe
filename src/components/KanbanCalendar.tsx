@@ -45,7 +45,6 @@ const generateRecurringInstances = (
   }
 
   const instances: Task[] = [];
-  const maxInstancesPerMonth = 4;
   
   if (
     task.recurrence_count !== null && 
@@ -55,25 +54,33 @@ const generateRecurringInstances = (
     return [];
   }
 
-  const maxDate = new Date(endMonth);
-  maxDate.setMonth(maxDate.getMonth() + 3);
+  const remainingInstances = task.recurrence_count !== null 
+    ? task.recurrence_count - (task.recurrence_completed || 0)
+    : Infinity;
   
   const baseDate = task.original_due_date ? new Date(task.original_due_date) : new Date(task.due_date);
   let instanceDate = new Date(baseDate);
+  
+  const maxDate = task.recurrence_count !== null
+    ? addMonths(baseDate, task.recurrence_count)
+    : addMonths(endMonth, 6);
+  
   let count = 0;
   
-  while (instanceDate <= maxDate && count < maxInstancesPerMonth) {
+  while (instanceDate <= maxDate && count < remainingInstances) {
     if (!isEqual(
       new Date(instanceDate.getFullYear(), instanceDate.getMonth(), instanceDate.getDate()),
       new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate())
     )) {
-      instances.push({
-        ...task,
-        due_date: instanceDate.toISOString(),
-        original_due_date: task.original_due_date || task.due_date,
-        _isRecurringInstance: true,
-        id: `${task.id}_instance_${count}`
-      } as Task);
+      if (isWithinInterval(instanceDate, { start: startOfMonth(startMonth), end: endOfMonth(maxDate) })) {
+        instances.push({
+          ...task,
+          due_date: instanceDate.toISOString(),
+          original_due_date: task.original_due_date || task.due_date,
+          _isRecurringInstance: true,
+          id: `${task.id}_instance_${count}`
+        } as Task);
+      }
     }
     
     instanceDate = addWeeks(instanceDate, 1);
