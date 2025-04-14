@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskUpdate } from "@/types/task";
@@ -37,6 +38,9 @@ export const useTasks = () => {
         category: task.category || null,
         priority: (task.priority as Task['priority']) || 'medium',
         section: task.section || 'inbox',
+        is_recurring: task.is_recurring || false,
+        recurrence_count: task.recurrence_count || null,
+        recurrence_completed: task.recurrence_completed || 0,
         subtasks: Array.isArray(task.subtasks) 
           ? (task.subtasks as any[]).map(st => ({
               id: st.id || crypto.randomUUID(),

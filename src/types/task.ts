@@ -1,3 +1,4 @@
+
 import { Database } from "@/integrations/supabase/types";
 
 type Json = Database['public']['Tables']['tasks']['Insert']['subtasks'];

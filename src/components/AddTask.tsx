@@ -1,7 +1,8 @@
+
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { useState } from "react";
-import { CalendarIcon, Flag, Tag } from "lucide-react";
+import { CalendarIcon, Flag, LayoutGrid, Tag } from "lucide-react";
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
@@ -40,7 +41,7 @@ export function AddTask({
     onAdd({
       title: title.trim(),
       priority,
-      due_date: date ? date.toISOString() : new Date().toISOString(),
+      due_date: date ? date.toISOString() : null,
       category,
       section,
       is_recurring: isRecurring,
@@ -152,7 +153,9 @@ export function AddTask({
 
             <Popover open={isSectionOpen} onOpenChange={setIsSectionOpen}>
               <PopoverTrigger asChild>
-                
+                <Button variant="ghost" size="icon" className={`h-8 w-8 ${section !== 'inbox' ? 'text-purple-400 hover:text-purple-500' : 'text-gray-400 hover:text-gray-500'}`}>
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
               </PopoverTrigger>
               <PopoverContent className="w-40 p-2">
                 <div className="flex flex-col gap-1">
