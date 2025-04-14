@@ -1,9 +1,9 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskUpdate } from "@/types/task";
 import { Database } from "@/integrations/supabase/types";
 import { toast } from "sonner";
+import { addDays, addMonths, addWeeks } from "date-fns";
 
 type TaskResponse = Database['public']['Tables']['tasks']['Row'];
 type Json = Database['public']['Tables']['tasks']['Insert']['subtasks'];
@@ -13,6 +13,21 @@ export type StreakProgressType = {
   next: number;
   nextMilestone: number;
   visualLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'master';
+};
+
+const calculateNextDueDate = (currentDate: string, type: Task['recurrence_type']): string => {
+  const date = new Date(currentDate);
+  
+  switch (type) {
+    case 'weekly':
+      return addWeeks(date, 1).toISOString();
+    case 'biweekly':
+      return addWeeks(date, 2).toISOString();
+    case 'monthly':
+      return addMonths(date, 1).toISOString();
+    default:
+      return addMonths(date, 1).toISOString();
+  }
 };
 
 export const useTasks = () => {
@@ -150,24 +165,35 @@ export const useTasks = () => {
 
       if (task.is_recurring && isCompleting) {
         const newRecurrenceCompleted = (task.recurrence_completed || 0) + 1;
-        const updates: any = { completed: false }; // Reset completion
-
+        
         if (task.recurrence_count !== null && newRecurrenceCompleted >= task.recurrence_count) {
-          updates.completed = true; // Mark as completed definitively
-        }
-
-        updates.recurrence_completed = newRecurrenceCompleted;
-        updateTaskMutation.mutate({ id, updates });
-
-        const recurrenceTypeText = {
-          weekly: 'semana',
-          biweekly: 'quinzena',
-          monthly: 'mês'
-        }[task.recurrence_type || 'monthly'];
-
-        if (updates.completed) {
+          updateTaskMutation.mutate({ 
+            id, 
+            updates: { 
+              completed: true,
+              recurrence_completed: newRecurrenceCompleted
+            } 
+          });
+          
           toast.success('Todas as recorrências foram concluídas!');
         } else {
+          const nextDueDate = calculateNextDueDate(task.due_date!, task.recurrence_type);
+          
+          updateTaskMutation.mutate({
+            id,
+            updates: {
+              completed: false,
+              due_date: nextDueDate,
+              recurrence_completed: newRecurrenceCompleted
+            }
+          });
+
+          const recurrenceTypeText = {
+            weekly: 'semana',
+            biweekly: 'quinzena',
+            monthly: 'mês'
+          }[task.recurrence_type || 'monthly'];
+
           toast.success(`Tarefa concluída! Próxima recorrência disponível no(a) próximo(a) ${recurrenceTypeText}.`);
         }
       } else {
