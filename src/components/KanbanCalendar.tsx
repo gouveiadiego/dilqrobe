@@ -28,6 +28,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { TextEllipsis } from "./ui/text-ellipsis";
 
 interface KanbanCalendarProps {
   tasks: Task[];
@@ -336,7 +337,10 @@ export function KanbanCalendar({
                         "font-medium text-gray-900 break-words",
                         task.completed ? "line-through" : ""
                       )}>
-                        {task.title}
+                        <TextEllipsis 
+                          text={task.title}
+                          maxLength={30}
+                        />
                         {task.is_recurring && (
                           <span className="inline-flex ml-1">
                             <Repeat className="h-3 w-3 text-purple-500" />

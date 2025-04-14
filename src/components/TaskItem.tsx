@@ -1,4 +1,3 @@
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { SubTask, Task, TaskUpdate } from "@/types/task";
@@ -11,6 +10,7 @@ import { ptBR } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
+import { TextEllipsis } from "./ui/text-ellipsis";
 
 interface TaskItemProps {
   task: Task;
@@ -170,14 +170,14 @@ export function TaskItem({
           ) : (
             <>
               <div className="flex items-center gap-2">
-                <p
+                <TextEllipsis
+                  text={task.title}
+                  maxLength={100}
                   className={cn(
                     "text-sm font-medium",
                     task.completed ? "line-through text-gray-400" : "text-gray-800"
                   )}
-                >
-                  {task.title}
-                </p>
+                />
                 {task.subtasks.length > 0 && (
                   <Button
                     variant="ghost"
@@ -254,12 +254,14 @@ export function TaskItem({
                 className="h-4 w-4 border-2 border-gray-300 rounded-full
                         data-[state=checked]:border-dilq-accent data-[state=checked]:bg-dilq-accent"
               />
-              <span className={cn(
-                "text-sm transition-all duration-300",
-                subtask.completed ? "line-through text-gray-400" : "text-gray-700"
-              )}>
-                {subtask.title}
-              </span>
+              <TextEllipsis 
+                text={subtask.title}
+                maxLength={80}
+                className={cn(
+                  "text-sm transition-all duration-300",
+                  subtask.completed ? "line-through text-gray-400" : "text-gray-700"
+                )}
+              />
             </div>
           ))}
           <div className="flex gap-2 mt-3">

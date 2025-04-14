@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { Transaction } from "@/hooks/useTransactions";
+import { TextEllipsis } from "../ui/text-ellipsis";
 
 interface TransactionsTableProps {
   transactions: Transaction[];
@@ -56,7 +56,6 @@ export const TransactionsTable = ({
   };
 
   const confirmDelete = (transaction: Transaction) => {
-    // If it's a recurring transaction and we have the handler for recurring deletion
     if (transaction.recurring && onDeleteRecurring) {
       setSelectedRecurringTransaction(transaction);
       setOpenRecurringDialog(true);
@@ -86,14 +85,24 @@ export const TransactionsTable = ({
             <TableRow key={transaction.id}>
               <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
               <TableCell>
-                {transaction.description}
+                <TextEllipsis 
+                  text={transaction.description}
+                  maxLength={40}
+                  className="block max-w-[200px]"
+                />
                 {transaction.recurring && (
                   <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
                     Recorrente
                   </span>
                 )}
               </TableCell>
-              <TableCell>{transaction.received_from}</TableCell>
+              <TableCell>
+                <TextEllipsis 
+                  text={transaction.received_from || ""}
+                  maxLength={30}
+                  className="block max-w-[150px]"
+                />
+              </TableCell>
               <TableCell>
                 <CategoryBadge category={transaction.category} />
               </TableCell>
@@ -146,7 +155,6 @@ export const TransactionsTable = ({
         </TableBody>
       </Table>
 
-      {/* Standard delete dialog */}
       <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -164,7 +172,6 @@ export const TransactionsTable = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Recurring transaction delete dialog */}
       <AlertDialog open={openRecurringDialog} onOpenChange={setOpenRecurringDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -194,7 +201,6 @@ export const TransactionsTable = ({
   );
 };
 
-// Helper function to translate payment types
 const getPaymentTypeLabel = (paymentType: string): string => {
   switch (paymentType) {
     case "pix": return "PIX";
@@ -206,7 +212,6 @@ const getPaymentTypeLabel = (paymentType: string): string => {
   }
 };
 
-// Helper component for category badges
 const CategoryBadge = ({ category }: { category: string }) => {
   const colors: Record<string, { bg: string, text: string }> = {
     'fixed': { bg: 'bg-blue-100', text: 'text-blue-800' },
@@ -226,7 +231,6 @@ const CategoryBadge = ({ category }: { category: string }) => {
   );
 };
 
-// Helper function to translate category names
 const getCategoryLabel = (categoryValue: string): string => {
   switch (categoryValue) {
     case "income": return "Recebimento";

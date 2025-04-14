@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format, isSameDay, parseISO, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { TextEllipsis } from "../ui/text-ellipsis";
 
 interface MeetingListProps {
   meetings: Meeting[];
@@ -56,7 +56,6 @@ export const MeetingList = ({
       )
     : meetings;
 
-  // Group meetings by date
   const groupedMeetings: { [key: string]: Meeting[] } = {};
   
   filteredMeetings.forEach((meeting) => {
@@ -67,7 +66,6 @@ export const MeetingList = ({
     groupedMeetings[dateKey].push(meeting);
   });
 
-  // Sort dates
   const sortedDates = Object.keys(groupedMeetings).sort((a, b) => {
     return new Date(a).getTime() - new Date(b).getTime();
   });
@@ -160,7 +158,11 @@ export const MeetingList = ({
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                          {meeting.title}
+                          <TextEllipsis 
+                            text={meeting.title}
+                            maxLength={60}
+                            className="max-w-[400px]"
+                          />
                         </h4>
                         {getStatusBadge(meeting.status)}
                       </div>
@@ -179,20 +181,34 @@ export const MeetingList = ({
                         {meeting.client && (
                           <div className="flex items-center gap-1">
                             <User className="h-3.5 w-3.5" />
-                            <span>Cliente: {meeting.client.name}</span>
+                            <span>Cliente: 
+                              <TextEllipsis 
+                                text={meeting.client.name}
+                                maxLength={40}
+                                className="inline-block max-w-[200px] ml-1"
+                              />
+                            </span>
                           </div>
                         )}
                         
                         {meeting.location && (
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3.5 w-3.5" />
-                            <span>{meeting.location}</span>
+                            <TextEllipsis 
+                              text={meeting.location}
+                              maxLength={50}
+                              className="max-w-[300px]"
+                            />
                           </div>
                         )}
                         
                         {meeting.description && (
                           <div className="mt-1 text-gray-600 dark:text-gray-300">
-                            {meeting.description}
+                            <TextEllipsis 
+                              text={meeting.description}
+                              maxLength={100}
+                              className="max-w-[500px]"
+                            />
                           </div>
                         )}
                       </div>
