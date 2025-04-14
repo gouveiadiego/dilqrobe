@@ -938,7 +938,10 @@ export type Database = {
           created_at: string | null
           due_date: string | null
           id: string
+          is_recurring: boolean | null
           priority: string | null
+          recurrence_completed: number | null
+          recurrence_count: number | null
           section: string | null
           subtasks: Json | null
           title: string
@@ -951,7 +954,10 @@ export type Database = {
           created_at?: string | null
           due_date?: string | null
           id?: string
+          is_recurring?: boolean | null
           priority?: string | null
+          recurrence_completed?: number | null
+          recurrence_count?: number | null
           section?: string | null
           subtasks?: Json | null
           title: string
@@ -964,7 +970,10 @@ export type Database = {
           created_at?: string | null
           due_date?: string | null
           id?: string
+          is_recurring?: boolean | null
           priority?: string | null
+          recurrence_completed?: number | null
+          recurrence_count?: number | null
           section?: string | null
           subtasks?: Json | null
           title?: string
