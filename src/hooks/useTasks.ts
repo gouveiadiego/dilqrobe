@@ -57,12 +57,15 @@ export const useTasks = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      // Set today's date as default when no date is provided
+      const taskDate = newTask.due_date || new Date().toISOString();
+
       const { data, error } = await supabase
         .from('tasks')
         .insert([{
           title: newTask.title,
           priority: newTask.priority,
-          due_date: newTask.due_date,
+          due_date: taskDate,
           category: newTask.category,
           section: newTask.section,
           is_recurring: newTask.is_recurring,
