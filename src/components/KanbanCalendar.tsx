@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Task } from "@/types/task";
 import { 
@@ -13,13 +14,16 @@ import {
   addDays,
   addMonths,
   subMonths,
-  getDay
+  getDay,
+  isSameMonth,
+  isWithinInterval,
+  addWeeks
 } from "date-fns";
 import { pt } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarIcon, Repeat } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -31,6 +35,61 @@ interface KanbanCalendarProps {
   tasks: Task[];
   onTaskDrop: (taskId: string, date: Date) => void;
 }
+
+// Utility function to generate future recurring task instances
+const generateRecurringInstances = (
+  task: Task, 
+  startMonth: Date, 
+  endMonth: Date
+): Task[] => {
+  if (!task.is_recurring || task.completed || !task.due_date) {
+    return [];
+  }
+
+  const originalDate = new Date(task.due_date);
+  const instances: Task[] = [];
+  const maxInstancesPerMonth = 4; // Limit to avoid excessive instances
+  
+  // Only generate future instances if the task is not completed
+  // Check if the task has a limit and if we've reached it
+  if (
+    task.recurrence_count !== null && 
+    task.recurrence_completed !== undefined && 
+    task.recurrence_completed >= task.recurrence_count
+  ) {
+    return [];
+  }
+
+  // Generate recurring instances for approximately 3 months ahead
+  const maxDate = new Date(endMonth);
+  maxDate.setMonth(maxDate.getMonth() + 3);
+  
+  // Generate a reasonable number of instances
+  let instanceDate = new Date(originalDate);
+  let count = 0;
+  
+  while (instanceDate <= maxDate && count < maxInstancesPerMonth) {
+    // Skip the original date as it's already in the tasks list
+    if (!isEqual(
+      new Date(instanceDate.getFullYear(), instanceDate.getMonth(), instanceDate.getDate()),
+      new Date(originalDate.getFullYear(), originalDate.getMonth(), originalDate.getDate())
+    )) {
+      // Create a virtual instance of the recurring task
+      instances.push({
+        ...task,
+        due_date: instanceDate.toISOString(),
+        _isRecurringInstance: true, // Mark as a virtual instance
+        id: `${task.id}_instance_${count}` // Create a unique ID for the instance
+      } as Task);
+    }
+    
+    // Move to next week for the next instance
+    instanceDate = addWeeks(instanceDate, 1);
+    count++;
+  }
+  
+  return instances;
+};
 
 export function KanbanCalendar({
   tasks,
@@ -81,13 +140,18 @@ export function KanbanCalendar({
   const handleDrop = (e: React.DragEvent, date: Date) => {
     e.preventDefault();
     if (draggingTaskId) {
-      onTaskDrop(draggingTaskId, date);
+      // If dragged task is a recurring instance, extract the original task ID
+      const originalTaskId = draggingTaskId.includes('_instance_') 
+        ? draggingTaskId.split('_instance_')[0] 
+        : draggingTaskId;
+        
+      onTaskDrop(originalTaskId, date);
       setDraggingTaskId(null);
     }
   };
 
   const getTasksForDay = (date: Date) => {
-    return tasks.filter(task => {
+    const regularTasks = tasks.filter(task => {
       if (!task.due_date) return false;
       const taskDate = new Date(task.due_date);
       // Compare year, month, and day for more accurate date comparison
@@ -96,6 +160,41 @@ export function KanbanCalendar({
         new Date(date.getFullYear(), date.getMonth(), date.getDate())
       );
     });
+
+    // Generate recurring task instances if we're looking at future months
+    let recurringInstances: Task[] = [];
+    
+    // Only generate instances for non-current months
+    if (!isSameMonth(date, new Date())) {
+      // Get recurring tasks
+      const recurringTasks = tasks.filter(task => 
+        task.is_recurring && !task.completed && task.due_date
+      );
+      
+      // Generate instances for each recurring task
+      recurringTasks.forEach(task => {
+        const instances = generateRecurringInstances(
+          task, 
+          monthStart,
+          monthEnd
+        );
+        
+        // Filter instances for this specific day
+        const instancesForDay = instances.filter(instance => {
+          if (!instance.due_date) return false;
+          const instanceDate = new Date(instance.due_date);
+          return isEqual(
+            new Date(instanceDate.getFullYear(), instanceDate.getMonth(), instanceDate.getDate()),
+            new Date(date.getFullYear(), date.getMonth(), date.getDate())
+          );
+        });
+        
+        recurringInstances = [...recurringInstances, ...instancesForDay];
+      });
+    }
+    
+    // Combine regular tasks and recurring instances
+    return [...regularTasks, ...recurringInstances];
   };
 
   const isNextMonth = (date: Date) => {
@@ -247,6 +346,11 @@ export function KanbanCalendar({
                         task.completed && "line-through"
                       )}>
                         {task.title}
+                        {task.is_recurring && (
+                          <span className="inline-flex ml-1">
+                            <Repeat className="h-3 w-3 text-purple-500" />
+                          </span>
+                        )}
                       </div>
                       {task.category && (
                         <span className={cn(

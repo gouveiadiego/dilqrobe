@@ -24,6 +24,8 @@ export interface Task {
   is_recurring: boolean;
   recurrence_count?: number | null; // null means infinite
   recurrence_completed?: number;
+  // Flag to mark virtual instances of recurring tasks in the calendar
+  _isRecurringInstance?: boolean;
 }
 
 export type TaskUpdate = Omit<Partial<Task>, 'subtasks'> & {
