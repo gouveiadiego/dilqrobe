@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Task } from "@/types/task";
 import { 
@@ -36,7 +35,6 @@ interface KanbanCalendarProps {
   onTaskDrop: (taskId: string, date: Date) => void;
 }
 
-// Utility function to generate future recurring task instances
 const generateRecurringInstances = (
   task: Task, 
   startMonth: Date, 
@@ -46,12 +44,9 @@ const generateRecurringInstances = (
     return [];
   }
 
-  const originalDate = new Date(task.due_date);
   const instances: Task[] = [];
-  const maxInstancesPerMonth = 4; // Limit to avoid excessive instances
+  const maxInstancesPerMonth = 4;
   
-  // Only generate future instances if the task is not completed
-  // Check if the task has a limit and if we've reached it
   if (
     task.recurrence_count !== null && 
     task.recurrence_completed !== undefined && 
@@ -60,30 +55,27 @@ const generateRecurringInstances = (
     return [];
   }
 
-  // Generate recurring instances for approximately 3 months ahead
   const maxDate = new Date(endMonth);
   maxDate.setMonth(maxDate.getMonth() + 3);
   
-  // Generate a reasonable number of instances
-  let instanceDate = new Date(originalDate);
+  const baseDate = task.original_due_date ? new Date(task.original_due_date) : new Date(task.due_date);
+  let instanceDate = new Date(baseDate);
   let count = 0;
   
   while (instanceDate <= maxDate && count < maxInstancesPerMonth) {
-    // Skip the original date as it's already in the tasks list
     if (!isEqual(
       new Date(instanceDate.getFullYear(), instanceDate.getMonth(), instanceDate.getDate()),
-      new Date(originalDate.getFullYear(), originalDate.getMonth(), originalDate.getDate())
+      new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate())
     )) {
-      // Create a virtual instance of the recurring task
       instances.push({
         ...task,
         due_date: instanceDate.toISOString(),
-        _isRecurringInstance: true, // Mark as a virtual instance
-        id: `${task.id}_instance_${count}` // Create a unique ID for the instance
+        original_due_date: task.original_due_date || task.due_date,
+        _isRecurringInstance: true,
+        id: `${task.id}_instance_${count}`
       } as Task);
     }
     
-    // Move to next week for the next instance
     instanceDate = addWeeks(instanceDate, 1);
     count++;
   }
@@ -99,19 +91,13 @@ export function KanbanCalendar({
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Get days of the current month
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   
-  // Calculate days needed to complete the grid
-  // First, get the last day of the week (0 = Sunday, 6 = Saturday)
   const lastDayOfWeek = getDay(monthEnd);
-  // Calculate how many days from the next month we need (to complete the week)
   const daysToAdd = lastDayOfWeek < 6 ? 6 - lastDayOfWeek : 0;
-  // Get the extended end date including days from next month
   const extendedEndDate = addDays(monthEnd, daysToAdd);
   
-  // Get all days to display (current month + days from next month to complete the grid)
   const monthDays = eachDayOfInterval({
     start: monthStart,
     end: extendedEndDate
@@ -125,7 +111,6 @@ export function KanbanCalendar({
     setCurrentMonth(prev => addMonths(prev, 1));
   };
 
-  // Format month name with first letter capitalized
   const formattedMonth = format(currentMonth, "MMMM 'de' yyyy", { locale: pt })
     .replace(/^\w/, (c) => c.toUpperCase());
 
@@ -140,7 +125,6 @@ export function KanbanCalendar({
   const handleDrop = (e: React.DragEvent, date: Date) => {
     e.preventDefault();
     if (draggingTaskId) {
-      // If dragged task is a recurring instance, extract the original task ID
       const originalTaskId = draggingTaskId.includes('_instance_') 
         ? draggingTaskId.split('_instance_')[0] 
         : draggingTaskId;
@@ -154,32 +138,22 @@ export function KanbanCalendar({
     const regularTasks = tasks.filter(task => {
       if (!task.due_date) return false;
       const taskDate = new Date(task.due_date);
-      // Compare year, month, and day for more accurate date comparison
       return isEqual(
         new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate()),
         new Date(date.getFullYear(), date.getMonth(), date.getDate())
       );
     });
 
-    // Generate recurring task instances if we're looking at future months
     let recurringInstances: Task[] = [];
     
-    // Only generate instances for non-current months
     if (!isSameMonth(date, new Date())) {
-      // Get recurring tasks
       const recurringTasks = tasks.filter(task => 
         task.is_recurring && !task.completed && task.due_date
       );
       
-      // Generate instances for each recurring task
       recurringTasks.forEach(task => {
-        const instances = generateRecurringInstances(
-          task, 
-          monthStart,
-          monthEnd
-        );
+        const instances = generateRecurringInstances(task, monthStart, monthEnd);
         
-        // Filter instances for this specific day
         const instancesForDay = instances.filter(instance => {
           if (!instance.due_date) return false;
           const instanceDate = new Date(instance.due_date);
@@ -193,7 +167,6 @@ export function KanbanCalendar({
       });
     }
     
-    // Combine regular tasks and recurring instances
     return [...regularTasks, ...recurringInstances];
   };
 
@@ -282,7 +255,6 @@ export function KanbanCalendar({
         </div>
 
         <div className="grid grid-cols-7 gap-2">
-          {/* Add weekday headers */}
           {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, index) => (
             <div key={`header-${index}`} className="text-center text-xs font-medium text-gray-500 py-2">
               {day}
@@ -343,7 +315,7 @@ export function KanbanCalendar({
                     >
                       <div className={cn(
                         "font-medium text-gray-900 break-words",
-                        task.completed && "line-through"
+                        task.completed ? "line-through" : ""
                       )}>
                         {task.title}
                         {task.is_recurring && (
