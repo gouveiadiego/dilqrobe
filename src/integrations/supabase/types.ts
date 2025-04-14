@@ -942,6 +942,7 @@ export type Database = {
           priority: string | null
           recurrence_completed: number | null
           recurrence_count: number | null
+          recurrence_type: string | null
           section: string | null
           subtasks: Json | null
           title: string
@@ -958,6 +959,7 @@ export type Database = {
           priority?: string | null
           recurrence_completed?: number | null
           recurrence_count?: number | null
+          recurrence_type?: string | null
           section?: string | null
           subtasks?: Json | null
           title: string
@@ -974,6 +976,7 @@ export type Database = {
           priority?: string | null
           recurrence_completed?: number | null
           recurrence_count?: number | null
+          recurrence_type?: string | null
           section?: string | null
           subtasks?: Json | null
           title?: string

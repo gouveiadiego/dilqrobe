@@ -22,9 +22,10 @@ export interface Task {
   subtasks: SubTask[];
   section: string;
   is_recurring: boolean;
-  recurrence_count?: number | null; // null means infinite
+  recurrence_count?: number | null;
   recurrence_completed?: number;
-  original_due_date?: string | null; // Added to track original date for instances
+  original_due_date?: string | null;
+  recurrence_type?: "weekly" | "biweekly" | "monthly" | null;
   _isRecurringInstance?: boolean;
 }
 

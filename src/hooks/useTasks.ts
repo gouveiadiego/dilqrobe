@@ -149,26 +149,28 @@ export const useTasks = () => {
       const isCompleting = !task.completed;
 
       if (task.is_recurring && isCompleting) {
-        // Se a tarefa está sendo marcada como concluída e é recorrente
         const newRecurrenceCompleted = (task.recurrence_completed || 0) + 1;
         const updates: any = { completed: false }; // Reset completion
 
-        // Se tem um número limitado de recorrências e atingiu o limite
         if (task.recurrence_count !== null && newRecurrenceCompleted >= task.recurrence_count) {
-          updates.completed = true; // Marca como concluída definitivamente
+          updates.completed = true; // Mark as completed definitively
         }
 
-        // Atualiza o contador de recorrências
         updates.recurrence_completed = newRecurrenceCompleted;
         updateTaskMutation.mutate({ id, updates });
+
+        const recurrenceTypeText = {
+          weekly: 'semana',
+          biweekly: 'quinzena',
+          monthly: 'mês'
+        }[task.recurrence_type || 'monthly'];
 
         if (updates.completed) {
           toast.success('Todas as recorrências foram concluídas!');
         } else {
-          toast.success('Tarefa concluída! Próxima recorrência disponível.');
+          toast.success(`Tarefa concluída! Próxima recorrência disponível no(a) próximo(a) ${recurrenceTypeText}.`);
         }
       } else {
-        // Comportamento normal para tarefas não recorrentes
         toggleTaskMutation.mutate({ id, completed: !task.completed });
       }
     }

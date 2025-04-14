@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { useState } from "react";
@@ -8,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "./ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 interface AddTaskProps {
   onAdd: (task: Omit<Task, "id" | "completed" | "user_id" | "subtasks">) => void;
@@ -35,6 +35,7 @@ export function AddTask({
   const [recurrenceCount, setRecurrenceCount] = useState<number | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isSectionOpen, setIsSectionOpen] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState<Task["recurrence_type"]>(null);
 
   const handleQuickAdd = () => {
     if (!title.trim()) return;
@@ -46,7 +47,8 @@ export function AddTask({
       section,
       is_recurring: isRecurring,
       recurrence_count: recurrenceCount,
-      recurrence_completed: 0
+      recurrence_completed: 0,
+      recurrence_type: isRecurring ? recurrenceType : null
     });
     setTitle("");
     setDate(null);
@@ -55,6 +57,7 @@ export function AddTask({
     setSection("inbox");
     setIsRecurring(false);
     setRecurrenceCount(null);
+    setRecurrenceType(null);
   };
 
   const handleCategorySelect = (selectedCategory: string) => {
@@ -185,23 +188,36 @@ export function AddTask({
         </div>
 
         {isRecurring && (
-          <div className="flex items-center gap-2">
-            <Input
-              type="number"
-              min="1"
-              placeholder="Número de repetições"
-              value={recurrenceCount === null ? '' : recurrenceCount}
-              onChange={(e) => setRecurrenceCount(e.target.value ? Number(e.target.value) : null)}
-              className="w-40"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setRecurrenceCount(null)}
-              className={recurrenceCount === null ? 'bg-purple-100 text-purple-700' : ''}
-            >
-              ∞ Infinito
-            </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min="1"
+                placeholder="Número de repetições"
+                value={recurrenceCount === null ? '' : recurrenceCount}
+                onChange={(e) => setRecurrenceCount(e.target.value ? Number(e.target.value) : null)}
+                className="w-40"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRecurrenceCount(null)}
+                className={recurrenceCount === null ? 'bg-purple-100 text-purple-700' : ''}
+              >
+                ∞ Infinito
+              </Button>
+            </div>
+
+            <Select value={recurrenceType || ''} onValueChange={(value: Task["recurrence_type"]) => setRecurrenceType(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Tipo de recorrência" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="weekly">Semanal</SelectItem>
+                <SelectItem value="biweekly">Quinzenal</SelectItem>
+                <SelectItem value="monthly">Mensal</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
