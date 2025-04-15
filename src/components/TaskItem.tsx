@@ -1,3 +1,4 @@
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { SubTask, Task, TaskUpdate } from "@/types/task";
@@ -95,6 +96,7 @@ export function TaskItem({
     return "text-gray-400 dark:text-gray-500";
   };
 
+  // These utility functions will be used for project tasks, but not for regular tasks
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'pending': return 'Pendente';
@@ -256,17 +258,7 @@ export function TaskItem({
                 </div>
               </div>
 
-              {task.description && (
-                <p className="text-sm text-gray-600 mt-1 mb-2">{task.description}</p>
-              )}
-
               <div className="flex flex-wrap gap-2 mt-2">
-                <span className={cn(
-                  "text-xs px-2 py-1 rounded-full border",
-                  getStatusClass(task.status)
-                )}>
-                  {getStatusLabel(task.status)}
-                </span>
                 {task.priority && (
                   <span className={`text-xs px-2 py-1 rounded-full ${getPriorityClass(task.priority)}`}>
                     {getPriorityLabel(task.priority)}
