@@ -1,4 +1,3 @@
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { SubTask, Task, TaskUpdate } from "@/types/task";
@@ -210,11 +209,11 @@ export function TaskItem({
             </div>
           ) : (
             <>
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
                   <TextEllipsis
                     text={task.title}
-                    truncateAfter={60}
+                    truncateAfter={45}
                     className={cn(
                       "text-sm font-medium",
                       task.completed ? "line-through text-gray-400" : "text-gray-800"
@@ -222,7 +221,7 @@ export function TaskItem({
                   />
                 </div>
                 
-                <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   {task.subtasks.length > 0 && (
                     <Button
                       variant="ghost"
@@ -242,7 +241,7 @@ export function TaskItem({
                       variant="ghost"
                       size="icon"
                       onClick={() => setIsEditing(true)}
-                      className="h-8 w-8 text-gray-400 hover:text-dilq-accent hover:bg-dilq-accent/10 rounded-full"
+                      className="h-8 w-8 text-gray-400 hover:text-dilq-accent hover:bg-dilq-accent/10 rounded-full flex-shrink-0"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -251,7 +250,7 @@ export function TaskItem({
                     variant="ghost"
                     size="icon"
                     onClick={() => onDelete(task.id)}
-                    className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
+                    className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full flex-shrink-0"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -260,13 +259,21 @@ export function TaskItem({
 
               <div className="flex flex-wrap gap-2 mt-2">
                 {task.priority && (
-                  <span className={`text-xs px-2 py-1 rounded-full ${getPriorityClass(task.priority)}`}>
-                    {getPriorityLabel(task.priority)}
+                  <span className={`text-xs px-2 py-1 rounded-full ${priorityClass}`}>
+                    {priorityLabel}
+                  </span>
+                )}
+                {task.category && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-purple-50 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
+                    {task.category}
                   </span>
                 )}
                 {task.due_date && (
-                  <span className="text-xs px-2 py-1 rounded-full bg-purple-50 text-purple-700">
-                    Entrega: {new Date(task.due_date).toLocaleDateString('pt-BR')}
+                  <span className={cn(
+                    "text-xs px-2 py-1 rounded-full bg-gray-50 dark:bg-gray-800",
+                    getDueStatus()
+                  )}>
+                    {format(new Date(task.due_date), "PP", { locale: ptBR })}
                   </span>
                 )}
               </div>
