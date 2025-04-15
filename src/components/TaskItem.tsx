@@ -1,4 +1,3 @@
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { SubTask, Task, TaskUpdate } from "@/types/task";
@@ -96,6 +95,42 @@ export function TaskItem({
     return "text-gray-400 dark:text-gray-500";
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending': return 'Pendente';
+      case 'in_progress': return 'Em Andamento';
+      case 'completed': return 'Concluída';
+      default: return status;
+    }
+  };
+
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPriorityLabel = (priority?: string) => {
+    switch (priority) {
+      case 'low': return 'Baixa';
+      case 'medium': return 'Média';
+      case 'high': return 'Alta';
+      default: return 'Média';
+    }
+  };
+
+  const getPriorityClass = (priority?: string) => {
+    switch (priority) {
+      case 'low': return 'bg-green-50 text-green-700';
+      case 'medium': return 'bg-blue-50 text-blue-700';
+      case 'high': return 'bg-red-50 text-red-700';
+      default: return 'bg-blue-50 text-blue-700';
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -104,15 +139,18 @@ export function TaskItem({
         "hover:bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 dark:hover:bg-gray-800/90"
       )}
     >
-      <div className="flex items-center gap-2">
-        <Checkbox
-          checked={task.completed}
-          onCheckedChange={() => onToggle(task.id)}
-          className="h-5 w-5 border-2 border-gray-300 rounded-full
-                   data-[state=checked]:border-dilq-accent data-[state=checked]:bg-dilq-accent
-                   transition-colors duration-300 flex-shrink-0"
-        />
-        <div className="flex-1 min-w-0 mr-2">
+      <div className="flex items-start gap-2">
+        <div className="pt-1">
+          <Checkbox
+            checked={task.completed}
+            onCheckedChange={() => onToggle(task.id)}
+            className="h-5 w-5 border-2 border-gray-300 rounded-full
+                     data-[state=checked]:border-dilq-accent data-[state=checked]:bg-dilq-accent
+                     transition-colors duration-300 flex-shrink-0"
+          />
+        </div>
+
+        <div className="flex-1 min-w-0">
           {isEditing ? (
             <div className="space-y-3">
               <Input
@@ -170,81 +208,81 @@ export function TaskItem({
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-2">
-                <TextEllipsis
-                  text={task.title}
-                  truncateAfter={50}
-                  className={cn(
-                    "text-sm font-medium",
-                    task.completed ? "line-through text-gray-400" : "text-gray-800"
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <TextEllipsis
+                    text={task.title}
+                    truncateAfter={60}
+                    className={cn(
+                      "text-sm font-medium",
+                      task.completed ? "line-through text-gray-400" : "text-gray-800"
+                    )}
+                  />
+                </div>
+                
+                <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                  {task.subtasks.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-dilq-accent hover:text-dilq-accent/80 hover:bg-dilq-accent/10 flex-shrink-0"
+                      onClick={() => setIsExpanded(!isExpanded)}
+                    >
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
                   )}
-                />
-                {task.subtasks.length > 0 && (
+                  {!isEditing && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsEditing(true)}
+                      className="h-8 w-8 text-gray-400 hover:text-dilq-accent hover:bg-dilq-accent/10 rounded-full"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-dilq-accent hover:text-dilq-accent/80 hover:bg-dilq-accent/10 flex-shrink-0"
-                    onClick={() => setIsExpanded(!isExpanded)}
+                    size="icon"
+                    onClick={() => onDelete(task.id)}
+                    className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
                   >
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
+                    <Trash2 className="h-4 w-4" />
                   </Button>
-                )}
+                </div>
               </div>
-              <div className="flex gap-2 mt-2 flex-wrap">
+
+              {task.description && (
+                <p className="text-sm text-gray-600 mt-1 mb-2">{task.description}</p>
+              )}
+
+              <div className="flex flex-wrap gap-2 mt-2">
                 <span className={cn(
-                  "text-xs px-2 py-0.5 rounded-full border backdrop-blur-sm", 
-                  priorityClass
+                  "text-xs px-2 py-1 rounded-full border",
+                  getStatusClass(task.status)
                 )}>
-                  {priorityLabel}
+                  {getStatusLabel(task.status)}
                 </span>
-                {task.category && (
-                  <span className="text-xs px-2 py-0.5 rounded-full border text-dilq-accent bg-dilq-accent/10 border-dilq-accent/20 flex items-center gap-1 backdrop-blur-sm">
-                    <Tag className="h-3 w-3" />
-                    {task.category}
+                {task.priority && (
+                  <span className={`text-xs px-2 py-1 rounded-full ${getPriorityClass(task.priority)}`}>
+                    {getPriorityLabel(task.priority)}
                   </span>
                 )}
                 {task.due_date && (
-                  <span className={cn("text-xs flex items-center gap-1", getDueStatus())}>
-                    <Bell className="h-3 w-3" />
-                    {format(new Date(task.due_date), "PPP", { locale: ptBR })}
-                  </span>
-                )}
-                {task.section !== "inbox" && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                    {task.section}
+                  <span className="text-xs px-2 py-1 rounded-full bg-purple-50 text-purple-700">
+                    Entrega: {new Date(task.due_date).toLocaleDateString('pt-BR')}
                   </span>
                 )}
               </div>
             </>
           )}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {!isEditing && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsEditing(true)}
-              className="h-8 w-8 text-gray-400 hover:text-dilq-accent hover:bg-dilq-accent/10 rounded-full"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(task.id)}
-            className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
 
-      {/* Subtasks section */}
       {isExpanded && (
         <div className="mt-4 pl-9 space-y-2 pt-3 border-t border-dashed border-gray-100">
           {task.subtasks.map((subtask: SubTask) => (
