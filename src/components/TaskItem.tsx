@@ -1,3 +1,4 @@
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { SubTask, Task, TaskUpdate } from "@/types/task";
@@ -103,15 +104,15 @@ export function TaskItem({
         "hover:bg-white/80 backdrop-blur-sm dark:bg-gray-800/80 dark:hover:bg-gray-800/90"
       )}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <Checkbox
           checked={task.completed}
           onCheckedChange={() => onToggle(task.id)}
           className="h-5 w-5 border-2 border-gray-300 rounded-full
                    data-[state=checked]:border-dilq-accent data-[state=checked]:bg-dilq-accent
-                   transition-colors duration-300"
+                   transition-colors duration-300 flex-shrink-0"
         />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 mr-2">
           {isEditing ? (
             <div className="space-y-3">
               <Input
@@ -172,7 +173,7 @@ export function TaskItem({
               <div className="flex items-center gap-2">
                 <TextEllipsis
                   text={task.title}
-                  maxLength={100}
+                  truncateAfter={50}
                   className={cn(
                     "text-sm font-medium",
                     task.completed ? "line-through text-gray-400" : "text-gray-800"
@@ -182,7 +183,7 @@ export function TaskItem({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 text-dilq-accent hover:text-dilq-accent/80 hover:bg-dilq-accent/10"
+                    className="h-6 w-6 p-0 text-dilq-accent hover:text-dilq-accent/80 hover:bg-dilq-accent/10 flex-shrink-0"
                     onClick={() => setIsExpanded(!isExpanded)}
                   >
                     {isExpanded ? (
@@ -221,7 +222,7 @@ export function TaskItem({
             </>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {!isEditing && (
             <Button
               variant="ghost"

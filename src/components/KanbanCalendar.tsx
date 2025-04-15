@@ -339,7 +339,7 @@ export function KanbanCalendar({
                       )}>
                         <TextEllipsis 
                           text={task.title}
-                          maxLength={30}
+                          truncateAfter={25}
                         />
                         {task.is_recurring && (
                           <span className="inline-flex ml-1">
