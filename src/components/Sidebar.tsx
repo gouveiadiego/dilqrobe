@@ -58,7 +58,7 @@ export function Sidebar({ activeTab, setActiveTab, onLogout }: SidebarProps) {
       
       <div 
         ref={sidebarRef} 
-        className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent pr-1"
+        className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-1"
       >
         <nav className="space-y-6">
           <div className="space-y-2">
@@ -181,8 +181,8 @@ export function Sidebar({ activeTab, setActiveTab, onLogout }: SidebarProps) {
       
       {showScrollIndicator && (
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-          <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 opacity-70 flex items-center justify-center animate-bounce">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <div className="w-6 h-6 rounded-full bg-gray-200 opacity-70 flex items-center justify-center animate-bounce">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </div>

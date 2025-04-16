@@ -2,7 +2,6 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -112,10 +111,6 @@ export default {
           "0%, 100%": { boxShadow: "0 0 5px rgba(139, 92, 246, 0.5)" },
           "50%": { boxShadow: "0 0 20px rgba(139, 92, 246, 0.8)" },
         },
-        "dark-glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 5px rgba(99, 102, 241, 0.3)" },
-          "50%": { boxShadow: "0 0 15px rgba(99, 102, 241, 0.6)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -127,16 +122,13 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "glow-pulse": "glow-pulse 2s infinite",
-        "dark-glow-pulse": "dark-glow-pulse 2s infinite",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
         "glass-gradient": "linear-gradient(to right bottom, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1))",
         "glass-shine": "linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 100%)",
-        "dark-glass-shine": "linear-gradient(135deg, rgba(30, 30, 40, 0) 0%, rgba(30, 30, 40, 0.1) 100%)",
         "futuristic-gradient": "linear-gradient(90deg, hsla(277, 75%, 84%, 1) 0%, hsla(297, 50%, 51%, 1) 100%)",
-        "dark-gradient": "linear-gradient(to bottom, #1A1F2C, #0F131B)",
         "purple-gradient": "linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%)",
         "indigo-gradient": "linear-gradient(90deg, #4F46E5 0%, #6366F1 100%)",
         "blue-purple-gradient": "linear-gradient(90deg, #3B82F6 0%, #8B5CF6 100%)",
@@ -158,12 +150,9 @@ export default {
         "inner-light": "inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)",
         "inner-dark": "inset 0 1px 3px 0 rgba(0, 0, 0, 0.3)",
         "card-hover": "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-        "card-hover-dark": "0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2)",
         "soft": "0 2px 10px rgba(0, 0, 0, 0.05)",
-        "soft-dark": "0 2px 10px rgba(0, 0, 0, 0.2)",
         "neo-dark": "0 4px 20px 0 rgba(0, 0, 0, 0.3)",
         "glassmorphism": "0 8px 32px 0 rgba(31, 38, 135, 0.37)",
-        "card-dark": "0 2px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3)",
       },
     },
   },
