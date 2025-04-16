@@ -1,91 +1,58 @@
+import { useEffect, useState } from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { Toaster } from "sonner";
 
-import { Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as SonnerToaster } from "sonner";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import ClientPortal from "./pages/ClientPortal";
-import CompanyDetails from "./pages/CompanyDetails";
-import LandingPage from "./pages/LandingPage";
-import Subscription from "./pages/Subscription";
-
-// Add title for the application
-document.title = "DilQ Orbe - Sistema para gerenciamento eficiente com produtividade e propósito";
+import { supabase } from "@/integrations/supabase/client";
+import Auth from "@/pages/Auth";
+import Dashboard from "@/pages/Dashboard";
+import Account from "@/pages/Account";
+import Tasks from "@/pages/Tasks";
+import Budgets from "@/pages/Budgets";
+import RunningChallenges from "@/pages/RunningChallenges";
+import Finance from "@/pages/Finance";
+import Journal from "@/pages/Journal";
+import Habits from "@/pages/Habits";
+import Clients from "@/pages/Clients";
+import ClientMeetings from "@/pages/ClientMeetings";
+import Services from "@/pages/Services";
+import CompanyDetails from "@/pages/CompanyDetails";
+import ClientPortal from "@/pages/ClientPortal";
 
 function App() {
-  // Initialize dark mode based on user preference or system preference
-  useEffect(() => {
-    // Check for saved preference
-    const savedTheme = localStorage.getItem('theme');
-    
-    if (savedTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else if (savedTheme === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
-      // If no saved preference, respect system preference
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-      }
-    }
-    
-    // Listen for system preference changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem('theme')) {
-        if (e.matches) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      }
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  const [session, setSession] = useState(null);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+  }, []);
+  
   return (
-    <>
+    <Router>
+      <Toaster richColors />
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/subscription" element={<Subscription />} />
-        
-        {/* Use a nested route for dashboard to handle refreshes better */}
-        <Route 
-          path="/dashboard/*" 
-          element={
-            <ProtectedRoute>
-              <Index />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Modified ClientPortal route - no longer wrapped in ProtectedRoute */}
-        <Route path="/client-portal" element={<ClientPortal />} />
-        
         <Route
-          path="/company/:companyId"
-          element={
-            <ProtectedRoute>
-              <CompanyDetails />
-            </ProtectedRoute>
-          }
+          path="/"
+          element={session ? <Dashboard session={session} /> : <Auth />}
         />
-        
-        <Route path="*" element={<NotFound />} />
+        <Route path="/account" element={<Account />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/budgets" element={<Budgets />} />
+        <Route path="/running-challenges" element={<RunningChallenges />} />
+        <Route path="/finance" element={<Finance />} />
+        <Route path="/journal" element={<Journal />} />
+        <Route path="/habits" element={<Habits />} />
+        <Route path="/clients" element={<Clients />} />
+        <Route path="/client-meetings" element={<ClientMeetings />} />
+        <Route path="/services" element={<Services />} />
+        <Route path="/company/:companyId" element={<CompanyDetails />} />
+        <Route path="/client-portal" element={<ClientPortal />} />
       </Routes>
-      <Toaster />
-      <SonnerToaster 
-        position="top-right" 
-        theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-        className="dark:bg-gray-900 dark:text-white dark:border-gray-800"
-      />
-    </>
+    </Router>
   );
 }
 
