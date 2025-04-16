@@ -36,15 +36,15 @@ export function TaskFilters({
   categories,
 }: TaskFiltersProps) {
   return (
-    <div className="bg-white dark:bg-gray-800/50 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
+    <div className="bg-gray-800/10 p-3 rounded-lg shadow-sm border border-gray-100 mb-4">
       <div className="flex gap-2 items-center flex-nowrap">
         <div className="relative flex-1 min-w-[140px]">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
           <Input
             placeholder="Pesquisar..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 h-9 text-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:ring-purple-200"
+            className="pl-8 h-9 text-sm bg-white border-gray-200 focus:ring-dilq-accent focus:border-dilq-accent"
           />
         </div>
 
@@ -52,7 +52,7 @@ export function TaskFilters({
           value={filter} 
           onValueChange={(v: "all" | "active" | "completed") => setFilter(v)}
         >
-          <SelectTrigger className="w-[130px] h-9 text-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-200">
+          <SelectTrigger className="w-[130px] h-9 text-sm bg-white border-gray-200 hover:border-dilq-accent">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -66,7 +66,7 @@ export function TaskFilters({
           value={categoryFilter} 
           onValueChange={(v: string) => setCategoryFilter(v)}
         >
-          <SelectTrigger className="w-[130px] h-9 text-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-200">
+          <SelectTrigger className="w-[130px] h-9 text-sm bg-white border-gray-200 hover:border-dilq-accent">
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
@@ -81,7 +81,7 @@ export function TaskFilters({
           value={priorityFilter} 
           onValueChange={(v: Task["priority"] | "all") => setPriorityFilter(v)}
         >
-          <SelectTrigger className="w-[130px] h-9 text-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-200">
+          <SelectTrigger className="w-[130px] h-9 text-sm bg-white border-gray-200 hover:border-dilq-accent">
             <SelectValue placeholder="Prioridade" />
           </SelectTrigger>
           <SelectContent>
@@ -96,7 +96,7 @@ export function TaskFilters({
           value={sectionFilter} 
           onValueChange={(v: string) => setSectionFilter(v)}
         >
-          <SelectTrigger className="w-[130px] h-9 text-sm bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-purple-200">
+          <SelectTrigger className="w-[130px] h-9 text-sm bg-white border-gray-200 hover:border-dilq-accent">
             <SelectValue placeholder="Seção" />
           </SelectTrigger>
           <SelectContent>
