@@ -31,25 +31,25 @@ export const UpcomingMeetings = () => {
     const meetingDate = new Date(meeting.meeting_date);
     
     if (isPast(meetingDate)) {
-      return <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Atrasada</Badge>;
+      return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">Atrasada</Badge>;
     }
     
     const daysUntil = differenceInDays(meetingDate, new Date());
     const hoursUntil = differenceInHours(meetingDate, new Date());
     
     if (daysUntil === 0 && hoursUntil < 3) {
-      return <Badge variant="outline" className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">Em breve</Badge>;
+      return <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">Em breve</Badge>;
     }
     
     if (daysUntil === 0) {
-      return <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Hoje</Badge>;
+      return <Badge variant="outline" className="bg-[#9b87f5]/10 text-[#6E59A5] border-[#9b87f5]/20">Hoje</Badge>;
     }
     
     if (daysUntil <= 2) {
-      return <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Próxima</Badge>;
+      return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Próxima</Badge>;
     }
     
-    return <Badge variant="outline" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">Agendada</Badge>;
+    return <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">Agendada</Badge>;
   };
 
   const formatTimeRemaining = (dateString: string) => {
@@ -80,26 +80,26 @@ export const UpcomingMeetings = () => {
   };
 
   return (
-    <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg dark:hover:shadow-dilq-accent/10 dark-hover-glow h-full">
-      <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-100/50 dark:from-blue-900/20 dark:to-indigo-900/20 pb-3 border-b dark:border-gray-800">
+    <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg h-full">
+      <CardHeader className="bg-gradient-to-r from-[#9b87f5]/10 to-[#9b87f5]/20 pb-3 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">Próximas Reuniões</CardTitle>
-          <div className="h-7 w-7 rounded-lg bg-white/80 dark:bg-gray-800/80 shadow-sm flex items-center justify-center">
-            <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <div className="h-7 w-7 rounded-lg bg-white/80 shadow-sm flex items-center justify-center">
+            <Calendar className="h-4 w-4 text-[#9b87f5]" />
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-4">
         {isLoading ? (
           <div className="text-center py-6">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Carregando reuniões...</p>
+            <p className="text-sm text-gray-500">Carregando reuniões...</p>
           </div>
         ) : upcomingMeetings.length === 0 ? (
           <div className="text-center py-6">
-            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 mx-auto flex items-center justify-center mb-3">
+            <div className="w-12 h-12 rounded-full bg-gray-100 mx-auto flex items-center justify-center mb-3">
               <Calendar className="h-6 w-6 text-gray-400" />
             </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Nenhuma reunião agendada</span>
+            <span className="text-sm text-gray-500">Nenhuma reunião agendada</span>
           </div>
         ) : (
           <div className="space-y-3">
@@ -108,28 +108,28 @@ export const UpcomingMeetings = () => {
                 key={meeting.id}
                 className={`p-3 rounded-lg transition-all duration-200 border 
                   ${isSameDay(new Date(meeting.meeting_date), new Date()) 
-                    ? 'border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-900/20' 
-                    : 'border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/40'}`}
+                    ? 'border-[#9b87f5]/30 bg-[#9b87f5]/5' 
+                    : 'border-gray-200 hover:bg-gray-50'}`}
               >
                 <div className="flex justify-between items-center mb-1">
                   <span className="font-medium text-sm truncate">{meeting.title}</span>
                   {getStatusBadge(meeting)}
                 </div>
-                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
                   <Clock className="h-3 w-3" />
                   <span>{format(new Date(meeting.meeting_date), "dd/MM/yyyy HH:mm")}</span>
-                  <span className="ml-1 text-blue-600 dark:text-blue-400 font-medium">
+                  <span className="ml-1 text-[#9b87f5] font-medium">
                     ({formatTimeRemaining(meeting.meeting_date)})
                   </span>
                 </div>
                 {meeting.client && (
-                  <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
                     <User className="h-3 w-3" />
                     <span>Cliente: {meeting.client.name}</span>
                   </div>
                 )}
                 {meeting.location && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic truncate">
+                  <div className="text-xs text-gray-500 mt-1 italic truncate">
                     {meeting.location}
                   </div>
                 )}
@@ -142,7 +142,7 @@ export const UpcomingMeetings = () => {
           <Button 
             variant="outline" 
             size="sm" 
-            className="w-full text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/30 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            className="w-full text-[#9b87f5] border-[#9b87f5]/30 hover:bg-[#9b87f5]/10 hover:border-[#9b87f5]/50"
             onClick={handleViewAllMeetings}
           >
             Ver todas as reuniões

@@ -117,8 +117,11 @@ export const MeetingManager = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-        <h2 className="text-2xl font-bold">Reuniões</h2>
-        <Button onClick={() => setIsFormOpen(true)}>
+        <h2 className="text-2xl font-bold text-gray-800">Reuniões</h2>
+        <Button 
+          onClick={() => setIsFormOpen(true)}
+          className="bg-[#496080] hover:bg-[#3a4c66] text-white"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nova Reunião
         </Button>
@@ -126,7 +129,7 @@ export const MeetingManager = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-4">
-          <Card className="p-4">
+          <Card className="p-4 border-gray-200">
             <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
               <div className="relative flex-1 w-full max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -134,14 +137,14 @@ export const MeetingManager = () => {
                   placeholder="Buscar reuniões..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 border-gray-200 focus:border-[#9b87f5] focus:ring-[#9b87f5]/20"
                 />
               </div>
 
               <div className="flex flex-wrap gap-3 items-center">
                 <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
-                  <SelectTrigger className="w-[160px]">
-                    <Filter className="h-4 w-4 mr-2" />
+                  <SelectTrigger className="w-[160px] border-gray-200 focus:border-[#9b87f5] focus:ring-[#9b87f5]/20">
+                    <Filter className="h-4 w-4 mr-2 text-gray-500" />
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -153,7 +156,12 @@ export const MeetingManager = () => {
                 </Select>
 
                 {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearFilters}
+                    className="text-[#9b87f5] hover:text-[#7E69AB] hover:bg-[#9b87f5]/10"
+                  >
                     Limpar filtros
                   </Button>
                 )}
@@ -163,6 +171,7 @@ export const MeetingManager = () => {
                     variant={view === "list" ? "default" : "outline"}
                     size="icon"
                     onClick={() => setView("list")}
+                    className={view === "list" ? "bg-[#9b87f5] hover:bg-[#7E69AB]" : "border-gray-200 text-gray-700"}
                   >
                     <List className="h-4 w-4" />
                   </Button>
@@ -170,6 +179,7 @@ export const MeetingManager = () => {
                     variant={view === "calendar" ? "default" : "outline"}
                     size="icon"
                     onClick={() => setView("calendar")}
+                    className={view === "calendar" ? "bg-[#9b87f5] hover:bg-[#7E69AB]" : "border-gray-200 text-gray-700"}
                   >
                     <CalendarIcon className="h-4 w-4" />
                   </Button>
@@ -178,16 +188,16 @@ export const MeetingManager = () => {
             </div>
 
             {selectedDate && (
-              <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md flex justify-between items-center">
+              <div className="mt-3 p-2 bg-[#9b87f5]/10 rounded-md flex justify-between items-center">
                 <div className="text-sm flex items-center">
-                  <CalendarIcon className="h-4 w-4 mr-1 text-blue-500" />
+                  <CalendarIcon className="h-4 w-4 mr-1 text-[#9b87f5]" />
                   <span>Filtrando por data: <strong>{selectedDate.toLocaleDateString()}</strong></span>
                 </div>
                 <Button 
                   variant="ghost" 
                   size="sm"
                   onClick={() => setSelectedDate(null)}
-                  className="text-xs h-7 px-2"
+                  className="text-xs h-7 px-2 text-[#9b87f5] hover:text-[#7E69AB] hover:bg-[#9b87f5]/10"
                 >
                   Remover filtro
                 </Button>
@@ -204,7 +214,7 @@ export const MeetingManager = () => {
               selectedDate={selectedDate}
             />
           ) : (
-            <div className="bg-white dark:bg-gray-800/20 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
               {/* Calendar view implementation here */}
               <p className="text-center text-gray-500">Visualização de calendário em desenvolvimento</p>
             </div>
@@ -218,22 +228,22 @@ export const MeetingManager = () => {
             selectedDate={selectedDate}
           />
 
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg text-blue-700 dark:text-blue-200">
+          <div className="p-4 bg-[#9b87f5]/10 border border-[#9b87f5]/20 rounded-lg text-[#6E59A5]">
             <h3 className="font-medium mb-2">Próximas reuniões</h3>
             <div className="space-y-2">
               {isLoading ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">Carregando...</p>
+                <p className="text-sm text-gray-500">Carregando...</p>
               ) : meetings.filter(m => m.status === "scheduled").length === 0 ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">Nenhuma reunião agendada</p>
+                <p className="text-sm text-gray-500">Nenhuma reunião agendada</p>
               ) : (
                 meetings
                   .filter(m => m.status === "scheduled")
                   .sort((a, b) => new Date(a.meeting_date).getTime() - new Date(b.meeting_date).getTime())
                   .slice(0, 3)
                   .map(meeting => (
-                    <div key={meeting.id} className="text-sm p-2 bg-white dark:bg-gray-800 rounded border border-blue-100 dark:border-blue-900/30">
+                    <div key={meeting.id} className="text-sm p-2 bg-white rounded border border-[#9b87f5]/20">
                       <div className="font-medium">{meeting.title}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-xs text-gray-500">
                         {new Date(meeting.meeting_date).toLocaleDateString()} -{" "}
                         {new Date(meeting.meeting_date).toLocaleTimeString([], {
                           hour: "2-digit",
@@ -241,7 +251,7 @@ export const MeetingManager = () => {
                         })}
                       </div>
                       {meeting.client && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <div className="text-xs text-gray-500">
                           Cliente: {meeting.client.name}
                         </div>
                       )}

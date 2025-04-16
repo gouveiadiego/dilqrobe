@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format, isSameDay, parseISO, isPast } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -74,7 +75,7 @@ export const MeetingList = ({
     switch (status) {
       case "scheduled":
         return (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Badge variant="outline" className="bg-[#9b87f5]/10 text-[#6E59A5] border-[#9b87f5]/20">
             Agendada
           </Badge>
         );
@@ -108,12 +109,12 @@ export const MeetingList = ({
 
   if (filteredMeetings.length === 0) {
     return (
-      <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/20 rounded-lg">
+      <div className="text-center py-12 bg-gray-50 rounded-lg">
         <Calendar className="h-12 w-12 mx-auto text-gray-400" />
-        <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">
+        <h3 className="mt-2 text-lg font-medium text-gray-900">
           Nenhuma reunião encontrada
         </h3>
-        <p className="mt-1 text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-gray-500">
           {selectedDate
             ? "Não há reuniões agendadas para esta data."
             : "Comece agendando sua primeira reunião."}
@@ -125,10 +126,10 @@ export const MeetingList = ({
   return (
     <div className="space-y-8">
       {sortedDates.map((dateKey) => (
-        <div key={dateKey} className="bg-white dark:bg-gray-800/20 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/40 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="font-medium flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
+        <div key={dateKey} className="bg-white rounded-lg overflow-hidden border border-gray-200">
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <h3 className="font-medium flex items-center gap-2 text-gray-700">
+              <Calendar className="h-4 w-4 text-[#9b87f5]" />
               <span>
                 {format(new Date(dateKey), "EEEE, d 'de' MMMM 'de' yyyy", {
                   locale: ptBR,
@@ -136,7 +137,7 @@ export const MeetingList = ({
               </span>
             </h3>
           </div>
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          <div className="divide-y divide-gray-200">
             {groupedMeetings[dateKey]
               .sort((a, b) => 
                 new Date(a.meeting_date).getTime() - new Date(b.meeting_date).getTime()
@@ -146,18 +147,18 @@ export const MeetingList = ({
                   key={meeting.id}
                   className={`p-4 transition-colors ${
                     meeting.status === "canceled" 
-                      ? "bg-gray-50/50 dark:bg-gray-900/30" 
+                      ? "bg-gray-50/50" 
                       : meeting.status === "completed"
-                      ? "bg-green-50/20 dark:bg-green-900/10"
+                      ? "bg-green-50/20"
                       : isPast(parseISO(meeting.meeting_date)) 
-                      ? "bg-yellow-50/20 dark:bg-yellow-900/10" 
+                      ? "bg-yellow-50/20" 
                       : ""
                   }`}
                 >
                   <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between">
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                        <h4 className="font-medium text-gray-900">
                           <TextEllipsis 
                             text={meeting.title}
                             maxLength={60}
@@ -203,7 +204,7 @@ export const MeetingList = ({
                         )}
                         
                         {meeting.description && (
-                          <div className="mt-1 text-gray-600 dark:text-gray-300">
+                          <div className="mt-1 text-gray-600">
                             <TextEllipsis 
                               text={meeting.description}
                               maxLength={100}
@@ -250,7 +251,7 @@ export const MeetingList = ({
                           ) : meeting.status === "canceled" ? (
                             <DropdownMenuItem 
                               onClick={() => onStatusChange(meeting.id, "scheduled")}
-                              className="text-blue-600"
+                              className="text-[#9b87f5]"
                             >
                               <Calendar className="h-4 w-4 mr-2" />
                               Reagendar

@@ -36,7 +36,7 @@ export const MeetingCalendar = ({
           {day.getDate()}
         </div>
         {hasMeeting && (
-          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500"></div>
+          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-[#9b87f5]"></div>
         )}
       </div>
     );
@@ -59,19 +59,29 @@ export const MeetingCalendar = ({
   };
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800/20">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-        <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
+    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handlePrevMonth}
+          className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+        >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h3 className="font-medium text-center">
+        <h3 className="font-medium text-center text-gray-800">
           {currentMonth.toLocaleString("default", { month: "long", year: "numeric" })}
         </h3>
-        <Button variant="ghost" size="icon" onClick={handleNextMonth}>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={handleNextMonth}
+          className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+        >
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
-      <div className="p-3">
+      <div className="p-3 bg-gray-100">
         <Calendar
           mode="single"
           selected={selectedDate || undefined}
@@ -83,7 +93,8 @@ export const MeetingCalendar = ({
             Day: ({ date, ...props }) => renderDay(date),
           }}
           classNames={{
-            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+            day_selected: "bg-[#9b87f5] text-white hover:bg-[#7E69AB] hover:text-white focus:bg-[#9b87f5] focus:text-white",
+            day_today: "bg-[#9b87f5]/10 text-[#6E59A5]",
           }}
         />
       </div>
