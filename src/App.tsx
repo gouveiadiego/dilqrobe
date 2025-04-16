@@ -1,12 +1,11 @@
 
 import { useEffect, useState } from "react";
-import { Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import Login from "@/pages/Login";
 import ClientPortal from "@/pages/ClientPortal";
-import Dashboard from "@/pages/Dashboard";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -22,16 +21,16 @@ function App() {
   }, []);
   
   return (
-    <>
+    <Router>
       <Toaster richColors />
       <Routes>
         <Route
           path="/"
-          element={session ? <Dashboard /> : <Login />}
+          element={session ? <div>Dashboard will go here</div> : <Login />}
         />
         <Route path="/client-portal" element={<ClientPortal />} />
       </Routes>
-    </>
+    </Router>
   );
 }
 
