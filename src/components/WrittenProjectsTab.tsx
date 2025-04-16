@@ -18,17 +18,17 @@ export function WrittenProjectsTab() {
         </h2>
       </div>
 
-      <div className="p-1 rounded-2xl bg-gradient-to-r from-dilq-indigo/20 to-dilq-purple/20">
+      <div className="rounded-xl overflow-hidden">
         <Tabs 
           value={activeTab} 
           defaultValue="companies" 
           onValueChange={setActiveTab} 
           className="w-full"
         >
-          <TabsList className="mb-6 w-full bg-white/70 backdrop-blur-sm dark:bg-gray-800/70 p-1 rounded-xl">
+          <TabsList className="mb-6 w-full bg-white/70 border border-gray-100 shadow-sm backdrop-blur-sm p-1 rounded-xl">
             <TabsTrigger 
               value="companies" 
-              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-gradient-to-r data-[state=active]:from-dilq-indigo data-[state=active]:to-dilq-purple data-[state=active]:text-white"
+              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-dilq-purple/10"
             >
               <Database className="h-4 w-4" />
               <span>Empresas</span>
@@ -36,7 +36,7 @@ export function WrittenProjectsTab() {
             
             <TabsTrigger 
               value="tasks" 
-              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-gradient-to-r data-[state=active]:from-dilq-indigo data-[state=active]:to-dilq-purple data-[state=active]:text-white"
+              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-dilq-purple/10"
             >
               <Rocket className="h-4 w-4" />
               <span>Tarefas</span>
@@ -44,14 +44,14 @@ export function WrittenProjectsTab() {
             
             <TabsTrigger 
               value="credentials" 
-              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-gradient-to-r data-[state=active]:from-dilq-indigo data-[state=active]:to-dilq-purple data-[state=active]:text-white"
+              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-dilq-purple/10"
             >
               <Shield className="h-4 w-4" />
               <span>Credenciais</span>
             </TabsTrigger>
           </TabsList>
           
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100/80 overflow-hidden dark:bg-gray-900 dark:border-gray-800">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100/80 overflow-hidden">
             <TabsContent value="companies" className="p-6 transition-all duration-300 animate-fade-in">
               <CompanyManager />
             </TabsContent>
