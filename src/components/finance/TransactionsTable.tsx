@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
@@ -69,7 +70,7 @@ export const TransactionsTable = ({
     <>
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-slate-50">
             <TableHead>Data</TableHead>
             <TableHead>Descrição</TableHead>
             <TableHead>Recebido de/Pago para</TableHead>
@@ -82,7 +83,7 @@ export const TransactionsTable = ({
         </TableHeader>
         <TableBody>
           {transactions.map(transaction => (
-            <TableRow key={transaction.id}>
+            <TableRow key={transaction.id} className="hover:bg-slate-50/50">
               <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
               <TableCell>
                 <TextEllipsis 
@@ -106,7 +107,7 @@ export const TransactionsTable = ({
               <TableCell>
                 <CategoryBadge category={transaction.category} />
               </TableCell>
-              <TableCell className={transaction.amount > 0 ? 'text-emerald-600' : 'text-rose-600'}>
+              <TableCell className={transaction.amount > 0 ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>
                 {formatCurrency(transaction.amount)}
               </TableCell>
               <TableCell>{getPaymentTypeLabel(transaction.payment_type)}</TableCell>
@@ -116,8 +117,8 @@ export const TransactionsTable = ({
                   onClick={() => onToggleStatus(transaction.id, transaction.is_paid)}
                   className={`px-2 py-1 rounded-full text-xs ${
                     transaction.is_paid 
-                      ? 'bg-green-500/20 text-green-700 hover:bg-green-500/30' 
-                      : 'bg-yellow-500/20 text-yellow-700 hover:bg-yellow-500/30'
+                      ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
                   }`}
                 >
                   {transaction.is_paid ? 'Pago' : 'Pendente'}
@@ -129,7 +130,7 @@ export const TransactionsTable = ({
                     variant="ghost" 
                     size="icon" 
                     onClick={() => onEdit(transaction)} 
-                    className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -137,7 +138,7 @@ export const TransactionsTable = ({
                     variant="ghost" 
                     size="icon" 
                     onClick={() => confirmDelete(transaction)}
-                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

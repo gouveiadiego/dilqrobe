@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,7 +176,7 @@ export const FinanceTab = () => {
           <Button variant="ghost" size="icon" onClick={handlePreviousMonth} className="hover:bg-gray-100">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="text-white px-4 py-2 rounded-md bg-slate-950 hover:bg-slate-800 transition-colors">
+          <div className="text-white px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 transition-colors">
             {formatMonth(currentDate)}
           </div>
           <Button variant="ghost" size="icon" onClick={handleNextMonth} className="hover:bg-gray-100">
@@ -184,16 +185,25 @@ export const FinanceTab = () => {
         </div>
 
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full md:w-auto">
-          <TabsList className="grid grid-cols-3 w-full md:w-[400px]">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+          <TabsList className="grid grid-cols-3 w-full md:w-[400px] bg-slate-900/10">
+            <TabsTrigger 
+              value="dashboard" 
+              className="flex items-center gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            >
               <LayoutDashboard className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
             </TabsTrigger>
-            <TabsTrigger value="list" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="list" 
+              className="flex items-center gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            >
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">Lista</span>
             </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center gap-2">
+            <TabsTrigger 
+              value="calendar" 
+              className="flex items-center gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            >
               <CalendarDays className="h-4 w-4" />
               <span className="hidden sm:inline">Calendário</span>
             </TabsTrigger>
