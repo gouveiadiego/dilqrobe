@@ -176,7 +176,7 @@ export const FinanceTab = () => {
           <Button variant="ghost" size="icon" onClick={handlePreviousMonth} className="hover:bg-gray-100">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="text-white px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 transition-colors">
+          <div className="text-white px-4 py-2 rounded-md bg-dilq-purple hover:bg-dilq-accent transition-colors">
             {formatMonth(currentDate)}
           </div>
           <Button variant="ghost" size="icon" onClick={handleNextMonth} className="hover:bg-gray-100">
@@ -185,24 +185,24 @@ export const FinanceTab = () => {
         </div>
 
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full md:w-auto">
-          <TabsList className="grid grid-cols-3 w-full md:w-[400px] bg-slate-900/10">
+          <TabsList className="grid grid-cols-3 w-full md:w-[400px] bg-white/10 border border-white/20">
             <TabsTrigger 
               value="dashboard" 
-              className="flex items-center gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-white/10"
             >
               <LayoutDashboard className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
             </TabsTrigger>
             <TabsTrigger 
               value="list" 
-              className="flex items-center gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-white/10"
             >
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">Lista</span>
             </TabsTrigger>
             <TabsTrigger 
               value="calendar" 
-              className="flex items-center gap-2 data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-white/10"
             >
               <CalendarDays className="h-4 w-4" />
               <span className="hidden sm:inline">Calendário</span>
@@ -213,7 +213,7 @@ export const FinanceTab = () => {
         <Button 
           variant="outline" 
           size="sm"
-          className="md:ml-2 hidden md:flex"
+          className="md:ml-2 hidden md:flex border-dilq-purple/50 text-dilq-purple hover:bg-dilq-purple/10"
           onClick={handleExportData}
         >
           <Download className="h-4 w-4 mr-2" />
