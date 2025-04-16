@@ -1,24 +1,26 @@
 
+import { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { Toaster } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Session } from "@supabase/supabase-js";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as SonnerToaster } from "sonner";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import ClientPortal from "./pages/ClientPortal";
 import CompanyDetails from "./pages/CompanyDetails";
+import ClientPortal from "./pages/ClientPortal";
 import LandingPage from "./pages/LandingPage";
 import Subscription from "./pages/Subscription";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 // Add title for the application
 document.title = "DilQ Orbe - Sistema para gerenciamento eficiente com produtividade e propósito";
 
 function App() {
-  // Initialize dark mode based on user preference or system preference
+  const [session, setSession] = useState<Session | null>(null);
+
   useEffect(() => {
-    // Check for saved preference
+    // Initialize dark mode based on user preference or system preference
     const savedTheme = localStorage.getItem('theme');
     
     if (savedTheme === 'dark') {
@@ -45,7 +47,23 @@ function App() {
     };
     
     mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+      }
+    );
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
@@ -79,11 +97,11 @@ function App() {
         
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <Toaster />
-      <SonnerToaster 
+      <Toaster 
         position="top-right" 
         theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
         className="dark:bg-gray-900 dark:text-white dark:border-gray-800"
+        richColors
       />
     </>
   );

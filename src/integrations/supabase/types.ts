@@ -200,6 +200,47 @@ export type Database = {
           },
         ]
       }
+      client_portal_links: {
+        Row: {
+          access_token: string
+          company_id: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          company_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_links_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "project_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -238,6 +279,7 @@ export type Database = {
       }
       company_content_tasks: {
         Row: {
+          client_status: string
           company_id: string
           completed: boolean | null
           content: string
@@ -250,6 +292,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_status?: string
           company_id: string
           completed?: boolean | null
           content: string
@@ -262,6 +305,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_status?: string
           company_id?: string
           completed?: boolean | null
           content?: string
