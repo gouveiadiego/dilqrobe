@@ -1,5 +1,6 @@
+
 import { useEffect, useState, useRef } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isSameMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -13,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Share, Check, Copy, Link, Calendar as CalendarIcon, X, AlertCircle } from "lucide-react";
+import { Share, Check, Copy, Link, Calendar as CalendarIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -64,9 +65,7 @@ export default function ClientPortal() {
   const [services, setServices] = useState<ClientService[]>([]);
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const clientId = searchParams.get('client');
   const clientSlug = searchParams.get('name');
   const [showShareDialog, setShowShareDialog] = useState(false);
@@ -87,80 +86,52 @@ export default function ClientPortal() {
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+      let effectiveClientId = clientId;
       
-      try {
-        let effectiveClientId = clientId;
-        
-        if (!effectiveClientId && clientSlug) {
-          const { data, error } = await supabase
-            .from('clients')
-            .select('id')
-            .ilike('name', `%${decodeURIComponent(clientSlug)}%`)
-            .limit(1)
-            .single();
-            
-          if (error) {
-            console.error('Error finding client by name:', error);
-            if (error.code === 'PGRST116') {
-              setError(`Cliente não encontrado com o nome: ${decodeURIComponent(clientSlug)}`);
-              setLoading(false);
-              return;
-            }
-            throw error;
-          }
-          
-          if (data) {
-            effectiveClientId = data.id;
-          }
-        }
-        
-        if (!effectiveClientId) {
-          setError('ID do cliente não fornecido');
-          setLoading(false);
-          return;
-        }
-
-        const { data: clientData, error: clientError } = await supabase
+      if (!effectiveClientId && clientSlug) {
+        const { data, error } = await supabase
           .from('clients')
-          .select('id, name, email')
-          .eq('id', effectiveClientId)
+          .select('id')
+          .ilike('name', `%${decodeURIComponent(clientSlug)}%`)
+          .limit(1)
           .single();
-
-        if (clientError) {
-          console.error('Erro ao buscar informações do cliente:', clientError);
-          if (clientError.code === 'PGRST116') {
-            setError(`Cliente não encontrado com ID: ${effectiveClientId}`);
-            setLoading(false);
-            return;
-          }
-          throw clientError;
+          
+        if (!error && data) {
+          effectiveClientId = data.id;
         }
-        
-        setClient(clientData as Client);
-
-        const { data: servicesData, error: servicesError } = await supabase
-          .from('services')
-          .select('*')
-          .eq('client_id', effectiveClientId)
-          .order('start_date', { ascending: false });
-
-        if (servicesError) {
-          console.error('Erro ao buscar serviços:', servicesError);
-          throw servicesError;
-        }
-
-        setServices(servicesData || []);
-        
-        const summary = calculatePaymentSummary(servicesData || []);
-        setPaymentSummary(summary);
-      } catch (err) {
-        console.error('Erro ao carregar dados:', err);
-        setError('Ocorreu um erro ao carregar os dados. Por favor, tente novamente.');
-      } finally {
-        setLoading(false);
       }
+      
+      if (!effectiveClientId) return;
+
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('id, name, email')
+        .eq('id', effectiveClientId)
+        .single();
+
+      if (clientError) {
+        console.error('Erro ao buscar informações do cliente:', clientError);
+      } else {
+        setClient(clientData as Client);
+      }
+
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('*')
+        .eq('client_id', effectiveClientId)
+        .order('start_date', { ascending: false });
+
+      if (servicesError) {
+        console.error('Erro ao buscar serviços:', servicesError);
+        return;
+      }
+
+      setServices(servicesData || []);
+      
+      const summary = calculatePaymentSummary(servicesData || []);
+      setPaymentSummary(summary);
+      
+      setLoading(false);
     };
 
     fetchData();
@@ -299,29 +270,10 @@ export default function ClientPortal() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4 md:p-6 flex justify-center items-center min-h-[80vh]">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 mb-4"></div>
-          <p className="text-gray-600">Carregando informações do cliente...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto p-4 md:p-6 flex justify-center items-center min-h-[80vh]">
-        <div className="text-center max-w-md p-6 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-red-700 dark:text-red-300 mb-2">Erro ao carregar portal</h2>
-          <p className="text-red-600 dark:text-red-200 mb-4">{error}</p>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/')}
-            className="border-red-300 text-red-700 hover:bg-red-100"
-          >
-            Voltar para página inicial
-          </Button>
+      <div className="container mx-auto p-4 md:p-6 flex justify-center items-center min-h-[50vh]">
+        <div className="animate-pulse flex flex-col items-center w-full">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
+          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded w-full max-w-3xl"></div>
         </div>
       </div>
     );
