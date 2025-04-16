@@ -45,27 +45,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useDarkMode } from "@/hooks/useDarkMode";
 
 export function SettingsTab() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [animationsActive, setAnimationsActive] = useState(true);
   const [language, setLanguage] = useState("pt-BR");
   const [autoSave, setAutoSave] = useState(true);
 
-  useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    setDarkMode(isDarkMode);
-  }, []);
-
-  const toggleDarkMode = (enabled: boolean) => {
-    setDarkMode(enabled);
-    document.documentElement.classList.toggle('dark', enabled);
-    localStorage.setItem('theme', enabled ? 'dark' : 'light');
-    toast.success(`Modo ${enabled ? 'escuro' : 'claro'} ativado`);
-  };
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   const handleSaveSettings = () => {
     toast.success("Configurações salvas com sucesso!");
@@ -83,7 +73,7 @@ export function SettingsTab() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-dilq-purple/20 to-dilq-blue/20 rounded-2xl blur-3xl -z-10 opacity-70"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-dilq-purple/20 to-dilq-blue/20 rounded-2xl blur-3xl -z-10 opacity-70 dark:opacity-30"></div>
         <div className="bg-gradient-to-r from-white/10 to-white/5 dark:from-gray-900/60 dark:to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-white/10 shadow-lg">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-4">
             <div className="flex items-center gap-4">
@@ -109,7 +99,7 @@ export function SettingsTab() {
               
               <Button 
                 onClick={handleSaveSettings} 
-                className="bg-gradient-to-r from-dilq-blue to-dilq-purple hover:from-dilq-blue/90 hover:to-dilq-purple/90 transition-all duration-300 shadow-md hover:shadow-dilq-purple/20 group"
+                className="bg-gradient-to-r from-dilq-blue to-dilq-purple hover:from-dilq-blue/90 hover:to-dilq-purple/90 transition-all duration-300 shadow-md hover:shadow-dilq-purple/20 dark:shadow-dilq-purple/40 group"
               >
                 <Save className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
                 Salvar
@@ -262,7 +252,7 @@ export function SettingsTab() {
                   </Label>
                   <Switch
                     id="dark-mode"
-                    checked={darkMode}
+                    checked={isDarkMode}
                     onCheckedChange={toggleDarkMode}
                     className="data-[state=checked]:bg-dilq-blue"
                   />
@@ -416,7 +406,7 @@ export function SettingsTab() {
       <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
         <Button 
           onClick={handleSaveSettings} 
-          className="bg-gradient-to-r from-dilq-blue to-dilq-purple hover:from-dilq-blue/90 hover:to-dilq-purple/90 transition-all duration-300 shadow-md hover:shadow-lg group"
+          className="bg-gradient-to-r from-dilq-blue to-dilq-purple hover:from-dilq-blue/90 hover:to-dilq-purple/90 transition-all duration-300 shadow-md hover:shadow-lg group dark:shadow-dilq-purple/30"
         >
           <Save className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
           Salvar configurações
