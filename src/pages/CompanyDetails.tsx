@@ -9,11 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CheckSquare, Key, Link, Plus, Save, Trash2, Edit, X } from "lucide-react";
+import { ArrowLeft, CheckSquare, Key, Link, Plus, Save, Trash2, Edit, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { CompanyCredentials } from "@/components/company-details/CompanyCredentials";
 import { CompanyChecklist } from "@/components/company-details/CompanyChecklist";
 import { CompanyNotes } from "@/components/company-details/CompanyNotes";
+import { CompanyContentTasks } from "@/components/company-details/CompanyContentTasks";
 
 interface Company {
   id: string;
@@ -29,7 +30,7 @@ export default function CompanyDetails() {
   const navigate = useNavigate();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'credentials' | 'notes'>('checklist');
+  const [activeTab, setActiveTab] = useState<'checklist' | 'credentials' | 'notes' | 'content'>('checklist');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Omit<Company, 'id'>>({
     name: '',
@@ -297,12 +298,20 @@ export default function CompanyDetails() {
                 <Link className="inline mr-2 h-4 w-4" />
                 Anotações
               </button>
+              <button 
+                className={`py-2 px-4 font-medium ${activeTab === 'content' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-600'}`}
+                onClick={() => setActiveTab('content')}
+              >
+                <FileText className="inline mr-2 h-4 w-4" />
+                Conteúdos
+              </button>
             </div>
           </CardHeader>
           <CardContent>
             {activeTab === 'checklist' && <CompanyChecklist companyId={company.id} />}
             {activeTab === 'credentials' && <CompanyCredentials companyId={company.id} companyName={company.name} />}
             {activeTab === 'notes' && <CompanyNotes companyId={company.id} />}
+            {activeTab === 'content' && <CompanyContentTasks companyId={company.id} companyName={company.name} />}
           </CardContent>
         </Card>
       </div>

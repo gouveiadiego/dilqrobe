@@ -236,6 +236,53 @@ export type Database = {
         }
         Relationships: []
       }
+      company_content_tasks: {
+        Row: {
+          company_id: string
+          completed: boolean | null
+          content: string
+          created_at: string | null
+          id: string
+          status: string
+          title: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          completed?: boolean | null
+          content: string
+          created_at?: string | null
+          id?: string
+          status?: string
+          title: string
+          type?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          completed?: boolean | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_content_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "project_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_records: {
         Row: {
           challenge_id: string
