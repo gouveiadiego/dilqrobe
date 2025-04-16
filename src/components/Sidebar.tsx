@@ -1,290 +1,193 @@
-import React, { useState, useEffect } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { LogoDilq } from "@/components/LogoDilq";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
-export type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings';
+import { Button } from "@/components/ui/button";
+import {
+  LayoutDashboard,
+  CheckSquare,
+  Wallet,
+  FileText,
+  Calendar,
+  Trophy,
+  User,
+  Settings,
+  LogOut,
+  Briefcase,
+  BarChart3,
+  CalendarClock,
+} from "lucide-react";
+import { useRef, useEffect, useState } from "react";
 
 interface SidebarProps {
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
-  activeTab?: TabType;
-  setActiveTab?: (tab: TabType) => void;
-  onLogout?: () => Promise<void>;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  onLogout: () => void;
 }
 
-export function Sidebar({ 
-  isOpen,
-  setIsOpen,
-  activeTab,
-  setActiveTab,
-  onLogout
-}: SidebarProps) {
-  const [profile, setProfile] = useState<{
-    id: string | undefined;
-    avatar_url: string | undefined;
-    email: string | undefined;
-  }>({ id: undefined, avatar_url: undefined, email: undefined });
-  const [loading, setLoading] = useState(true);
-  const location = useLocation();
+export function Sidebar({ activeTab, setActiveTab, onLogout }: SidebarProps) {
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
 
+  // Check if scrolling is needed based on sidebar height vs window height
   useEffect(() => {
-    const getProfile = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase.auth.getUser();
-
-        if (error) {
-          console.error("Erro ao obter dados do usuário:", error);
-          return;
-        }
-
-        const userId = data.user?.id;
-
-        if (userId) {
-          const { data: userProfile, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", userId)
-            .single();
-
-          if (profileError) {
-            console.error("Erro ao buscar perfil do usuário:", profileError);
-            return;
-          }
-
-          if (userProfile) {
-            setProfile({
-              id: userProfile.id,
-              avatar_url: userProfile.avatar_url,
-              email: data.user?.email,
-            });
-          }
-        }
-      } finally {
-        setLoading(false);
+    const checkScrollNeeded = () => {
+      if (sidebarRef.current) {
+        const sidebarHeight = sidebarRef.current.scrollHeight;
+        const windowHeight = window.innerHeight;
+        setShowScrollIndicator(sidebarHeight > windowHeight);
       }
     };
 
-    getProfile();
+    checkScrollNeeded();
+    window.addEventListener('resize', checkScrollNeeded);
+    
+    return () => {
+      window.removeEventListener('resize', checkScrollNeeded);
+    };
   }, []);
 
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("Erro ao fazer logout:", error);
-    }
-    
-    if (onLogout) {
-      await onLogout();
-    }
-  };
-
-  const handleNavLinkClick = (tab: TabType) => {
-    if (setActiveTab) {
-      setActiveTab(tab);
-    }
-  };
-
   return (
-    <aside className={`fixed inset-y-0 left-0 z-50 w-64 transition-transform duration-300 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:sticky top-0 h-screen`}>
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <Menu className="absolute top-4 right-4 lg:hidden cursor-pointer" />
-        </SheetTrigger>
-        <SheetContent className="sm:max-w-xs p-0">
-          <SheetHeader className="pl-0 pr-6">
-            <SheetTitle>Menu</SheetTitle>
-            <SheetDescription>
-              Ações rápidas e informações importantes
-            </SheetDescription>
-          </SheetHeader>
-          <div className="flex h-16 items-center px-4 border-b border-gray-200 dark:border-gray-800">
-            <LogoDilq className="h-8 w-auto" />
-            <span className="ml-2 text-lg font-medium text-gray-900 dark:text-white">DilQ</span>
-            <div className="ml-auto">
-              <ThemeToggle size="sm" variant="ghost" />
-            </div>
-          </div>
-          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800">
-            {loading ? (
-              <div className="flex items-center space-x-4">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-[200px]" />
-                  <Skeleton className="h-4 w-[150px]" />
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-4">
-                <Avatar>
-                  {profile.avatar_url ? (
-                    <AvatarImage src={profile.avatar_url} alt="Avatar" />
-                  ) : (
-                    <AvatarFallback>{profile.email?.[0].toUpperCase()}</AvatarFallback>
-                  )}
-                </Avatar>
-                <div className="space-y-1">
-                  <h4 className="text-sm font-semibold">{profile.email}</h4>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {profile.id}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-          <nav className="flex flex-col px-2 py-4 space-y-1">
-            <NavLink
-              to="/dashboard"
-              className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-              onClick={() => handleNavLinkClick('dashboard')}
-            >
-              Visão geral
-            </NavLink>
-            <NavLink
-              to="/dashboard/tasks"
-              className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/tasks' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-              onClick={() => handleNavLinkClick('tasks')}
-            >
-              Tarefas
-            </NavLink>
-            <NavLink
-              to="/dashboard/projects"
-              className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/projects' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-              onClick={() => handleNavLinkClick('projects')}
-            >
-              Projetos
-            </NavLink>
-            <NavLink
-              to="/dashboard/finances"
-              className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/finances' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-              onClick={() => handleNavLinkClick('finance')}
-            >
-              Financeiro
-            </NavLink>
-            <NavLink
-              to="/dashboard/meetings"
-              className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/meetings' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-              onClick={() => handleNavLinkClick('meetings')}
-            >
-              Reuniões
-            </NavLink>
-            <NavLink
-              to="/dashboard/settings"
-              className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/settings' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-              onClick={() => handleNavLinkClick('settings')}
-            >
-              Configurações
-            </NavLink>
-          </nav>
-          <div className="mt-auto px-4 py-2">
-            <button
-              onClick={handleSignOut}
-              className="w-full py-2 px-4 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
-            >
-              Sair
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
-      <div className="flex h-16 items-center px-4 border-b border-gray-200 dark:border-gray-800">
-        <LogoDilq className="h-8 w-auto" />
-        <span className="ml-2 text-lg font-medium text-gray-900 dark:text-white">DilQ</span>
-        <div className="ml-auto">
-          <ThemeToggle size="sm" variant="ghost" />
+    <div className="p-4 h-full flex flex-col">
+      <div className="flex items-center justify-center mb-6">
+        <div className="relative w-24 h-24 overflow-hidden">
+          <img
+            src="/lovable-uploads/edd4e2f7-ee31-4d6c-8b97-6b0b3771a57e.png"
+            alt="DILQ ORBE"
+            className="w-full h-full object-contain"
+          />
         </div>
       </div>
-      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800">
-        {loading ? (
-          <div className="flex items-center space-x-4">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-[200px]" />
-              <Skeleton className="h-4 w-[150px]" />
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center space-x-4">
-            <Avatar>
-              {profile.avatar_url ? (
-                <AvatarImage src={profile.avatar_url} alt="Avatar" />
-              ) : (
-                <AvatarFallback>{profile.email?.[0].toUpperCase()}</AvatarFallback>
-              )}
-            </Avatar>
+      
+      <div 
+        ref={sidebarRef} 
+        className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent pr-1"
+      >
+        <nav className="space-y-6">
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-gray-400">MÓDULOS</span>
             <div className="space-y-1">
-              <h4 className="text-sm font-semibold">{profile.email}</h4>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {profile.id}
-              </p>
+              <Button 
+                variant={activeTab === 'dashboard' ? "secondary" : "ghost"}
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('dashboard')}
+              >
+                <LayoutDashboard size={20} />
+                Painel
+              </Button>
+              <Button 
+                variant={activeTab === 'tasks' ? "secondary" : "ghost"} 
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('tasks')}
+              >
+                <CheckSquare size={20} />
+                Execução
+              </Button>
+              <Button 
+                variant={activeTab === 'meetings' ? "secondary" : "ghost"} 
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('meetings')}
+              >
+                <CalendarClock size={20} />
+                Reuniões
+              </Button>
+              <Button 
+                variant={activeTab === 'finance' ? "secondary" : "ghost"} 
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('finance')}
+              >
+                <Wallet size={20} />
+                Financeiro
+              </Button>
+              <Button 
+                variant={activeTab === 'services' ? "secondary" : "ghost"} 
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('services')}
+              >
+                <Briefcase size={20} />
+                Serviços
+              </Button>
+              <Button 
+                variant={activeTab === 'projects' ? "secondary" : "ghost"} 
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('projects')}
+              >
+                <FileText size={20} />
+                Projetos
+              </Button>
+              <Button 
+                variant={activeTab === 'budget' ? "secondary" : "ghost"}
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('budget')}
+              >
+                <FileText size={20} />
+                Orçamentos
+              </Button>
+              <Button 
+                variant={activeTab === 'journals' ? "secondary" : "ghost"}
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('journals')}
+              >
+                <Calendar size={20} />
+                Diários
+              </Button>
+              <Button 
+                variant={activeTab === 'habits' ? "secondary" : "ghost"}
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('habits')}
+              >
+                <BarChart3 size={20} />
+                Hábitos
+              </Button>
+              <Button 
+                variant={activeTab === 'challenges' ? "secondary" : "ghost"}
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('challenges')}
+              >
+                <Trophy size={20} />
+                Desafios
+              </Button>
             </div>
           </div>
-        )}
+          
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-gray-400">CONFIGURAÇÕES</span>
+            <div className="space-y-1">
+              <Button 
+                variant={activeTab === 'profile' ? "secondary" : "ghost"}
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('profile')}
+              >
+                <User size={20} />
+                Perfil
+              </Button>
+              <Button 
+                variant={activeTab === 'settings' ? "secondary" : "ghost"}
+                className="w-full justify-start gap-3"
+                onClick={() => setActiveTab('settings')}
+              >
+                <Settings size={20} />
+                Configurações
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={onLogout}
+              >
+                <LogOut size={20} />
+                Sair
+              </Button>
+            </div>
+          </div>
+        </nav>
       </div>
-      <nav className="flex flex-col px-2 py-4 space-y-1">
-        <NavLink
-          to="/dashboard"
-          className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-          onClick={() => handleNavLinkClick('dashboard')}
-        >
-          Visão geral
-        </NavLink>
-        <NavLink
-          to="/dashboard/tasks"
-          className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/tasks' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-          onClick={() => handleNavLinkClick('tasks')}
-        >
-          Tarefas
-        </NavLink>
-        <NavLink
-          to="/dashboard/projects"
-          className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/projects' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-          onClick={() => handleNavLinkClick('projects')}
-        >
-          Projetos
-        </NavLink>
-        <NavLink
-          to="/dashboard/finances"
-          className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/finances' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-          onClick={() => handleNavLinkClick('finance')}
-        >
-          Financeiro
-        </NavLink>
-        <NavLink
-          to="/dashboard/meetings"
-          className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/meetings' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-          onClick={() => handleNavLinkClick('meetings')}
-        >
-          Reuniões
-        </NavLink>
-        <NavLink
-          to="/dashboard/settings"
-          className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/settings' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
-          onClick={() => handleNavLinkClick('settings')}
-        >
-          Configurações
-        </NavLink>
-      </nav>
-      <div className="mt-auto px-4 py-2">
-        <button
-          onClick={handleSignOut}
-          className="w-full py-2 px-4 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
-        >
-          Sair
-        </button>
-      </div>
-    </aside>
+      
+      {showScrollIndicator && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+          <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 opacity-70 flex items-center justify-center animate-bounce">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
