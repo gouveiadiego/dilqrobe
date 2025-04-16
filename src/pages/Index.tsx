@@ -141,7 +141,7 @@ const Index = () => {
       <HabitReminder />
       
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out z-30 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} onLogout={handleLogout} />
+        <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} onLogout={handleLogout} isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       </aside>
 
       <main className={`transition-all duration-200 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
