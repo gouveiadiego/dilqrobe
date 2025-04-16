@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Sheet,
@@ -15,14 +16,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LogoDilq } from "./LogoDilq";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
+export type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings';
+
 interface SidebarProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  activeTab?: TabType;
+  setActiveTab?: (tab: TabType) => void;
+  onLogout?: () => Promise<void>;
 }
 
 export function Sidebar({ 
   isOpen,
-  setIsOpen
+  setIsOpen,
+  activeTab,
+  setActiveTab,
+  onLogout
 }: SidebarProps) {
   const [profile, setProfile] = useState<{
     id: string | undefined;
@@ -78,6 +87,16 @@ export function Sidebar({
     if (error) {
       console.error("Erro ao fazer logout:", error);
     }
+    
+    if (onLogout) {
+      await onLogout();
+    }
+  };
+
+  const handleNavLinkClick = (tab: TabType) => {
+    if (setActiveTab) {
+      setActiveTab(tab);
+    }
   };
 
   return (
@@ -131,36 +150,42 @@ export function Sidebar({
             <NavLink
               to="/dashboard"
               className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+              onClick={() => handleNavLinkClick('dashboard')}
             >
               Visão geral
             </NavLink>
             <NavLink
               to="/dashboard/tasks"
               className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/tasks' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+              onClick={() => handleNavLinkClick('tasks')}
             >
               Tarefas
             </NavLink>
             <NavLink
               to="/dashboard/projects"
               className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/projects' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+              onClick={() => handleNavLinkClick('projects')}
             >
               Projetos
             </NavLink>
             <NavLink
               to="/dashboard/finances"
               className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/finances' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+              onClick={() => handleNavLinkClick('finance')}
             >
               Financeiro
             </NavLink>
             <NavLink
               to="/dashboard/meetings"
               className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/meetings' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+              onClick={() => handleNavLinkClick('meetings')}
             >
               Reuniões
             </NavLink>
             <NavLink
               to="/dashboard/settings"
               className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/settings' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+              onClick={() => handleNavLinkClick('settings')}
             >
               Configurações
             </NavLink>
@@ -213,36 +238,42 @@ export function Sidebar({
         <NavLink
           to="/dashboard"
           className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+          onClick={() => handleNavLinkClick('dashboard')}
         >
           Visão geral
         </NavLink>
         <NavLink
           to="/dashboard/tasks"
           className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/tasks' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+          onClick={() => handleNavLinkClick('tasks')}
         >
           Tarefas
         </NavLink>
         <NavLink
           to="/dashboard/projects"
           className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/projects' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+          onClick={() => handleNavLinkClick('projects')}
         >
           Projetos
         </NavLink>
         <NavLink
           to="/dashboard/finances"
           className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/finances' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+          onClick={() => handleNavLinkClick('finance')}
         >
           Financeiro
         </NavLink>
         <NavLink
           to="/dashboard/meetings"
           className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/meetings' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+          onClick={() => handleNavLinkClick('meetings')}
         >
           Reuniões
         </NavLink>
         <NavLink
           to="/dashboard/settings"
           className={`flex items-center px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 ${location.pathname === '/dashboard/settings' ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+          onClick={() => handleNavLinkClick('settings')}
         >
           Configurações
         </NavLink>
