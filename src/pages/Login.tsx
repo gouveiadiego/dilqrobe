@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Mail, User, CreditCard, FileText } from "lucide-react";
+import { Lock, Mail, User, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -66,9 +67,8 @@ export const Login = () => {
         }
 
         if (data?.session) {
-          // After successful login, redirect to dashboard
-          // In the future, we may need to check subscription status here
-          navigate("/dashboard", { replace: true });
+          // After successful login, redirect to home (root path)
+          navigate("/", { replace: true });
         }
       }
     } catch (error: any) {
