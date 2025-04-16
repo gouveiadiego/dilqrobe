@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Sheet,
@@ -13,7 +12,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogoDilq } from "./LogoDilq";
+import { LogoDilq } from "@/components/LogoDilq";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings';

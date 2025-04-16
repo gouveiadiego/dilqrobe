@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AddTask } from "@/components/AddTask";
 import { supabase } from "@/integrations/supabase/client";
@@ -141,7 +140,13 @@ const Index = () => {
       <HabitReminder />
       
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out z-30 dark:bg-gray-900 dark:border-gray-800 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} onLogout={handleLogout} />
+        <Sidebar 
+          isOpen={sidebarOpen} 
+          setIsOpen={setSidebarOpen} 
+          activeTab={activeTab} 
+          setActiveTab={handleTabChange} 
+          onLogout={handleLogout} 
+        />
       </aside>
 
       <main className={`transition-all duration-200 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
