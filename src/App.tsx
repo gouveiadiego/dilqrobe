@@ -1,80 +1,52 @@
 
-import { useEffect, useState } from "react";
-import { Routes, Route } from "react-router-dom";
-import { Toaster } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Session } from "@supabase/supabase-js";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import Dashboard from "./pages/Dashboard";
+import Auth from "./pages/Auth";
 import Login from "./pages/Login";
+import LandingPage from "./pages/LandingPage";
 import CompanyDetails from "./pages/CompanyDetails";
 import ClientPortal from "./pages/ClientPortal";
-import LandingPage from "./pages/LandingPage";
 import Subscription from "./pages/Subscription";
+import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
-// Add title for the application
-document.title = "DilQ Orbe - Sistema para gerenciamento eficiente com produtividade e propósito";
+const queryClient = new QueryClient();
 
 function App() {
-  const [session, setSession] = useState<Session | null>(null);
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/subscription" element={<Subscription />} />
-        
-        {/* Use a nested route for dashboard to handle refreshes better */}
-        <Route 
-          path="/dashboard/*" 
-          element={
-            <ProtectedRoute>
-              <Index />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Modified ClientPortal route - no longer wrapped in ProtectedRoute */}
-        <Route path="/client-portal" element={<ClientPortal />} />
-        
-        <Route
-          path="/company/:companyId"
-          element={
-            <ProtectedRoute>
-              <CompanyDetails />
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster 
-        position="top-right" 
-        theme="light"
-        className="bg-white text-black border-gray-200"
-        richColors
-      />
-    </>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/client-portal/:accessToken" element={<ClientPortal />} />
+            <Route path="/subscription" element={
+              <ProtectedRoute>
+                <Subscription />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/company/:id" element={
+              <ProtectedRoute>
+                <CompanyDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 }
 

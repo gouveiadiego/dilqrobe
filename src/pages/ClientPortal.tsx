@@ -1,573 +1,490 @@
-import { useEffect, useState, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isSameMonth } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Card } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Share, Check, Copy, Link, Calendar as CalendarIcon, X } from "lucide-react";
-import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Eye, EyeOff, Building2, CheckCircle2, Clock, User, Mail, Phone } from "lucide-react";
+import { toast } from "sonner";
+import bcrypt from "bcryptjs";
 
-interface ClientService {
-  id: string;
-  start_date: string;
-  service_description: string;
-  company_name: string;
-  stage: string;
-  status: string;
-  amount: number;
-  payment_status: string;
-  client_id: string;
-}
-
-interface Client {
+interface Company {
   id: string;
   name: string;
-  email: string;
+  description: string | null;
+  contact_person: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
 }
 
-interface PaymentSummary {
-  paid: number;
-  pending: number;
-  canceled: number;
-  paidTotal: number;
-  pendingTotal: number;
-  canceledTotal: number;
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string | null;
+  due_date: string | null;
+  created_at: string;
+}
+
+interface ContentTask {
+  id: string;
+  title: string;
+  content: string;
+  type: string;
+  status: string;
+  client_status: string;
+  completed: boolean;
+  created_at: string;
+}
+
+interface ChecklistItem {
+  id: string;
+  title: string;
+  category: string | null;
+  completed: boolean;
+  created_at: string;
 }
 
 export default function ClientPortal() {
-  const [services, setServices] = useState<ClientService[]>([]);
-  const [client, setClient] = useState<Client | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const clientId = searchParams.get('client');
-  const clientSlug = searchParams.get('name');
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [isPublic] = useState(searchParams.get('public') === 'true');
-  const shareUrlRef = useRef<HTMLInputElement>(null);
-  const [paymentSummary, setPaymentSummary] = useState<PaymentSummary>({
-    paid: 0,
-    pending: 0,
-    canceled: 0,
-    paidTotal: 0,
-    pendingTotal: 0,
-    canceledTotal: 0
-  });
-  const isMobile = useIsMobile();
-  const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(undefined);
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  const { accessToken } = useParams<{ accessToken: string }>();
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
+  // Check if already authenticated on component mount
   useEffect(() => {
-    const fetchData = async () => {
-      let effectiveClientId = clientId;
-      
-      if (!effectiveClientId && clientSlug) {
-        const { data, error } = await supabase
-          .from('clients')
-          .select('id')
-          .ilike('name', `%${decodeURIComponent(clientSlug)}%`)
-          .limit(1)
-          .single();
-          
-        if (!error && data) {
-          effectiveClientId = data.id;
-        }
-      }
-      
-      if (!effectiveClientId) return;
+    const savedAuth = sessionStorage.getItem(`client_portal_auth_${accessToken}`);
+    if (savedAuth === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, [accessToken]);
 
-      const { data: clientData, error: clientError } = await supabase
-        .from('clients')
-        .select('id, name, email')
-        .eq('id', effectiveClientId)
+  // Verify portal link exists and get company data
+  const { data: portalData, isLoading: isPortalLoading } = useQuery({
+    queryKey: ['client-portal', accessToken],
+    queryFn: async () => {
+      if (!accessToken) throw new Error('Access token is required');
+
+      const { data, error } = await supabase
+        .from('client_portal_links')
+        .select(`
+          id,
+          company_id,
+          is_active,
+          expires_at,
+          project_companies!inner (
+            id,
+            name,
+            description,
+            contact_person,
+            contact_email,
+            contact_phone
+          )
+        `)
+        .eq('access_token', accessToken)
         .single();
 
-      if (clientError) {
-        console.error('Erro ao buscar informações do cliente:', clientError);
-      } else {
-        setClient(clientData as Client);
+      if (error || !data) {
+        throw new Error('Link de acesso inválido ou expirado');
       }
 
-      const { data: servicesData, error: servicesError } = await supabase
-        .from('services')
-        .select('*')
-        .eq('client_id', effectiveClientId)
-        .order('start_date', { ascending: false });
+      // Check if link is active
+      if (!data.is_active) {
+        throw new Error('Este link de acesso foi desativado');
+      }
 
-      if (servicesError) {
-        console.error('Erro ao buscar serviços:', servicesError);
+      // Check if link has expired
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        throw new Error('Este link de acesso expirou');
+      }
+
+      return {
+        portalLink: data,
+        company: data.project_companies as Company
+      };
+    },
+    enabled: !!accessToken
+  });
+
+  // Fetch project tasks
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['client-portal-tasks', portalData?.company.id],
+    queryFn: async () => {
+      if (!portalData?.company.id) return [];
+
+      const { data, error } = await supabase
+        .from('project_tasks')
+        .select('*')
+        .eq('company_id', portalData.company.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Task[];
+    },
+    enabled: isAuthenticated && !!portalData?.company.id
+  });
+
+  // Fetch content tasks
+  const { data: contentTasks = [] } = useQuery({
+    queryKey: ['client-portal-content-tasks', portalData?.company.id],
+    queryFn: async () => {
+      if (!portalData?.company.id) return [];
+
+      const { data, error } = await supabase
+        .from('company_content_tasks')
+        .select('*')
+        .eq('company_id', portalData.company.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as ContentTask[];
+    },
+    enabled: isAuthenticated && !!portalData?.company.id
+  });
+
+  // Fetch checklist items
+  const { data: checklistItems = [] } = useQuery({
+    queryKey: ['client-portal-checklist', portalData?.company.id],
+    queryFn: async () => {
+      if (!portalData?.company.id) return [];
+
+      const { data, error } = await supabase
+        .from('project_checklist')
+        .select('*')
+        .eq('company_id', portalData.company.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as ChecklistItem[];
+    },
+    enabled: isAuthenticated && !!portalData?.company.id
+  });
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!password.trim()) {
+      toast.error('Digite a senha de acesso');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Get the password hash from the database
+      const { data, error } = await supabase
+        .from('client_portal_links')
+        .select('password_hash')
+        .eq('access_token', accessToken)
+        .single();
+
+      if (error || !data) {
+        toast.error('Erro ao verificar senha');
         return;
       }
 
-      setServices(servicesData || []);
-      
-      const summary = calculatePaymentSummary(servicesData || []);
-      setPaymentSummary(summary);
-      
-      setLoading(false);
-    };
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, data.password_hash);
 
-    fetchData();
-  }, [clientId, clientSlug]);
-
-  const calculatePaymentSummary = (services: ClientService[]): PaymentSummary => {
-    const filteredServices = selectedMonth 
-      ? services.filter(service => isSameMonth(new Date(service.start_date), selectedMonth))
-      : services;
-    
-    const summary = {
-      paid: 0,
-      pending: 0,
-      canceled: 0,
-      paidTotal: 0,
-      pendingTotal: 0,
-      canceledTotal: 0
-    };
-
-    filteredServices.forEach(service => {
-      switch (service.payment_status) {
-        case 'paid':
-          summary.paid++;
-          summary.paidTotal += service.amount;
-          break;
-        case 'pending':
-          summary.pending++;
-          summary.pendingTotal += service.amount;
-          break;
-        case 'canceled':
-          summary.canceled++;
-          summary.canceledTotal += service.amount;
-          break;
+      if (isPasswordValid) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem(`client_portal_auth_${accessToken}`, 'true');
+        toast.success('Acesso autorizado!');
+      } else {
+        toast.error('Senha incorreta');
       }
-    });
-
-    return summary;
-  };
-
-  const handleShare = () => {
-    setShowShareDialog(true);
-  };
-
-  const handleCopyLink = () => {
-    if (shareUrlRef.current) {
-      shareUrlRef.current.select();
-      navigator.clipboard.writeText(shareUrlRef.current.value);
-      setCopied(true);
-      toast.success("Link copiado para a área de transferência!");
-      
-      setTimeout(() => {
-        setCopied(false);
-      }, 3000);
+    } catch (error) {
+      console.error('Password verification error:', error);
+      toast.error('Erro ao verificar senha');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getShareableUrl = () => {
-    const baseUrl = window.location.origin;
-    const clientNameSlug = client?.name 
-      ? encodeURIComponent(client.name.toLowerCase().replace(/\s+/g, '-')) 
-      : '';
-      
-    return `${baseUrl}/client-portal?client=${clientId}&public=true&name=${clientNameSlug}`;
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+      case 'concluído':
+        return 'bg-green-100 text-green-800';
+      case 'in_progress':
+      case 'em_andamento':
+        return 'bg-blue-100 text-blue-800';
+      case 'pending':
+      case 'pendente':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const getFriendlyUrl = () => {
-    const baseUrl = window.location.origin;
-    const clientNameSlug = client?.name 
-      ? encodeURIComponent(client.name.toLowerCase().replace(/\s+/g, '-')) 
-      : '';
-      
-    return `${baseUrl}/client-portal?name=${clientNameSlug}&public=true`;
+  const getPriorityColor = (priority: string | null) => {
+    switch (priority?.toLowerCase()) {
+      case 'high':
+      case 'alta':
+        return 'bg-red-100 text-red-800';
+      case 'medium':
+      case 'média':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'low':
+      case 'baixa':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const ServiceCard = ({ service }: { service: ClientService }) => {
+  if (isPortalLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-4">
-        <div className="flex justify-between items-start mb-2">
-          <div className="font-medium">{service.company_name}</div>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            service.payment_status === 'paid' 
-              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-              : service.payment_status === 'canceled'
-              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-          }`}>
-            {service.payment_status === 'paid' 
-              ? 'Pago' 
-              : service.payment_status === 'canceled'
-              ? 'Cancelado'
-              : 'Pendente'}
-          </span>
-        </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          {format(new Date(service.start_date), "dd/MM/yyyy")}
-        </div>
-        <div className="mb-2">{service.service_description}</div>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <span className="text-gray-500 dark:text-gray-400">Etapa:</span> {service.stage}
-          </div>
-          <div>
-            <span className="text-gray-500 dark:text-gray-400">Situação:</span> {service.status}
-          </div>
-          <div className="col-span-2">
-            <span className="text-gray-500 dark:text-gray-400">Valor:</span>{' '}
-            <span className="font-semibold">
-              {new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: 'BRL'
-              }).format(service.amount)}
-            </span>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const handleMonthSelect = (date: Date | undefined) => {
-    setSelectedMonth(date);
-    setCalendarOpen(false);
-  };
-
-  const clearMonthFilter = () => {
-    setSelectedMonth(undefined);
-  };
-
-  const filteredServices = selectedMonth
-    ? services.filter(service => isSameMonth(new Date(service.start_date), selectedMonth))
-    : services;
-
-  useEffect(() => {
-    const summary = calculatePaymentSummary(services);
-    setPaymentSummary(summary);
-  }, [selectedMonth, services]);
-
-  if (loading) {
-    return (
-      <div className="container mx-auto p-4 md:p-6 flex justify-center items-center min-h-[50vh]">
-        <div className="animate-pulse flex flex-col items-center w-full">
-          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
-          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded w-full max-w-3xl"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Carregando portal do cliente...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="container mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Portal do Cliente</h1>
-          {!isPublic && (
-            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-1">
-              Gerencie e compartilhe informações com seu cliente
-            </p>
-          )}
-          {isPublic && (
-            <p className="text-sm md:text-base text-gray-500 dark:text-gray-400 mt-1">
-              Sistema para gerenciamento eficiente com produtividade e propósito
-            </p>
-          )}
-        </div>
-        {!isPublic && (
-          <Button variant="outline" size="sm" onClick={handleShare}>
-            <Share className="h-4 w-4 mr-2" />
-            Compartilhar
-          </Button>
-        )}
+  if (!portalData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Acesso Negado</h1>
+            <p className="text-gray-600">Link de acesso inválido ou expirado.</p>
+          </CardContent>
+        </Card>
       </div>
-      
-      <Card className="p-4 md:p-6 border shadow-sm dark:bg-gray-900/60 backdrop-blur-sm">
-        <div className="flex justify-between items-center mb-4 md:mb-6">
-          <div>
-            <h2 className="text-lg md:text-xl font-semibold">
-              {client?.name || "Cliente"}
-            </h2>
-            <div className="flex flex-wrap gap-2 md:gap-3 mt-2 md:mt-3">
-              <div className="bg-green-100 dark:bg-green-900/30 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs">
-                <span className="text-xs text-green-800 dark:text-green-300 font-medium">Pagos:</span> 
-                <span className="ml-1 text-xs md:text-sm font-bold text-green-800 dark:text-green-300">{paymentSummary.paid}</span>
-                <span className="md:ml-2 ml-1 text-xs text-green-800 dark:text-green-300">
-                  ({new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }).format(paymentSummary.paidTotal)})
-                </span>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2">
+              <Building2 className="h-6 w-6" />
+              {portalData.company.name}
+            </CardTitle>
+            <p className="text-gray-600">Portal do Cliente</p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium mb-2">
+                  Senha de Acesso
+                </label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Digite sua senha"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
-              <div className="bg-orange-100 dark:bg-orange-900/30 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs">
-                <span className="text-xs text-orange-800 dark:text-orange-300 font-medium">Pendentes:</span> 
-                <span className="ml-1 text-xs md:text-sm font-bold text-orange-800 dark:text-orange-300">{paymentSummary.pending}</span>
-                <span className="md:ml-2 ml-1 text-xs text-orange-800 dark:text-orange-300">
-                  ({new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }).format(paymentSummary.pendingTotal)})
-                </span>
-              </div>
-              <div className="bg-yellow-100 dark:bg-yellow-900/30 px-2 md:px-3 py-1 md:py-1.5 rounded-lg text-xs">
-                <span className="text-xs text-yellow-800 dark:text-yellow-300 font-medium">Cancelados:</span> 
-                <span className="ml-1 text-xs md:text-sm font-bold text-yellow-800 dark:text-yellow-300">{paymentSummary.canceled}</span>
-                <span className="md:ml-2 ml-1 text-xs text-yellow-800 dark:text-yellow-300">
-                  ({new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }).format(paymentSummary.canceledTotal)})
-                </span>
-              </div>
-            </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Verificando...' : 'Acessar'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <Building2 className="h-8 w-8 text-blue-600" />
+            <h1 className="text-3xl font-bold">{portalData.company.name}</h1>
           </div>
-          <div className="flex items-center gap-2">
-            {isPublic && (
-              <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-3 py-1 rounded-full text-xs font-medium">
-                Visualização pública
-              </div>
-            )}
-            
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className={cn(
-                    selectedMonth ? "border-indigo-500 text-indigo-600 dark:text-indigo-400" : "",
-                    "gap-2"
-                  )}
-                >
-                  <CalendarIcon className="h-4 w-4" />
-                  {selectedMonth 
-                    ? format(selectedMonth, "MMMM yyyy", { locale: ptBR }) 
-                    : "Filtrar por mês"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={selectedMonth}
-                  onSelect={handleMonthSelect}
-                  initialFocus
-                  className="pointer-events-auto"
-                  locale={ptBR}
-                  captionLayout="dropdown-buttons"
-                  fromYear={2020}
-                  toYear={2030}
-                  modifiers={{ disabled: [{ before: new Date(2020, 0) }] }}
-                  modifiersStyles={{ disabled: { display: 'none' } }}
-                />
-                {selectedMonth && (
-                  <div className="p-2 border-t border-gray-100 dark:border-gray-800 flex justify-end">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={clearMonthFilter}
-                      className="text-xs"
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Limpar filtro
-                    </Button>
+          {portalData.company.description && (
+            <p className="text-gray-600 mb-4">{portalData.company.description}</p>
+          )}
+          
+          {/* Contact Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Informações de Contato</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {portalData.company.contact_person && (
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    <span>{portalData.company.contact_person}</span>
                   </div>
                 )}
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-        
-        {selectedMonth && (
-          <div className="mb-4 p-2 bg-indigo-50 dark:bg-indigo-950/30 rounded-md flex items-center justify-between">
-            <div className="text-sm text-indigo-600 dark:text-indigo-300">
-              Mostrando serviços de {format(selectedMonth, "MMMM yyyy", { locale: ptBR })}
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={clearMonthFilter}
-              className="h-7 px-2 text-indigo-600 dark:text-indigo-300 hover:text-indigo-700"
-            >
-              <X className="h-3 w-3 mr-1" />
-              Limpar
-            </Button>
-          </div>
-        )}
-        
-        {isMobile && (
-          <div className="md:hidden space-y-4">
-            {filteredServices.length === 0 ? (
-              <div className="text-center py-6 text-gray-500">
-                {selectedMonth 
-                  ? `Nenhum serviço encontrado para ${format(selectedMonth, "MMMM yyyy", { locale: ptBR })}`
-                  : "Nenhum serviço encontrado para este cliente"
-                }
-              </div>
-            ) : (
-              filteredServices.map((service) => (
-                <ServiceCard key={service.id} service={service} />
-              ))
-            )}
-          </div>
-        )}
-        
-        {!isMobile && (
-          <div className="hidden md:block overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Nome da Empresa/Cliente</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Etapa</TableHead>
-                  <TableHead>Situação</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredServices.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-6 text-gray-500">
-                      {selectedMonth 
-                        ? `Nenhum serviço encontrado para ${format(selectedMonth, "MMMM yyyy", { locale: ptBR })}`
-                        : "Nenhum serviço encontrado para este cliente"
-                      }
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredServices.map((service) => (
-                    <TableRow key={service.id}>
-                      <TableCell>
-                        {format(new Date(service.start_date), "dd/MM/yyyy")}
-                      </TableCell>
-                      <TableCell>{service.company_name}</TableCell>
-                      <TableCell>{service.service_description}</TableCell>
-                      <TableCell>{service.stage}</TableCell>
-                      <TableCell>{service.status}</TableCell>
-                      <TableCell>
-                        {new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(service.amount)}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          service.payment_status === 'paid' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                            : service.payment_status === 'canceled'
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                            : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
-                        }`}>
-                          {service.payment_status === 'paid' 
-                            ? 'Pago' 
-                            : service.payment_status === 'canceled'
-                            ? 'Cancelado'
-                            : 'Pendente'}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                {portalData.company.contact_email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-gray-500" />
+                    <span>{portalData.company.contact_email}</span>
+                  </div>
                 )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        
-        {isPublic && (
-          <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-              Esta é uma visualização pública compartilhada por {client?.email}. Quaisquer atualizações 
-              feitas pelo profissional serão refletidas automaticamente nesta página.
-            </p>
-            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-2">
-              DilQ Orbe - Sistema para gerenciamento eficiente com produtividade e propósito
-            </p>
-          </div>
-        )}
-      </Card>
+                {portalData.company.contact_phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    <span>{portalData.company.contact_phone}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="sm:max-w-md max-w-[90vw] rounded-lg">
-          <DialogHeader>
-            <DialogTitle>Compartilhar portal do cliente</DialogTitle>
-            <DialogDescription>
-              Qualquer pessoa com o link abaixo poderá visualizar os serviços deste cliente sem precisar fazer login.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4">
-            <div>
-              <p className="text-sm font-medium mb-2">Link com ID do cliente:</p>
-              <div className="flex items-center space-x-2">
-                <div className="grid flex-1 gap-2">
-                  <Input
-                    ref={shareUrlRef}
-                    readOnly
-                    className="w-full"
-                    value={getShareableUrl()}
-                  />
-                </div>
-                <Button size="sm" className="px-3" onClick={handleCopyLink}>
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  <span className="sr-only">Copiar</span>
-                </Button>
+        {/* Content Tabs */}
+        <Tabs defaultValue="tasks" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="tasks">Tarefas do Projeto</TabsTrigger>
+            <TabsTrigger value="content">Conteúdos</TabsTrigger>
+            <TabsTrigger value="checklist">Checklist</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="tasks" className="space-y-4">
+            <h2 className="text-xl font-semibold">Tarefas do Projeto</h2>
+            {tasks.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center text-gray-500">
+                  Nenhuma tarefa encontrada
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {tasks.map((task) => (
+                  <Card key={task.id}>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-medium">{task.title}</h3>
+                        <div className="flex gap-2">
+                          <Badge className={getStatusColor(task.status)}>
+                            {task.status}
+                          </Badge>
+                          {task.priority && (
+                            <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                              {task.priority}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      {task.description && (
+                        <p className="text-gray-600 mb-3">{task.description}</p>
+                      )}
+                      <div className="text-sm text-gray-500">
+                        <p>Criado em: {new Date(task.created_at).toLocaleDateString('pt-BR')}</p>
+                        {task.due_date && (
+                          <p>Prazo: {new Date(task.due_date).toLocaleDateString('pt-BR')}</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </div>
-            
-            <div>
-              <p className="text-sm font-medium mb-2">Link amigável (com nome do cliente):</p>
-              <div className="flex items-center space-x-2">
-                <div className="grid flex-1 gap-2">
-                  <Input
-                    readOnly
-                    className="w-full"
-                    value={getFriendlyUrl()}
-                  />
-                </div>
-                <Button 
-                  size="sm" 
-                  className="px-3" 
-                  onClick={() => {
-                    navigator.clipboard.writeText(getFriendlyUrl());
-                    toast.success("Link amigável copiado!");
-                  }}
-                >
-                  <Copy className="h-4 w-4" />
-                  <span className="sr-only">Copiar</span>
-                </Button>
+            )}
+          </TabsContent>
+
+          <TabsContent value="content" className="space-y-4">
+            <h2 className="text-xl font-semibold">Conteúdos Desenvolvidos</h2>
+            {contentTasks.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center text-gray-500">
+                  Nenhum conteúdo encontrado
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {contentTasks.map((task) => (
+                  <Card key={task.id}>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-medium">{task.title}</h3>
+                        <div className="flex gap-2">
+                          <Badge className={getStatusColor(task.status)}>
+                            {task.status}
+                          </Badge>
+                          <Badge variant="outline">
+                            {task.type}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="prose max-w-none mb-3">
+                        <p className="text-gray-600">{task.content}</p>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        <p>Criado em: {new Date(task.created_at).toLocaleDateString('pt-BR')}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Este link usa o nome do cliente em vez do ID, ficando mais amigável e legível.
-              </p>
-            </div>
-          </div>
-          <DialogFooter className="flex items-center border-t pt-4 mt-4">
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Link className="h-4 w-4 mr-2" />
-              O link será atualizado automaticamente quando houver novas informações
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            )}
+          </TabsContent>
+
+          <TabsContent value="checklist" className="space-y-4">
+            <h2 className="text-xl font-semibold">Checklist do Projeto</h2>
+            {checklistItems.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center text-gray-500">
+                  Nenhum item de checklist encontrado
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(
+                  checklistItems.reduce((acc, item) => {
+                    const category = item.category || 'Geral';
+                    if (!acc[category]) acc[category] = [];
+                    acc[category].push(item);
+                    return acc;
+                  }, {} as Record<string, ChecklistItem[]>)
+                ).map(([category, items]) => (
+                  <Card key={category}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{category}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {items.map((item) => (
+                          <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded">
+                            {item.completed ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <Clock className="h-5 w-5 text-gray-400" />
+                            )}
+                            <span className={item.completed ? 'line-through text-gray-500' : ''}>
+                              {item.title}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

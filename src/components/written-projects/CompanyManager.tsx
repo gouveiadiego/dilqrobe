@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, ExternalLink, Trash2, Edit } from "lucide-react";
+import { Plus, ExternalLink, Trash2, Link, Settings } from "lucide-react";
 import { toast } from "sonner";
+import { ClientPortalManager } from "./ClientPortalManager";
 
 interface Company {
   id: string;
@@ -25,7 +25,9 @@ export function CompanyManager() {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isPortalDialogOpen, setIsPortalDialogOpen] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [newCompany, setNewCompany] = useState({
     name: "",
     description: "",
@@ -127,6 +129,11 @@ export function CompanyManager() {
 
   const handleViewCompanyDetails = (companyId: string) => {
     navigate(`/company/${companyId}`);
+  };
+
+  const handlePortalManager = (company: Company) => {
+    setSelectedCompany(company);
+    setIsPortalDialogOpen(true);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -234,6 +241,21 @@ export function CompanyManager() {
         </DialogContent>
       </Dialog>
 
+      {/* Portal Manager Dialog */}
+      <Dialog open={isPortalDialogOpen} onOpenChange={setIsPortalDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Links de Acesso - {selectedCompany?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedCompany && (
+            <ClientPortalManager 
+              companyId={selectedCompany.id} 
+              companyName={selectedCompany.name}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {companies.length === 0 ? (
           <div className="col-span-full text-center p-8 bg-gray-50 rounded-lg">
@@ -260,6 +282,14 @@ export function CompanyManager() {
                       title="Ver detalhes"
                     >
                       <ExternalLink className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handlePortalManager(company)}
+                      title="Gerenciar links de acesso"
+                    >
+                      <Link className="h-4 w-4 text-blue-500" />
                     </Button>
                     <Button 
                       variant="ghost" 
@@ -293,14 +323,22 @@ export function CompanyManager() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="bg-gray-50 p-3 border-t">
+              <CardFooter className="bg-gray-50 p-3 border-t flex gap-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full"
+                  className="flex-1"
                   onClick={() => handleViewCompanyDetails(company.id)}
                 >
                   Ver Detalhes
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handlePortalManager(company)}
+                  title="Links de acesso"
+                >
+                  <Link className="h-4 w-4" />
                 </Button>
               </CardFooter>
             </Card>
