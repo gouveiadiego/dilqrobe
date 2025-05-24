@@ -209,6 +209,7 @@ export type Database = {
           expires_at: string | null
           id: string
           is_active: boolean
+          password_hash: string
           updated_at: string
         }
         Insert: {
@@ -219,6 +220,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean
+          password_hash: string
           updated_at?: string
         }
         Update: {
@@ -229,6 +231,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean
+          password_hash?: string
           updated_at?: string
         }
         Relationships: [
