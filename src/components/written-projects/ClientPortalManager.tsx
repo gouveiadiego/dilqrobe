@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link, Copy, Eye, EyeOff, Trash2, Plus } from "lucide-react";
+import { Link, Copy, Eye, EyeOff, Trash2, Plus, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import bcrypt from "bcryptjs";
 
@@ -162,6 +162,11 @@ export function ClientPortalManager({ companyId, companyName }: ClientPortalMana
     toast.success('Link copiado para a área de transferência');
   };
 
+  const openInNewTab = (accessToken: string) => {
+    const link = `${window.location.origin}/client-portal/${accessToken}`;
+    window.open(link, '_blank');
+  };
+
   const getPortalUrl = (accessToken: string) => {
     return `${window.location.origin}/client-portal/${accessToken}`;
   };
@@ -291,17 +296,44 @@ export function ClientPortalManager({ companyId, companyName }: ClientPortalMana
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
-                    <Link className="h-4 w-4 text-gray-500" />
-                    <code className="text-sm flex-1 truncate">
+                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <Link className="h-4 w-4 text-blue-600" />
+                    <code className="text-sm flex-1 truncate text-blue-700 font-medium">
                       {getPortalUrl(link.access_token)}
                     </code>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => copyLinkToClipboard(link.access_token)}
+                      title="Copiar link"
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className="h-4 w-4 text-blue-600" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openInNewTab(link.access_token)}
+                      title="Abrir em nova aba"
+                    >
+                      <ExternalLink className="h-4 w-4 text-blue-600" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={() => copyLinkToClipboard(link.access_token)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar Link
+                    </Button>
+                    <Button
+                      onClick={() => openInNewTab(link.access_token)}
+                      variant="outline"
+                      className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Abrir Portal
                     </Button>
                   </div>
                   
