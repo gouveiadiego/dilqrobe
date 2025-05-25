@@ -1,4 +1,3 @@
 
-import { useToast, toast } from "@/hooks/use-toast";
-
-export { useToast, toast };
+// Redirect to the correct hook location
+export { useToast, toast } from "@/hooks/use-toast";

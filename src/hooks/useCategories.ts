@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { handleApiError, handleSuccess } from "@/utils/errorHandler";
 
 export type CategoryType = "expense" | "income";
 
@@ -15,7 +15,7 @@ export interface Category {
 export const useCategories = () => {
   const queryClient = useQueryClient();
 
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], isLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       console.log("Fetching categories");
@@ -26,14 +26,11 @@ export const useCategories = () => {
       
       if (error) {
         console.error("Error fetching categories:", error);
-        toast.error('Erro ao carregar categorias');
         throw error;
       }
       
-      // Transform the data to ensure type is CategoryType
       const transformedData = data.map(category => ({
         ...category,
-        // Ensure type is either "expense" or "income", defaulting to "expense"
         type: (category.type === "income" ? "income" : "expense") as CategoryType
       }));
       
@@ -44,7 +41,6 @@ export const useCategories = () => {
 
   const addCategoryMutation = useMutation({
     mutationFn: async ({ name, type }: { name: string; type?: CategoryType }) => {
-      // Log the parameters to debug
       console.log("Adding category:", { name, type });
       
       const { data: { user } } = await supabase.auth.getUser();
@@ -54,7 +50,7 @@ export const useCategories = () => {
         .from('categories')
         .insert([{
           name,
-          type: type || 'expense', // Default to expense if not specified
+          type: type || 'expense',
           user_id: user.id
         }])
         .select()
@@ -62,11 +58,9 @@ export const useCategories = () => {
 
       if (error) {
         console.error("Error adding category:", error);
-        toast.error('Erro ao adicionar categoria');
         throw error;
       }
 
-      // Transform to ensure type compatibility
       return {
         ...data,
         type: (data.type === "income" ? "income" : "expense") as CategoryType
@@ -74,10 +68,10 @@ export const useCategories = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Categoria adicionada com sucesso');
+      handleSuccess('Categoria adicionada com sucesso');
     },
     onError: (error) => {
-      console.error("Mutation error:", error);
+      handleApiError(error, 'Erro ao adicionar categoria');
     }
   });
 
@@ -94,13 +88,15 @@ export const useCategories = () => {
 
       if (error) {
         console.error("Error updating category:", error);
-        toast.error('Erro ao atualizar categoria');
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Categoria atualizada com sucesso');
+      handleSuccess('Categoria atualizada com sucesso');
+    },
+    onError: (error) => {
+      handleApiError(error, 'Erro ao atualizar categoria');
     }
   });
 
@@ -113,24 +109,27 @@ export const useCategories = () => {
 
       if (error) {
         console.error("Error deleting category:", error);
-        toast.error('Erro ao excluir categoria');
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Categoria excluída com sucesso');
+      handleSuccess('Categoria excluída com sucesso');
+    },
+    onError: (error) => {
+      handleApiError(error, 'Erro ao excluir categoria');
     }
   });
 
   return {
     categories,
+    isLoading,
     addCategory: (params: { name: string; type?: CategoryType }) => {
       console.log("addCategory called with params:", params);
       if (!categories.some(cat => cat.name === params.name)) {
         addCategoryMutation.mutate(params);
       } else {
-        toast.error('Esta categoria já existe');
+        handleApiError('Esta categoria já existe');
       }
     },
     updateCategory: updateCategoryMutation.mutate,

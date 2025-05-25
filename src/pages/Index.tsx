@@ -3,7 +3,7 @@ import { useState } from "react";
 import { AddTask } from "@/components/AddTask";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/hooks/use-toast";
+import { handleApiError, handleSuccess } from "@/utils/errorHandler";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryManager } from "@/components/CategoryManager";
@@ -26,6 +26,8 @@ import { WrittenProjectsTab } from "@/components/WrittenProjectsTab";
 import { HabitsTab } from "@/components/HabitsTab";
 import { HabitReminder } from "@/components/HabitReminder";
 import { MeetingsTab } from "@/components/MeetingsTab";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings';
 
@@ -54,6 +56,7 @@ const Index = () => {
 
   const {
     categories,
+    isLoading: categoriesLoading,
     addCategory,
     updateCategory,
     deleteCategory
@@ -62,11 +65,11 @@ const Index = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      toast.success("Logout realizado com sucesso!");
+      handleSuccess("Logout realizado com sucesso!");
       navigate("/login");
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
-      toast.error("Erro ao fazer logout");
+      handleApiError(error, "Erro ao fazer logout");
     }
   };
 
@@ -136,6 +139,10 @@ const Index = () => {
     });
   };
 
+  if (isLoading) {
+    return <LoadingSpinner size="lg" text="Carregando..." className="h-screen" />;
+  }
+
   return (
     <div className="min-h-screen bg-white text-gray-900 transition-colors duration-300">
       <HabitReminder />
@@ -188,31 +195,46 @@ const Index = () => {
                     <AddTask onAdd={addTask} categories={categories} sections={sections} />
                   </div>
                   <div className="futuristic-card transition-all duration-300 hover:shadow-lg">
-                    <CategoryManager 
-                      categories={categories} 
-                      onAddCategory={addCategory}
-                      onUpdateCategory={updateCategory}
-                      onDeleteCategory={deleteCategory}
-                    />
+                    {categoriesLoading ? (
+                      <LoadingSpinner text="Carregando categorias..." />
+                    ) : (
+                      <CategoryManager 
+                        categories={categories} 
+                        onAddCategory={addCategory}
+                        onUpdateCategory={updateCategory}
+                        onDeleteCategory={deleteCategory}
+                      />
+                    )}
                   </div>
                 </div>
                 
                 <div className="mt-10 p-6 bg-gradient-to-br from-white/80 to-gray-50/80 backdrop-blur-sm border border-gray-100 rounded-xl shadow-md">
-                  <TaskList
-                    tasks={filteredTasks}
-                    onToggleTask={toggleTask}
-                    onDeleteTask={deleteTask}
-                    onUpdateTask={handleUpdateTask}
-                    categories={categories}
-                    showThisWeek={showThisWeek}
-                    setShowThisWeek={setShowThisWeek}
-                    showThisMonth={showThisMonth}
-                    setShowThisMonth={setShowThisMonth}
-                    showOlder={showOlder}
-                    setShowOlder={setShowOlder}
-                    onAddSubtask={() => {}}
-                    onToggleSubtask={() => {}}
-                  />
+                  {filteredTasks.length === 0 ? (
+                    <EmptyState
+                      title="Nenhuma tarefa encontrada"
+                      description="Adicione sua primeira tarefa para começar a organizar seu trabalho."
+                      action={{
+                        label: "Nova Tarefa",
+                        onClick: () => {}
+                      }}
+                    />
+                  ) : (
+                    <TaskList
+                      tasks={filteredTasks}
+                      onToggleTask={toggleTask}
+                      onDeleteTask={deleteTask}
+                      onUpdateTask={handleUpdateTask}
+                      categories={categories}
+                      showThisWeek={showThisWeek}
+                      setShowThisWeek={setShowThisWeek}
+                      showThisMonth={showThisMonth}
+                      setShowThisMonth={setShowThisMonth}
+                      showOlder={showOlder}
+                      setShowOlder={setShowOlder}
+                      onAddSubtask={() => {}}
+                      onToggleSubtask={() => {}}
+                    />
+                  )}
                 </div>
 
                 <div className="p-6 bg-white/90 backdrop-blur-lg border border-gray-100 rounded-xl shadow-md transition-all duration-300 hover:shadow-xl">

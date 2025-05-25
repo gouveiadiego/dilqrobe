@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { handleApiError, handleSuccess } from "@/utils/errorHandler";
 import { Client } from "@/hooks/useClients";
 
 export interface Meeting {
@@ -41,11 +41,9 @@ export const useMeetings = () => {
         .order('meeting_date', { ascending: true });
 
       if (error) {
-        toast.error('Erro ao carregar reuniões');
         throw error;
       }
 
-      // Cast the data to the Meeting type after converting it to unknown first
       return (data as unknown) as Meeting[];
     }
   });
@@ -65,7 +63,6 @@ export const useMeetings = () => {
         .single();
 
       if (error) {
-        toast.error('Erro ao adicionar reunião');
         throw error;
       }
 
@@ -73,7 +70,10 @@ export const useMeetings = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
-      toast.success('Reunião agendada com sucesso');
+      handleSuccess('Reunião agendada com sucesso');
+    },
+    onError: (error) => {
+      handleApiError(error, 'Erro ao adicionar reunião');
     }
   });
 
@@ -85,13 +85,15 @@ export const useMeetings = () => {
         .eq('id', id);
 
       if (error) {
-        toast.error('Erro ao atualizar reunião');
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
-      toast.success('Reunião atualizada com sucesso');
+      handleSuccess('Reunião atualizada com sucesso');
+    },
+    onError: (error) => {
+      handleApiError(error, 'Erro ao atualizar reunião');
     }
   });
 
@@ -103,13 +105,15 @@ export const useMeetings = () => {
         .eq('id', id);
 
       if (error) {
-        toast.error('Erro ao deletar reunião');
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
-      toast.success('Reunião removida com sucesso');
+      handleSuccess('Reunião removida com sucesso');
+    },
+    onError: (error) => {
+      handleApiError(error, 'Erro ao deletar reunião');
     }
   });
 
@@ -121,13 +125,15 @@ export const useMeetings = () => {
         .eq('id', id);
 
       if (error) {
-        toast.error('Erro ao atualizar status da reunião');
         throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['meetings'] });
-      toast.success('Status da reunião atualizado');
+      handleSuccess('Status da reunião atualizado');
+    },
+    onError: (error) => {
+      handleApiError(error, 'Erro ao atualizar status da reunião');
     }
   });
 

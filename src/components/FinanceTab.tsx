@@ -17,6 +17,9 @@ import { TransactionCalendarView } from "./finance/TransactionCalendarView";
 import { FinancialSummaryView } from "./finance/FinancialSummaryView";
 import { TransactionsTable } from "./finance/TransactionsTable";
 import { useTransactions } from "@/hooks/useTransactions";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { EmptyState } from "@/components/ui/empty-state";
+import { handleApiError, handleSuccess } from "@/utils/errorHandler";
 import {
   Tabs,
   TabsContent,
@@ -24,7 +27,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 export const FinanceTab = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -84,12 +86,12 @@ export const FinanceTab = () => {
       
       if (fetchError) {
         console.error('Error fetching transaction:', fetchError);
-        toast.error("Erro ao buscar detalhes da transação");
+        handleApiError(fetchError, "Erro ao buscar detalhes da transação");
         return;
       }
       
       if (!transaction) {
-        toast.error("Transação não encontrada");
+        handleApiError("Transação não encontrada");
         return;
       }
       
@@ -97,7 +99,7 @@ export const FinanceTab = () => {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          toast.error("Usuário não autenticado");
+          handleApiError("Usuário não autenticado");
           return;
         }
         
@@ -113,11 +115,11 @@ export const FinanceTab = () => {
           
         if (deleteError) {
           console.error('Error deleting recurring transactions:', deleteError);
-          toast.error("Erro ao excluir todas as transações recorrentes");
+          handleApiError(deleteError, "Erro ao excluir todas as transações recorrentes");
           return;
         }
         
-        toast.success("Todas as transações recorrentes foram excluídas");
+        handleSuccess("Todas as transações recorrentes foram excluídas");
       } else {
         const { error: deleteError } = await supabase
           .from('transactions')
@@ -126,17 +128,17 @@ export const FinanceTab = () => {
           
         if (deleteError) {
           console.error('Error deleting transaction:', deleteError);
-          toast.error("Erro ao excluir transação");
+          handleApiError(deleteError, "Erro ao excluir transação");
           return;
         }
         
-        toast.success("Transação excluída com sucesso");
+        handleSuccess("Transação excluída com sucesso");
       }
       
       fetchTransactions();
     } catch (error) {
       console.error('Error in handleDeleteRecurringTransaction:', error);
-      toast.error("Erro ao processar a exclusão da transação");
+      handleApiError(error, "Erro ao processar a exclusão da transação");
     }
   };
 
@@ -164,10 +166,17 @@ export const FinanceTab = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
+      handleSuccess("Dados exportados com sucesso");
     } catch (error) {
       console.error('Error exporting data:', error);
+      handleApiError(error, "Erro ao exportar dados");
     }
   };
+
+  if (loading) {
+    return <LoadingSpinner size="lg" text="Carregando transações..." className="h-64" />;
+  }
 
   return (
     <div className="space-y-6">
@@ -288,14 +297,25 @@ export const FinanceTab = () => {
 
         {(viewMode === "list" || viewMode === "dashboard") && (
           <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <TransactionsTable 
-              transactions={filteredTransactions}
-              onDelete={handleDeleteTransaction}
-              onToggleStatus={togglePaymentStatus}
-              onEdit={handleEditTransaction}
-              onDeleteRecurring={handleDeleteRecurringTransaction}
-              loading={loading}
-            />
+            {filteredTransactions.length === 0 ? (
+              <EmptyState
+                title="Nenhuma transação encontrada"
+                description="Adicione sua primeira transação para começar a gerenciar suas finanças."
+                action={{
+                  label: "Nova Transação",
+                  onClick: () => setShowNewTransactionForm(true)
+                }}
+              />
+            ) : (
+              <TransactionsTable 
+                transactions={filteredTransactions}
+                onDelete={handleDeleteTransaction}
+                onToggleStatus={togglePaymentStatus}
+                onEdit={handleEditTransaction}
+                onDeleteRecurring={handleDeleteRecurringTransaction}
+                loading={loading}
+              />
+            )}
           </div>
         )}
       </div>
