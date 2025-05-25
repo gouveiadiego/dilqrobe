@@ -16,6 +16,10 @@ import { Trash2, Edit, Plus } from "lucide-react";
 import { supabase, deleteJournalEntry, fetchJournalEntries } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { EmptyState } from "@/components/ui/empty-state";
+import { usePagination } from "@/hooks/usePagination";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 interface JournalEntry {
   id: string;
@@ -33,8 +37,16 @@ export function JournalsTab() {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry | null>(null);
   const [editContent, setEditContent] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const {
+    paginatedData: paginatedEntries,
+    currentPage,
+    totalPages,
+    goToPage,
+    hasNextPage,
+    hasPrevPage
+  } = usePagination({ data: entries, itemsPerPage: 6 });
   
-  // Fetch journal entries on component mount
   useEffect(() => {
     loadEntries();
   }, []);
@@ -84,8 +96,6 @@ export function JournalsTab() {
       
       toast.success("Entrada adicionada com sucesso!");
       setNewEntry("");
-      
-      // Add the new entry to the entries list
       setEntries([data as JournalEntry, ...entries]);
       setIsDialogOpen(false);
     } catch (error) {
@@ -106,19 +116,16 @@ export function JournalsTab() {
       const result = await deleteJournalEntry(entryId);
       
       if (result.success) {
-        // Update UI by removing the deleted entry
         setEntries(entries.filter(entry => entry.id !== entryId));
         toast.success("Entrada excluída com sucesso!");
       } else {
         toast.error("Erro ao excluir entrada");
         console.error("Delete operation returned success:false");
-        // Reload entries to ensure UI is in sync with database
         await loadEntries();
       }
     } catch (error) {
       console.error("Error deleting entry:", error);
       toast.error("Erro ao excluir entrada");
-      // Reload entries to ensure UI is in sync with database
       await loadEntries();
     } finally {
       setIsDeleting(false);
@@ -146,7 +153,6 @@ export function JournalsTab() {
         throw error;
       }
       
-      // Update the entry in the local state
       setEntries(
         entries.map((entry) =>
           entry.id === currentEntry.id
@@ -160,7 +166,6 @@ export function JournalsTab() {
     } catch (error) {
       console.error("Error updating entry:", error);
       toast.error("Erro ao atualizar entrada");
-      // Reload entries to ensure UI is in sync with database
       await loadEntries();
     } finally {
       setIsEditing(false);
@@ -178,16 +183,18 @@ export function JournalsTab() {
   };
   
   return (
-    <div className="space-y-6 p-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Meus Diários</h2>
+    <div className="space-y-4 md:space-y-6 p-2 md:p-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-xl md:text-2xl font-bold">Meus Diários</h2>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-1">
-              <Plus size={16} /> Nova Entrada
+            <Button className="flex items-center gap-1 w-full sm:w-auto">
+              <Plus size={16} /> 
+              <span className="sm:hidden">Nova Entrada</span>
+              <span className="hidden sm:inline">Nova Entrada</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="mx-4 sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Nova Entrada de Diário</DialogTitle>
             </DialogHeader>
@@ -196,14 +203,15 @@ export function JournalsTab() {
                 value={newEntry}
                 onChange={(e) => setNewEntry(e.target.value)}
                 placeholder="O que você está pensando hoje?"
-                rows={8}
-                className="w-full"
+                rows={6}
+                className="w-full resize-none"
               />
             </div>
             <DialogFooter className="mt-4">
               <Button 
                 onClick={handleNewEntry} 
                 disabled={isLoading || !newEntry.trim()}
+                className="w-full sm:w-auto"
               >
                 {isLoading ? "Salvando..." : "Salvar Entrada"}
               </Button>
@@ -213,46 +221,65 @@ export function JournalsTab() {
       </div>
       
       {isLoading && entries.length === 0 ? (
-        <div className="text-center p-10">Carregando entradas...</div>
+        <LoadingSpinner size="lg" text="Carregando entradas..." className="h-64" />
       ) : entries.length === 0 ? (
-        <div className="text-center p-10">
-          Você ainda não tem nenhuma entrada. Crie sua primeira entrada de diário!
-        </div>
+        <EmptyState
+          title="Nenhuma entrada encontrada"
+          description="Você ainda não tem nenhuma entrada. Crie sua primeira entrada de diário!"
+          action={{
+            label: "Nova Entrada",
+            onClick: () => setIsDialogOpen(true)
+          }}
+        />
       ) : (
-        <div className="grid grid-cols-1 gap-6">
-          {entries.map((entry) => (
-            <Card key={entry.id} className="overflow-hidden">
-              <CardHeader className="p-4 pb-2 flex flex-row justify-between items-start">
-                <CardTitle className="text-sm text-gray-500">
-                  {formatDate(entry.created_at)}
-                </CardTitle>
-                <div className="flex gap-2">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => openEditDialog(entry)}
-                  >
-                    <Edit size={16} />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => handleDeleteEntry(entry.id)}
-                    disabled={isDeleting}
-                  >
-                    <Trash2 size={16} className="text-red-500" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-2">
-                <div className="whitespace-pre-wrap">{entry.content}</div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            {paginatedEntries.map((entry) => (
+              <Card key={entry.id} className="overflow-hidden h-fit">
+                <CardHeader className="p-3 md:p-4 pb-2 flex flex-row justify-between items-start">
+                  <CardTitle className="text-sm text-gray-500 flex-1 mr-2">
+                    {formatDate(entry.created_at)}
+                  </CardTitle>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => openEditDialog(entry)}
+                      className="h-8 w-8"
+                    >
+                      <Edit size={14} />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleDeleteEntry(entry.id)}
+                      disabled={isDeleting}
+                      className="h-8 w-8"
+                    >
+                      <Trash2 size={14} className="text-red-500" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-3 md:p-4 pt-2">
+                  <div className="whitespace-pre-wrap text-sm md:text-base break-words line-clamp-6">
+                    {entry.content}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+            hasNextPage={hasNextPage}
+            hasPrevPage={hasPrevPage}
+            className="mt-6"
+          />
         </div>
       )}
       
-      {/* Edit Dialog */}
       {currentEntry && (
         <Dialog
           open={!!currentEntry}
@@ -260,7 +287,7 @@ export function JournalsTab() {
             if (!open) setCurrentEntry(null);
           }}
         >
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="mx-4 sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Editar Entrada</DialogTitle>
             </DialogHeader>
@@ -268,14 +295,15 @@ export function JournalsTab() {
               <Textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                rows={8}
-                className="w-full"
+                rows={6}
+                className="w-full resize-none"
               />
             </div>
             <DialogFooter className="mt-4">
               <Button 
                 onClick={handleEditEntry} 
                 disabled={isEditing || !editContent.trim()}
+                className="w-full sm:w-auto"
               >
                 {isEditing ? "Salvando..." : "Salvar Alterações"}
               </Button>

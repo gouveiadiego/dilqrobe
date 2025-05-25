@@ -179,13 +179,14 @@ export const FinanceTab = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center space-x-2">
+    <div className="space-y-4 md:space-y-6 p-2 md:p-0">
+      {/* Header responsivo */}
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+        <div className="flex items-center justify-center md:justify-start space-x-2">
           <Button variant="ghost" size="icon" onClick={handlePreviousMonth} className="hover:bg-gray-100">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="text-white px-4 py-2 rounded-md bg-dilq-purple hover:bg-dilq-accent transition-colors">
+          <div className="text-white px-3 py-2 rounded-md bg-dilq-purple hover:bg-dilq-accent transition-colors text-sm md:text-base">
             {formatMonth(currentDate)}
           </div>
           <Button variant="ghost" size="icon" onClick={handleNextMonth} className="hover:bg-gray-100">
@@ -193,79 +194,85 @@ export const FinanceTab = () => {
           </Button>
         </div>
 
+        {/* Tabs responsivas */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full md:w-auto">
-          <TabsList className="grid grid-cols-3 w-full md:w-[400px] bg-white/10 border border-white/20">
+          <TabsList className="grid grid-cols-3 w-full md:w-[300px] bg-white/10 border border-white/20">
             <TabsTrigger 
               value="dashboard" 
-              className="flex items-center gap-2 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-white/10"
+              className="flex items-center gap-1 text-xs md:text-sm data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-white/10"
             >
-              <LayoutDashboard className="h-4 w-4" />
+              <LayoutDashboard className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Dashboard</span>
             </TabsTrigger>
             <TabsTrigger 
               value="list" 
-              className="flex items-center gap-2 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-white/10"
+              className="flex items-center gap-1 text-xs md:text-sm data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-white/10"
             >
-              <List className="h-4 w-4" />
+              <List className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Lista</span>
             </TabsTrigger>
             <TabsTrigger 
               value="calendar" 
-              className="flex items-center gap-2 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-white/10"
+              className="flex items-center gap-1 text-xs md:text-sm data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-white/10"
             >
-              <CalendarDays className="h-4 w-4" />
+              <CalendarDays className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Calendário</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="md:ml-2 hidden md:flex border-dilq-purple/50 text-dilq-purple hover:bg-dilq-purple/10"
-          onClick={handleExportData}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Exportar
-        </Button>
       </div>
 
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-3">
-          <div className="relative flex-1 max-w-sm w-full">
+      {/* Controles e filtros */}
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col space-y-3 md:flex-row md:justify-between md:items-center md:space-y-0">
+          <div className="relative flex-1 max-w-full md:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input 
               placeholder="Pesquisar transações..." 
-              className="pl-9 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 w-full" 
+              className="pl-9 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500" 
               value={searchQuery} 
               onChange={e => setSearchQuery(e.target.value)} 
             />
           </div>
-          <div className="flex gap-2 w-full md:w-auto">
+          
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <Button 
               variant="outline" 
               size="sm"
-              className="flex md:hidden"
+              className="flex md:hidden order-2 sm:order-1"
               onClick={handleExportData}
             >
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>
+            
             <Button 
-              className="bg-black hover:bg-black/90 text-white w-full md:w-auto" 
+              variant="outline" 
+              size="sm"
+              className="hidden md:flex order-2 sm:order-1"
+              onClick={handleExportData}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+            
+            <Button 
+              className="bg-black hover:bg-black/90 text-white order-1 sm:order-2" 
               onClick={() => {
                 setEditingTransaction(null);
                 setShowNewTransactionForm(!showNewTransactionForm);
               }}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Nova Transação
+              <span className="hidden sm:inline">Nova Transação</span>
+              <span className="sm:hidden">Nova</span>
             </Button>
           </div>
         </div>
 
+        {/* Formulário */}
         {showNewTransactionForm && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
             <NewTransactionForm 
               selectedFilter={selectedFilter} 
               onTransactionCreated={handleTransactionCreated} 
@@ -274,8 +281,9 @@ export const FinanceTab = () => {
           </div>
         )}
 
+        {/* Conteúdo por visualização */}
         {viewMode === "dashboard" && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
             <FinancialSummaryView 
               income={summaries.income}
               expenses={summaries.expenses}
@@ -287,7 +295,7 @@ export const FinanceTab = () => {
         )}
 
         {viewMode === "calendar" && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
             <TransactionCalendarView 
               transactions={filteredTransactions} 
               onDateSelect={() => {}} 
@@ -296,7 +304,7 @@ export const FinanceTab = () => {
         )}
 
         {(viewMode === "list" || viewMode === "dashboard") && (
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm overflow-x-auto">
             {filteredTransactions.length === 0 ? (
               <EmptyState
                 title="Nenhuma transação encontrada"

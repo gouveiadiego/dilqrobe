@@ -22,23 +22,53 @@ export interface Meeting {
 
 export type NewMeeting = Omit<Meeting, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'client'>;
 
-export const useMeetings = () => {
-  const queryClient = useQueryClient();
+interface UseMeetingsOptions {
+  limit?: number;
+  offset?: number;
+  status?: Meeting['status'];
+  dateFrom?: string;
+  dateTo?: string;
+  searchQuery?: string;
+}
 
-  const { data: meetings = [], isLoading } = useQuery({
-    queryKey: ['meetings'],
+export const useMeetings = (options: UseMeetingsOptions = {}) => {
+  const queryClient = useQueryClient();
+  const { limit = 50, offset = 0, status, dateFrom, dateTo, searchQuery } = options;
+
+  const { data: meetings = [], isLoading, error } = useQuery({
+    queryKey: ['meetings', { limit, offset, status, dateFrom, dateTo, searchQuery }],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('client_meetings' as any)
         .select(`
           *,
           client:clients(*)
         `)
         .eq('user_id', user.id)
-        .order('meeting_date', { ascending: true });
+        .order('meeting_date', { ascending: true })
+        .range(offset, offset + limit - 1);
+
+      // Apply filters on the server side
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      if (dateFrom) {
+        query = query.gte('meeting_date', dateFrom);
+      }
+
+      if (dateTo) {
+        query = query.lte('meeting_date', dateTo);
+      }
+
+      if (searchQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%`);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         throw error;
@@ -140,6 +170,7 @@ export const useMeetings = () => {
   return {
     meetings,
     isLoading,
+    error,
     addMeeting: addMeeting.mutate,
     updateMeeting: updateMeeting.mutate,
     deleteMeeting: deleteMeeting.mutate,
