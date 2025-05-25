@@ -90,7 +90,7 @@ export const MeetingManager = () => {
     setSelectedDate(null);
   };
 
-  const hasActiveFilters = searchQuery || statusFilter !== "all" || selectedDate;
+  const hasActiveFilters = Boolean(searchQuery || statusFilter !== "all" || selectedDate);
 
   if (isLoading) {
     return <LoadingSpinner size="lg" text="Carregando reuniões..." className="h-64" />;
