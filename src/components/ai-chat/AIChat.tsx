@@ -180,7 +180,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
             <Bot className="h-4 w-4 text-[#9b87f5]" />
             Assistente IA
             {apiError && (
-              <AlertTriangle className="h-3 w-3 text-orange-500" title="Modo Offline" />
+              <AlertTriangle className="h-3 w-3 text-orange-500" />
             )}
           </CardTitle>
         </CardHeader>
