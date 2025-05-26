@@ -5,14 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Send, Bot, User, Sparkles, MessageCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Send, Bot, User, Sparkles, MessageCircle, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'error';
   timestamp: Date;
 }
 
@@ -32,6 +33,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([
     "Como posso ser mais produtivo?",
     "Resumo das minhas atividades",
@@ -47,6 +49,28 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
     }
   }, [messages]);
 
+  const getFallbackResponse = (messageText: string) => {
+    const message = messageText.toLowerCase();
+    
+    if (message.includes('produtivo') || message.includes('produtividade')) {
+      return "Para ser mais produtivo, recomendo: 1) Organizar suas tarefas por prioridade, 2) Usar a técnica Pomodoro, 3) Definir metas claras diárias, 4) Eliminar distrações durante o trabalho. Você pode adicionar essas práticas como hábitos no sistema!";
+    }
+    
+    if (message.includes('tarefa') || message.includes('task')) {
+      return "Para gerenciar melhor suas tarefas: vá até a aba 'Tarefas', organize por prioridade (Alta, Média, Baixa), defina prazos realistas e use as categorias para agrupar atividades similares. Você também pode usar o calendário para visualizar suas tarefas por data.";
+    }
+    
+    if (message.includes('financ') || message.includes('gasto') || message.includes('dinheiro')) {
+      return "Para controlar melhor suas finanças: acesse a aba 'Financeiro' para registrar receitas e despesas, use a aba 'Orçamento' para planejar gastos mensais, e categorize suas transações para ter uma visão clara de onde vai seu dinheiro.";
+    }
+    
+    if (message.includes('reunião') || message.includes('meeting')) {
+      return "Para organizar reuniões: use a aba 'Reuniões' para agendar compromissos, defina participantes, adicione notas e acompanhe o status. Você pode visualizar suas reuniões no calendário para melhor planejamento.";
+    }
+    
+    return "Desculpe, estou com dificuldades técnicas no momento. Enquanto isso, você pode: explorar as abas do sistema (Tarefas, Financeiro, Reuniões, Hábitos), organizar suas atividades, ou verificar o dashboard para insights. Tente novamente em alguns minutos!";
+  };
+
   const sendMessage = async (messageText: string) => {
     if (!messageText.trim() || isLoading) return;
 
@@ -60,12 +84,13 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
+    setApiError(null);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
       const context = messages.map(msg => ({
-        role: msg.role,
+        role: msg.role === 'error' ? 'assistant' : msg.role,
         content: msg.content
       }));
 
@@ -77,7 +102,10 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -92,11 +120,40 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         setSuggestions(data.suggestions);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
+      
+      // Detect specific error types
+      let errorMessage = '';
+      let fallbackResponse = '';
+      
+      if (error.message?.includes('429') || error.message?.includes('quota')) {
+        errorMessage = 'Cota da API OpenAI excedida. Usando modo offline.';
+        fallbackResponse = getFallbackResponse(messageText);
+        setApiError('quota_exceeded');
+      } else if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
+        errorMessage = 'Problema de autenticação com a API. Usando modo offline.';
+        fallbackResponse = getFallbackResponse(messageText);
+        setApiError('auth_error');
+      } else {
+        errorMessage = 'Erro na comunicação. Usando modo offline.';
+        fallbackResponse = getFallbackResponse(messageText);
+        setApiError('general_error');
+      }
+
+      // Add fallback response
+      const fallbackMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: fallbackResponse,
+        role: 'assistant',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, fallbackMessage]);
+
       toast({
-        title: "Erro na comunicação",
-        description: "Não foi possível enviar a mensagem. Tente novamente.",
+        title: "Modo Offline Ativado",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -122,9 +179,20 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
           <CardTitle className="text-sm flex items-center gap-2">
             <Bot className="h-4 w-4 text-[#9b87f5]" />
             Assistente IA
+            {apiError && (
+              <AlertTriangle className="h-3 w-3 text-orange-500" title="Modo Offline" />
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {apiError && (
+            <Alert className="py-2">
+              <AlertTriangle className="h-3 w-3" />
+              <AlertDescription className="text-xs">
+                Modo offline ativo
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="flex gap-2">
             <Input
               placeholder="Pergunte algo..."
@@ -160,14 +228,27 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
             <Sparkles className="h-4 w-4 text-white" />
           </div>
           Assistente Virtual IA
-          <Badge variant="secondary" className="ml-auto">
+          <Badge variant={apiError ? "destructive" : "secondary"} className="ml-auto">
             <MessageCircle className="h-3 w-3 mr-1" />
-            Online
+            {apiError ? "Offline" : "Online"}
           </Badge>
         </CardTitle>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0">
+        {apiError && (
+          <div className="p-3 border-b">
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {apiError === 'quota_exceeded' && "Cota da API OpenAI excedida. Funcionando em modo offline com respostas básicas."}
+                {apiError === 'auth_error' && "Problema de autenticação com a API. Verifique as configurações."}
+                {apiError === 'general_error' && "Problema temporário de conexão. Usando modo offline."}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((message) => (
@@ -185,6 +266,8 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                   className={`max-w-[80%] rounded-lg p-3 ${
                     message.role === 'user'
                       ? 'bg-[#9b87f5] text-white ml-auto'
+                      : message.role === 'error'
+                      ? 'bg-red-100 dark:bg-red-900 border border-red-200'
                       : 'bg-gray-100 dark:bg-gray-800'
                   }`}
                 >

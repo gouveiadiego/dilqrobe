@@ -19,7 +19,14 @@ serve(async (req) => {
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      console.error('OpenAI API key not configured');
+      return new Response(JSON.stringify({ 
+        error: 'API não configurada',
+        details: 'Chave da API OpenAI não configurada'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Initialize Supabase client to get user data
@@ -91,6 +98,8 @@ Comandos que você pode interpretar:
 
 ${userContext}`;
 
+    console.log('Making request to OpenAI API...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -112,7 +121,25 @@ ${userContext}`;
     if (!response.ok) {
       const errorData = await response.text();
       console.error('OpenAI API error:', response.status, errorData);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      
+      // Parse error details
+      let errorDetails;
+      try {
+        errorDetails = JSON.parse(errorData);
+      } catch {
+        errorDetails = { error: { message: errorData } };
+      }
+      
+      // Return specific error information
+      return new Response(JSON.stringify({ 
+        error: 'Erro na API OpenAI',
+        details: errorDetails.error?.message || 'Erro desconhecido',
+        status: response.status,
+        type: errorDetails.error?.type || 'unknown_error'
+      }), {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
@@ -135,8 +162,8 @@ ${userContext}`;
   } catch (error) {
     console.error('Error in ai-chat function:', error);
     return new Response(JSON.stringify({ 
-      error: 'Erro ao processar solicitação',
-      details: error.message 
+      error: 'Erro interno do servidor',
+      details: error.message || 'Erro desconhecido'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
