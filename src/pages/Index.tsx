@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { AddTask } from "@/components/AddTask";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,8 +27,10 @@ import { HabitReminder } from "@/components/HabitReminder";
 import { MeetingsTab } from "@/components/MeetingsTab";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
+import { AIAssistantTab } from "@/components/ai-chat/AIAssistantTab";
+import { AIChatWidget } from "@/components/ai-chat/AIChatWidget";
 
-type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings';
+type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -138,6 +139,8 @@ const Index = () => {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardTab />;
+      case 'ai-assistant':
+        return <AIAssistantTab />;
       case 'tasks':
         return (
           <div className="space-y-4 md:space-y-6 rounded-lg animate-fade-in">
@@ -272,6 +275,9 @@ const Index = () => {
           {renderTabContent()}
         </div>
       </main>
+
+      {/* AI Chat Widget */}
+      <AIChatWidget />
     </div>
   );
 };
