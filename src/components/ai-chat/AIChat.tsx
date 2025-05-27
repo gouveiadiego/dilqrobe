@@ -312,7 +312,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
 
   if (compact) {
     return (
-      <Card className={`${className} max-w-sm border-2 border-gradient-to-r from-[#9b87f5] to-[#33C3F0] shadow-lg`}>
+      <Card className={`${className} max-w-sm border-2 border-gradient-to-r from-[#9b87f5] to-[#33C3F0] shadow-lg bg-white`}>
         <CardHeader className="pb-3 bg-gradient-to-r from-[#9b87f5]/10 to-[#33C3F0]/10">
           <CardTitle className="text-sm flex items-center gap-2">
             <div className="relative">
@@ -325,7 +325,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 bg-white">
           {contextualInsights.length > 0 && (
             <div className="text-xs space-y-1">
               {contextualInsights.map((insight, index) => (
@@ -337,7 +337,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
           )}
           
           {apiError && (
-            <Alert className="py-2">
+            <Alert className="py-2 bg-white">
               <AlertTriangle className="h-3 w-3" />
               <AlertDescription className="text-xs">
                 Modo offline inteligente ativo
@@ -351,7 +351,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendMessage(inputMessage)}
-              className="text-xs border-[#9b87f5]/30"
+              className="text-xs border-[#9b87f5]/30 bg-white"
             />
             <Button 
               size="sm" 
@@ -374,7 +374,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
   }
 
   return (
-    <Card className={`${className} h-[700px] flex flex-col border-2 border-gradient-to-r from-[#9b87f5] to-[#33C3F0] shadow-2xl`}>
+    <Card className={`${className} h-[700px] flex flex-col border-2 border-gradient-to-r from-[#9b87f5] to-[#33C3F0] shadow-2xl bg-white`}>
       <CardHeader className="border-b bg-gradient-to-r from-[#9b87f5]/20 to-[#33C3F0]/20 backdrop-blur-sm">
         <CardTitle className="flex items-center gap-3">
           <div className="relative">
@@ -414,10 +414,10 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         )}
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0">
+      <CardContent className="flex-1 flex flex-col p-0 bg-white">
         {apiError && (
           <div className="p-3 border-b bg-gradient-to-r from-orange-50 to-red-50">
-            <Alert className="border-orange-200">
+            <Alert className="border-orange-200 bg-white">
               <Brain className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-700">
                 <strong>Modo Offline Inteligente Ativado</strong><br />
@@ -429,7 +429,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
           </div>
         )}
 
-        <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1 p-4 bg-white" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -452,8 +452,8 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                     message.role === 'user'
                       ? 'bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] text-white ml-auto shadow-lg'
                       : message.role === 'error'
-                      ? 'bg-red-100 dark:bg-red-900 border border-red-200'
-                      : 'bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border border-gray-200 shadow-md'
+                      ? 'bg-red-50 border border-red-200 text-gray-900'
+                      : 'bg-white border border-gray-200 shadow-md text-gray-900'
                   }`}
                 >
                   <div className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</div>
@@ -481,7 +481,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                 </div>
 
                 {message.role === 'user' && (
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center flex-shrink-0">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center flex-shrink-0">
                     <User className="h-4 w-4" />
                   </div>
                 )}
@@ -493,7 +493,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                 <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] flex items-center justify-center">
                   <Brain className="h-4 w-4 text-white animate-pulse" />
                 </div>
-                <div className="bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-xl p-4 border border-gray-200 shadow-md">
+                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md">
                   <div className="flex items-center gap-3">
                     <Loader2 className="h-4 w-4 animate-spin text-[#9b87f5]" />
                     <span className="text-sm text-[#9b87f5] font-medium">Processando com IA avançada...</span>
@@ -519,11 +519,11 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className={`text-xs h-auto py-2 px-3 justify-start border-2 transition-all hover:scale-105 ${
+                    className={`text-xs h-auto py-2 px-3 justify-start border-2 transition-all hover:scale-105 bg-white ${
                       suggestion.priority === 'high' 
-                        ? 'border-red-200 hover:border-red-300 bg-red-50' 
+                        ? 'border-red-200 hover:border-red-300 hover:bg-red-50' 
                         : suggestion.priority === 'medium'
-                        ? 'border-yellow-200 hover:border-yellow-300 bg-yellow-50'
+                        ? 'border-yellow-200 hover:border-yellow-300 hover:bg-yellow-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                     disabled={isLoading}
@@ -545,13 +545,13 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendMessage(inputMessage)}
               disabled={isLoading}
-              className="flex-1 border-[#9b87f5]/30 focus:border-[#9b87f5] transition-colors"
+              className="flex-1 border-[#9b87f5]/30 focus:border-[#9b87f5] transition-colors bg-white"
             />
             <Button
               onClick={startVoiceRecognition}
               disabled={isLoading || isListening}
               variant="outline"
-              className="border-[#9b87f5]/30 hover:bg-[#9b87f5]/10"
+              className="border-[#9b87f5]/30 hover:bg-[#9b87f5]/10 bg-white"
             >
               {isListening ? (
                 <MicOff className="h-4 w-4 text-red-500" />
