@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -38,6 +37,34 @@
     @apply bg-background text-foreground font-sans;
     font-family: 'Poppins', 'Inter', sans-serif;
   }
+}
+
+/* Force white background for tables */
+.services-table {
+  @apply bg-white;
+}
+
+.services-table table,
+.services-table thead,
+.services-table tbody,
+.services-table tr,
+.services-table th,
+.services-table td {
+  @apply bg-white !important;
+}
+
+.services-table tr:hover {
+  @apply bg-gray-50 !important;
+}
+
+/* Ensure table headers have proper styling */
+.services-table th {
+  @apply bg-gray-50 text-gray-700 font-medium !important;
+}
+
+/* Ensure table cells have proper text color */
+.services-table td {
+  @apply text-gray-900 !important;
 }
 
 /* Priority styles */

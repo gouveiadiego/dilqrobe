@@ -756,10 +756,10 @@ export function ServicesTab() {
               {Object.entries(groupedServices).map(([clientId, {
               clientName,
               services
-            }]) => <div key={clientId} className="border border-gray-200 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
-                  <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+            }]) => <div key={clientId} className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                  <div className="flex justify-between items-center bg-gray-50 px-4 py-3 border-b border-gray-200">
                     <div className="flex items-center gap-2">
-                      <h3 className="font-medium">{clientName}</h3>
+                      <h3 className="font-medium text-gray-900">{clientName}</h3>
                     </div>
                     <Button variant="ghost" size="sm" className="text-gray-500 hover:text-indigo-600" onClick={() => {
                       handleToggleClientSelection(clientId);
@@ -769,52 +769,54 @@ export function ServicesTab() {
                     </Button>
                   </div>
                   
-                  <Table>
-                    <TableHeader className="bg-gray-50 dark:bg-gray-800">
-                      <TableRow>
-                        <TableHead className="w-[180px]">Data</TableHead>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead>Nome da Empresa/Cliente</TableHead>
-                        <TableHead>Etapa</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Valor</TableHead>
-                        <TableHead className="text-center">Pagamento</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {services.map(service => <TableRow key={service.id}>
-                          <TableCell className="font-medium">
-                            {format(new Date(service.start_date), "dd/MM/yyyy")}
-                          </TableCell>
-                          <TableCell>{service.service_description}</TableCell>
-                          <TableCell>{service.company_name}</TableCell>
-                          <TableCell>{service.stage}</TableCell>
-                          <TableCell>{service.status}</TableCell>
-                          <TableCell className="text-right font-semibold">
-                            {formatCurrency(service.amount)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Button variant="ghost" size="sm" onClick={() => togglePaymentStatus(service.id, service.payment_status)} className={`rounded-full px-3 py-1 text-xs font-medium ${service.payment_status === 'paid' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : service.payment_status === 'canceled' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'}`}>
-                              {service.payment_status === 'paid' && 'Pago'}
-                              {service.payment_status === 'pending' && 'Pendente'}
-                              {service.payment_status === 'canceled' && 'Cancelado'}
-                            </Button>
-                          </TableCell>
-                          <TableCell className="text-right space-x-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(service)} className="h-8 w-8">
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => {
+                  <div className="bg-white">
+                    <Table>
+                      <TableHeader className="bg-gray-50">
+                        <TableRow className="border-b border-gray-200">
+                          <TableHead className="w-[180px] text-gray-700 font-medium">Data</TableHead>
+                          <TableHead className="text-gray-700 font-medium">Descrição</TableHead>
+                          <TableHead className="text-gray-700 font-medium">Nome da Empresa/Cliente</TableHead>
+                          <TableHead className="text-gray-700 font-medium">Etapa</TableHead>
+                          <TableHead className="text-gray-700 font-medium">Status</TableHead>
+                          <TableHead className="text-right text-gray-700 font-medium">Valor</TableHead>
+                          <TableHead className="text-center text-gray-700 font-medium">Pagamento</TableHead>
+                          <TableHead className="text-right text-gray-700 font-medium">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="bg-white">
+                        {services.map(service => <TableRow key={service.id} className="border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors">
+                            <TableCell className="font-medium text-gray-900 bg-white">
+                              {format(new Date(service.start_date), "dd/MM/yyyy")}
+                            </TableCell>
+                            <TableCell className="text-gray-900 bg-white">{service.service_description}</TableCell>
+                            <TableCell className="text-gray-900 bg-white">{service.company_name}</TableCell>
+                            <TableCell className="text-gray-900 bg-white">{service.stage}</TableCell>
+                            <TableCell className="text-gray-900 bg-white">{service.status}</TableCell>
+                            <TableCell className="text-right font-semibold text-gray-900 bg-white">
+                              {formatCurrency(service.amount)}
+                            </TableCell>
+                            <TableCell className="text-center bg-white">
+                              <Button variant="ghost" size="sm" onClick={() => togglePaymentStatus(service.id, service.payment_status)} className={`rounded-full px-3 py-1 text-xs font-medium ${service.payment_status === 'paid' ? 'bg-green-100 text-green-800' : service.payment_status === 'canceled' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                {service.payment_status === 'paid' && 'Pago'}
+                                {service.payment_status === 'pending' && 'Pendente'}
+                                {service.payment_status === 'canceled' && 'Cancelado'}
+                              </Button>
+                            </TableCell>
+                            <TableCell className="text-right space-x-1 bg-white">
+                              <Button variant="ghost" size="icon" onClick={() => handleEdit(service)} className="h-8 w-8 text-gray-600 hover:text-gray-800">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => {
                         setServiceToDelete(service.id);
                         setShowDeleteDialog(true);
                       }} className="h-8 w-8 text-red-500 hover:text-red-600">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>)}
-                    </TableBody>
-                  </Table>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>)}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>)}
             </div>
           </div>
