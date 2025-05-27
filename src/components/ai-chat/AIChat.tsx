@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -329,7 +328,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
           {contextualInsights.length > 0 && (
             <div className="text-xs space-y-1">
               {contextualInsights.map((insight, index) => (
-                <div key={index} className="p-2 bg-blue-50 rounded text-blue-700 border border-blue-200">
+                <div key={index} className="p-2 bg-blue-50 rounded text-blue-700 border border-blue-200 break-words">
                   {insight}
                 </div>
               ))}
@@ -339,7 +338,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
           {apiError && (
             <Alert className="py-2 bg-white">
               <AlertTriangle className="h-3 w-3" />
-              <AlertDescription className="text-xs">
+              <AlertDescription className="text-xs break-words">
                 Modo offline inteligente ativo
               </AlertDescription>
             </Alert>
@@ -357,14 +356,14 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
               size="sm" 
               onClick={() => sendMessage(inputMessage)}
               disabled={isLoading}
-              className="bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] hover:from-[#7E69AB] hover:to-[#2AA3D0]"
+              className="bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] hover:from-[#7E69AB] hover:to-[#2AA3D0] flex-shrink-0"
             >
               {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
             </Button>
           </div>
           
           {messages.length > 1 && (
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-500 break-words">
               💡 {messages[messages.length - 1]?.content.substring(0, 50)}...
             </div>
           )}
@@ -377,13 +376,13 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
     <Card className={`${className} h-[700px] flex flex-col border-2 border-gradient-to-r from-[#9b87f5] to-[#33C3F0] shadow-2xl bg-white`}>
       <CardHeader className="border-b bg-gradient-to-r from-[#9b87f5]/20 to-[#33C3F0]/20 backdrop-blur-sm">
         <CardTitle className="flex items-center gap-3">
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <div className="h-10 w-10 rounded-full bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] flex items-center justify-center">
               <Brain className="h-5 w-5 text-white animate-pulse" />
             </div>
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse border-2 border-white"></div>
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="text-xl font-bold bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] bg-clip-text text-transparent">
               DilQ Orbe AI - Próxima Geração
             </div>
@@ -391,7 +390,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
               Assistente Inteligente com IA Avançada
             </div>
           </div>
-          <Badge variant={apiError ? "destructive" : "secondary"} className="ml-auto">
+          <Badge variant={apiError ? "destructive" : "secondary"} className="ml-auto flex-shrink-0">
             <div className="flex items-center gap-1">
               {apiError ? (
                 <AlertTriangle className="h-3 w-3" />
@@ -404,9 +403,9 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         </CardTitle>
         
         {contextualInsights.length > 0 && (
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-2 flex-wrap">
             {contextualInsights.map((insight, index) => (
-              <div key={index} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full border border-blue-200">
+              <div key={index} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full border border-blue-200 break-words">
                 {insight}
               </div>
             ))}
@@ -418,8 +417,8 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         {apiError && (
           <div className="p-3 border-b bg-gradient-to-r from-orange-50 to-red-50">
             <Alert className="border-orange-200 bg-white">
-              <Brain className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="text-orange-700">
+              <Brain className="h-4 w-4 text-orange-600 flex-shrink-0" />
+              <AlertDescription className="text-orange-700 break-words">
                 <strong>Modo Offline Inteligente Ativado</strong><br />
                 {apiError === 'quota_exceeded' && "Cota da API OpenAI excedida. Usando IA local para continuar ajudando."}
                 {apiError === 'auth_error' && "Problema de autenticação. Funcionando com capacidades offline avançadas."}
@@ -437,8 +436,8 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                 className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {message.role === 'assistant' && (
-                  <div className="relative">
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] flex items-center justify-center flex-shrink-0">
+                  <div className="relative flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] flex items-center justify-center">
                       <Brain className="h-4 w-4 text-white" />
                     </div>
                     {message.category && (
@@ -448,7 +447,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                 )}
                 
                 <div
-                  className={`max-w-[80%] rounded-xl p-4 ${
+                  className={`max-w-[80%] rounded-xl p-4 min-w-0 ${
                     message.role === 'user'
                       ? 'bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] text-white ml-auto shadow-lg'
                       : message.role === 'error'
@@ -456,7 +455,9 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                       : 'bg-white border border-gray-200 shadow-md text-gray-900'
                   }`}
                 >
-                  <div className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</div>
+                  <div className="text-sm whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
+                    {message.content}
+                  </div>
                   <div className={`flex items-center justify-between mt-3 pt-2 border-t ${
                     message.role === 'user' 
                       ? 'border-white/20' 
@@ -467,7 +468,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                     }`}>
                       {formatTime(message.timestamp)}
                     </span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       {message.sentiment && (
                         <span className={`text-xs ${getSentimentColor(message.sentiment)}`}>
                           {message.sentiment === 'positive' ? '😊' : message.sentiment === 'negative' ? '😟' : '😐'}
@@ -490,13 +491,13 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
             
             {isLoading && (
               <div className="flex gap-3 justify-start">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] flex items-center justify-center">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] flex items-center justify-center flex-shrink-0">
                   <Brain className="h-4 w-4 text-white animate-pulse" />
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md">
+                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md max-w-[80%] min-w-0">
                   <div className="flex items-center gap-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-[#9b87f5]" />
-                    <span className="text-sm text-[#9b87f5] font-medium">Processando com IA avançada...</span>
+                    <Loader2 className="h-4 w-4 animate-spin text-[#9b87f5] flex-shrink-0" />
+                    <span className="text-sm text-[#9b87f5] font-medium break-words">Processando com IA avançada...</span>
                   </div>
                 </div>
               </div>
@@ -507,7 +508,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         {smartSuggestions.length > 0 && (
           <div className="border-t p-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50">
             <p className="text-sm font-semibold mb-3 text-gray-700 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#9b87f5]" />
+              <Sparkles className="h-4 w-4 text-[#9b87f5] flex-shrink-0" />
               Sugestões Inteligentes
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -519,7 +520,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                     variant="outline"
                     size="sm"
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className={`text-xs h-auto py-2 px-3 justify-start border-2 transition-all hover:scale-105 bg-white ${
+                    className={`text-xs h-auto py-2 px-3 justify-start border-2 transition-all hover:scale-105 bg-white min-w-0 ${
                       suggestion.priority === 'high' 
                         ? 'border-red-200 hover:border-red-300 hover:bg-red-50' 
                         : suggestion.priority === 'medium'
@@ -528,8 +529,8 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                     }`}
                     disabled={isLoading}
                   >
-                    <IconComponent className="h-3 w-3 mr-2" />
-                    {suggestion.text}
+                    <IconComponent className="h-3 w-3 mr-2 flex-shrink-0" />
+                    <span className="break-words overflow-hidden text-ellipsis">{suggestion.text}</span>
                   </Button>
                 );
               })}
@@ -545,13 +546,13 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendMessage(inputMessage)}
               disabled={isLoading}
-              className="flex-1 border-[#9b87f5]/30 focus:border-[#9b87f5] transition-colors bg-white"
+              className="flex-1 border-[#9b87f5]/30 focus:border-[#9b87f5] transition-colors bg-white min-w-0"
             />
             <Button
               onClick={startVoiceRecognition}
               disabled={isLoading || isListening}
               variant="outline"
-              className="border-[#9b87f5]/30 hover:bg-[#9b87f5]/10 bg-white"
+              className="border-[#9b87f5]/30 hover:bg-[#9b87f5]/10 bg-white flex-shrink-0"
             >
               {isListening ? (
                 <MicOff className="h-4 w-4 text-red-500" />
@@ -562,7 +563,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
             <Button 
               onClick={() => sendMessage(inputMessage)}
               disabled={isLoading || !inputMessage.trim()}
-              className="bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] hover:from-[#7E69AB] hover:to-[#2AA3D0] shadow-lg transition-all hover:scale-105"
+              className="bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] hover:from-[#7E69AB] hover:to-[#2AA3D0] shadow-lg transition-all hover:scale-105 flex-shrink-0"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
