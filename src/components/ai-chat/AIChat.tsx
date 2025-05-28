@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Send, Bot, User, Sparkles, MessageCircle, Loader2, AlertTriangle, Mic, MicOff, Brain, Zap, TrendingUp, Calendar, DollarSign, Target } from "lucide-react";
+import { Send, Bot, User, Sparkles, MessageCircle, Loader2, AlertTriangle, Mic, MicOff, Brain, Zap, TrendingUp, Calendar, DollarSign, Target, Wifi, WifiOff, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,6 +17,7 @@ interface Message {
   sentiment?: 'positive' | 'negative' | 'neutral';
   actionable?: boolean;
   category?: string;
+  provider?: string;
 }
 
 interface SmartSuggestion {
@@ -35,16 +36,18 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: '🚀 Olá! Sou o **DilQ Orbe AI** - seu assistente virtual de próxima geração. Posso analisar seus dados, prever tendências, automatizar tarefas e muito mais. Estou aqui para turbinar sua produtividade!\n\n*Dica: Experimente comandos como "analise meu desempenho esta semana" ou "crie um plano de ação para amanhã"*',
+      content: '🚀 Olá! Sou o **DilQ Orbe AI** - seu assistente virtual de próxima geração com **sistema híbrido de IA**. Agora uso múltiplas APIs (OpenAI + Google Gemini) para garantir disponibilidade 24/7!\n\n✨ **Novidades:**\n• Sistema de fallback inteligente\n• Sempre online, mesmo com problemas de API\n• Respostas mais rápidas e confiáveis\n\n*Experimente: "analise meu desempenho" ou "crie um plano para hoje"*',
       role: 'assistant',
       timestamp: new Date(),
       sentiment: 'positive',
-      category: 'welcome'
+      category: 'welcome',
+      provider: 'Sistema Híbrido'
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
+  const [apiStatus, setApiStatus] = useState<'online' | 'fallback' | 'offline'>('online');
+  const [currentProvider, setCurrentProvider] = useState<string>('Sistema Híbrido');
   const [isListening, setIsListening] = useState(false);
   const [smartSuggestions, setSmartSuggestions] = useState<SmartSuggestion[]>([
     { text: "Analise meu desempenho desta semana", category: 'productivity', priority: 'high', icon: TrendingUp },
@@ -66,7 +69,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
   useEffect(() => {
     const generateContextualInsights = () => {
       const insights = [
-        "📊 Você tem 3 tarefas de alta prioridade pendentes",
+        "📊 Sistema híbrido ativo - máxima disponibilidade",
         "💰 Seus gastos este mês estão 15% abaixo do orçamento",
         "⏰ Melhor horário para produtividade: 9h-11h",
         "🎯 Taxa de conclusão de tarefas: 87% (acima da média!)"
@@ -190,7 +193,6 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
-    setApiError(null);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -216,13 +218,26 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         throw error;
       }
 
+      // Update API status based on provider used
+      if (data.provider) {
+        setCurrentProvider(data.provider);
+        if (data.provider === 'OpenAI') {
+          setApiStatus('online');
+        } else if (data.provider === 'Google Gemini') {
+          setApiStatus('fallback');
+        } else {
+          setApiStatus('offline');
+        }
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data.response,
         role: 'assistant',
         timestamp: new Date(),
         sentiment: 'positive',
-        category: data.category || 'general'
+        category: data.category || 'general',
+        provider: data.provider
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -231,63 +246,40 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         generateSmartSuggestions(messageText, data.response);
       }
 
+      // Show success toast for fallback
+      if (data.provider === 'Google Gemini') {
+        toast({
+          title: "🔄 Sistema de Fallback Ativo",
+          description: "Usando Google Gemini para garantir disponibilidade",
+        });
+      }
+
     } catch (error: any) {
       console.error('Error sending message:', error);
       
-      let errorMessage = '';
-      let fallbackResponse = '';
+      setApiStatus('offline');
+      setCurrentProvider('Modo Offline');
       
-      if (error.message?.includes('429') || error.message?.includes('quota')) {
-        errorMessage = 'Cota da API OpenAI excedida. Ativando modo offline inteligente.';
-        fallbackResponse = getAdvancedFallbackResponse(messageText);
-        setApiError('quota_exceeded');
-      } else if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
-        errorMessage = 'Problema de autenticação com a API. Usando modo offline.';
-        fallbackResponse = getAdvancedFallbackResponse(messageText);
-        setApiError('auth_error');
-      } else {
-        errorMessage = 'Erro na comunicação. Usando modo offline inteligente.';
-        fallbackResponse = getAdvancedFallbackResponse(messageText);
-        setApiError('general_error');
-      }
-
       const fallbackMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: fallbackResponse,
+        content: "🤖 **Sistema Offline Temporário:**\n\nTodos os provedores de IA estão temporariamente indisponíveis. Ativando modo offline inteligente...\n\n💡 **Ainda posso ajudar com:**\n• Análise de dados locais\n• Sugestões baseadas em padrões\n• Organização de tarefas\n• Planejamento básico\n\n*Reconectando automaticamente...*",
         role: 'assistant',
         timestamp: new Date(),
         sentiment: 'neutral',
-        category: 'fallback'
+        category: 'system',
+        provider: 'Modo Offline'
       };
 
       setMessages(prev => [...prev, fallbackMessage]);
 
       toast({
-        title: "🤖 Modo Offline Inteligente",
-        description: errorMessage,
+        title: "🔄 Modo Offline Ativo",
+        description: "Funcionalidades básicas mantidas, reconectando...",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getAdvancedFallbackResponse = (messageText: string) => {
-    const message = messageText.toLowerCase();
-    
-    if (message.includes('analise') || message.includes('desempenho')) {
-      return "📊 **Análise Offline Disponível:**\n\n🎯 **Produtividade:** Com base nos seus dados locais, você tem uma taxa de conclusão de tarefas de 87%\n\n📈 **Tendência:** Seus melhores dias são terças e quartas-feiras\n\n💡 **Sugestão:** Concentre tarefas importantes entre 9h-11h para máxima eficiência\n\n*Reconectando com a IA para análises mais profundas...*";
-    }
-    
-    if (message.includes('plano') || message.includes('planej')) {
-      return "🚀 **Gerador de Planos Offline:**\n\n✅ **Próximos Passos:**\n1. Revisar tarefas de alta prioridade\n2. Definir 3 metas principais para hoje\n3. Bloquear tempo para trabalho focado\n\n⚡ **Dica Inteligente:** Use a técnica Pomodoro (25min foco + 5min pausa)\n\n*Aguardando conexão com IA para planos personalizados...*";
-    }
-    
-    if (message.includes('financ') || message.includes('gasto')) {
-      return "💰 **Análise Financeira Offline:**\n\n📊 **Status Atual:**\n• Gastos do mês: Dentro do orçamento\n• Economia potencial identificada: R$ 200\n• Categorias com mais gastos: Alimentação, Transporte\n\n🎯 **Ação Recomendada:** Revisar gastos recorrentes\n\n*Reconectando para insights financeiros avançados...*";
-    }
-    
-    return "🤖 **Assistente Offline Ativo:**\n\nEstou funcionando em modo offline inteligente! Posso ajudar com:\n\n🔹 Análise de dados locais\n🔹 Sugestões baseadas em padrões\n🔹 Organização de tarefas\n🔹 Planejamento básico\n\n💫 **Reconectando com a nuvem para recursos avançados...**\n\n*Tente: 'organizar minha agenda' ou 'revisar tarefas pendentes'*";
   };
 
   const handleSuggestionClick = (suggestion: SmartSuggestion) => {
@@ -309,6 +301,24 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
     }
   };
 
+  const getStatusIcon = () => {
+    switch (apiStatus) {
+      case 'online': return <CheckCircle className="h-3 w-3 text-green-500" />;
+      case 'fallback': return <Zap className="h-3 w-3 text-yellow-500" />;
+      case 'offline': return <WifiOff className="h-3 w-3 text-red-500" />;
+      default: return <Wifi className="h-3 w-3 text-blue-500" />;
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (apiStatus) {
+      case 'online': return 'bg-green-100 text-green-800 border-green-200';
+      case 'fallback': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'offline': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-blue-100 text-blue-800 border-blue-200';
+    }
+  };
+
   if (compact) {
     return (
       <Card className={`${className} max-w-sm border-2 border-gradient-to-r from-[#9b87f5] to-[#33C3F0] shadow-lg bg-white`}>
@@ -319,9 +329,10 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             </div>
             DilQ Orbe AI
-            {apiError && (
-              <AlertTriangle className="h-3 w-3 text-orange-500" />
-            )}
+            <Badge className={`text-xs ${getStatusColor()} flex items-center gap-1`}>
+              {getStatusIcon()}
+              {currentProvider}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 bg-white">
@@ -333,15 +344,6 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                 </div>
               ))}
             </div>
-          )}
-          
-          {apiError && (
-            <Alert className="py-2 bg-white">
-              <AlertTriangle className="h-3 w-3" />
-              <AlertDescription className="text-xs break-words">
-                Modo offline inteligente ativo
-              </AlertDescription>
-            </Alert>
           )}
           
           <div className="flex gap-2">
@@ -384,21 +386,15 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-xl font-bold bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] bg-clip-text text-transparent">
-              DilQ Orbe AI - Próxima Geração
+              DilQ Orbe AI - Sistema Híbrido
             </div>
             <div className="text-xs text-gray-500 font-normal">
-              Assistente Inteligente com IA Avançada
+              Múltiplas APIs • Disponibilidade 24/7
             </div>
           </div>
-          <Badge variant={apiError ? "destructive" : "secondary"} className="ml-auto flex-shrink-0">
-            <div className="flex items-center gap-1">
-              {apiError ? (
-                <AlertTriangle className="h-3 w-3" />
-              ) : (
-                <Zap className="h-3 w-3 text-green-500" />
-              )}
-              {apiError ? "Offline" : "Online"}
-            </div>
+          <Badge className={`flex items-center gap-2 ${getStatusColor()}`}>
+            {getStatusIcon()}
+            <span className="text-xs font-medium">{currentProvider}</span>
           </Badge>
         </CardTitle>
         
@@ -414,15 +410,25 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0 bg-white">
-        {apiError && (
-          <div className="p-3 border-b bg-gradient-to-r from-orange-50 to-red-50">
-            <Alert className="border-orange-200 bg-white">
-              <Brain className="h-4 w-4 text-orange-600 flex-shrink-0" />
-              <AlertDescription className="text-orange-700 break-words">
-                <strong>Modo Offline Inteligente Ativado</strong><br />
-                {apiError === 'quota_exceeded' && "Cota da API OpenAI excedida. Usando IA local para continuar ajudando."}
-                {apiError === 'auth_error' && "Problema de autenticação. Funcionando com capacidades offline avançadas."}
-                {apiError === 'general_error' && "Conectividade temporária perdida. IA offline mantém funcionalidades essenciais."}
+        {apiStatus === 'fallback' && (
+          <div className="p-3 border-b bg-gradient-to-r from-yellow-50 to-orange-50">
+            <Alert className="border-yellow-200 bg-white">
+              <Zap className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+              <AlertDescription className="text-yellow-700 break-words">
+                <strong>Sistema de Fallback Ativo</strong><br />
+                OpenAI temporariamente indisponível. Usando Google Gemini para manter o serviço ativo.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {apiStatus === 'offline' && (
+          <div className="p-3 border-b bg-gradient-to-r from-red-50 to-orange-50">
+            <Alert className="border-red-200 bg-white">
+              <WifiOff className="h-4 w-4 text-red-600 flex-shrink-0" />
+              <AlertDescription className="text-red-700 break-words">
+                <strong>Modo Offline Temporário</strong><br />
+                Todas as APIs estão indisponíveis. Funcionalidades básicas mantidas, reconectando automaticamente.
               </AlertDescription>
             </Alert>
           </div>
@@ -440,7 +446,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                     <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] flex items-center justify-center">
                       <Brain className="h-4 w-4 text-white" />
                     </div>
-                    {message.category && (
+                    {message.provider && (
                       <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-white"></div>
                     )}
                   </div>
@@ -468,7 +474,16 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                     }`}>
                       {formatTime(message.timestamp)}
                     </span>
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {message.provider && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          message.role === 'user' 
+                            ? 'bg-white/20 text-white/80' 
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {message.provider}
+                        </span>
+                      )}
                       {message.sentiment && (
                         <span className={`text-xs ${getSentimentColor(message.sentiment)}`}>
                           {message.sentiment === 'positive' ? '😊' : message.sentiment === 'negative' ? '😟' : '😐'}
@@ -497,7 +512,9 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                 <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md max-w-[80%] min-w-0">
                   <div className="flex items-center gap-3">
                     <Loader2 className="h-4 w-4 animate-spin text-[#9b87f5] flex-shrink-0" />
-                    <span className="text-sm text-[#9b87f5] font-medium break-words">Processando com IA avançada...</span>
+                    <span className="text-sm text-[#9b87f5] font-medium break-words">
+                      Processando com sistema híbrido de IA...
+                    </span>
                   </div>
                 </div>
               </div>
