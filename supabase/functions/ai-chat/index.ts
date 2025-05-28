@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -14,7 +15,7 @@ serve(async (req) => {
 
   try {
     const { message, context, userId, sentiment, actionable, requestAdvanced } = await req.json();
-    console.log('Hybrid AI Chat request:', { message, userId, sentiment, actionable, requestAdvanced });
+    console.log('AI Chat request:', { message, userId, sentiment, actionable, requestAdvanced });
 
     // Initialize Supabase client to get user data
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -106,7 +107,7 @@ Reuniões: ${meetingsData.data?.slice(0, 3).map(m => `- ${m.title} em ${new Date
     }
 
     // Advanced system prompt for intelligent responses
-    const advancedSystemPrompt = `Você é o DilQ Orbe AI, um assistente virtual de PRÓXIMA GERAÇÃO com capacidades avançadas de análise, predição e automação.
+    const systemPrompt = `Você é o DilQ Orbe AI, um assistente virtual de PRÓXIMA GERAÇÃO com capacidades avançadas de análise, predição e automação.
 
 CARACTERÍSTICAS PRINCIPAIS:
 🧠 INTELIGÊNCIA AVANÇADA: Analise padrões, identifique tendências e faça predições
@@ -151,26 +152,26 @@ INSTRUÇÕES ESPECIAIS:
 - Sempre sugira 2-3 ações concretas
 - Use dados do contexto para personalizar respostas`;
 
-    // Try multiple AI providers with improved error handling
-    const aiResponse = await tryMultipleAIProviders(message, context, advancedSystemPrompt);
+    // Try Google Gemini API
+    const geminiResponse = await callGemini(message, context, systemPrompt);
 
     // Generate smart suggestions based on response content
-    const smartSuggestions = generateSmartSuggestions(message, aiResponse.response);
+    const smartSuggestions = generateSmartSuggestions(message, geminiResponse);
 
-    console.log('AI response generated successfully using:', aiResponse.provider);
+    console.log('AI response generated successfully using Google Gemini');
 
     return new Response(JSON.stringify({ 
-      response: aiResponse.response,
+      response: geminiResponse,
       suggestions: smartSuggestions,
       category: categorizeResponse(message),
       sentiment: 'positive',
-      provider: aiResponse.provider
+      provider: 'Google Gemini'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error in hybrid ai-chat function:', error);
+    console.error('Error in ai-chat function:', error);
     return new Response(JSON.stringify({ 
       error: 'Erro interno do servidor',
       details: error.message || 'Erro desconhecido'
@@ -180,83 +181,6 @@ INSTRUÇÕES ESPECIAIS:
     });
   }
 });
-
-async function tryMultipleAIProviders(message: string, context: any[], systemPrompt: string) {
-  const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-  const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-
-  console.log('Starting hybrid AI system...');
-
-  // Try OpenAI first if key is available
-  if (openAIApiKey) {
-    try {
-      console.log('Attempting OpenAI API...');
-      const openAIResponse = await callOpenAI(message, context, systemPrompt);
-      console.log('✅ OpenAI successful');
-      return { response: openAIResponse, provider: 'OpenAI GPT-4o-mini' };
-    } catch (error) {
-      console.log('❌ OpenAI failed:', error.message);
-      
-      // If it's a quota/billing error, log it specifically
-      if (error.message.includes('429') || error.message.includes('quota')) {
-        console.log('OpenAI quota exceeded, switching to Gemini...');
-      }
-    }
-  }
-
-  // Try Google Gemini as fallback if key is available
-  if (geminiApiKey) {
-    try {
-      console.log('Attempting Google Gemini API...');
-      const geminiResponse = await callGemini(message, context, systemPrompt);
-      console.log('✅ Gemini successful');
-      return { response: geminiResponse, provider: 'Google Gemini Pro' };
-    } catch (geminiError) {
-      console.log('❌ Gemini also failed:', geminiError.message);
-    }
-  }
-
-  // Enhanced offline fallback if both APIs fail
-  console.log('All APIs failed, using enhanced offline mode...');
-  const offlineResponse = getEnhancedOfflineResponse(message);
-  return { response: offlineResponse, provider: 'Modo Offline Inteligente' };
-}
-
-async function callOpenAI(message: string, context: any[], systemPrompt: string) {
-  const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!openAIApiKey) {
-    throw new Error('OpenAI API key not configured');
-  }
-  
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...(context || []),
-        { role: 'user', content: message }
-      ],
-      temperature: 0.7,
-      max_tokens: 1500,
-      presence_penalty: 0.1,
-      frequency_penalty: 0.1,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.text();
-    console.error('OpenAI API error:', response.status, errorData);
-    throw new Error(`OpenAI API error: ${response.status} - ${errorData}`);
-  }
-
-  const data = await response.json();
-  return data.choices[0].message.content;
-}
 
 async function callGemini(message: string, context: any[], systemPrompt: string) {
   const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
@@ -273,7 +197,8 @@ async function callGemini(message: string, context: any[], systemPrompt: string)
   // Add system prompt as first user message and current message
   const fullPrompt = `${systemPrompt}\n\nUsuário: ${message}`;
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+  // Use the correct model name - gemini-1.5-flash is available in the free tier
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -306,28 +231,6 @@ async function callGemini(message: string, context: any[], systemPrompt: string)
   }
 
   return data.candidates[0].content.parts[0].text;
-}
-
-function getEnhancedOfflineResponse(messageText: string) {
-  const message = messageText.toLowerCase();
-  
-  if (message.includes('analise') || message.includes('desempenho') || message.includes('métricas')) {
-    return "📊 **Análise Inteligente Offline:**\n\n🎯 **Produtividade:** Com base nos padrões locais, você mantém uma boa taxa de conclusão de tarefas\n\n📈 **Tendências:** Seus melhores dias produtivos são durante a semana\n\n💡 **Sugestões Inteligentes:**\n• Concentre tarefas importantes entre 9h-11h\n• Use blocos de tempo de 25-50 minutos\n• Faça pausas estratégicas a cada 2 horas\n\n⚡ **Próximos Passos:**\n1. Revise tarefas de alta prioridade\n2. Planeje o dia seguinte\n3. Documente conquistas\n\n*🔄 Sistema híbrido reconectando...*";
-  }
-  
-  if (message.includes('plano') || message.includes('planej') || message.includes('organiz')) {
-    return "🚀 **Planejador Estratégico Offline:**\n\n✅ **Estrutura Recomendada:**\n\n📋 **Manhã (8h-12h):**\n• 3 tarefas de alta prioridade\n• 1 reunião importante máximo\n• Revisão de emails (30min)\n\n🎯 **Tarde (13h-17h):**\n• Tarefas criativas e colaborativas\n• Follow-ups e comunicação\n• Planejamento do dia seguinte\n\n💡 **Dicas Inteligentes:**\n• Regra 3-2-1: 3 tarefas importantes, 2 médias, 1 rápida\n• Bloqueie tempo para trabalho focado\n• Reserve 20% do tempo para imprevistos\n\n*🔄 Sistema híbrido reconectando...*";
-  }
-  
-  if (message.includes('financ') || message.includes('gasto') || message.includes('orçamento')) {
-    return "💰 **Consultor Financeiro Offline:**\n\n📊 **Análise Rápida:**\n\n💸 **Gastos Principais:**\n• Moradia: 30-35% da renda\n• Alimentação: 15-20%\n• Transporte: 10-15%\n• Lazer: 5-10%\n\n🎯 **Estratégias de Economia:**\n• Revise assinaturas mensais\n• Negocie contas fixas (internet, telefone)\n• Implemente regra 50/30/20 (necessidades/desejos/poupança)\n\n📈 **Metas Sugeridas:**\n• Reserva de emergência: 6 meses de gastos\n• Investimentos: 10-20% da renda\n• Controle mensal rigoroso\n\n*🔄 Sistema híbrido reconectando...*";
-  }
-
-  if (message.includes('meta') || message.includes('objetivo') || message.includes('smart')) {
-    return "🎯 **Definidor de Metas SMART Offline:**\n\n✨ **Template de Metas SMART:**\n\n**S** - Específica: Defina exatamente o que quer alcançar\n**M** - Mensurável: Estabeleça métricas claras\n**A** - Atingível: Seja realista com recursos disponíveis\n**R** - Relevante: Alinhe com objetivos maiores\n**T** - Temporal: Defina prazo específico\n\n🚀 **Exemplos Práticos:**\n• \"Concluir 85% das tarefas semanais nos próximos 30 dias\"\n• \"Reduzir gastos em 15% até final do mês\"\n• \"Implementar 3 novos hábitos produtivos em 21 dias\"\n\n📋 **Próximas Ações:**\n1. Escolha 1-3 metas prioritárias\n2. Defina marcos semanais\n3. Configure lembretes diários\n\n*🔄 Sistema híbrido reconectando...*";
-  }
-  
-  return "🤖 **Sistema Híbrido Offline:**\n\n🔋 **Status:** Modo offline inteligente ativo!\n\n💡 **Posso ajudar com:**\n• 📊 Análise de produtividade e métricas\n• 📅 Planejamento estratégico e organização\n• 💰 Consultoria financeira básica\n• 🎯 Definição de metas SMART\n• ⚡ Automação de tarefas repetitivas\n• 🧠 Insights baseados em padrões\n\n🚀 **Comandos Especiais:**\n• \"analise meu desempenho\"\n• \"crie um plano para hoje\"\n• \"defina metas smart\"\n• \"otimize minha rotina\"\n\n💫 **Sistema híbrido reconectando automaticamente...**\n\n*💡 Dica: Usando análises locais para insights inteligentes!*";
 }
 
 function generateSmartSuggestions(userMessage: string, aiResponse: string): string[] {

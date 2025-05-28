@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Send, Bot, User, Sparkles, MessageCircle, Loader2, AlertTriangle, Mic, MicOff, Brain, Zap, TrendingUp, Calendar, DollarSign, Target, Wifi, WifiOff, CheckCircle, Activity } from "lucide-react";
+import { Send, Bot, User, Sparkles, MessageCircle, Loader2, AlertTriangle, Mic, MicOff, Brain, Zap, TrendingUp, Calendar, DollarSign, Target, CheckCircle, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,18 +37,17 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: '🚀 Olá! Sou o **DilQ Orbe AI** - seu assistente virtual híbrido de próxima geração!\n\n✨ **Sistema Totalmente Operacional:**\n• 🔄 **Sistema Híbrido Ativo**: OpenAI GPT-4o-mini + Google Gemini Pro\n• 🛡️ **Fallback Inteligente**: Garantia de disponibilidade 24/7\n• 📊 **Análise Avançada**: Insights baseados em seus dados reais\n• ⚡ **Sempre Online**: Se uma API falhar, outra assume automaticamente\n\n💡 **Experimente comandos avançados:**\n• "Analise meu desempenho desta semana"\n• "Crie um plano financeiro otimizado"\n• "Otimize minha agenda para amanhã"\n\n*Sistema híbrido pronto para máxima performance!* 🎯',
+      content: '🚀 Olá! Sou o **DilQ Orbe AI** - seu assistente virtual powered by Google Gemini!\n\n✨ **Sistema Operacional:**\n• 🤖 **Google Gemini AI**: Inteligência artificial avançada\n• 📊 **Análise Avançada**: Insights baseados em seus dados reais\n• ⚡ **Sempre Online**: Disponibilidade garantida 24/7\n• 🧠 **Contexto Inteligente**: Respostas personalizadas\n\n💡 **Experimente comandos avançados:**\n• "Analise meu desempenho desta semana"\n• "Crie um plano financeiro otimizado"\n• "Otimize minha agenda para amanhã"\n\n*Powered by Google Gemini - Pronto para máxima performance!* 🎯',
       role: 'assistant',
       timestamp: new Date(),
       sentiment: 'positive',
       category: 'welcome',
-      provider: 'Sistema Híbrido Operacional'
+      provider: 'Google Gemini'
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [apiStatus, setApiStatus] = useState<'online' | 'fallback' | 'offline'>('online');
-  const [currentProvider, setCurrentProvider] = useState<string>('Sistema Híbrido');
+  const [apiStatus, setApiStatus] = useState<'online' | 'error'>('online');
   const [isListening, setIsListening] = useState(false);
   const [smartSuggestions, setSmartSuggestions] = useState<SmartSuggestion[]>([
     { text: "Analise meu desempenho desta semana", category: 'productivity', priority: 'high', icon: TrendingUp },
@@ -69,11 +69,11 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
   useEffect(() => {
     const generateContextualInsights = () => {
       const insights = [
-        "🔄 Sistema híbrido 100% operacional",
+        "🤖 Google Gemini AI ativo e funcionando",
         "💰 Seus gastos este mês estão 15% abaixo do orçamento",
         "⏰ Melhor horário para produtividade: 9h-11h",
         "🎯 Taxa de conclusão de tarefas: 87% (acima da média!)",
-        "⚡ Fallback automático garantindo disponibilidade"
+        "⚡ Sistema de IA avançado operacional"
       ];
       setContextualInsights(insights.slice(0, 2));
     };
@@ -219,17 +219,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         throw error;
       }
 
-      // Update API status based on provider used
-      if (data.provider) {
-        setCurrentProvider(data.provider);
-        if (data.provider.includes('OpenAI') || data.provider.includes('GPT')) {
-          setApiStatus('online');
-        } else if (data.provider.includes('Gemini')) {
-          setApiStatus('fallback');
-        } else {
-          setApiStatus('offline');
-        }
-      }
+      setApiStatus('online');
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -238,7 +228,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         timestamp: new Date(),
         sentiment: 'positive',
         category: data.category || 'general',
-        provider: data.provider
+        provider: 'Google Gemini'
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -247,40 +237,30 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         generateSmartSuggestions(messageText, data.response);
       }
 
-      // Show appropriate toast based on provider
-      if (data.provider.includes('Gemini')) {
-        toast({
-          title: "🔄 Sistema de Fallback Ativo",
-          description: "Usando Google Gemini para garantir disponibilidade máxima",
-        });
-      } else if (data.provider.includes('OpenAI') || data.provider.includes('GPT')) {
-        toast({
-          title: "✅ OpenAI Conectado",
-          description: "Sistema principal operando normalmente",
-        });
-      }
+      toast({
+        title: "✅ Google Gemini Conectado",
+        description: "Resposta gerada com sucesso",
+      });
 
     } catch (error: any) {
       console.error('Error sending message:', error);
       
-      setApiStatus('offline');
-      setCurrentProvider('Modo Offline Inteligente');
+      setApiStatus('error');
       
-      const fallbackMessage: Message = {
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "🤖 **Sistema Híbrido Temporariamente Offline:**\n\nTodas as APIs estão temporariamente indisponíveis, mas o modo offline inteligente está ativo!\n\n💡 **Ainda posso ajudar com:**\n• Análise de dados locais e padrões\n• Sugestões baseadas em histórico\n• Organização e planejamento básico\n• Insights de produtividade\n\n⚡ **Sistema híbrido reconectando automaticamente...**\n\n*Fallback inteligente mantendo funcionalidades essenciais!*",
-        role: 'assistant',
+        content: `❌ **Erro na Comunicação:**\n\nNão foi possível conectar com o Google Gemini no momento.\n\n**Detalhes do erro:** ${error.message}\n\n🔧 **Soluções:**\n• Verifique sua conexão com a internet\n• Aguarde alguns segundos e tente novamente\n• Verifique se a chave API do Gemini está configurada corretamente\n\n*Tente novamente em instantes...*`,
+        role: 'error',
         timestamp: new Date(),
-        sentiment: 'neutral',
-        category: 'system',
-        provider: 'Modo Offline Inteligente'
+        sentiment: 'negative',
+        category: 'error'
       };
 
-      setMessages(prev => [...prev, fallbackMessage]);
+      setMessages(prev => [...prev, errorMessage]);
 
       toast({
-        title: "🔄 Modo Offline Ativo",
-        description: "Sistema híbrido mantendo funcionalidades essenciais",
+        title: "❌ Erro de Conexão",
+        description: "Falha ao comunicar com Google Gemini",
         variant: "destructive"
       });
     } finally {
@@ -310,17 +290,15 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
   const getStatusIcon = () => {
     switch (apiStatus) {
       case 'online': return <CheckCircle className="h-3 w-3 text-green-500" />;
-      case 'fallback': return <Activity className="h-3 w-3 text-yellow-500" />;
-      case 'offline': return <WifiOff className="h-3 w-3 text-red-500" />;
-      default: return <Wifi className="h-3 w-3 text-blue-500" />;
+      case 'error': return <AlertTriangle className="h-3 w-3 text-red-500" />;
+      default: return <Activity className="h-3 w-3 text-blue-500" />;
     }
   };
 
   const getStatusColor = () => {
     switch (apiStatus) {
       case 'online': return 'bg-green-100 text-green-800 border-green-200';
-      case 'fallback': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'offline': return 'bg-red-100 text-red-800 border-red-200';
+      case 'error': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-blue-100 text-blue-800 border-blue-200';
     }
   };
@@ -337,7 +315,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
             DilQ Orbe AI
             <Badge className={`text-xs ${getStatusColor()} flex items-center gap-1`}>
               {getStatusIcon()}
-              {currentProvider}
+              Google Gemini
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -392,15 +370,15 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-xl font-bold bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] bg-clip-text text-transparent">
-              DilQ Orbe AI - Sistema Híbrido
+              DilQ Orbe AI - Google Gemini
             </div>
             <div className="text-xs text-gray-500 font-normal">
-              OpenAI + Gemini • Disponibilidade Garantida 24/7
+              Powered by Google Gemini • Disponibilidade 24/7
             </div>
           </div>
           <Badge className={`flex items-center gap-2 ${getStatusColor()}`}>
             {getStatusIcon()}
-            <span className="text-xs font-medium">{currentProvider}</span>
+            <span className="text-xs font-medium">Google Gemini</span>
           </Badge>
         </CardTitle>
         
@@ -416,25 +394,13 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0 bg-white">
-        {apiStatus === 'fallback' && (
-          <div className="p-3 border-b bg-gradient-to-r from-yellow-50 to-orange-50">
-            <Alert className="border-yellow-200 bg-white">
-              <Activity className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-              <AlertDescription className="text-yellow-700 break-words">
-                <strong>Sistema Híbrido - Fallback Ativo</strong><br />
-                OpenAI temporariamente indisponível. Google Gemini assumiu automaticamente para manter o serviço ativo.
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
-
-        {apiStatus === 'offline' && (
+        {apiStatus === 'error' && (
           <div className="p-3 border-b bg-gradient-to-r from-red-50 to-orange-50">
             <Alert className="border-red-200 bg-white">
-              <WifiOff className="h-4 w-4 text-red-600 flex-shrink-0" />
+              <AlertTriangle className="h-4 w-4 text-red-600 flex-shrink-0" />
               <AlertDescription className="text-red-700 break-words">
-                <strong>Modo Offline Inteligente</strong><br />
-                Todas as APIs estão indisponíveis. Sistema híbrido mantendo funcionalidades essenciais, reconectando automaticamente.
+                <strong>Erro de Conexão</strong><br />
+                Falha ao comunicar com Google Gemini. Verifique sua conexão e tente novamente.
               </AlertDescription>
             </Alert>
           </div>
@@ -519,7 +485,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                   <div className="flex items-center gap-3">
                     <Loader2 className="h-4 w-4 animate-spin text-[#9b87f5] flex-shrink-0" />
                     <span className="text-sm text-[#9b87f5] font-medium break-words">
-                      Processando com sistema híbrido de IA...
+                      Processando com Google Gemini...
                     </span>
                   </div>
                 </div>
