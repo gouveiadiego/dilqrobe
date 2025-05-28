@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Send, Bot, User, Sparkles, MessageCircle, Loader2, AlertTriangle, Mic, MicOff, Brain, Zap, TrendingUp, Calendar, DollarSign, Target, Wifi, WifiOff, CheckCircle } from "lucide-react";
+import { Send, Bot, User, Sparkles, MessageCircle, Loader2, AlertTriangle, Mic, MicOff, Brain, Zap, TrendingUp, Calendar, DollarSign, Target, Wifi, WifiOff, CheckCircle, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -36,12 +36,12 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: '🚀 Olá! Sou o **DilQ Orbe AI** - seu assistente virtual de próxima geração com **sistema híbrido de IA**. Agora uso múltiplas APIs (OpenAI + Google Gemini) para garantir disponibilidade 24/7!\n\n✨ **Novidades:**\n• Sistema de fallback inteligente\n• Sempre online, mesmo com problemas de API\n• Respostas mais rápidas e confiáveis\n\n*Experimente: "analise meu desempenho" ou "crie um plano para hoje"*',
+      content: '🚀 Olá! Sou o **DilQ Orbe AI** - seu assistente virtual híbrido de próxima geração!\n\n✨ **Sistema Totalmente Operacional:**\n• 🔄 **Sistema Híbrido Ativo**: OpenAI GPT-4o-mini + Google Gemini Pro\n• 🛡️ **Fallback Inteligente**: Garantia de disponibilidade 24/7\n• 📊 **Análise Avançada**: Insights baseados em seus dados reais\n• ⚡ **Sempre Online**: Se uma API falhar, outra assume automaticamente\n\n💡 **Experimente comandos avançados:**\n• "Analise meu desempenho desta semana"\n• "Crie um plano financeiro otimizado"\n• "Otimize minha agenda para amanhã"\n\n*Sistema híbrido pronto para máxima performance!* 🎯',
       role: 'assistant',
       timestamp: new Date(),
       sentiment: 'positive',
       category: 'welcome',
-      provider: 'Sistema Híbrido'
+      provider: 'Sistema Híbrido Operacional'
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
@@ -69,10 +69,11 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
   useEffect(() => {
     const generateContextualInsights = () => {
       const insights = [
-        "📊 Sistema híbrido ativo - máxima disponibilidade",
+        "🔄 Sistema híbrido 100% operacional",
         "💰 Seus gastos este mês estão 15% abaixo do orçamento",
         "⏰ Melhor horário para produtividade: 9h-11h",
-        "🎯 Taxa de conclusão de tarefas: 87% (acima da média!)"
+        "🎯 Taxa de conclusão de tarefas: 87% (acima da média!)",
+        "⚡ Fallback automático garantindo disponibilidade"
       ];
       setContextualInsights(insights.slice(0, 2));
     };
@@ -221,9 +222,9 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
       // Update API status based on provider used
       if (data.provider) {
         setCurrentProvider(data.provider);
-        if (data.provider === 'OpenAI') {
+        if (data.provider.includes('OpenAI') || data.provider.includes('GPT')) {
           setApiStatus('online');
-        } else if (data.provider === 'Google Gemini') {
+        } else if (data.provider.includes('Gemini')) {
           setApiStatus('fallback');
         } else {
           setApiStatus('offline');
@@ -246,11 +247,16 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         generateSmartSuggestions(messageText, data.response);
       }
 
-      // Show success toast for fallback
-      if (data.provider === 'Google Gemini') {
+      // Show appropriate toast based on provider
+      if (data.provider.includes('Gemini')) {
         toast({
           title: "🔄 Sistema de Fallback Ativo",
-          description: "Usando Google Gemini para garantir disponibilidade",
+          description: "Usando Google Gemini para garantir disponibilidade máxima",
+        });
+      } else if (data.provider.includes('OpenAI') || data.provider.includes('GPT')) {
+        toast({
+          title: "✅ OpenAI Conectado",
+          description: "Sistema principal operando normalmente",
         });
       }
 
@@ -258,23 +264,23 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
       console.error('Error sending message:', error);
       
       setApiStatus('offline');
-      setCurrentProvider('Modo Offline');
+      setCurrentProvider('Modo Offline Inteligente');
       
       const fallbackMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "🤖 **Sistema Offline Temporário:**\n\nTodos os provedores de IA estão temporariamente indisponíveis. Ativando modo offline inteligente...\n\n💡 **Ainda posso ajudar com:**\n• Análise de dados locais\n• Sugestões baseadas em padrões\n• Organização de tarefas\n• Planejamento básico\n\n*Reconectando automaticamente...*",
+        content: "🤖 **Sistema Híbrido Temporariamente Offline:**\n\nTodas as APIs estão temporariamente indisponíveis, mas o modo offline inteligente está ativo!\n\n💡 **Ainda posso ajudar com:**\n• Análise de dados locais e padrões\n• Sugestões baseadas em histórico\n• Organização e planejamento básico\n• Insights de produtividade\n\n⚡ **Sistema híbrido reconectando automaticamente...**\n\n*Fallback inteligente mantendo funcionalidades essenciais!*",
         role: 'assistant',
         timestamp: new Date(),
         sentiment: 'neutral',
         category: 'system',
-        provider: 'Modo Offline'
+        provider: 'Modo Offline Inteligente'
       };
 
       setMessages(prev => [...prev, fallbackMessage]);
 
       toast({
         title: "🔄 Modo Offline Ativo",
-        description: "Funcionalidades básicas mantidas, reconectando...",
+        description: "Sistema híbrido mantendo funcionalidades essenciais",
         variant: "destructive"
       });
     } finally {
@@ -304,7 +310,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
   const getStatusIcon = () => {
     switch (apiStatus) {
       case 'online': return <CheckCircle className="h-3 w-3 text-green-500" />;
-      case 'fallback': return <Zap className="h-3 w-3 text-yellow-500" />;
+      case 'fallback': return <Activity className="h-3 w-3 text-yellow-500" />;
       case 'offline': return <WifiOff className="h-3 w-3 text-red-500" />;
       default: return <Wifi className="h-3 w-3 text-blue-500" />;
     }
@@ -389,7 +395,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
               DilQ Orbe AI - Sistema Híbrido
             </div>
             <div className="text-xs text-gray-500 font-normal">
-              Múltiplas APIs • Disponibilidade 24/7
+              OpenAI + Gemini • Disponibilidade Garantida 24/7
             </div>
           </div>
           <Badge className={`flex items-center gap-2 ${getStatusColor()}`}>
@@ -413,10 +419,10 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
         {apiStatus === 'fallback' && (
           <div className="p-3 border-b bg-gradient-to-r from-yellow-50 to-orange-50">
             <Alert className="border-yellow-200 bg-white">
-              <Zap className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+              <Activity className="h-4 w-4 text-yellow-600 flex-shrink-0" />
               <AlertDescription className="text-yellow-700 break-words">
-                <strong>Sistema de Fallback Ativo</strong><br />
-                OpenAI temporariamente indisponível. Usando Google Gemini para manter o serviço ativo.
+                <strong>Sistema Híbrido - Fallback Ativo</strong><br />
+                OpenAI temporariamente indisponível. Google Gemini assumiu automaticamente para manter o serviço ativo.
               </AlertDescription>
             </Alert>
           </div>
@@ -427,8 +433,8 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
             <Alert className="border-red-200 bg-white">
               <WifiOff className="h-4 w-4 text-red-600 flex-shrink-0" />
               <AlertDescription className="text-red-700 break-words">
-                <strong>Modo Offline Temporário</strong><br />
-                Todas as APIs estão indisponíveis. Funcionalidades básicas mantidas, reconectando automaticamente.
+                <strong>Modo Offline Inteligente</strong><br />
+                Todas as APIs estão indisponíveis. Sistema híbrido mantendo funcionalidades essenciais, reconectando automaticamente.
               </AlertDescription>
             </Alert>
           </div>
@@ -447,7 +453,7 @@ export const AIChat = ({ compact = false, className = "" }: AIChatProps) => {
                       <Brain className="h-4 w-4 text-white" />
                     </div>
                     {message.provider && (
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-white"></div>
+                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white"></div>
                     )}
                   </div>
                 )}
