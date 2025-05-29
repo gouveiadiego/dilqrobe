@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, ExternalLink, Trash2, Edit } from "lucide-react";
 import { toast } from "sonner";
+import { CompanyShareButton } from "./CompanyShareButton";
 
 interface Company {
   id: string;
@@ -293,15 +293,19 @@ export function CompanyManager() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="bg-gray-50 p-3 border-t">
+              <CardFooter className="bg-gray-50 p-3 border-t space-x-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full"
+                  className="flex-1"
                   onClick={() => handleViewCompanyDetails(company.id)}
                 >
                   Ver Detalhes
                 </Button>
+                <CompanyShareButton 
+                  companyId={company.id} 
+                  companyName={company.name} 
+                />
               </CardFooter>
             </Card>
           ))
