@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
@@ -60,7 +60,7 @@ const App = () => {
               path="/dashboard" 
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <Dashboard session={session} />
                 </ProtectedRoute>
               } 
             />
