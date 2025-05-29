@@ -2,7 +2,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
@@ -49,48 +49,46 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/shared-company/:token" element={<SharedCompany />} />
-            <Route path="/client-portal/:token" element={<ClientPortal />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard session={session} />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/subscription" 
-              element={
-                <ProtectedRoute>
-                  <Subscription />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/company/:companyId" 
-              element={
-                <ProtectedRoute>
-                  <CompanyDetails />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/home" 
-              element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/shared-company/:token" element={<SharedCompany />} />
+          <Route path="/client-portal/:token" element={<ClientPortal />} />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard session={session} />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/subscription" 
+            element={
+              <ProtectedRoute>
+                <Subscription />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company/:companyId" 
+            element={
+              <ProtectedRoute>
+                <CompanyDetails />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/home" 
+            element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </TooltipProvider>
     </QueryClientProvider>
   );
