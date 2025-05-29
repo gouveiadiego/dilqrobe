@@ -59,7 +59,7 @@ const App = () => {
             path="/dashboard" 
             element={
               <ProtectedRoute>
-                <Dashboard session={session} />
+                <Index />
               </ProtectedRoute>
             } 
           />
