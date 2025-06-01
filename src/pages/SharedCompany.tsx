@@ -50,6 +50,7 @@ export default function SharedCompany() {
   useEffect(() => {
     async function fetchSharedCompanyData() {
       if (!token) {
+        console.error('No token provided in URL');
         setError('Token inválido');
         setLoading(false);
         return;
@@ -58,23 +59,36 @@ export default function SharedCompany() {
       try {
         console.log('Fetching share link for token:', token);
         
+        // Create a new supabase client instance for public access
+        const publicSupabase = supabase;
+        
         // First, get the share link to validate and get company_id
-        const { data: shareLink, error: shareLinkError } = await supabase
+        const { data: shareLink, error: shareLinkError } = await publicSupabase
           .from('company_share_links')
           .select('*')
           .eq('share_token', token)
           .eq('is_active', true)
-          .single();
+          .maybeSingle();
 
-        if (shareLinkError || !shareLink) {
+        console.log('Share link query result:', { shareLink, error: shareLinkError });
+
+        if (shareLinkError) {
           console.error('Share link error:', shareLinkError);
-          setError('Link inválido ou expirado');
+          setError('Erro ao buscar link de compartilhamento: ' + shareLinkError.message);
+          setLoading(false);
+          return;
+        }
+
+        if (!shareLink) {
+          console.error('Share link not found or inactive');
+          setError('Link inválido ou inativo');
           setLoading(false);
           return;
         }
 
         // Check if link is expired
         if (shareLink.expires_at && new Date(shareLink.expires_at) < new Date()) {
+          console.error('Share link expired');
           setError('Link expirado');
           setLoading(false);
           return;
@@ -83,14 +97,23 @@ export default function SharedCompany() {
         console.log('Share link found:', shareLink);
 
         // Fetch company details
-        const { data: companyData, error: companyError } = await supabase
+        const { data: companyData, error: companyError } = await publicSupabase
           .from('project_companies')
           .select('*')
           .eq('id', shareLink.company_id)
-          .single();
+          .maybeSingle();
 
-        if (companyError || !companyData) {
+        console.log('Company query result:', { companyData, error: companyError });
+
+        if (companyError) {
           console.error('Company error:', companyError);
+          setError('Erro ao buscar dados da empresa: ' + companyError.message);
+          setLoading(false);
+          return;
+        }
+
+        if (!companyData) {
+          console.error('Company not found');
           setError('Empresa não encontrada');
           setLoading(false);
           return;
@@ -100,28 +123,36 @@ export default function SharedCompany() {
         setCompany(companyData);
 
         // Fetch checklist items
-        const { data: checklistData, error: checklistError } = await supabase
+        const { data: checklistData, error: checklistError } = await publicSupabase
           .from('project_checklist')
           .select('id, title, category, completed')
           .eq('company_id', shareLink.company_id);
 
+        console.log('Checklist query result:', { checklistData, error: checklistError });
+
         if (!checklistError && checklistData) {
           setChecklist(checklistData);
+        } else if (checklistError) {
+          console.error('Checklist error:', checklistError);
         }
 
         // Fetch content tasks
-        const { data: contentData, error: contentError } = await supabase
+        const { data: contentData, error: contentError } = await publicSupabase
           .from('company_content_tasks')
           .select('id, title, content, type, status, client_status')
           .eq('company_id', shareLink.company_id);
 
+        console.log('Content tasks query result:', { contentData, error: contentError });
+
         if (!contentError && contentData) {
           setContentTasks(contentData);
+        } else if (contentError) {
+          console.error('Content tasks error:', contentError);
         }
 
       } catch (error) {
         console.error('Error fetching shared company data:', error);
-        setError('Erro ao carregar dados da empresa');
+        setError('Erro inesperado ao carregar dados da empresa');
       } finally {
         setLoading(false);
       }
@@ -148,7 +179,10 @@ export default function SharedCompany() {
           <CardContent className="p-6 text-center">
             <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Acesso Negado</h2>
-            <p className="text-gray-600">{error}</p>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-sm text-gray-500">
+              Verifique se o link está correto e ainda está ativo.
+            </p>
           </CardContent>
         </Card>
       </div>
