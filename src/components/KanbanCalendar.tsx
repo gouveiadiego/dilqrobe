@@ -10,6 +10,7 @@ import {
   isAfter, 
   isEqual, 
   startOfWeek,
+  endOfWeek,
   addDays,
   addMonths,
   subMonths,
@@ -114,13 +115,14 @@ export function KanbanCalendar({
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   
-  const lastDayOfWeek = getDay(monthEnd);
-  const daysToAdd = lastDayOfWeek < 6 ? 6 - lastDayOfWeek : 0;
-  const extendedEndDate = addDays(monthEnd, daysToAdd);
+  // Get the start of the week for the first day and end of the week for the last day
+  // This ensures we always show complete weeks
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Sunday
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 }); // Saturday
   
   const monthDays = eachDayOfInterval({
-    start: monthStart,
-    end: extendedEndDate
+    start: calendarStart,
+    end: calendarEnd
   });
 
   const handlePrevMonth = () => {
@@ -190,9 +192,8 @@ export function KanbanCalendar({
     return [...regularTasks, ...recurringInstances];
   };
 
-  const isNextMonth = (date: Date) => {
-    const currentMonthDate = currentMonth.getMonth();
-    return date.getMonth() !== currentMonthDate;
+  const isCurrentMonthDay = (date: Date) => {
+    return isSameMonth(date, currentMonth);
   };
 
   const getTodayTasks = () => {
@@ -284,7 +285,7 @@ export function KanbanCalendar({
           {monthDays.map(day => {
             const dayTasks = getTasksForDay(day);
             const isCurrentDay = isToday(day);
-            const isNextMonthDay = isNextMonth(day);
+            const isOutsideCurrentMonth = !isCurrentMonthDay(day);
 
             return (
               <div
@@ -292,25 +293,25 @@ export function KanbanCalendar({
                 className={cn(
                   "rounded-lg border min-h-[100px] h-full",
                   isCurrentDay ? "border-purple-500 shadow-lg shadow-purple-100" : "border-gray-200",
-                  isNextMonthDay ? "bg-gray-50/50" : ""
+                  isOutsideCurrentMonth ? "bg-gray-50/50" : ""
                 )}
                 onDragOver={handleDragOver}
                 onDrop={e => handleDrop(e, day)}
               >
                 <div className={cn(
                   "p-2 border-b text-xs font-medium",
-                  isCurrentDay ? "bg-purple-50" : isNextMonthDay ? "bg-gray-100/50" : "bg-gray-50"
+                  isCurrentDay ? "bg-purple-50" : isOutsideCurrentMonth ? "bg-gray-100/50" : "bg-gray-50"
                 )}>
                   <div className="flex flex-col">
                     <span className={cn(
                       "text-gray-600",
-                      isNextMonthDay && "text-gray-400"
+                      isOutsideCurrentMonth && "text-gray-400"
                     )}>
                       {format(day, "d", { locale: pt })}
                     </span>
                     <span className={cn(
                       "text-gray-400 text-[10px]",
-                      isNextMonthDay && "text-gray-400/70"
+                      isOutsideCurrentMonth && "text-gray-400/70"
                     )}>
                       {format(day, "EEEE", { locale: pt })}
                     </span>
