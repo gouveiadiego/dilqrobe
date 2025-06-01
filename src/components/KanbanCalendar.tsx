@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Task } from "@/types/task";
 import { 
@@ -116,9 +117,9 @@ export function KanbanCalendar({
   const monthEnd = endOfMonth(currentMonth);
   
   // Get the start of the week for the first day and end of the week for the last day
-  // This ensures we always show complete weeks
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Sunday
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 }); // Saturday
+  // This ensures we always show complete weeks (including next month days)
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 }); // Sunday
   
   const monthDays = eachDayOfInterval({
     start: calendarStart,
@@ -276,7 +277,7 @@ export function KanbanCalendar({
         </div>
 
         <div className="grid grid-cols-7 gap-2">
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, index) => (
+          {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day, index) => (
             <div key={`header-${index}`} className="text-center text-xs font-medium text-gray-500 py-2">
               {day}
             </div>
