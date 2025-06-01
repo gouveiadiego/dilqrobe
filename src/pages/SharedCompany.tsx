@@ -1,10 +1,15 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, User, Mail, Phone, Calendar, Shield } from "lucide-react";
+
+// Create a separate client for public access
+const supabaseUrl = 'https://wgnvrxubwifcscrbkimm.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndnbnZyeHVid2lmY3NjcmJraW1tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg1MjYxNzAsImV4cCI6MjA1NDEwMjE3MH0.AwaBd1VRrzz_DvvDjJ3Ke7CJFoxl5XUB2chymhueybg';
+
+const publicSupabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Company {
   id: string;
@@ -58,9 +63,6 @@ export default function SharedCompany() {
 
       try {
         console.log('Fetching share link for token:', token);
-        
-        // Create a new supabase client instance for public access
-        const publicSupabase = supabase;
         
         // First, get the share link to validate and get company_id
         const { data: shareLink, error: shareLinkError } = await publicSupabase
