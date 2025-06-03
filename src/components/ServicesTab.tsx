@@ -687,11 +687,11 @@ export function ServicesTab() {
                     Cliente: {selectedClient}
                   </div>
                 )}
-                <Button variant="outline" className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700" onClick={() => setShowShareDialog(true)}>
+                <Button variant="outline" className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800" onClick={() => setShowShareDialog(true)}>
                   <Link2 className="h-4 w-4 mr-2" />
                   Compartilhar por Cliente
                 </Button>
-                <Button variant="outline" className="bg-white dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-gray-700" onClick={() => setShowStatsCard(!showStatsCard)}>
+                <Button variant="outline" className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800" onClick={() => setShowStatsCard(!showStatsCard)}>
                   {showStatsCard ? "Ocultar estatísticas" : "Mostrar estatísticas"}
                 </Button>
               </div>
