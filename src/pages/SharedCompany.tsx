@@ -3,7 +3,9 @@ import { useParams } from "react-router-dom";
 import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, User, Mail, Phone, Calendar, Shield } from "lucide-react";
+import { Building2, User, Mail, Phone, Calendar, Shield, CheckSquare } from "lucide-react";
+import { format } from "date-fns";
+import { pt } from "date-fns/locale";
 
 // Create a separate client for public access
 const supabaseUrl = 'https://wgnvrxubwifcscrbkimm.supabase.co';
@@ -292,7 +294,7 @@ export default function SharedCompany() {
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-gray-500" />
                 <span className="text-sm">
-                  {new Date(company.created_at).toLocaleDateString('pt-BR')}
+                  {format(new Date(company.created_at), 'dd/MM/yyyy', { locale: pt })}
                 </span>
               </div>
             </CardContent>

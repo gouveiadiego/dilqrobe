@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +14,7 @@ import { CompanyCredentials } from "@/components/company-details/CompanyCredenti
 import { CompanyChecklist } from "@/components/company-details/CompanyChecklist";
 import { CompanyNotes } from "@/components/company-details/CompanyNotes";
 import { CompanyContentTasks } from "@/components/company-details/CompanyContentTasks";
+import { CompanyWorkLog } from "@/components/company-details/CompanyWorkLog";
 
 interface Company {
   id: string;
@@ -30,7 +30,7 @@ export default function CompanyDetails() {
   const navigate = useNavigate();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'credentials' | 'notes' | 'content'>('checklist');
+  const [activeTab, setActiveTab] = useState<'checklist' | 'credentials' | 'notes' | 'content' | 'worklog'>('checklist');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Omit<Company, 'id'>>({
     name: '',
@@ -160,7 +160,7 @@ export default function CompanyDetails() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
-        <h1 className="text-2xl font-bold">{company.name}</h1>
+        <h1 className="text-2xl font-bold">{company?.name}</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -285,6 +285,13 @@ export default function CompanyDetails() {
                 Checklist
               </button>
               <button 
+                className={`py-2 px-4 font-medium ${activeTab === 'worklog' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-600'}`}
+                onClick={() => setActiveTab('worklog')}
+              >
+                <FileText className="inline mr-2 h-4 w-4" />
+                Diário de Bordo
+              </button>
+              <button 
                 className={`py-2 px-4 font-medium ${activeTab === 'credentials' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-600'}`}
                 onClick={() => setActiveTab('credentials')}
               >
@@ -309,6 +316,7 @@ export default function CompanyDetails() {
           </CardHeader>
           <CardContent>
             {activeTab === 'checklist' && <CompanyChecklist companyId={company.id} />}
+            {activeTab === 'worklog' && <CompanyWorkLog companyId={company.id} />}
             {activeTab === 'credentials' && <CompanyCredentials companyId={company.id} companyName={company.name} />}
             {activeTab === 'notes' && <CompanyNotes companyId={company.id} />}
             {activeTab === 'content' && <CompanyContentTasks companyId={company.id} companyName={company.name} />}

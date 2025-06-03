@@ -371,6 +371,48 @@ export type Database = {
           },
         ]
       }
+      company_work_log: {
+        Row: {
+          category: string | null
+          checklist_item_id: string | null
+          company_id: string
+          completed_at: string
+          created_at: string
+          description: string | null
+          id: string
+          month_year: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          checklist_item_id?: string | null
+          company_id: string
+          completed_at?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          month_year?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          checklist_item_id?: string | null
+          company_id?: string
+          completed_at?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          month_year?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       gym_records: {
         Row: {
           challenge_id: string
