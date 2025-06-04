@@ -1,9 +1,10 @@
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, User, Mail, Phone, Calendar, Shield, CheckSquare, ChevronDown, ChevronRight } from "lucide-react";
+import { Building2, User, Mail, Phone, Calendar, Shield, CheckSquare, ChevronDown, ChevronRight, Clock, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 
@@ -46,11 +47,21 @@ interface ContentTask {
   client_status: string;
 }
 
+interface WorkLogEntry {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  completed_at: string;
+  checklist_item_id: string | null;
+}
+
 export default function SharedCompany() {
   const { token } = useParams();
   const [company, setCompany] = useState<Company | null>(null);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [contentTasks, setContentTasks] = useState<ContentTask[]>([]);
+  const [workLogEntries, setWorkLogEntries] = useState<WorkLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
@@ -163,6 +174,21 @@ export default function SharedCompany() {
           console.error('Content tasks error:', contentError);
         }
 
+        // Fetch work log entries
+        const { data: workLogData, error: workLogError } = await publicSupabase
+          .from('company_work_log')
+          .select('id, title, description, category, completed_at, checklist_item_id')
+          .eq('company_id', shareLink.company_id)
+          .order('completed_at', { ascending: false });
+
+        console.log('Work log query result:', { workLogData, error: workLogError });
+
+        if (!workLogError && workLogData) {
+          setWorkLogEntries(workLogData);
+        } else if (workLogError) {
+          console.error('Work log error:', workLogError);
+        }
+
       } catch (error) {
         console.error('Error fetching shared company data:', error);
         setError('Erro inesperado ao carregar dados da empresa');
@@ -179,6 +205,18 @@ export default function SharedCompany() {
       ...expandedCategories,
       [category]: !expandedCategories[category]
     });
+  };
+
+  const getCategoryIcon = (category: string | null) => {
+    switch (category) {
+      case 'design': return '🎨';
+      case 'desenvolvimento': return '💻';
+      case 'conteúdo': return '📝';
+      case 'seo': return '🔍';
+      case 'reunião': return '🤝';
+      case 'planejamento': return '📋';
+      default: return '📌';
+    }
   };
 
   if (loading) {
@@ -275,7 +313,7 @@ export default function SharedCompany() {
         </div>
 
         {/* Progress Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Progresso do Projeto</CardTitle>
@@ -308,6 +346,20 @@ export default function SharedCompany() {
                   {contentTasks.length}
                 </div>
                 <p className="text-gray-600 text-sm">Total de conteúdos</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Diário de Bordo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600 mb-2">
+                  {workLogEntries.length}
+                </div>
+                <p className="text-gray-600 text-sm">Entradas registradas</p>
               </div>
             </CardContent>
           </Card>
@@ -371,6 +423,51 @@ export default function SharedCompany() {
                             </span>
                           </div>
                         ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Work Log / Diário de Bordo */}
+        {workLogEntries.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Diário de Bordo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {workLogEntries.map((entry) => (
+                  <div key={entry.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg">{getCategoryIcon(entry.category)}</span>
+                        <h4 className="font-medium">{entry.title}</h4>
+                        {entry.checklist_item_id && (
+                          <Badge variant="secondary" className="text-xs">
+                            <CheckSquare className="h-3 w-3 mr-1" />
+                            Checklist
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {format(new Date(entry.completed_at), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}
+                      </div>
+                    </div>
+                    
+                    {entry.description && (
+                      <p className="text-gray-600 text-sm whitespace-pre-wrap">{entry.description}</p>
+                    )}
+                    
+                    {entry.category && (
+                      <div className="mt-2">
+                        <Badge variant="outline" className="text-xs">
+                          {entry.category}
+                        </Badge>
                       </div>
                     )}
                   </div>
