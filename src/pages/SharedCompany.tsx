@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, User, Mail, Phone, Calendar, Shield, CheckSquare } from "lucide-react";
+import { Building2, User, Mail, Phone, Calendar, Shield, CheckSquare, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 
@@ -53,6 +53,7 @@ export default function SharedCompany() {
   const [contentTasks, setContentTasks] = useState<ContentTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     async function fetchSharedCompanyData() {
@@ -136,6 +137,14 @@ export default function SharedCompany() {
 
         if (!checklistError && checklistData) {
           setChecklist(checklistData);
+          
+          // Initialize all categories as expanded
+          const categories = [...new Set(checklistData.map(item => item.category || "geral"))];
+          const expanded: Record<string, boolean> = {};
+          categories.forEach(cat => {
+            expanded[cat] = true;
+          });
+          setExpandedCategories(expanded);
         } else if (checklistError) {
           console.error('Checklist error:', checklistError);
         }
@@ -164,6 +173,13 @@ export default function SharedCompany() {
 
     fetchSharedCompanyData();
   }, [token]);
+
+  const toggleCategoryExpansion = (category: string) => {
+    setExpandedCategories({
+      ...expandedCategories,
+      [category]: !expandedCategories[category]
+    });
+  };
 
   if (loading) {
     return (
@@ -208,6 +224,16 @@ export default function SharedCompany() {
   const completedTasks = checklist.filter(item => item.completed).length;
   const totalTasks = checklist.length;
   const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  // Group checklist items by category
+  const groupedItems = checklist.reduce((acc: Record<string, ChecklistItem[]>, item) => {
+    const category = item.category || "geral";
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(item);
+    return acc;
+  }, {});
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -301,32 +327,51 @@ export default function SharedCompany() {
           </Card>
         </div>
 
-        {/* Checklist */}
+        {/* Checklist organized by categories */}
         {checklist.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Checklist do Projeto</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {checklist.map((item) => (
-                  <div key={item.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
-                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                      item.completed 
-                        ? 'bg-green-500 border-green-500' 
-                        : 'border-gray-300'
-                    }`}>
-                      {item.completed && (
-                        <span className="text-white text-xs">✓</span>
-                      )}
+              <div className="space-y-4">
+                {Object.keys(groupedItems).sort().map((category) => (
+                  <div key={category} className="border rounded-lg overflow-hidden">
+                    <div 
+                      className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                      onClick={() => toggleCategoryExpansion(category)}
+                    >
+                      <h4 className="font-medium text-gray-700 flex items-center">
+                        {expandedCategories[category] ? 
+                          <ChevronDown className="h-4 w-4 mr-2" /> : 
+                          <ChevronRight className="h-4 w-4 mr-2" />
+                        }
+                        {category.charAt(0).toUpperCase() + category.slice(1)} ({groupedItems[category].length})
+                      </h4>
+                      <div className="text-xs text-gray-500">
+                        {groupedItems[category].filter(item => item.completed).length} de {groupedItems[category].length} completos
+                      </div>
                     </div>
-                    <span className={`flex-1 ${item.completed ? 'line-through text-gray-500' : ''}`}>
-                      {item.title}
-                    </span>
-                    {item.category && (
-                      <Badge variant="outline" className="text-xs">
-                        {item.category}
-                      </Badge>
+                    
+                    {expandedCategories[category] && (
+                      <div className="space-y-2 p-3 bg-white">
+                        {groupedItems[category].map((item) => (
+                          <div key={item.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
+                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                              item.completed 
+                                ? 'bg-green-500 border-green-500' 
+                                : 'border-gray-300'
+                            }`}>
+                              {item.completed && (
+                                <span className="text-white text-xs">✓</span>
+                              )}
+                            </div>
+                            <span className={`flex-1 ${item.completed ? 'line-through text-gray-500' : ''}`}>
+                              {item.title}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 ))}
