@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Building2, User, Mail, Phone, Calendar, Shield, CheckSquare, ChevronDown, ChevronRight, Clock, FileText } from "lucide-react";
 import { format } from "date-fns";
@@ -379,136 +380,148 @@ export default function SharedCompany() {
           </Card>
         </div>
 
-        {/* Checklist organized by categories */}
-        {checklist.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Checklist do Projeto</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Object.keys(groupedItems).sort().map((category) => (
-                  <div key={category} className="border rounded-lg overflow-hidden">
-                    <div 
-                      className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-                      onClick={() => toggleCategoryExpansion(category)}
-                    >
-                      <h4 className="font-medium text-gray-700 flex items-center">
-                        {expandedCategories[category] ? 
-                          <ChevronDown className="h-4 w-4 mr-2" /> : 
-                          <ChevronRight className="h-4 w-4 mr-2" />
-                        }
-                        {category.charAt(0).toUpperCase() + category.slice(1)} ({groupedItems[category].length})
-                      </h4>
-                      <div className="text-xs text-gray-500">
-                        {groupedItems[category].filter(item => item.completed).length} de {groupedItems[category].length} completos
+        {/* Organized sections using Accordion */}
+        <Accordion type="multiple" defaultValue={["checklist"]} className="w-full">
+          {/* Checklist Section */}
+          {checklist.length > 0 && (
+            <AccordionItem value="checklist">
+              <AccordionTrigger className="text-lg font-semibold">
+                <div className="flex items-center">
+                  <CheckSquare className="mr-2 h-5 w-5" />
+                  Checklist do Projeto ({completedTasks}/{totalTasks})
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  {Object.keys(groupedItems).sort().map((category) => (
+                    <div key={category} className="border rounded-lg overflow-hidden">
+                      <div 
+                        className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => toggleCategoryExpansion(category)}
+                      >
+                        <h4 className="font-medium text-gray-700 flex items-center">
+                          {expandedCategories[category] ? 
+                            <ChevronDown className="h-4 w-4 mr-2" /> : 
+                            <ChevronRight className="h-4 w-4 mr-2" />
+                          }
+                          {category.charAt(0).toUpperCase() + category.slice(1)} ({groupedItems[category].length})
+                        </h4>
+                        <div className="text-xs text-gray-500">
+                          {groupedItems[category].filter(item => item.completed).length} de {groupedItems[category].length} completos
+                        </div>
                       </div>
-                    </div>
-                    
-                    {expandedCategories[category] && (
-                      <div className="space-y-2 p-3 bg-white">
-                        {groupedItems[category].map((item) => (
-                          <div key={item.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
-                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                              item.completed 
-                                ? 'bg-green-500 border-green-500' 
-                                : 'border-gray-300'
-                            }`}>
-                              {item.completed && (
-                                <span className="text-white text-xs">✓</span>
-                              )}
+                      
+                      {expandedCategories[category] && (
+                        <div className="space-y-2 p-3 bg-white">
+                          {groupedItems[category].map((item) => (
+                            <div key={item.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
+                              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                item.completed 
+                                  ? 'bg-green-500 border-green-500' 
+                                  : 'border-gray-300'
+                              }`}>
+                                {item.completed && (
+                                  <span className="text-white text-xs">✓</span>
+                                )}
+                              </div>
+                              <span className={`flex-1 ${item.completed ? 'line-through text-gray-500' : ''}`}>
+                                {item.title}
+                              </span>
                             </div>
-                            <span className={`flex-1 ${item.completed ? 'line-through text-gray-500' : ''}`}>
-                              {item.title}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
 
-        {/* Work Log / Diário de Bordo */}
-        {workLogEntries.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Diário de Bordo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {workLogEntries.map((entry) => (
-                  <div key={entry.id} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg">{getCategoryIcon(entry.category)}</span>
-                        <h4 className="font-medium">{entry.title}</h4>
-                        {entry.checklist_item_id && (
-                          <Badge variant="secondary" className="text-xs">
-                            <CheckSquare className="h-3 w-3 mr-1" />
-                            Checklist
+          {/* Work Log Section */}
+          {workLogEntries.length > 0 && (
+            <AccordionItem value="worklog">
+              <AccordionTrigger className="text-lg font-semibold">
+                <div className="flex items-center">
+                  <FileText className="mr-2 h-5 w-5" />
+                  Diário de Bordo ({workLogEntries.length} entradas)
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  {workLogEntries.map((entry) => (
+                    <div key={entry.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg">{getCategoryIcon(entry.category)}</span>
+                          <h4 className="font-medium">{entry.title}</h4>
+                          {entry.checklist_item_id && (
+                            <Badge variant="secondary" className="text-xs">
+                              <CheckSquare className="h-3 w-3 mr-1" />
+                              Checklist
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {format(new Date(entry.completed_at), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}
+                        </div>
+                      </div>
+                      
+                      {entry.description && (
+                        <p className="text-gray-600 text-sm whitespace-pre-wrap">{entry.description}</p>
+                      )}
+                      
+                      {entry.category && (
+                        <div className="mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {entry.category}
                           </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center text-xs text-gray-500">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {format(new Date(entry.completed_at), "dd/MM/yyyy 'às' HH:mm", { locale: pt })}
-                      </div>
+                        </div>
+                      )}
                     </div>
-                    
-                    {entry.description && (
-                      <p className="text-gray-600 text-sm whitespace-pre-wrap">{entry.description}</p>
-                    )}
-                    
-                    {entry.category && (
-                      <div className="mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {entry.category}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
 
-        {/* Content Tasks */}
-        {contentTasks.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Conteúdos do Projeto</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {contentTasks.map((task) => (
-                  <div key={task.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-medium">{task.title}</h3>
-                      <div className="flex space-x-2">
-                        <Badge variant="outline">
-                          {task.type}
-                        </Badge>
-                        <Badge 
-                          variant={task.client_status === 'aprovado' ? 'default' : 'secondary'}
-                        >
-                          {task.client_status}
-                        </Badge>
+          {/* Content Tasks Section */}
+          {contentTasks.length > 0 && (
+            <AccordionItem value="content">
+              <AccordionTrigger className="text-lg font-semibold">
+                <div className="flex items-center">
+                  <FileText className="mr-2 h-5 w-5" />
+                  Conteúdos do Projeto ({contentTasks.length})
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  {contentTasks.map((task) => (
+                    <div key={task.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium">{task.title}</h3>
+                        <div className="flex space-x-2">
+                          <Badge variant="outline">
+                            {task.type}
+                          </Badge>
+                          <Badge 
+                            variant={task.client_status === 'aprovado' ? 'default' : 'secondary'}
+                          >
+                            {task.client_status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600 whitespace-pre-wrap">
+                        {task.content}
                       </div>
                     </div>
-                    <div className="text-sm text-gray-600 whitespace-pre-wrap">
-                      {task.content}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+        </Accordion>
 
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm py-4">
