@@ -1,14 +1,14 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CheckSquare, Key, Link, Plus, Save, Trash2, Edit, X, FileText } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ArrowLeft, Edit, X, Save, CheckSquare, Key, FileText, Link } from "lucide-react";
 import { toast } from "sonner";
 import { CompanyCredentials } from "@/components/company-details/CompanyCredentials";
 import { CompanyChecklist } from "@/components/company-details/CompanyChecklist";
@@ -30,7 +30,6 @@ export default function CompanyDetails() {
   const navigate = useNavigate();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'checklist' | 'credentials' | 'notes' | 'content' | 'worklog'>('checklist');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Omit<Company, 'id'>>({
     name: '',
@@ -163,7 +162,8 @@ export default function CompanyDetails() {
         <h1 className="text-2xl font-bold">{company?.name}</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Informações da Empresa */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Informações da Empresa</CardTitle>
@@ -273,55 +273,69 @@ export default function CompanyDetails() {
             )}
           </CardContent>
         </Card>
-        
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <div className="flex space-x-4 border-b pb-3">
-              <button 
-                className={`py-2 px-4 font-medium ${activeTab === 'checklist' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-600'}`}
-                onClick={() => setActiveTab('checklist')}
-              >
-                <CheckSquare className="inline mr-2 h-4 w-4" />
-                Checklist
-              </button>
-              <button 
-                className={`py-2 px-4 font-medium ${activeTab === 'worklog' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-600'}`}
-                onClick={() => setActiveTab('worklog')}
-              >
-                <FileText className="inline mr-2 h-4 w-4" />
+
+        {/* Seções Organizadas em Accordion */}
+        <Accordion type="multiple" defaultValue={["checklist"]} className="w-full">
+          <AccordionItem value="checklist">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center">
+                <CheckSquare className="mr-2 h-5 w-5" />
+                Checklist do Projeto
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <CompanyChecklist companyId={company.id} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="worklog">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center">
+                <FileText className="mr-2 h-5 w-5" />
                 Diário de Bordo
-              </button>
-              <button 
-                className={`py-2 px-4 font-medium ${activeTab === 'credentials' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-600'}`}
-                onClick={() => setActiveTab('credentials')}
-              >
-                <Key className="inline mr-2 h-4 w-4" />
-                Credenciais
-              </button>
-              <button 
-                className={`py-2 px-4 font-medium ${activeTab === 'notes' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-600'}`}
-                onClick={() => setActiveTab('notes')}
-              >
-                <Link className="inline mr-2 h-4 w-4" />
-                Anotações
-              </button>
-              <button 
-                className={`py-2 px-4 font-medium ${activeTab === 'content' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-600'}`}
-                onClick={() => setActiveTab('content')}
-              >
-                <FileText className="inline mr-2 h-4 w-4" />
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <CompanyWorkLog companyId={company.id} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="content">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center">
+                <FileText className="mr-2 h-5 w-5" />
                 Conteúdos
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {activeTab === 'checklist' && <CompanyChecklist companyId={company.id} />}
-            {activeTab === 'worklog' && <CompanyWorkLog companyId={company.id} />}
-            {activeTab === 'credentials' && <CompanyCredentials companyId={company.id} companyName={company.name} />}
-            {activeTab === 'notes' && <CompanyNotes companyId={company.id} />}
-            {activeTab === 'content' && <CompanyContentTasks companyId={company.id} companyName={company.name} />}
-          </CardContent>
-        </Card>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <CompanyContentTasks companyId={company.id} companyName={company.name} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="credentials">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center">
+                <Key className="mr-2 h-5 w-5" />
+                Credenciais
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <CompanyCredentials companyId={company.id} companyName={company.name} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="notes">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center">
+                <Link className="mr-2 h-5 w-5" />
+                Anotações
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <CompanyNotes companyId={company.id} />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
     </div>
   );
