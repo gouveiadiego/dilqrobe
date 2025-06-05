@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from '@supabase/supabase-js';
@@ -495,7 +494,7 @@ export default function SharedCompany() {
             </AccordionItem>
           )}
 
-          {/* Enhanced Work Log Timeline Section */}
+          {/* Work Log Timeline Section - New Design */}
           {workLogEntries.length > 0 && (
             <AccordionItem value="worklog">
               <AccordionTrigger className="text-lg font-semibold">
