@@ -1,12 +1,15 @@
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Building2, User, Mail, Phone, Calendar, Shield, CheckSquare, ChevronDown, ChevronRight, Clock, FileText, Briefcase } from "lucide-react";
+import { Building2, User, Mail, Phone, Calendar, Shield, CheckSquare, ChevronDown, ChevronRight, Clock, FileText, Briefcase, TrendingUp, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 // Create a separate client for public access
 const supabaseUrl = 'https://wgnvrxubwifcscrbkimm.supabase.co';
@@ -209,13 +212,13 @@ export default function SharedCompany() {
 
   const getCategoryIcon = (category: string | null) => {
     switch (category) {
-      case 'design': return { icon: '🎨', color: 'bg-pink-100 text-pink-800' };
-      case 'desenvolvimento': return { icon: '💻', color: 'bg-blue-100 text-blue-800' };
-      case 'conteúdo': return { icon: '📝', color: 'bg-green-100 text-green-800' };
-      case 'seo': return { icon: '🔍', color: 'bg-purple-100 text-purple-800' };
-      case 'reunião': return { icon: '🤝', color: 'bg-orange-100 text-orange-800' };
-      case 'planejamento': return { icon: '📋', color: 'bg-indigo-100 text-indigo-800' };
-      default: return { icon: '📌', color: 'bg-gray-100 text-gray-800' };
+      case 'design': return { icon: '🎨', color: 'bg-pink-100 text-pink-800', bgColor: '#fdf2f8', chartColor: '#ec4899' };
+      case 'desenvolvimento': return { icon: '💻', color: 'bg-blue-100 text-blue-800', bgColor: '#eff6ff', chartColor: '#3b82f6' };
+      case 'conteúdo': return { icon: '📝', color: 'bg-green-100 text-green-800', bgColor: '#f0fdf4', chartColor: '#22c55e' };
+      case 'seo': return { icon: '🔍', color: 'bg-purple-100 text-purple-800', bgColor: '#faf5ff', chartColor: '#a855f7' };
+      case 'reunião': return { icon: '🤝', color: 'bg-orange-100 text-orange-800', bgColor: '#fff7ed', chartColor: '#f97316' };
+      case 'planejamento': return { icon: '📋', color: 'bg-indigo-100 text-indigo-800', bgColor: '#eef2ff', chartColor: '#6366f1' };
+      default: return { icon: '📌', color: 'bg-gray-100 text-gray-800', bgColor: '#f9fafb', chartColor: '#6b7280' };
     }
   };
 
@@ -229,6 +232,34 @@ export default function SharedCompany() {
       case 'planejamento': return 'Planejamento';
       default: return 'Geral';
     }
+  };
+
+  // Prepare chart data
+  const getCategoryChartData = () => {
+    const categoryCount: Record<string, number> = {};
+    workLogEntries.forEach(entry => {
+      const category = entry.category || 'geral';
+      categoryCount[category] = (categoryCount[category] || 0) + 1;
+    });
+
+    return Object.entries(categoryCount).map(([category, count]) => ({
+      category: getCategoryDisplayName(category),
+      count,
+      fill: getCategoryIcon(category).chartColor
+    }));
+  };
+
+  // Prepare timeline data by month
+  const getTimelineData = () => {
+    const monthlyData: Record<string, number> = {};
+    workLogEntries.forEach(entry => {
+      const month = format(new Date(entry.completed_at), 'MM/yyyy');
+      monthlyData[month] = (monthlyData[month] || 0) + 1;
+    });
+
+    return Object.entries(monthlyData)
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
   };
 
   if (loading) {
@@ -285,15 +316,20 @@ export default function SharedCompany() {
     return acc;
   }, {});
 
-  // Group work log entries by category
-  const groupedWorkLogEntries = workLogEntries.reduce((acc: Record<string, WorkLogEntry[]>, entry) => {
-    const category = entry.category || "geral";
-    if (!acc[category]) {
-      acc[category] = [];
+  // Group work log entries by date for timeline
+  const groupedByDate = workLogEntries.reduce((acc: Record<string, WorkLogEntry[]>, entry) => {
+    const date = format(new Date(entry.completed_at), 'yyyy-MM-dd');
+    if (!acc[date]) {
+      acc[date] = [];
     }
-    acc[category].push(entry);
+    acc[date].push(entry);
     return acc;
   }, {});
+
+  const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+  const chartData = getCategoryChartData();
+  const timelineChartData = getTimelineData();
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -374,14 +410,14 @@ export default function SharedCompany() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Diário de Bordo</CardTitle>
+              <CardTitle className="text-lg">Atividades</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600 mb-2">
                   {workLogEntries.length}
                 </div>
-                <p className="text-gray-600 text-sm">Entradas registradas</p>
+                <p className="text-gray-600 text-sm">Total realizadas</p>
               </div>
             </CardContent>
           </Card>
@@ -459,104 +495,169 @@ export default function SharedCompany() {
             </AccordionItem>
           )}
 
-          {/* Enhanced Work Log Section */}
+          {/* Enhanced Work Log Timeline Section */}
           {workLogEntries.length > 0 && (
             <AccordionItem value="worklog">
               <AccordionTrigger className="text-lg font-semibold">
                 <div className="flex items-center">
-                  <Briefcase className="mr-2 h-5 w-5" />
-                  Relatório de Atividades ({workLogEntries.length} registros)
+                  <TrendingUp className="mr-2 h-5 w-5" />
+                  Linha do Tempo do Projeto ({workLogEntries.length} atividades)
                 </div>
               </AccordionTrigger>
               <AccordionContent>
-                <div className="space-y-6">
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-blue-700 mb-1">
-                          {workLogEntries.length}
-                        </div>
-                        <p className="text-sm text-blue-600">Total de Atividades</p>
+                <div className="space-y-8">
+                  {/* Analytics Dashboard */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Activity Distribution Chart */}
+                    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                      <CardHeader>
+                        <CardTitle className="flex items-center text-lg">
+                          <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
+                          Distribuição por Categoria
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ChartContainer
+                          config={{
+                            count: {
+                              label: "Atividades",
+                            },
+                          }}
+                          className="h-[200px]"
+                        >
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={chartData}
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={60}
+                                dataKey="count"
+                                label={(entry) => `${entry.category}: ${entry.count}`}
+                              >
+                                {chartData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                              </Pie>
+                              <ChartTooltip content={<ChartTooltipContent />} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </ChartContainer>
                       </CardContent>
                     </Card>
-                    <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-green-700 mb-1">
-                          {Object.keys(groupedWorkLogEntries).length}
-                        </div>
-                        <p className="text-sm text-green-600">Categorias</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-purple-700 mb-1">
-                          {workLogEntries.filter(entry => entry.checklist_item_id).length}
-                        </div>
-                        <p className="text-sm text-purple-600">Do Checklist</p>
+
+                    {/* Timeline Chart */}
+                    <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                      <CardHeader>
+                        <CardTitle className="flex items-center text-lg">
+                          <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
+                          Atividades por Mês
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ChartContainer
+                          config={{
+                            count: {
+                              label: "Atividades",
+                              color: "#22c55e",
+                            },
+                          }}
+                          className="h-[200px]"
+                        >
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={timelineChartData}>
+                              <XAxis dataKey="month" />
+                              <YAxis />
+                              <ChartTooltip content={<ChartTooltipContent />} />
+                              <Bar dataKey="count" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </ChartContainer>
                       </CardContent>
                     </Card>
                   </div>
 
-                  {/* Activities by Category */}
-                  {Object.keys(groupedWorkLogEntries).sort().map((category) => {
-                    const categoryInfo = getCategoryIcon(category);
-                    const categoryEntries = groupedWorkLogEntries[category];
+                  {/* Interactive Timeline */}
+                  <div className="relative">
+                    <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-500 via-blue-500 to-green-500"></div>
                     
-                    return (
-                      <div key={category} className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${categoryInfo.color}`}>
-                                <span className="mr-2">{categoryInfo.icon}</span>
-                                {getCategoryDisplayName(category)}
+                    <div className="space-y-8">
+                      {sortedDates.map((date, dateIndex) => {
+                        const dayEntries = groupedByDate[date];
+                        const totalEntriesForDay = dayEntries.length;
+                        
+                        return (
+                          <div key={date} className="relative">
+                            {/* Timeline marker */}
+                            <div className="absolute left-6 w-4 h-4 bg-white border-4 border-purple-500 rounded-full shadow-lg z-10"></div>
+                            
+                            {/* Date header */}
+                            <div className="ml-16 mb-4">
+                              <div className="inline-flex items-center bg-purple-100 text-purple-800 px-4 py-2 rounded-full font-semibold">
+                                <Calendar className="h-4 w-4 mr-2" />
+                                {format(new Date(date), "dd 'de' MMMM 'de' yyyy", { locale: pt })}
+                                <Badge className="ml-2 bg-purple-600 text-white">
+                                  {totalEntriesForDay} {totalEntriesForDay === 1 ? 'atividade' : 'atividades'}
+                                </Badge>
                               </div>
-                              <span className="text-sm text-gray-500">
-                                {categoryEntries.length} {categoryEntries.length === 1 ? 'atividade' : 'atividades'}
-                              </span>
+                            </div>
+
+                            {/* Activities for this date */}
+                            <div className="ml-16 space-y-4">
+                              {dayEntries.map((entry, entryIndex) => {
+                                const categoryInfo = getCategoryIcon(entry.category);
+                                
+                                return (
+                                  <Card 
+                                    key={entry.id} 
+                                    className="hover:shadow-lg transition-all duration-300 border-l-4 hover:scale-[1.02]"
+                                    style={{ borderLeftColor: categoryInfo.chartColor }}
+                                  >
+                                    <CardContent className="p-6">
+                                      <div className="flex items-start justify-between mb-3">
+                                        <div className="flex items-center space-x-3">
+                                          <div 
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-sm`}
+                                            style={{ backgroundColor: categoryInfo.bgColor }}
+                                          >
+                                            {categoryInfo.icon}
+                                          </div>
+                                          <div>
+                                            <h4 className="font-semibold text-gray-900 text-lg">{entry.title}</h4>
+                                            <div className="flex items-center space-x-3 mt-1">
+                                              <Badge variant="secondary" className={categoryInfo.color}>
+                                                {getCategoryDisplayName(entry.category)}
+                                              </Badge>
+                                              <div className="flex items-center text-sm text-gray-500">
+                                                <Clock className="h-3 w-3 mr-1" />
+                                                {format(new Date(entry.completed_at), "HH:mm", { locale: pt })}
+                                              </div>
+                                              {entry.checklist_item_id && (
+                                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                  <CheckSquare className="h-3 w-3 mr-1" />
+                                                  Checklist
+                                                </Badge>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      {entry.description && (
+                                        <div className="bg-gray-50 rounded-lg p-4 mt-4 border-l-2" style={{ borderLeftColor: categoryInfo.chartColor }}>
+                                          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.description}</p>
+                                        </div>
+                                      )}
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="divide-y divide-gray-100">
-                          {categoryEntries.map((entry, index) => (
-                            <div key={entry.id} className="p-6 hover:bg-gray-50 transition-colors">
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex-1">
-                                  <h4 className="font-semibold text-gray-900 text-lg mb-2">{entry.title}</h4>
-                                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                    <div className="flex items-center">
-                                      <Calendar className="h-4 w-4 mr-1" />
-                                      {format(new Date(entry.completed_at), "dd 'de' MMMM 'de' yyyy", { locale: pt })}
-                                    </div>
-                                    <div className="flex items-center">
-                                      <Clock className="h-4 w-4 mr-1" />
-                                      {format(new Date(entry.completed_at), "HH:mm", { locale: pt })}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex space-x-2">
-                                  {entry.checklist_item_id && (
-                                    <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
-                                      <CheckSquare className="h-3 w-3 mr-1" />
-                                      Checklist
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {entry.description && (
-                                <div className="bg-gray-50 rounded-lg p-4 mt-3">
-                                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.description}</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
