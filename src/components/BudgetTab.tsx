@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +46,8 @@ import {
   Clock,
   PanelRight,
   Plus,
-  Sparkles 
+  Sparkles,
+  Pencil 
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
@@ -85,6 +85,7 @@ export function BudgetTab() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [clientData, setClientData] = useState({
@@ -281,7 +282,6 @@ export function BudgetTab() {
       if (!user) throw new Error('User not authenticated');
 
       const budgetData = {
-        user_id: user.id,
         client_name: clientData.name,
         client_document: clientData.document,
         client_email: clientData.email,
@@ -300,45 +300,36 @@ export function BudgetTab() {
         total_amount: calculateTotal(),
       };
 
-      const { error } = await supabase
-        .from('budgets')
-        .insert(budgetData);
+      let error;
+      
+      if (editingBudget) {
+        // Update existing budget
+        const { error: updateError } = await supabase
+          .from('budgets')
+          .update(budgetData)
+          .eq('id', editingBudget.id);
+        error = updateError;
+      } else {
+        // Create new budget
+        const { error: insertError } = await supabase
+          .from('budgets')
+          .insert({
+            ...budgetData,
+            user_id: user.id,
+          });
+        error = insertError;
+      }
 
       if (error) throw error;
 
       toast({
-        title: "Orçamento salvo com sucesso!",
-        description: "O orçamento foi salvo e pode ser visualizado na lista abaixo.",
+        title: editingBudget ? "Orçamento atualizado com sucesso!" : "Orçamento salvo com sucesso!",
+        description: editingBudget ? "O orçamento foi atualizado na lista." : "O orçamento foi salvo e pode ser visualizado na lista abaixo.",
         duration: 5000,
       });
 
       // Reset form
-      setClientData({
-        name: '',
-        document: '',
-        email: '',
-        phone: '',
-        address: '',
-      });
-      setCompanyData({
-        name: '',
-        document: '',
-        phone: '',
-        address: '',
-        logo: '',
-      });
-      setBudgetDetails({
-        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        paymentTerms: '',
-        delivery: '',
-        notes: '',
-      });
-      setItems([{
-        description: '',
-        quantity: 1,
-        unitPrice: 0,
-        totalPrice: 0,
-      }]);
+      resetForm();
       setShowForm(false);
       fetchBudgets();
 
@@ -485,6 +476,81 @@ export function BudgetTab() {
     }
   };
 
+  const handleEditBudget = (budget: Budget) => {
+    setEditingBudget(budget);
+    
+    // Populate form with budget data
+    setClientData({
+      name: budget.client_name || '',
+      document: budget.client_document || '',
+      email: budget.client_email || '',
+      phone: budget.client_phone || '',
+      address: budget.client_address || '',
+    });
+    
+    setCompanyData({
+      name: budget.company_name || '',
+      document: budget.company_document || '',
+      phone: budget.company_phone || '',
+      address: budget.company_address || '',
+      logo: budget.company_logo || '',
+    });
+    
+    setBudgetDetails({
+      validUntil: budget.valid_until ? new Date(budget.valid_until).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      paymentTerms: budget.payment_terms || '',
+      delivery: budget.delivery_time || '',
+      notes: budget.notes || '',
+    });
+    
+    // Parse and set items
+    const budgetItems = typeof budget.items === 'string' ? JSON.parse(budget.items) : budget.items;
+    setItems(Array.isArray(budgetItems) ? budgetItems : [{
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      totalPrice: 0,
+    }]);
+    
+    setShowForm(true);
+    setFormTab('company');
+  };
+
+  const resetForm = () => {
+    setEditingBudget(null);
+    setClientData({
+      name: '',
+      document: '',
+      email: '',
+      phone: '',
+      address: '',
+    });
+    setCompanyData({
+      name: '',
+      document: '',
+      phone: '',
+      address: '',
+      logo: companyLogo || '',
+    });
+    setBudgetDetails({
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      paymentTerms: '',
+      delivery: '',
+      notes: '',
+    });
+    setItems([{
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      totalPrice: 0,
+    }]);
+  };
+
+  const handleCancelEdit = () => {
+    resetForm();
+    setShowForm(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 p-6 backdrop-blur-sm">
@@ -506,14 +572,17 @@ export function BudgetTab() {
           <div className="flex gap-2">
             <Button 
               variant="outline" 
-              onClick={() => setShowForm(false)}
+              onClick={handleCancelEdit}
               className="border-indigo-200 hover:border-indigo-400 transition-all duration-300"
             >
               <FileText className="mr-2 h-4 w-4" />
               Ver Lista
             </Button>
             <Button 
-              onClick={() => setShowForm(true)}
+              onClick={() => {
+                resetForm();
+                setShowForm(true);
+              }}
               className="bg-gradient-to-r from-dilq-indigo to-dilq-purple hover:from-dilq-indigo/90 hover:to-dilq-purple/90 text-white transition-all duration-300"
             >
               <FilePlus className="mr-2 h-4 w-4" />
@@ -544,7 +613,10 @@ export function BudgetTab() {
                   <p className="mb-2">Nenhum orçamento encontrado.</p>
                   <Button 
                     variant="outline" 
-                    onClick={() => setShowForm(true)}
+                    onClick={() => {
+                      resetForm();
+                      setShowForm(true);
+                    }}
                     className="mt-2"
                   >
                     <FilePlus className="mr-2 h-4 w-4" />
@@ -584,6 +656,15 @@ export function BudgetTab() {
                         </div>
                       </div>
                       <div className="flex justify-end mt-4 space-x-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditBudget(budget)}
+                          className="border-green-200 hover:border-green-400 text-green-600 transition-all duration-300"
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Editar
+                        </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -636,10 +717,10 @@ export function BudgetTab() {
             <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100/50">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-indigo-500" />
-                Novo Orçamento
+                {editingBudget ? 'Editar Orçamento' : 'Novo Orçamento'}
               </CardTitle>
               <CardDescription>
-                Preencha os dados para gerar um novo orçamento
+                {editingBudget ? 'Modifique os dados do orçamento existente' : 'Preencha os dados para gerar um novo orçamento'}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -1014,7 +1095,7 @@ export function BudgetTab() {
                     <div className="space-x-2">
                       <Button 
                         variant="outline" 
-                        onClick={() => setShowForm(false)}
+                        onClick={handleCancelEdit}
                         className="border-indigo-200 hover:border-indigo-400"
                       >
                         Cancelar
@@ -1030,12 +1111,12 @@ export function BudgetTab() {
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Salvando...
+                            {editingBudget ? 'Atualizando...' : 'Salvando...'}
                           </>
                         ) : (
                           <>
                             <Sparkles className="mr-2 h-4 w-4" />
-                            Salvar Orçamento
+                            {editingBudget ? 'Atualizar Orçamento' : 'Salvar Orçamento'}
                           </>
                         )}
                       </Button>
