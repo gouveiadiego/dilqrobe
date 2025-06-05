@@ -233,11 +233,21 @@ export default function SharedCompany() {
     }
   };
 
+  // Helper function to get the correct category for a work log entry
+  const getWorkLogEntryCategory = (entry: WorkLogEntry) => {
+    if (entry.checklist_item_id) {
+      // Find the related checklist item to get its category
+      const checklistItem = checklist.find(item => item.id === entry.checklist_item_id);
+      return checklistItem?.category || 'geral';
+    }
+    return entry.category || 'geral';
+  };
+
   // Prepare chart data
   const getCategoryChartData = () => {
     const categoryCount: Record<string, number> = {};
     workLogEntries.forEach(entry => {
-      const category = entry.category || 'geral';
+      const category = getWorkLogEntryCategory(entry);
       categoryCount[category] = (categoryCount[category] || 0) + 1;
     });
 
@@ -604,7 +614,8 @@ export default function SharedCompany() {
                             {/* Activities for this date */}
                             <div className="ml-16 space-y-4">
                               {dayEntries.map((entry, entryIndex) => {
-                                const categoryInfo = getCategoryIcon(entry.category);
+                                const entryCategory = getWorkLogEntryCategory(entry);
+                                const categoryInfo = getCategoryIcon(entryCategory);
                                 
                                 return (
                                   <Card 
@@ -625,7 +636,7 @@ export default function SharedCompany() {
                                             <h4 className="font-semibold text-gray-900 text-lg">{entry.title}</h4>
                                             <div className="flex items-center space-x-3 mt-1">
                                               <Badge variant="secondary" className={categoryInfo.color}>
-                                                {getCategoryDisplayName(entry.category)}
+                                                {getCategoryDisplayName(entryCategory)}
                                               </Badge>
                                               <div className="flex items-center text-sm text-gray-500">
                                                 <Clock className="h-3 w-3 mr-1" />
