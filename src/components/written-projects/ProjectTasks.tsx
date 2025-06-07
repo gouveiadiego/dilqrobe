@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +24,8 @@ import {
   Edit,
   Trash2,
   Plus,
-  FileText
+  FileText,
+  RefreshCw
 } from "lucide-react";
 import {
   AlertDialog,
@@ -69,12 +69,17 @@ export function ProjectTasks() {
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({
     queryKey: ['project-companies'],
     queryFn: async () => {
+      console.log('Fetching project companies...');
       const { data, error } = await supabase
         .from('project_companies')
         .select('*')
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching companies:', error);
+        throw error;
+      }
+      console.log('Companies loaded:', data);
       return data;
     }
   });
@@ -82,6 +87,7 @@ export function ProjectTasks() {
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['project-tasks'],
     queryFn: async () => {
+      console.log('Fetching project tasks...');
       const { data, error } = await supabase
         .from('project_tasks')
         .select(`
@@ -92,10 +98,19 @@ export function ProjectTasks() {
         `)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching project tasks:', error);
+        throw error;
+      }
+      console.log('Project tasks loaded:', data);
       return data as ProjectTask[];
     }
   });
+
+  const refreshTasks = () => {
+    console.log('Refreshing project tasks...');
+    queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+  };
 
   const addTaskMutation = useMutation({
     mutationFn: async (task: Omit<ProjectTask, 'id'>) => {
@@ -243,104 +258,110 @@ export function ProjectTasks() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Tarefas do Projeto</h3>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar Tarefa
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Nova Tarefa</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <label htmlFor="title" className="text-sm font-medium">Título</label>
-                <Input
-                  id="title"
-                  value={newTask.title}
-                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  placeholder="Título da tarefa"
-                />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={refreshTasks}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Atualizar
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Tarefa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Nova Tarefa</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <label htmlFor="title" className="text-sm font-medium">Título</label>
+                  <Input
+                    id="title"
+                    value={newTask.title}
+                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                    placeholder="Título da tarefa"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="description" className="text-sm font-medium">Descrição</label>
+                  <Textarea
+                    id="description"
+                    value={newTask.description || ''}
+                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                    placeholder="Descreva a tarefa"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="company" className="text-sm font-medium">Empresa</label>
+                  <Select
+                    value={newTask.company_id}
+                    onValueChange={(value) => setNewTask({ ...newTask, company_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma empresa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id}>
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="status" className="text-sm font-medium">Status</label>
+                  <Select
+                    value={newTask.status}
+                    onValueChange={(value: 'pending' | 'in_progress' | 'completed') => 
+                      setNewTask({ ...newTask, status: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="in_progress">Em Andamento</SelectItem>
+                      <SelectItem value="completed">Concluída</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="priority" className="text-sm font-medium">Prioridade</label>
+                  <Select
+                    value={newTask.priority || 'medium'}
+                    onValueChange={(value) => setNewTask({ ...newTask, priority: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a prioridade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Baixa</SelectItem>
+                      <SelectItem value="medium">Média</SelectItem>
+                      <SelectItem value="high">Alta</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <label htmlFor="dueDate" className="text-sm font-medium">Data de Entrega</label>
+                  <Input
+                    type="date"
+                    id="dueDate"
+                    value={newTask.due_date ? new Date(newTask.due_date).toISOString().split('T')[0] : ''}
+                    onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                  />
+                </div>
               </div>
-              <div className="grid gap-2">
-                <label htmlFor="description" className="text-sm font-medium">Descrição</label>
-                <Textarea
-                  id="description"
-                  value={newTask.description || ''}
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  placeholder="Descreva a tarefa"
-                />
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="company" className="text-sm font-medium">Empresa</label>
-                <Select
-                  value={newTask.company_id}
-                  onValueChange={(value) => setNewTask({ ...newTask, company_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma empresa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {companies.map((company) => (
-                      <SelectItem key={company.id} value={company.id}>
-                        {company.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="status" className="text-sm font-medium">Status</label>
-                <Select
-                  value={newTask.status}
-                  onValueChange={(value: 'pending' | 'in_progress' | 'completed') => 
-                    setNewTask({ ...newTask, status: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pendente</SelectItem>
-                    <SelectItem value="in_progress">Em Andamento</SelectItem>
-                    <SelectItem value="completed">Concluída</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="priority" className="text-sm font-medium">Prioridade</label>
-                <Select
-                  value={newTask.priority || 'medium'}
-                  onValueChange={(value) => setNewTask({ ...newTask, priority: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a prioridade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Baixa</SelectItem>
-                    <SelectItem value="medium">Média</SelectItem>
-                    <SelectItem value="high">Alta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="dueDate" className="text-sm font-medium">Data de Entrega</label>
-                <Input
-                  type="date"
-                  id="dueDate"
-                  value={newTask.due_date ? new Date(newTask.due_date).toISOString().split('T')[0] : ''}
-                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleAddTask}>Adicionar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
+                <Button onClick={handleAddTask}>Adicionar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -348,7 +369,7 @@ export function ProjectTasks() {
           <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-100">
             <FileText className="h-12 w-12 mx-auto text-gray-300 mb-3" />
             <h4 className="text-lg font-medium text-gray-700 mb-1">Nenhuma tarefa encontrada</h4>
-            <p className="text-gray-500 mb-4">Comece adicionando uma nova tarefa ao projeto.</p>
+            <p className="text-gray-500 mb-4">Comece adicionando uma nova tarefa ao projeto ou conclua uma tarefa da aba Execução que esteja vinculada a uma empresa.</p>
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Tarefa

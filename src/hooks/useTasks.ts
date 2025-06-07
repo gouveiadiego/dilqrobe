@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskUpdate } from "@/types/task";
@@ -35,8 +34,10 @@ const calculateNextDueDate = (currentDate: string, type: Task['recurrence_type']
 const createProjectTaskFromTask = async (task: Task) => {
   if (!task.project_company_id) return;
   
+  console.log('Creating project task for:', task.title, 'Company ID:', task.project_company_id);
+  
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('project_tasks')
       .insert({
         title: task.title,
@@ -45,13 +46,20 @@ const createProjectTaskFromTask = async (task: Task) => {
         company_id: task.project_company_id,
         due_date: task.due_date,
         priority: task.priority
-      });
+      })
+      .select()
+      .single();
     
     if (error) {
       console.error('Erro ao criar tarefa de projeto:', error);
+      toast.error('Erro ao sincronizar com projeto');
+    } else {
+      console.log('Tarefa de projeto criada com sucesso:', data);
+      toast.success('Tarefa sincronizada com o projeto!');
     }
   } catch (error) {
     console.error('Erro ao sincronizar com projeto:', error);
+    toast.error('Erro ao sincronizar com projeto');
   }
 };
 
@@ -101,6 +109,8 @@ export const useTasks = () => {
       // Set today's date as default when no date is provided
       const taskDate = newTask.due_date || new Date().toISOString();
 
+      console.log('Adding task with project_company_id:', newTask.project_company_id);
+
       const { data, error } = await supabase
         .from('tasks')
         .insert([{
@@ -120,14 +130,17 @@ export const useTasks = () => {
         .single();
 
       if (error) {
+        console.error('Error adding task:', error);
         toast.error('Erro ao adicionar tarefa');
         throw error;
       }
 
+      console.log('Task added successfully:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
       toast.success('Tarefa adicionada com sucesso');
     }
   });
