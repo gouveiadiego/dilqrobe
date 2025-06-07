@@ -30,13 +30,39 @@ const calculateNextDueDate = (currentDate: string, type: Task['recurrence_type']
   }
 };
 
-// Function to create a corresponding project task when a regular task is completed
+// Enhanced function to create a corresponding project task when a regular task is completed
 const createProjectTaskFromTask = async (task: Task) => {
-  if (!task.project_company_id) return;
+  if (!task.project_company_id) {
+    console.log('⚠️ Task has no project_company_id, skipping project task creation');
+    return;
+  }
   
-  console.log('Creating project task for:', task.title, 'Company ID:', task.project_company_id);
+  console.log('🔄 Creating project task for:', {
+    taskTitle: task.title,
+    companyId: task.project_company_id,
+    taskId: task.id
+  });
   
   try {
+    // First, check if a project task already exists for this regular task
+    const { data: existingTask, error: checkError } = await supabase
+      .from('project_tasks')
+      .select('id')
+      .eq('title', task.title)
+      .eq('company_id', task.project_company_id)
+      .eq('status', 'completed')
+      .maybeSingle();
+    
+    if (checkError) {
+      console.error('❌ Error checking for existing project task:', checkError);
+    }
+    
+    if (existingTask) {
+      console.log('ℹ️ Project task already exists for this task, skipping creation');
+      toast.info('Tarefa já sincronizada com o projeto');
+      return;
+    }
+
     const { data, error } = await supabase
       .from('project_tasks')
       .insert({
@@ -51,15 +77,23 @@ const createProjectTaskFromTask = async (task: Task) => {
       .single();
     
     if (error) {
-      console.error('Erro ao criar tarefa de projeto:', error);
+      console.error('❌ Error creating project task:', error);
       toast.error('Erro ao sincronizar com projeto');
+      throw error;
     } else {
-      console.log('Tarefa de projeto criada com sucesso:', data);
-      toast.success('Tarefa sincronizada com o projeto!');
+      console.log('✅ Project task created successfully:', {
+        projectTaskId: data.id,
+        title: data.title,
+        companyId: data.company_id,
+        status: data.status
+      });
+      toast.success('✅ Tarefa sincronizada com o projeto!');
+      return data;
     }
   } catch (error) {
-    console.error('Erro ao sincronizar com projeto:', error);
+    console.error('💥 Exception in createProjectTaskFromTask:', error);
     toast.error('Erro ao sincronizar com projeto');
+    throw error;
   }
 };
 
@@ -147,19 +181,26 @@ export const useTasks = () => {
 
   const toggleTaskMutation = useMutation({
     mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
+      console.log('🔄 Toggling task:', { id, completed });
+      
       const { error } = await supabase
         .from('tasks')
         .update({ completed })
         .eq('id', id);
 
       if (error) {
+        console.error('❌ Error toggling task:', error);
         toast.error('Erro ao atualizar tarefa');
         throw error;
       }
+      
+      console.log('✅ Task toggle successful');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // Aggressively invalidate project tasks to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+      console.log('🔄 Cache invalidated for tasks and project-tasks');
     }
   });
 
@@ -202,58 +243,98 @@ export const useTasks = () => {
 
   const toggleTask = async (id: string) => {
     const task = tasks.find(t => t.id === id);
-    if (task) {
-      const isCompleting = !task.completed;
+    if (!task) {
+      console.error('❌ Task not found:', id);
+      return;
+    }
 
-      if (task.is_recurring && isCompleting) {
-        const newRecurrenceCompleted = (task.recurrence_completed || 0) + 1;
+    const isCompleting = !task.completed;
+    console.log('🎯 Task action:', {
+      taskId: id,
+      taskTitle: task.title,
+      isCompleting,
+      isRecurring: task.is_recurring,
+      hasProjectCompany: !!task.project_company_id,
+      projectCompanyId: task.project_company_id
+    });
+
+    if (task.is_recurring && isCompleting) {
+      const newRecurrenceCompleted = (task.recurrence_completed || 0) + 1;
+      
+      if (task.recurrence_count !== null && newRecurrenceCompleted >= task.recurrence_count) {
+        console.log('🏁 Completing final recurrence for task:', task.title);
         
-        if (task.recurrence_count !== null && newRecurrenceCompleted >= task.recurrence_count) {
-          updateTaskMutation.mutate({ 
-            id, 
-            updates: { 
-              completed: true,
-              recurrence_completed: newRecurrenceCompleted
-            } 
-          });
-          
-          // Create project task if associated with a company
-          if (task.project_company_id) {
+        updateTaskMutation.mutate({ 
+          id, 
+          updates: { 
+            completed: true,
+            recurrence_completed: newRecurrenceCompleted
+          } 
+        });
+        
+        // Create project task if associated with a company
+        if (task.project_company_id) {
+          console.log('🔗 Creating project task for completed recurring task');
+          try {
             await createProjectTaskFromTask(task);
+            // Force refresh of project tasks
+            queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+            queryClient.refetchQueries({ queryKey: ['project-tasks'] });
+          } catch (error) {
+            console.error('💥 Failed to create project task:', error);
           }
-          
-          toast.success('Todas as recorrências foram concluídas!');
-        } else {
-          const nextDueDate = calculateNextDueDate(task.due_date!, task.recurrence_type);
-          
-          updateTaskMutation.mutate({
-            id,
-            updates: {
-              completed: false,
-              due_date: nextDueDate,
-              recurrence_completed: newRecurrenceCompleted
-            }
-          });
-
-          // Create project task if associated with a company
-          if (task.project_company_id) {
-            await createProjectTaskFromTask(task);
-          }
-
-          const recurrenceTypeText = {
-            weekly: 'semana',
-            biweekly: 'quinzena',
-            monthly: 'mês'
-          }[task.recurrence_type || 'monthly'];
-
-          toast.success(`Tarefa concluída! Próxima recorrência disponível no(a) próximo(a) ${recurrenceTypeText}.`);
         }
-      } else {
-        toggleTaskMutation.mutate({ id, completed: !task.completed });
         
-        // Create project task if completing and associated with a company
-        if (isCompleting && task.project_company_id) {
+        toast.success('Todas as recorrências foram concluídas!');
+      } else {
+        const nextDueDate = calculateNextDueDate(task.due_date!, task.recurrence_type);
+        
+        updateTaskMutation.mutate({
+          id,
+          updates: {
+            completed: false,
+            due_date: nextDueDate,
+            recurrence_completed: newRecurrenceCompleted
+          }
+        });
+
+        // Create project task if associated with a company
+        if (task.project_company_id) {
+          console.log('🔗 Creating project task for recurring task completion');
+          try {
+            await createProjectTaskFromTask(task);
+            // Force refresh of project tasks
+            queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+            queryClient.refetchQueries({ queryKey: ['project-tasks'] });
+          } catch (error) {
+            console.error('💥 Failed to create project task:', error);
+          }
+        }
+
+        const recurrenceTypeText = {
+          weekly: 'semana',
+          biweekly: 'quinzena',
+          monthly: 'mês'
+        }[task.recurrence_type || 'monthly'];
+
+        toast.success(`Tarefa concluída! Próxima recorrência disponível no(a) próximo(a) ${recurrenceTypeText}.`);
+      }
+    } else {
+      console.log('📝 Toggling regular task completion');
+      toggleTaskMutation.mutate({ id, completed: !task.completed });
+      
+      // Create project task if completing and associated with a company
+      if (isCompleting && task.project_company_id) {
+        console.log('🔗 Creating project task for regular task completion');
+        try {
           await createProjectTaskFromTask(task);
+          // Force refresh of project tasks immediately
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+            queryClient.refetchQueries({ queryKey: ['project-tasks'] });
+          }, 500); // Small delay to ensure the task creation is processed
+        } catch (error) {
+          console.error('💥 Failed to create project task:', error);
         }
       }
     }
