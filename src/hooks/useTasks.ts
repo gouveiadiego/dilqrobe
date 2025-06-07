@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskUpdate } from "@/types/task";
@@ -30,6 +31,30 @@ const calculateNextDueDate = (currentDate: string, type: Task['recurrence_type']
   }
 };
 
+// Function to create a corresponding project task when a regular task is completed
+const createProjectTaskFromTask = async (task: Task) => {
+  if (!task.project_company_id) return;
+  
+  try {
+    const { error } = await supabase
+      .from('project_tasks')
+      .insert({
+        title: task.title,
+        description: `Tarefa criada automaticamente: ${task.title}`,
+        status: 'completed',
+        company_id: task.project_company_id,
+        due_date: task.due_date,
+        priority: task.priority
+      });
+    
+    if (error) {
+      console.error('Erro ao criar tarefa de projeto:', error);
+    }
+  } catch (error) {
+    console.error('Erro ao sincronizar com projeto:', error);
+  }
+};
+
 export const useTasks = () => {
   const queryClient = useQueryClient();
 
@@ -56,6 +81,7 @@ export const useTasks = () => {
         is_recurring: Boolean(task.is_recurring),
         recurrence_count: task.recurrence_count !== undefined ? task.recurrence_count : null,
         recurrence_completed: task.recurrence_completed || 0,
+        project_company_id: task.project_company_id || null,
         subtasks: Array.isArray(task.subtasks) 
           ? (task.subtasks as any[]).map(st => ({
               id: st.id || crypto.randomUUID(),
@@ -87,7 +113,8 @@ export const useTasks = () => {
           recurrence_count: newTask.recurrence_count,
           recurrence_completed: 0,
           user_id: user.id,
-          subtasks: []
+          subtasks: [],
+          project_company_id: newTask.project_company_id
         }])
         .select()
         .single();
@@ -119,6 +146,7 @@ export const useTasks = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
     }
   });
 
@@ -154,6 +182,7 @@ export const useTasks = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
       toast.success('Tarefa atualizada com sucesso');
     }
   });
@@ -175,6 +204,11 @@ export const useTasks = () => {
             } 
           });
           
+          // Create project task if associated with a company
+          if (task.project_company_id) {
+            await createProjectTaskFromTask(task);
+          }
+          
           toast.success('Todas as recorrências foram concluídas!');
         } else {
           const nextDueDate = calculateNextDueDate(task.due_date!, task.recurrence_type);
@@ -188,6 +222,11 @@ export const useTasks = () => {
             }
           });
 
+          // Create project task if associated with a company
+          if (task.project_company_id) {
+            await createProjectTaskFromTask(task);
+          }
+
           const recurrenceTypeText = {
             weekly: 'semana',
             biweekly: 'quinzena',
@@ -198,6 +237,11 @@ export const useTasks = () => {
         }
       } else {
         toggleTaskMutation.mutate({ id, completed: !task.completed });
+        
+        // Create project task if completing and associated with a company
+        if (isCompleting && task.project_company_id) {
+          await createProjectTaskFromTask(task);
+        }
       }
     }
   };

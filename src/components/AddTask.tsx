@@ -1,13 +1,15 @@
+
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { useState } from "react";
-import { CalendarIcon, Flag, LayoutGrid, Tag } from "lucide-react";
+import { CalendarIcon, Flag, LayoutGrid, Tag, Building } from "lucide-react";
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { ptBR } from "date-fns/locale";
 import { Checkbox } from "./ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useProjectCompanies } from "@/hooks/useProjectCompanies";
 
 interface AddTaskProps {
   onAdd: (task: Omit<Task, "id" | "completed" | "user_id" | "subtasks">) => void;
@@ -36,6 +38,10 @@ export function AddTask({
   const [isOpen, setIsOpen] = useState(false);
   const [isSectionOpen, setIsSectionOpen] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState<Task["recurrence_type"]>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [isCompanyOpen, setIsCompanyOpen] = useState(false);
+
+  const { companies, isLoading: companiesLoading } = useProjectCompanies();
 
   const handleQuickAdd = () => {
     if (!title.trim()) return;
@@ -48,7 +54,8 @@ export function AddTask({
       is_recurring: isRecurring,
       recurrence_count: recurrenceCount,
       recurrence_completed: 0,
-      recurrence_type: isRecurring ? recurrenceType : null
+      recurrence_type: isRecurring ? recurrenceType : null,
+      project_company_id: selectedCompanyId
     });
     setTitle("");
     setDate(null);
@@ -58,6 +65,7 @@ export function AddTask({
     setIsRecurring(false);
     setRecurrenceCount(null);
     setRecurrenceType(null);
+    setSelectedCompanyId(null);
   };
 
   const handleCategorySelect = (selectedCategory: string) => {
@@ -68,6 +76,11 @@ export function AddTask({
   const handleSectionSelect = (selectedSection: string) => {
     setSection(selectedSection);
     setIsSectionOpen(false);
+  };
+
+  const handleCompanySelect = (companyId: string) => {
+    setSelectedCompanyId(companyId);
+    setIsCompanyOpen(false);
   };
 
   const getPriorityColor = (p: Task["priority"]) => {
@@ -83,6 +96,8 @@ export function AddTask({
     }
   };
 
+  const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+
   return <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 space-y-4">
       <div className="flex gap-4 items-center">
         <div className="relative flex-1">
@@ -90,7 +105,7 @@ export function AddTask({
             placeholder="Digite sua tarefa e pressione Enter..." 
             value={title} 
             onChange={e => setTitle(e.target.value)} 
-            className="w-full bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 pr-36 focus:ring-purple-200" 
+            className="w-full bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 pr-48 focus:ring-purple-200" 
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -168,9 +183,62 @@ export function AddTask({
                 </div>
               </PopoverContent>
             </Popover>
+
+            <Popover open={isCompanyOpen} onOpenChange={setIsCompanyOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className={`h-8 w-8 ${selectedCompanyId ? 'text-purple-400 hover:text-purple-500' : 'text-gray-400 hover:text-gray-500'}`}
+                  disabled={companiesLoading}
+                >
+                  <Building className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2">
+                <div className="flex flex-col gap-1">
+                  <Button 
+                    variant="ghost" 
+                    className={`justify-start ${!selectedCompanyId ? 'text-purple-400' : ''}`} 
+                    onClick={() => handleCompanySelect('')}
+                  >
+                    <Building className="h-4 w-4 mr-2" />
+                    Nenhuma empresa
+                  </Button>
+                  {companies.map(company => 
+                    <Button 
+                      key={company.id} 
+                      variant="ghost" 
+                      className={`justify-start ${selectedCompanyId === company.id ? 'text-purple-400' : ''}`} 
+                      onClick={() => handleCompanySelect(company.id)}
+                    >
+                      <Building className="h-4 w-4 mr-2" />
+                      {company.name}
+                    </Button>
+                  )}
+                  {companies.length === 0 && !companiesLoading && 
+                    <span className="text-sm text-gray-400 p-2">
+                      Nenhuma empresa criada
+                    </span>
+                  }
+                  {companiesLoading && 
+                    <span className="text-sm text-gray-400 p-2">
+                      Carregando...
+                    </span>
+                  }
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>
+
+      {selectedCompany && (
+        <div className="flex items-center gap-2 text-sm text-gray-600 bg-purple-50 p-2 rounded">
+          <Building className="h-4 w-4 text-purple-600" />
+          <span>Empresa: <strong>{selectedCompany.name}</strong></span>
+        </div>
+      )}
 
       <div className="flex items-center gap-4">
         <div className="flex items-center space-x-2">

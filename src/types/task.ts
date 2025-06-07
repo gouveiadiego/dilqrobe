@@ -27,6 +27,7 @@ export interface Task {
   original_due_date?: string | null;
   recurrence_type?: "weekly" | "biweekly" | "monthly" | null;
   _isRecurringInstance?: boolean;
+  project_company_id?: string | null;
 }
 
 export type TaskUpdate = Omit<Partial<Task>, 'subtasks'> & {

@@ -1117,6 +1117,7 @@ export type Database = {
           id: string
           is_recurring: boolean | null
           priority: string | null
+          project_company_id: string | null
           recurrence_completed: number | null
           recurrence_count: number | null
           recurrence_type: string | null
@@ -1134,6 +1135,7 @@ export type Database = {
           id?: string
           is_recurring?: boolean | null
           priority?: string | null
+          project_company_id?: string | null
           recurrence_completed?: number | null
           recurrence_count?: number | null
           recurrence_type?: string | null
@@ -1151,6 +1153,7 @@ export type Database = {
           id?: string
           is_recurring?: boolean | null
           priority?: string | null
+          project_company_id?: string | null
           recurrence_completed?: number | null
           recurrence_count?: number | null
           recurrence_type?: string | null
@@ -1160,7 +1163,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tasks_project_company_id_fkey"
+            columns: ["project_company_id"]
+            isOneToOne: false
+            referencedRelation: "project_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
