@@ -3,11 +3,12 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CompanyManager } from "./written-projects/CompanyManager";
 import { ProjectTasks } from "./written-projects/ProjectTasks";
+import { ProjectDashboard } from "./written-projects/ProjectDashboard";
 import { CredentialsManager } from "./written-projects/CredentialsManager";
-import { Rocket, Database, Shield } from "lucide-react";
+import { Rocket, Database, Shield, BarChart3 } from "lucide-react";
 
 export function WrittenProjectsTab() {
-  const [activeTab, setActiveTab] = useState("companies");
+  const [activeTab, setActiveTab] = useState("dashboard");
   
   return (
     <div className="space-y-8">
@@ -21,11 +22,19 @@ export function WrittenProjectsTab() {
       <div className="rounded-xl overflow-hidden">
         <Tabs 
           value={activeTab} 
-          defaultValue="companies" 
+          defaultValue="dashboard" 
           onValueChange={setActiveTab} 
           className="w-full"
         >
           <TabsList className="mb-6 w-full bg-white/70 border border-gray-100 shadow-sm backdrop-blur-sm p-1 rounded-xl">
+            <TabsTrigger 
+              value="dashboard" 
+              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-dilq-purple/10"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span>Dashboard</span>
+            </TabsTrigger>
+            
             <TabsTrigger 
               value="companies" 
               className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-dilq-purple/10"
@@ -52,6 +61,10 @@ export function WrittenProjectsTab() {
           </TabsList>
           
           <div className="bg-white rounded-xl shadow-sm border border-gray-100/80 overflow-hidden">
+            <TabsContent value="dashboard" className="p-6 transition-all duration-300 animate-fade-in">
+              <ProjectDashboard />
+            </TabsContent>
+            
             <TabsContent value="companies" className="p-6 transition-all duration-300 animate-fade-in">
               <CompanyManager />
             </TabsContent>
