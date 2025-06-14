@@ -413,6 +413,42 @@ export type Database = {
         }
         Relationships: []
       }
+      editorial_calendar_posts: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          id: string
+          idea: string
+          post_date: string
+          responsible: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          id?: string
+          idea: string
+          post_date: string
+          responsible?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          idea?: string
+          post_date?: string
+          responsible?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       gym_records: {
         Row: {
           challenge_id: string
