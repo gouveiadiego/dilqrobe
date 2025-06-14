@@ -148,21 +148,13 @@ export function SettingsTab() {
       </div>
 
       <Tabs defaultValue="notifications" className="space-y-6">
-        <TabsList className="bg-gray-100 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700 w-full grid grid-cols-2 sm:grid-cols-4 gap-1">
+        <TabsList className="bg-gray-100 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700 w-full grid grid-cols-2 sm:grid-cols-3 gap-1">
           <TabsTrigger 
             value="notifications" 
             className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-purple"
           >
             <Bell className="h-4 w-4 mr-2" />
             Notificações
-          </TabsTrigger>
-          
-          <TabsTrigger 
-            value="sound" 
-            className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-teal"
-          >
-            <Volume2 className="h-4 w-4 mr-2" />
-            Som
           </TabsTrigger>
           
           <TabsTrigger 
@@ -263,57 +255,6 @@ export function SettingsTab() {
                       <Label htmlFor="r3">Resumo semanal</Label>
                     </div>
                   </RadioGroup>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="sound" className="space-y-4 animate-fade-in">
-          <Card className="border-none shadow-md hover:shadow-lg transition-all duration-300 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-dilq-teal/5 to-dilq-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-            
-            <CardHeader className="relative z-10">
-              <CardTitle className="flex items-center gap-2 text-xl font-medium text-dilq-teal">
-                <Volume2 className="h-5 w-5 text-dilq-teal" />
-                Som
-              </CardTitle>
-              <CardDescription>
-                Configure as preferências de som
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="space-y-6 relative z-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center justify-between space-x-2 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <Label htmlFor="sound-enabled" className="flex flex-col">
-                    <span className="text-base font-medium">Sons do sistema</span>
-                    <span className="text-sm text-muted-foreground">
-                      Ative ou desative os sons do sistema
-                    </span>
-                  </Label>
-                  <Switch
-                    id="sound-enabled"
-                    checked={settings.soundEnabled}
-                    onCheckedChange={(val) => handleSettingChange('soundEnabled', val)}
-                    className="data-[state=checked]:bg-dilq-teal"
-                  />
-                </div>
-                
-                <div className="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <Label htmlFor="volume-slider" className="text-base font-medium mb-2 block">Volume</Label>
-                  <div className="flex items-center gap-4">
-                    <Volume2 className="h-4 w-4 text-muted-foreground" />
-                    <Slider
-                      id="volume-slider"
-                      value={[settings.volume]}
-                      max={100}
-                      step={1}
-                      onValueChange={(value) => handleSettingChange('volume', value[0])}
-                      className="w-[60%]"
-                    />
-                    <span className="text-sm text-muted-foreground w-12 text-center">{settings.volume}%</span>
-                  </div>
                 </div>
               </div>
             </CardContent>
