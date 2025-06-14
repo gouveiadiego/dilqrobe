@@ -109,12 +109,35 @@ export function EditorialCalendar() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
       });
-      const { generatedText } = await resp.json();
+
+      // LOG: mostrar resposta bruta para debug
+      const textResponse = await resp.text();
+      console.log("Resposta bruta da função IA:", textResponse);
+
+      let generatedText: string = "";
+      try {
+        // Tentar parsear como JSON (esperado: { generatedText: string })
+        const parsed = JSON.parse(textResponse);
+        if (!parsed.generatedText) {
+          throw new Error(parsed.error || "Nenhuma resposta gerada pela IA.");
+        }
+        generatedText = parsed.generatedText;
+      } catch (err) {
+        // Se a resposta for inválida ou vazia, mostrar a mensagem detalhada
+        toast({
+          title: "Erro ao processar resposta da IA",
+          description: typeof err === "string" ? err : "A resposta da IA veio vazia ou em formato inesperado: " + textResponse,
+          variant: "destructive",
+        });
+        setLoadingAI(false);
+        return;
+      }
+
       let ideas: Array<{ data: string, ideia: string }> = [];
       try {
         ideas = JSON.parse(generatedText);
       } catch {
-        toast({ title: "A IA respondeu em formato inesperado", variant: "destructive" });
+        toast({ title: "A IA respondeu em formato inesperado", description: generatedText, variant: "destructive" });
         setLoadingAI(false);
         return;
       }
@@ -124,7 +147,7 @@ export function EditorialCalendar() {
         setLoadingAI(false);
         return;
       }
-
+      
       const { data: userData } = await supabase.auth.getUser();
       if (!userData?.user?.id) throw new Error("Usuário não autenticado.");
 
@@ -150,7 +173,11 @@ export function EditorialCalendar() {
       queryClient.invalidateQueries({ queryKey: ["editorial-calendar-posts"] });
       toast({ title: "Sugestões do calendário adicionadas!" });
     } catch (e: any) {
-      toast({ title: "Erro ao usar IA", description: e.message, variant: "destructive" });
+      toast({ 
+        title: "Erro ao usar IA", 
+        description: typeof e === "string" ? e : (e?.message || "Erro desconhecido"), 
+        variant: "destructive"
+      });
     } finally {
       setLoadingAI(false);
     }
