@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { useState } from "react";
@@ -40,6 +39,7 @@ export function AddTask({
   const [recurrenceType, setRecurrenceType] = useState<Task["recurrence_type"]>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [isCompanyOpen, setIsCompanyOpen] = useState(false);
+  const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
 
   const { companies, isLoading: companiesLoading } = useProjectCompanies();
 
@@ -55,7 +55,8 @@ export function AddTask({
       recurrence_count: recurrenceCount,
       recurrence_completed: 0,
       recurrence_type: isRecurring ? recurrenceType : null,
-      project_company_id: selectedCompanyId
+      project_company_id: selectedCompanyId,
+      estimated_time_minutes: estimatedTime,
     });
     setTitle("");
     setDate(null);
@@ -66,6 +67,7 @@ export function AddTask({
     setRecurrenceCount(null);
     setRecurrenceType(null);
     setSelectedCompanyId(null);
+    setEstimatedTime(null);
   };
 
   const handleCategorySelect = (selectedCategory: string) => {
@@ -98,7 +100,8 @@ export function AddTask({
 
   const selectedCompany = companies.find(c => c.id === selectedCompanyId);
 
-  return <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 space-y-4">
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 space-y-4">
       <div className="flex gap-4 items-center">
         <div className="relative flex-1">
           <Input 
@@ -289,5 +292,20 @@ export function AddTask({
           </div>
         )}
       </div>
-    </div>;
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">Tempo estimado (min)</label>
+          <input
+            type="number"
+            className="block w-full rounded-md border-gray-200 focus:ring-purple-200"
+            placeholder="ex: 30"
+            value={estimatedTime ?? ""}
+            min={1}
+            onChange={e => setEstimatedTime(e.target.value ? Number(e.target.value) : null)}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }

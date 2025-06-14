@@ -130,7 +130,11 @@ export const useTasks = () => {
               title: st.title || '',
               completed: st.completed || false
             }))
-          : []
+          : [],
+        estimated_time_minutes: task.estimated_time_minutes ?? null,
+        timer_value_seconds: task.timer_value_seconds ?? 0,
+        comments: Array.isArray(task.comments) ? task.comments : [],
+        attachments: Array.isArray(task.attachments) ? task.attachments : [],
       })) as Task[];
     }
   });
