@@ -29,6 +29,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AIAssistantTab } from "@/components/ai-chat/AIAssistantTab";
 import { AIChatWidget } from "@/components/ai-chat/AIChatWidget";
+import { QuickActionsMenu } from "@/components/QuickActionsMenu";
 
 type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
 
@@ -45,6 +46,7 @@ const Index = () => {
   const [showThisWeek, setShowThisWeek] = useState(false);
   const [showThisMonth, setShowThisMonth] = useState(false);
   const [showOlder, setShowOlder] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
 
   const {
     tasks,
@@ -131,6 +133,33 @@ const Index = () => {
     });
   };
 
+  const handleCompleteAll = () => {
+    // Marcar todas as tarefas ativas como concluídas
+    filteredTasks
+      .filter(t => !t.completed)
+      .forEach(t => toggleTask(t.id));
+  };
+
+  const handlePostponeAll = () => {
+    // Adia todas as tarefas ativas para amanhã
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    filteredTasks
+      .filter(t => !t.completed)
+      .forEach(t => handleUpdateTask(t.id, { due_date: tomorrow.toISOString() }));
+  };
+
+  // Modo Foco: exibe só tarefas de prioridade alta ou vencidas
+  const tasksFocusFiltered = focusMode
+    ? filteredTasks.filter(task =>
+        (!task.completed &&
+          (
+            task.priority === "high" ||
+            (task.due_date && new Date(task.due_date) < new Date())
+          )
+        ))
+    : filteredTasks;
+
   if (isLoading) {
     return <LoadingSpinner size="lg" text="Carregando..." className="h-screen" />;
   }
@@ -144,6 +173,13 @@ const Index = () => {
       case 'tasks':
         return (
           <div className="space-y-4 md:space-y-6 rounded-lg animate-fade-in">
+            {/* Quick Actions */}
+            <QuickActionsMenu
+              onCompleteAll={handleCompleteAll}
+              onPostponeAll={handlePostponeAll}
+              focusMode={focusMode}
+              onToggleFocus={() => setFocusMode(f => !f)}
+            />
             <div className="space-y-4 md:space-y-6">
               <div className="flex items-center">
                 <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-dilq-accent to-dilq-teal bg-clip-text text-transparent">Execução</h2>
@@ -190,7 +226,7 @@ const Index = () => {
               </div>
               
               <div className="p-4 md:p-6 bg-gradient-to-br from-white/80 to-gray-50/80 backdrop-blur-sm border border-gray-100 rounded-xl shadow-md">
-                {filteredTasks.length === 0 ? (
+                {tasksFocusFiltered.length === 0 ? (
                   <EmptyState
                     title="Nenhuma tarefa encontrada"
                     description="Adicione sua primeira tarefa para começar a organizar seu trabalho."
@@ -201,7 +237,7 @@ const Index = () => {
                   />
                 ) : (
                   <TaskList
-                    tasks={filteredTasks}
+                    tasks={tasksFocusFiltered}
                     onToggleTask={toggleTask}
                     onDeleteTask={deleteTask}
                     onUpdateTask={handleUpdateTask}
