@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +36,11 @@ export function JournalsTab() {
   const [currentEntry, setCurrentEntry] = useState<JournalEntry | null>(null);
   const [editContent, setEditContent] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Novos estados para busca/filtro/ordenação
+  const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "week" | "month">("all");
+  const [order, setOrder] = useState<"newest" | "oldest">("newest");
 
   const {
     paginatedData: paginatedEntries,
@@ -182,6 +186,55 @@ export function JournalsTab() {
     setEditContent(entry.content);
   };
   
+  // Função de filtro por data
+  function filterByDate(entry: JournalEntry) {
+    if (dateFilter === "all") return true;
+    const entryDate = new Date(entry.created_at);
+    const now = new Date();
+
+    if (dateFilter === "today") {
+      return (
+        entryDate.getFullYear() === now.getFullYear() &&
+        entryDate.getMonth() === now.getMonth() &&
+        entryDate.getDate() === now.getDate()
+      );
+    }
+    if (dateFilter === "week") {
+      const firstDayOfWeek = new Date(now);
+      firstDayOfWeek.setDate(now.getDate() - now.getDay());
+      const lastDayOfWeek = new Date(firstDayOfWeek);
+      lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
+      return entryDate >= firstDayOfWeek && entryDate <= lastDayOfWeek;
+    }
+    if (dateFilter === "month") {
+      return (
+        entryDate.getFullYear() === now.getFullYear() &&
+        entryDate.getMonth() === now.getMonth()
+      );
+    }
+    return true;
+  }
+
+  // Memoized filtered/sorted entries
+  const visibleEntries = React.useMemo(() => {
+    let filtered = entries
+      .filter(entry => 
+        search.length === 0 ||
+        entry.content.toLowerCase().includes(search.toLowerCase()) ||
+        (entry.prompt && entry.prompt.toLowerCase().includes(search.toLowerCase()))
+      )
+      .filter(filterByDate);
+
+    filtered = filtered.sort((a, b) => {
+      if (order === "newest") {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
+
+    return filtered;
+  }, [entries, search, dateFilter, order]);
+
   return (
     <div className="space-y-4 md:space-y-6 p-2 md:p-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -220,9 +273,42 @@ export function JournalsTab() {
         </Dialog>
       </div>
       
+      {/* Barra de busca, filtros e ordenação */}
+      <div className="flex flex-col md:flex-row gap-2 md:gap-4 w-full mb-2">
+        <input
+          type="text"
+          placeholder="Buscar pelo texto..."
+          className="bg-gray-50 border border-gray-200 rounded px-3 py-2 text-sm w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-accent"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <div className="flex gap-2">
+          <select
+            title="Filtrar por data"
+            value={dateFilter}
+            onChange={e => setDateFilter(e.target.value as any)}
+            className="bg-gray-50 border border-gray-200 rounded px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+          >
+            <option value="all">Todas</option>
+            <option value="today">Hoje</option>
+            <option value="week">Semana</option>
+            <option value="month">Mês</option>
+          </select>
+          <select
+            title="Ordenar"
+            value={order}
+            onChange={e => setOrder(e.target.value as any)}
+            className="bg-gray-50 border border-gray-200 rounded px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+          >
+            <option value="newest">Mais recente</option>
+            <option value="oldest">Mais antiga</option>
+          </select>
+        </div>
+      </div>
+
       {isLoading && entries.length === 0 ? (
         <LoadingSpinner size="lg" text="Carregando entradas..." className="h-64" />
-      ) : entries.length === 0 ? (
+      ) : visibleEntries.length === 0 ? (
         <EmptyState
           title="Nenhuma entrada encontrada"
           description="Você ainda não tem nenhuma entrada. Crie sua primeira entrada de diário!"
@@ -234,7 +320,7 @@ export function JournalsTab() {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            {paginatedEntries.map((entry) => (
+            {visibleEntries.map((entry) => (
               <Card key={entry.id} className="overflow-hidden h-fit">
                 <CardHeader className="p-3 md:p-4 pb-2 flex flex-row justify-between items-start">
                   <CardTitle className="text-sm text-gray-500 flex-1 mr-2">
