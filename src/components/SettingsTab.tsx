@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,10 +26,9 @@ import {
   RefreshCw,
   Lock,
   Eye,
-  Sliders,
   BellDot,
   SunDim,
-  CreditCard
+  CreditCard,
 } from "lucide-react";
 import {
   Select,
@@ -45,38 +43,72 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Slider } from "@/components/ui/slider";
+
+type Settings = {
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  soundEnabled: boolean;
+  darkMode: boolean;
+  animationsActive: boolean;
+  language: string;
+  autoSave: boolean;
+  notificationFrequency: "realtime" | "daily" | "weekly";
+  volume: number;
+};
+
+const defaultSettings: Settings = {
+  emailNotifications: true,
+  pushNotifications: true,
+  soundEnabled: true,
+  darkMode: false,
+  animationsActive: true,
+  language: "pt-BR",
+  autoSave: true,
+  notificationFrequency: "daily",
+  volume: 80,
+};
 
 export function SettingsTab() {
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [animationsActive, setAnimationsActive] = useState(true);
-  const [language, setLanguage] = useState("pt-BR");
-  const [autoSave, setAutoSave] = useState(true);
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
 
   useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains('dark');
-    setDarkMode(isDarkMode);
+    const storedSettings = localStorage.getItem("appSettings");
+    if (storedSettings) {
+      const parsed = JSON.parse(storedSettings);
+      setSettings({ ...defaultSettings, ...parsed });
+      document.documentElement.classList.toggle("dark", parsed.darkMode);
+    } else {
+      const isSystemDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      setSettings((s) => ({ ...s, darkMode: isSystemDark }));
+      document.documentElement.classList.toggle("dark", isSystemDark);
+    }
   }, []);
 
+  const handleSettingChange = <K extends keyof Settings>(
+    key: K,
+    value: Settings[K]
+  ) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
   const toggleDarkMode = (enabled: boolean) => {
-    setDarkMode(enabled);
-    document.documentElement.classList.toggle('dark', enabled);
-    localStorage.setItem('theme', enabled ? 'dark' : 'light');
-    toast.success(`Modo ${enabled ? 'escuro' : 'claro'} ativado`);
+    handleSettingChange("darkMode", enabled);
+    document.documentElement.classList.toggle("dark", enabled);
+    toast.success(`Modo ${enabled ? "escuro" : "claro"} ativado`);
   };
 
   const handleSaveSettings = () => {
+    localStorage.setItem("appSettings", JSON.stringify(settings));
     toast.success("Configurações salvas com sucesso!");
   };
 
   const handleReset = () => {
-    setEmailNotifications(true);
-    setPushNotifications(true);
-    setSoundEnabled(true);
-    setAutoSave(true);
-    setAnimationsActive(true);
+    setSettings(defaultSettings);
+    localStorage.removeItem("appSettings");
+    document.documentElement.classList.toggle("dark", defaultSettings.darkMode);
     toast.success("Configurações redefinidas para os valores padrão");
   };
 
@@ -120,7 +152,7 @@ export function SettingsTab() {
       </div>
 
       <Tabs defaultValue="notifications" className="space-y-6">
-        <TabsList className="bg-gray-100 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700 w-full grid grid-cols-2 md:grid-cols-4 gap-1">
+        <TabsList className="bg-gray-100 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700 w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1">
           <TabsTrigger 
             value="notifications" 
             className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-purple"
@@ -152,6 +184,14 @@ export function SettingsTab() {
             <Shield className="h-4 w-4 mr-2" />
             Privacidade
           </TabsTrigger>
+
+          <TabsTrigger 
+            value="billing" 
+            className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-accent"
+          >
+            <CreditCard className="h-4 w-4 mr-2" />
+            Faturamento
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="notifications" className="space-y-4 animate-fade-in">
@@ -179,8 +219,8 @@ export function SettingsTab() {
                   </Label>
                   <Switch
                     id="email-notifications"
-                    checked={emailNotifications}
-                    onCheckedChange={setEmailNotifications}
+                    checked={settings.emailNotifications}
+                    onCheckedChange={(val) => handleSettingChange('emailNotifications', val)}
                     className="data-[state=checked]:bg-dilq-purple"
                   />
                 </div>
@@ -194,8 +234,8 @@ export function SettingsTab() {
                   </Label>
                   <Switch
                     id="push-notifications"
-                    checked={pushNotifications}
-                    onCheckedChange={setPushNotifications}
+                    checked={settings.pushNotifications}
+                    onCheckedChange={(val) => handleSettingChange('pushNotifications', val)}
                     className="data-[state=checked]:bg-dilq-purple"
                   />
                 </div>
@@ -204,20 +244,24 @@ export function SettingsTab() {
                   <Label htmlFor="auto-save" className="flex flex-col">
                     <span className="text-base font-medium">Salvar automaticamente</span>
                     <span className="text-sm text-muted-foreground">
-                      Salve seu progresso automaticamente
+                      Suas alterações serão salvas ao sair
                     </span>
                   </Label>
                   <Switch
                     id="auto-save"
-                    checked={autoSave}
-                    onCheckedChange={setAutoSave}
+                    checked={settings.autoSave}
+                    onCheckedChange={(val) => handleSettingChange('autoSave', val)}
                     className="data-[state=checked]:bg-dilq-purple"
                   />
                 </div>
                 
                 <div className="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <Label className="text-base font-medium mb-2 block">Frequência de notificações</Label>
-                  <RadioGroup defaultValue="daily" className="flex flex-col gap-2">
+                  <RadioGroup 
+                    value={settings.notificationFrequency} 
+                    onValueChange={(val) => handleSettingChange('notificationFrequency', val as any)} 
+                    className="flex flex-col gap-2"
+                  >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="realtime" id="r1" />
                       <Label htmlFor="r1">Em tempo real</Label>
@@ -262,7 +306,7 @@ export function SettingsTab() {
                   </Label>
                   <Switch
                     id="dark-mode"
-                    checked={darkMode}
+                    checked={settings.darkMode}
                     onCheckedChange={toggleDarkMode}
                     className="data-[state=checked]:bg-dilq-blue"
                   />
@@ -277,15 +321,15 @@ export function SettingsTab() {
                   </Label>
                   <Switch
                     id="animations-active"
-                    checked={animationsActive}
-                    onCheckedChange={setAnimationsActive}
+                    checked={settings.animationsActive}
+                    onCheckedChange={(val) => handleSettingChange('animationsActive', val)}
                     className="data-[state=checked]:bg-dilq-blue"
                   />
                 </div>
                 
                 <div className="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors md:col-span-2">
                   <Label htmlFor="language-select" className="text-base font-medium mb-2 block">Idioma</Label>
-                  <Select value={language} onValueChange={setLanguage}>
+                  <Select value={settings.language} onValueChange={(val) => handleSettingChange('language', val)}>
                     <SelectTrigger id="language-select" className="w-full md:w-1/2">
                       <SelectValue placeholder="Selecione um idioma" />
                     </SelectTrigger>
@@ -327,8 +371,8 @@ export function SettingsTab() {
                   </Label>
                   <Switch
                     id="sound-enabled"
-                    checked={soundEnabled}
-                    onCheckedChange={setSoundEnabled}
+                    checked={settings.soundEnabled}
+                    onCheckedChange={(val) => handleSettingChange('soundEnabled', val)}
                     className="data-[state=checked]:bg-dilq-teal"
                   />
                 </div>
@@ -337,7 +381,15 @@ export function SettingsTab() {
                   <Label htmlFor="volume-slider" className="text-base font-medium mb-2 block">Volume</Label>
                   <div className="flex items-center gap-4">
                     <Volume2 className="h-4 w-4 text-muted-foreground" />
-                    <Sliders className="h-5 w-5 text-dilq-teal" />
+                    <Slider
+                      id="volume-slider"
+                      value={[settings.volume]}
+                      max={100}
+                      step={1}
+                      onValueChange={(value) => handleSettingChange('volume', value[0])}
+                      className="w-[60%]"
+                    />
+                    <span className="text-sm text-muted-foreground w-12 text-center">{settings.volume}%</span>
                   </div>
                 </div>
               </div>
@@ -405,6 +457,46 @@ export function SettingsTab() {
                   </p>
                   <Button variant="outline" className="border-dilq-accent/20 hover:border-dilq-accent/50 hover:bg-dilq-accent/5 transition-all duration-300">
                     Gerenciar dados
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="billing" className="space-y-4 animate-fade-in">
+          <Card className="border-none shadow-md hover:shadow-lg transition-all duration-300 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-dilq-accent/5 to-dilq-purple/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+            
+            <CardHeader className="relative z-10">
+              <CardTitle className="flex items-center gap-2 text-xl font-medium text-dilq-accent">
+                <CreditCard className="h-5 w-5 text-dilq-accent" />
+                Faturamento e Assinatura
+              </CardTitle>
+              <CardDescription>
+                Gerencie suas informações de pagamento e assinatura
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="space-y-6 relative z-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                  <h3 className="text-base font-medium mb-2">Plano Atual</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Você está no plano <span className="font-bold text-dilq-purple">Pro</span>.
+                  </p>
+                  <Button variant="outline" className="border-dilq-accent/20 hover:border-dilq-accent/50 hover:bg-dilq-accent/5 transition-all duration-300">
+                    Gerenciar Assinatura
+                  </Button>
+                </div>
+                
+                <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                  <h3 className="text-base font-medium mb-2">Método de Pagamento</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Seu cartão de crédito terminando em •••• 1234.
+                  </p>
+                  <Button variant="outline" className="border-dilq-accent/20 hover:border-dilq-accent/50 hover:bg-dilq-accent/5 transition-all duration-300">
+                    Atualizar Pagamento
                   </Button>
                 </div>
               </div>
