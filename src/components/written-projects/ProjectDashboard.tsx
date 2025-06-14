@@ -27,10 +27,6 @@ type ProjectTask = {
   title: string;
   status: 'pending' | 'in_progress' | 'completed';
   company_id: string;
-  project_companies?: {
-    name: string;
-    is_active: boolean | null;
-  } | null;
 };
 
 export function ProjectDashboard() {
@@ -50,7 +46,7 @@ export function ProjectDashboard() {
         throw error;
       }
       console.log('✅ Companies for dashboard loaded:', data?.length);
-      return data as ProjectCompany[];
+      return data as unknown as ProjectCompany[];
     }
   });
 
@@ -60,13 +56,7 @@ export function ProjectDashboard() {
       console.log('📋 Fetching tasks for dashboard...');
       const { data, error } = await supabase
         .from('project_tasks')
-        .select(`
-          *,
-          project_companies (
-            name,
-            is_active
-          )
-        `)
+        .select(`*`)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -103,10 +93,13 @@ export function ProjectDashboard() {
   const activeCompanies = companies.filter(c => c.is_active !== false);
   const inactiveCompanies = companies.filter(c => c.is_active === false);
   
+  const companiesById = new Map(companies.map(c => [c.id, c]));
+  
   // Tarefas por empresa ativa
-  const activeTasks = tasks.filter(task => 
-    task.project_companies?.is_active !== false
-  );
+  const activeTasks = tasks.filter(task => {
+    const company = companiesById.get(task.company_id);
+    return company?.is_active !== false;
+  });
   
   const pendingTasks = activeTasks.filter(task => 
     task.status === 'pending' || task.status === 'in_progress'
