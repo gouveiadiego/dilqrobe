@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, ExternalLink, Trash2, Edit } from "lucide-react";
+import { Plus, ExternalLink, Trash2, Edit, ListCheck } from "lucide-react";
 import { toast } from "sonner";
 import { CompanyShareButton } from "./CompanyShareButton";
 
@@ -33,6 +33,7 @@ export function CompanyManager() {
     contact_email: "",
     contact_phone: "",
   });
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Fetch companies
   const { data: companies = [], isLoading } = useQuery({
@@ -50,6 +51,34 @@ export function CompanyManager() {
 
       return data as Company[];
     }
+  });
+
+  // Fetch templates
+  const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({
+    queryKey: ["project-templates"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_templates")
+        .select("id, title");
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch template items
+  const { data: templateItems = [] } = useQuery({
+    queryKey: ["project-template-items", selectedTemplateId],
+    queryFn: async () => {
+      if (!selectedTemplateId) return [];
+      const { data, error } = await supabase
+        .from("project_template_items")
+        .select("*")
+        .eq("template_id", selectedTemplateId)
+        .order("order_index", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedTemplateId
   });
 
   // Add company mutation
@@ -105,13 +134,43 @@ export function CompanyManager() {
     }
   });
 
-  const handleAddCompany = () => {
+  const handleAddCompany = async () => {
     if (!newCompany.name.trim()) {
       toast.error('O nome da empresa é obrigatório');
       return;
     }
 
-    addCompanyMutation.mutate(newCompany);
+    // Criar empresa normalmente
+    addCompanyMutation.mutate(newCompany, {
+      onSuccess: async (createdCompany) => {
+        setNewCompany({
+          name: "",
+          description: "",
+          contact_person: "",
+          contact_email: "",
+          contact_phone: "",
+        });
+        setIsAddDialogOpen(false);
+        queryClient.invalidateQueries({ queryKey: ['project-companies'] });
+        toast.success('Empresa adicionada com sucesso');
+
+        // Se selecionou template, copiar itens para checklist
+        if (selectedTemplateId && templateItems.length > 0 && createdCompany?.id) {
+          const { data: { user } } = await supabase.auth.getUser();
+          const checklistItems = templateItems.map((item: any) => ({
+            company_id: createdCompany.id,
+            user_id: user.id,
+            title: item.title,
+            category: "geral",
+            completed: false,
+          }));
+          if (checklistItems.length > 0) {
+            await supabase.from("project_checklist").insert(checklistItems);
+          }
+        }
+        setSelectedTemplateId(null);
+      }
+    });
   };
 
   const handleDeleteCompany = (companyId: string) => {
@@ -208,6 +267,33 @@ export function CompanyManager() {
                   onChange={handleInputChange}
                   placeholder="(00) 00000-0000"
                 />
+              </div>
+              {/* Novo campo: selecionar template */}
+              <div>
+                <label htmlFor="template" className="block text-sm font-medium mb-1 flex items-center gap-1">
+                  <ListCheck className="h-4 w-4 text-dilq-purple" />
+                  Importar checklist template
+                  <span className="text-xs text-gray-400 ml-2">(opcional)</span>
+                </label>
+                <select
+                  id="template"
+                  className="w-full border rounded p-2 mt-1 text-sm"
+                  value={selectedTemplateId || ""}
+                  onChange={e => setSelectedTemplateId(e.target.value || null)}
+                  disabled={isLoadingTemplates}
+                >
+                  <option value="">Não importar</option>
+                  {templates.map((tpl: any) => (
+                    <option key={tpl.id} value={tpl.id}>
+                      {tpl.title}
+                    </option>
+                  ))}
+                </select>
+                {selectedTemplateId && templateItems.length > 0 && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    {templateItems.length} tarefa(s) será(ão) copiada(s) do template!
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
