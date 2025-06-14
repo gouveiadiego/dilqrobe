@@ -1113,13 +1113,10 @@ export type Database = {
       }
       tasks: {
         Row: {
-          attachments: Json
           category: string | null
-          comments: Json
           completed: boolean | null
           created_at: string | null
           due_date: string | null
-          estimated_time_minutes: number | null
           id: string
           is_recurring: boolean | null
           priority: string | null
@@ -1129,19 +1126,15 @@ export type Database = {
           recurrence_type: string | null
           section: string | null
           subtasks: Json | null
-          timer_value_seconds: number | null
           title: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
-          attachments?: Json
           category?: string | null
-          comments?: Json
           completed?: boolean | null
           created_at?: string | null
           due_date?: string | null
-          estimated_time_minutes?: number | null
           id?: string
           is_recurring?: boolean | null
           priority?: string | null
@@ -1151,19 +1144,15 @@ export type Database = {
           recurrence_type?: string | null
           section?: string | null
           subtasks?: Json | null
-          timer_value_seconds?: number | null
           title: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
-          attachments?: Json
           category?: string | null
-          comments?: Json
           completed?: boolean | null
           created_at?: string | null
           due_date?: string | null
-          estimated_time_minutes?: number | null
           id?: string
           is_recurring?: boolean | null
           priority?: string | null
@@ -1173,7 +1162,6 @@ export type Database = {
           recurrence_type?: string | null
           section?: string | null
           subtasks?: Json | null
-          timer_value_seconds?: number | null
           title?: string
           updated_at?: string | null
           user_id?: string
