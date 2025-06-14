@@ -104,29 +104,35 @@ export function EditorialCalendar() {
     try {
       // Usando o endpoint de IA já existente
       const prompt = `Você é um especialista em marketing. Crie uma ideia de post INSTAGRAM para cada data importante, datas comemorativas e ao menos 1 ideia criativa para o segmento dessa empresa para o mês de ${format(selectedMonth, "MMMM 'de' yyyy", { locale: ptBR })}. Responda no formato JSON: [{"data":"YYYY-MM-DD","ideia":"texto da ideia"}], com uma entrada por dia apenas se tiver sugestão pertinente (não precisa preencher todos os dias). Segmento: ${selectedCompany.name}`;
-      const resp = await fetch("/api/generate-with-ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+
+      // ALTERAÇÃO PRINCIPAL: use a chamada .functions.invoke do Supabase!
+      const { data: responseData, error: responseError } = await supabase.functions.invoke('generate-with-ai', {
+        body: { prompt }
       });
 
-      // LOG: mostrar resposta bruta para debug
-      const textResponse = await resp.text();
-      console.log("Resposta bruta da função IA:", textResponse);
+      if (responseError) {
+        toast({
+          title: "Erro ao chamar função de IA",
+          description: responseError.message || "Erro desconhecido",
+          variant: "destructive",
+        });
+        setLoadingAI(false);
+        return;
+      }
+
+      // LOG de debug para checar o que veio
+      console.log("Resposta da função IA (Gemini):", responseData);
 
       let generatedText: string = "";
       try {
-        // Tentar parsear como JSON (esperado: { generatedText: string })
-        const parsed = JSON.parse(textResponse);
-        if (!parsed.generatedText) {
-          throw new Error(parsed.error || "Nenhuma resposta gerada pela IA.");
+        if (!responseData?.generatedText) {
+          throw new Error(responseData?.error || "Nenhuma resposta gerada pela IA.");
         }
-        generatedText = parsed.generatedText;
+        generatedText = responseData.generatedText;
       } catch (err) {
-        // Se a resposta for inválida ou vazia, mostrar a mensagem detalhada
         toast({
           title: "Erro ao processar resposta da IA",
-          description: typeof err === "string" ? err : "A resposta da IA veio vazia ou em formato inesperado: " + textResponse,
+          description: typeof err === "string" ? err : "A resposta da IA veio vazia ou em formato inesperado: " + JSON.stringify(responseData),
           variant: "destructive",
         });
         setLoadingAI(false);
