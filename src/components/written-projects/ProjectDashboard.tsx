@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,13 @@ type ProjectTask = {
   title: string;
   status: 'pending' | 'in_progress' | 'completed';
   company_id: string;
+};
+
+type ChecklistItem = {
+  id: string;
+  company_id: string;
+  title: string;
+  completed: boolean;
 };
 
 export function ProjectDashboard() {
@@ -62,6 +70,23 @@ export function ProjectDashboard() {
     }
   });
 
+  const { data: checklistItems = [], isLoading: isLoadingChecklist } = useQuery({
+    queryKey: ['project-checklist-dashboard'],
+    queryFn: async () => {
+      console.log('📋 Fetching checklist items for dashboard...');
+      const { data, error } = await supabase
+        .from('project_checklist')
+        .select('id, company_id, title, completed');
+      
+      if (error) {
+        console.error('❌ Error fetching checklist items:', error);
+        throw error;
+      }
+      console.log('✅ Checklist items for dashboard loaded:', data?.length);
+      return data as ChecklistItem[];
+    }
+  });
+
   const toggleCompanyStatusMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabase
@@ -89,27 +114,36 @@ export function ProjectDashboard() {
   
   const companiesById = new Map(companies.map(c => [c.id, c]));
   
-  // Tarefas por empresa ativa
+  // Itens por empresa ativa
   const activeTasks = tasks.filter(task => {
     const company = companiesById.get(task.company_id);
     return company?.is_active !== false;
   });
   
-  const pendingTasks = activeTasks.filter(task => 
-    task.status === 'pending' || task.status === 'in_progress'
-  );
-  
-  const completedTasks = activeTasks.filter(task => 
-    task.status === 'completed'
-  );
+  const activeChecklistItems = checklistItems.filter(item => {
+    const company = companiesById.get(item.company_id);
+    return company?.is_active !== false;
+  });
 
-  // Empresas que precisam finalizar tarefas
-  const companiesWithPendingTasks = companies.filter(company => {
+  const pendingItemsCount = activeTasks.filter(task => 
+    task.status === 'pending' || task.status === 'in_progress'
+  ).length + activeChecklistItems.filter(item => !item.completed).length;
+  
+  const completedItemsCount = activeTasks.filter(task => 
+    task.status === 'completed'
+  ).length + activeChecklistItems.filter(item => item.completed).length;
+
+  // Empresas que precisam finalizar itens
+  const companiesWithPendingItems = companies.filter(company => {
     if (company.is_active === false) return false;
-    return tasks.some(task => 
+    const hasPendingTask = tasks.some(task => 
       task.company_id === company.id && 
       (task.status === 'pending' || task.status === 'in_progress')
     );
+    const hasPendingChecklistItem = checklistItems.some(item =>
+      item.company_id === company.id && !item.completed
+    );
+    return hasPendingTask || hasPendingChecklistItem;
   });
 
   const handleToggleCompanyStatus = (company: ProjectCompany) => {
@@ -120,7 +154,7 @@ export function ProjectDashboard() {
     });
   };
 
-  if (isLoadingCompanies || isLoadingTasks) {
+  if (isLoadingCompanies || isLoadingTasks || isLoadingChecklist) {
     return <div className="text-center p-4">Carregando dashboard...</div>;
   }
 
@@ -147,7 +181,7 @@ export function ProjectDashboard() {
             <AlertCircle className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{pendingTasks.length}</div>
+            <div className="text-2xl font-bold text-orange-600">{pendingItemsCount}</div>
             <p className="text-xs text-gray-500">
               Precisam de atenção
             </p>
@@ -160,7 +194,7 @@ export function ProjectDashboard() {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{completedTasks.length}</div>
+            <div className="text-2xl font-bold text-green-600">{completedItemsCount}</div>
             <p className="text-xs text-gray-500">
               Este período
             </p>
@@ -173,7 +207,7 @@ export function ProjectDashboard() {
             <Target className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{companiesWithPendingTasks.length}</div>
+            <div className="text-2xl font-bold text-red-600">{companiesWithPendingItems.length}</div>
             <p className="text-xs text-gray-500">
               Empresas com pendências
             </p>
@@ -197,13 +231,22 @@ export function ProjectDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {companies.map((company) => {
-                const companyTasks = tasks.filter(task => task.company_id === company.id);
-                const pendingCompanyTasks = companyTasks.filter(task => 
-                  task.status === 'pending' || task.status === 'in_progress'
-                );
-                const completedCompanyTasks = companyTasks.filter(task => 
-                  task.status === 'completed'
-                );
+                const pendingCompanyTasks = tasks.filter(task => 
+                  task.company_id === company.id && (task.status === 'pending' || task.status === 'in_progress')
+                ).length;
+                const completedCompanyTasks = tasks.filter(task => 
+                  task.company_id === company.id && task.status === 'completed'
+                ).length;
+
+                const pendingCompanyChecklistItems = checklistItems.filter(item =>
+                  item.company_id === company.id && !item.completed
+                ).length;
+                const completedCompanyChecklistItems = checklistItems.filter(item =>
+                  item.company_id === company.id && item.completed
+                ).length;
+
+                const totalPendingForCompany = pendingCompanyTasks + pendingCompanyChecklistItems;
+                const totalCompletedForCompany = completedCompanyTasks + completedCompanyChecklistItems;
 
                 return (
                   <div 
@@ -224,9 +267,9 @@ export function ProjectDashboard() {
                           >
                             {company.is_active !== false ? "Ativo" : "Inativo"}
                           </Badge>
-                          {pendingCompanyTasks.length > 0 && (
+                          {totalPendingForCompany > 0 && (
                             <Badge variant="destructive">
-                              {pendingCompanyTasks.length} pendente{pendingCompanyTasks.length !== 1 ? 's' : ''}
+                              {totalPendingForCompany} pendente{totalPendingForCompany !== 1 ? 's' : ''}
                             </Badge>
                           )}
                         </div>
@@ -254,11 +297,11 @@ export function ProjectDashboard() {
                     <div className="text-sm text-gray-600 space-y-1">
                       <div className="flex justify-between">
                         <span>Tarefas concluídas:</span>
-                        <span className="font-medium">{completedCompanyTasks.length}</span>
+                        <span className="font-medium">{totalCompletedForCompany}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Tarefas pendentes:</span>
-                        <span className="font-medium text-orange-600">{pendingCompanyTasks.length}</span>
+                        <span className="font-medium text-orange-600">{totalPendingForCompany}</span>
                       </div>
                     </div>
                   </div>
@@ -270,7 +313,7 @@ export function ProjectDashboard() {
       </Card>
 
       {/* Empresas que precisam finalizar tarefas */}
-      {companiesWithPendingTasks.length > 0 && (
+      {companiesWithPendingItems.length > 0 && (
         <Card className="border-orange-200 bg-orange-50">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-orange-800">
@@ -280,17 +323,21 @@ export function ProjectDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {companiesWithPendingTasks.map((company) => {
-                const pendingCount = tasks.filter(task => 
+              {companiesWithPendingItems.map((company) => {
+                const pendingTaskCount = tasks.filter(task => 
                   task.company_id === company.id && 
                   (task.status === 'pending' || task.status === 'in_progress')
                 ).length;
+                const pendingChecklistItemCount = checklistItems.filter(item =>
+                  item.company_id === company.id && !item.completed
+                ).length;
+                const totalPendingCount = pendingTaskCount + pendingChecklistItemCount;
 
                 return (
                   <div key={company.id} className="flex justify-between items-center p-2 bg-white rounded border">
                     <span className="font-medium">{company.name}</span>
                     <Badge variant="destructive">
-                      {pendingCount} tarefa{pendingCount !== 1 ? 's' : ''} pendente{pendingCount !== 1 ? 's' : ''}
+                      {totalPendingCount} tarefa{totalPendingCount !== 1 ? 's' : ''} pendente{totalPendingCount !== 1 ? 's' : ''}
                     </Badge>
                   </div>
                 );
