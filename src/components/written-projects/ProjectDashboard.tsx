@@ -1,10 +1,18 @@
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { 
   Building2,
@@ -13,7 +21,10 @@ import {
   Users,
   Target,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  ArrowRight,
+  Filter,
+  ArrowDownUp
 } from "lucide-react";
 import { ProjectCompany } from "@/hooks/useProjectCompanies";
 
@@ -33,6 +44,8 @@ type ChecklistItem = {
 
 export function ProjectDashboard() {
   const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'pending' | 'progress'>('name');
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({
     queryKey: ['project-companies-dashboard'],
@@ -133,6 +146,9 @@ export function ProjectDashboard() {
     task.status === 'completed'
   ).length + activeChecklistItems.filter(item => item.completed).length;
 
+  const totalItemsCount = pendingItemsCount + completedItemsCount;
+  const completionPercentage = totalItemsCount > 0 ? Math.round((completedItemsCount / totalItemsCount) * 100) : 0;
+
   // Empresas que precisam finalizar itens
   const companiesWithPendingItems = companies.filter(company => {
     if (company.is_active === false) return false;
@@ -145,6 +161,52 @@ export function ProjectDashboard() {
     );
     return hasPendingTask || hasPendingChecklistItem;
   });
+
+  const displayedCompanies = useMemo(() => {
+    let filtered = companies;
+    if (statusFilter === 'active') {
+      filtered = companies.filter(c => c.is_active !== false);
+    } else if (statusFilter === 'inactive') {
+      filtered = companies.filter(c => c.is_active === false);
+    }
+
+    const companyMetrics = filtered.map(company => {
+      const pendingCompanyTasks = tasks.filter(task => 
+        task.company_id === company.id && (task.status === 'pending' || task.status === 'in_progress')
+      ).length;
+      const completedCompanyTasks = tasks.filter(task => 
+        task.company_id === company.id && task.status === 'completed'
+      ).length;
+      const pendingCompanyChecklistItems = checklistItems.filter(item =>
+        item.company_id === company.id && !item.completed
+      ).length;
+      const completedCompanyChecklistItems = checklistItems.filter(item =>
+        item.company_id === company.id && item.completed
+      ).length;
+
+      const totalPending = pendingCompanyTasks + pendingCompanyChecklistItems;
+      const totalCompleted = completedCompanyTasks + completedCompanyChecklistItems;
+      const totalItems = totalPending + totalCompleted;
+      const progress = totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0;
+      
+      return { 
+        ...company, 
+        totalPendingForCompany: totalPending,
+        totalCompletedForCompany: totalCompleted,
+        progressPercentage: progress 
+      };
+    });
+
+    switch (sortBy) {
+      case 'pending':
+        return companyMetrics.sort((a, b) => b.totalPendingForCompany - a.totalPendingForCompany);
+      case 'progress':
+        return companyMetrics.sort((a, b) => a.progressPercentage - b.progressPercentage);
+      case 'name':
+      default:
+        return companyMetrics.sort((a, b) => a.name.localeCompare(b.name));
+    }
+  }, [companies, tasks, checklistItems, statusFilter, sortBy]);
 
   const handleToggleCompanyStatus = (company: ProjectCompany) => {
     const newStatus = !company.is_active;
@@ -196,7 +258,7 @@ export function ProjectDashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{completedItemsCount}</div>
             <p className="text-xs text-gray-500">
-              Este período
+              {completionPercentage}% de progresso total
             </p>
           </CardContent>
         </Card>
@@ -218,91 +280,134 @@ export function ProjectDashboard() {
       {/* Lista de empresas com controle de status */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Gerenciar Status das Empresas
-          </CardTitle>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Gerenciar Status das Empresas
+            </CardTitle>
+            <div className="flex items-center gap-2 md:gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-gray-500" />
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Filtrar por status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="active">Ativas</SelectItem>
+                    <SelectItem value="inactive">Inativas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <ArrowDownUp className="h-4 w-4 text-gray-500" />
+                <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Nome (A-Z)</SelectItem>
+                    <SelectItem value="pending">Mais Pendentes</SelectItem>
+                    <SelectItem value="progress">Menor Progresso</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {companies.length === 0 ? (
+          {displayedCompanies.length === 0 ? (
             <p className="text-gray-500 text-center py-4">
-              Nenhuma empresa cadastrada ainda.
+              Nenhuma empresa encontrada para os filtros selecionados.
             </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {companies.map((company) => {
-                const pendingCompanyTasks = tasks.filter(task => 
-                  task.company_id === company.id && (task.status === 'pending' || task.status === 'in_progress')
-                ).length;
-                const completedCompanyTasks = tasks.filter(task => 
-                  task.company_id === company.id && task.status === 'completed'
-                ).length;
-
-                const pendingCompanyChecklistItems = checklistItems.filter(item =>
-                  item.company_id === company.id && !item.completed
-                ).length;
-                const completedCompanyChecklistItems = checklistItems.filter(item =>
-                  item.company_id === company.id && item.completed
-                ).length;
-
-                const totalPendingForCompany = pendingCompanyTasks + pendingCompanyChecklistItems;
-                const totalCompletedForCompany = completedCompanyTasks + completedCompanyChecklistItems;
-
+              {displayedCompanies.map((company) => {
+                const hasManyPending = company.totalPendingForCompany > 5;
+                const companyCardClass = `p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-300 flex flex-col ${hasManyPending ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-200'}`;
+                
                 return (
                   <div 
                     key={company.id} 
-                    className="p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow"
+                    className={companyCardClass}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-medium text-lg">{company.name}</h4>
-                        <div className="flex gap-2 mt-2">
-                          <Badge 
-                            variant={company.is_active !== false ? "default" : "secondary"}
-                            className={
-                              company.is_active !== false 
-                                ? "bg-green-100 text-green-800" 
-                                : "bg-gray-100 text-gray-800"
-                            }
-                          >
-                            {company.is_active !== false ? "Ativo" : "Inativo"}
-                          </Badge>
-                          {totalPendingForCompany > 0 && (
-                            <Badge variant="destructive">
-                              {totalPendingForCompany} pendente{totalPendingForCompany !== 1 ? 's' : ''}
+                    <div className="flex-grow">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="font-medium text-lg">{company.name}</h4>
+                          <div className="flex gap-2 mt-2">
+                            <Badge 
+                              variant={company.is_active !== false ? "default" : "secondary"}
+                              className={
+                                company.is_active !== false 
+                                  ? "bg-green-100 text-green-800" 
+                                  : "bg-gray-100 text-gray-800"
+                              }
+                            >
+                              {company.is_active !== false ? "Ativo" : "Inativo"}
                             </Badge>
+                            {company.totalPendingForCompany > 0 && (
+                              <Badge variant="destructive">
+                                {company.totalPendingForCompany} pendente{company.totalPendingForCompany !== 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleCompanyStatus(company)}
+                          className="flex items-center gap-1 text-xs"
+                        >
+                          {company.is_active !== false ? (
+                            <>
+                              <ToggleRight className="h-4 w-4 text-green-600" />
+                              <span>Desativar</span>
+                            </>
+                          ) : (
+                            <>
+                              <ToggleLeft className="h-4 w-4 text-gray-600" />
+                              <span>Ativar</span>
+                            </>
                           )}
+                        </Button>
+                      </div>
+
+                      <div className="mb-3">
+                        <div className="flex justify-between items-center text-xs text-gray-500 mb-1">
+                          <span>Progresso</span>
+                          <span className="font-semibold">{company.progressPercentage}%</span>
+                        </div>
+                        <Progress 
+                          value={company.progressPercentage} 
+                          className="h-2" 
+                          indicatorClassName={
+                            company.progressPercentage < 30 ? 'bg-red-500' : 
+                            company.progressPercentage < 70 ? 'bg-yellow-500' : 
+                            'bg-green-500'
+                          }
+                        />
+                      </div>
+
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <div className="flex justify-between">
+                          <span>Concluídas:</span>
+                          <span className="font-medium text-green-600">{company.totalCompletedForCompany}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Pendentes:</span>
+                          <span className="font-medium text-orange-600">{company.totalPendingForCompany}</span>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleCompanyStatus(company)}
-                        className="flex items-center gap-1"
-                      >
-                        {company.is_active !== false ? (
-                          <>
-                            <ToggleRight className="h-4 w-4 text-green-600" />
-                            <span className="text-xs">Desativar</span>
-                          </>
-                        ) : (
-                          <>
-                            <ToggleLeft className="h-4 w-4 text-gray-600" />
-                            <span className="text-xs">Ativar</span>
-                          </>
-                        )}
-                      </Button>
                     </div>
 
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <div className="flex justify-between">
-                        <span>Tarefas concluídas:</span>
-                        <span className="font-medium">{totalCompletedForCompany}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Tarefas pendentes:</span>
-                        <span className="font-medium text-orange-600">{totalPendingForCompany}</span>
-                      </div>
+                    <div className="mt-4 pt-3 border-t">
+                      <Link to={`/company-details/${company.id}`} className="w-full">
+                        <Button variant="outline" size="sm" className="w-full">
+                          Ver Detalhes
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 );
