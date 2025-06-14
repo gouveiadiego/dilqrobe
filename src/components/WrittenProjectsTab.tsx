@@ -5,7 +5,8 @@ import { CompanyManager } from "./written-projects/CompanyManager";
 import { ProjectTasks } from "./written-projects/ProjectTasks";
 import { ProjectDashboard } from "./written-projects/ProjectDashboard";
 import { CredentialsManager } from "./written-projects/CredentialsManager";
-import { Rocket, Database, Shield, BarChart3 } from "lucide-react";
+import { ProjectTemplatesManager } from "./written-projects/ProjectTemplatesManager";
+import { Rocket, Database, Shield, BarChart3, List } from "lucide-react";
 
 export function WrittenProjectsTab() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -58,6 +59,14 @@ export function WrittenProjectsTab() {
               <Shield className="h-4 w-4" />
               <span>Credenciais</span>
             </TabsTrigger>
+
+            <TabsTrigger
+              value="templates"
+              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-dilq-purple data-[state=active]:text-white hover:bg-dilq-purple/10"
+            >
+              <List className="h-4 w-4" />
+              <span>Templates</span>
+            </TabsTrigger>
           </TabsList>
           
           <div className="bg-white rounded-xl shadow-sm border border-gray-100/80 overflow-hidden">
@@ -75,6 +84,10 @@ export function WrittenProjectsTab() {
             
             <TabsContent value="credentials" className="p-6 transition-all duration-300 animate-fade-in">
               <CredentialsManager />
+            </TabsContent>
+
+            <TabsContent value="templates" className="p-6 transition-all duration-300 animate-fade-in">
+              <ProjectTemplatesManager />
             </TabsContent>
           </div>
         </Tabs>
