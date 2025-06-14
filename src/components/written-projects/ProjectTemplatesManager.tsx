@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,9 +62,13 @@ export function ProjectTemplatesManager() {
   // Criar novo template
   const addTemplateMutation = useMutation({
     mutationFn: async ({ title, description }: { title: string; description: string }) => {
+      // Buscar usuário logado
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user?.id) throw new Error("Falha ao obter usuário logado.");
+      const user_id = userData.user.id;
       const { data, error } = await supabase
         .from('project_templates')
-        .insert({ title, description })
+        .insert({ title, description, user_id })
         .select()
         .single();
       if (error) throw error;
