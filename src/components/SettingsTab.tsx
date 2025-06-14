@@ -219,43 +219,6 @@ export function SettingsTab() {
                     className="data-[state=checked]:bg-dilq-purple"
                   />
                 </div>
-                
-                <div className="flex items-center justify-between space-x-2 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <Label htmlFor="auto-save" className="flex flex-col">
-                    <span className="text-base font-medium">Salvar automaticamente</span>
-                    <span className="text-sm text-muted-foreground">
-                      Suas alterações serão salvas ao sair
-                    </span>
-                  </Label>
-                  <Switch
-                    id="auto-save"
-                    checked={settings.autoSave}
-                    onCheckedChange={(val) => handleSettingChange('autoSave', val)}
-                    className="data-[state=checked]:bg-dilq-purple"
-                  />
-                </div>
-                
-                <div className="p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <Label className="text-base font-medium mb-2 block">Frequência de notificações</Label>
-                  <RadioGroup 
-                    value={settings.notificationFrequency} 
-                    onValueChange={(val) => handleSettingChange('notificationFrequency', val as any)} 
-                    className="flex flex-col gap-2"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="realtime" id="r1" />
-                      <Label htmlFor="r1">Em tempo real</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="daily" id="r2" />
-                      <Label htmlFor="r2">Resumo diário</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="weekly" id="r3" />
-                      <Label htmlFor="r3">Resumo semanal</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
               </div>
             </CardContent>
           </Card>
