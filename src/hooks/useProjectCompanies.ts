@@ -13,6 +13,7 @@ export interface ProjectCompany {
   user_id: string;
   created_at?: string;
   updated_at?: string;
+  is_active?: boolean | null;
 }
 
 export const useProjectCompanies = () => {

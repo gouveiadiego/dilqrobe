@@ -14,13 +14,7 @@ import {
   ToggleLeft,
   ToggleRight
 } from "lucide-react";
-
-type ProjectCompany = {
-  id: string;
-  name: string;
-  is_active: boolean | null;
-  user_id: string;
-};
+import { ProjectCompany } from "@/hooks/useProjectCompanies";
 
 type ProjectTask = {
   id: string;
@@ -46,7 +40,7 @@ export function ProjectDashboard() {
         throw error;
       }
       console.log('✅ Companies for dashboard loaded:', data?.length);
-      return data as unknown as ProjectCompany[];
+      return data as ProjectCompany[];
     }
   });
 
