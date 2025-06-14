@@ -6,11 +6,15 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 
+// Use the complete EditorialPost type for consistency
 type EditorialPost = {
   id: string;
+  user_id: string;
+  company_id: string;
+  post_date: string;
   idea: string;
   status: string;
-  post_date: string;
+  responsible?: string;
 };
 
 interface EditorialIdeasListProps {
@@ -23,16 +27,22 @@ export function EditorialIdeasList({ days, calendarPosts, onAddTask }: Editorial
   return (
     <div className="space-y-2">
       {days.map(day => {
-        const postsOfDay = calendarPosts.filter(p => format(new Date(p.post_date), "yyyy-MM-dd") === format(day, "yyyy-MM-dd"));
+        const postsOfDay = calendarPosts.filter(
+          p => format(new Date(p.post_date), "yyyy-MM-dd") === format(day, "yyyy-MM-dd")
+        );
         if (postsOfDay.length === 0) return null;
         return (
           <Card className="p-3 flex gap-3 items-center" key={day.toISOString()}>
-            <span className="text-sm font-semibold text-dilq-purple w-24">{format(day, "dd/MM", { locale: ptBR })}</span>
+            <span className="text-sm font-semibold text-dilq-purple w-24">
+              {format(day, "dd/MM", { locale: ptBR })}
+            </span>
             <div className="flex-1 space-y-1">
               {postsOfDay.map((p) => (
                 <div key={p.id} className="flex items-center gap-2">
                   <span className="text-sm">{p.idea}</span>
-                  <span className="text-xs px-2 py-0.5 rounded bg-gray-100 ml-2">{p.status}</span>
+                  <span className="text-xs px-2 py-0.5 rounded bg-gray-100 ml-2">
+                    {p.status}
+                  </span>
                   <Button
                     variant="ghost"
                     size="icon"
