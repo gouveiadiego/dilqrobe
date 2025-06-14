@@ -141,11 +141,21 @@ const Index = () => {
   };
 
   const handlePostponeAll = () => {
-    // Adia todas as tarefas ativas para amanhã
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Só adia tarefas ativas "de hoje" para amanhã
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
     filteredTasks
-      .filter(t => !t.completed)
+      .filter(t => {
+        if (t.completed) return false;
+        if (!t.due_date) return false;
+        const due = new Date(t.due_date);
+        due.setHours(0, 0, 0, 0);
+        return due.getTime() === today.getTime();
+      })
       .forEach(t => handleUpdateTask(t.id, { due_date: tomorrow.toISOString() }));
   };
 
@@ -175,7 +185,6 @@ const Index = () => {
           <div className="space-y-4 md:space-y-6 rounded-lg animate-fade-in">
             {/* Quick Actions */}
             <QuickActionsMenu
-              onCompleteAll={handleCompleteAll}
               onPostponeAll={handlePostponeAll}
               focusMode={focusMode}
               onToggleFocus={() => setFocusMode(f => !f)}
