@@ -94,6 +94,7 @@ type HabitLog = {
   habit_id: string;
   user_id: string;
   date: string;
+  completed_at?: string;
   notes?: string;
   mood?: string;
   habit_title?: string;
@@ -666,7 +667,7 @@ export function HabitsTab() {
       
       const { data: logs, error } = await supabase
         .from("habit_logs")
-        .select("id, habit_id, user_id, date, notes, mood")
+        .select("id, habit_id, user_id, date, completed_at, notes, mood")
         .eq("user_id", session.user.id)
         .gte("date", thirtyDaysAgo.toISOString());
 
@@ -760,9 +761,16 @@ export function HabitsTab() {
     ? habits.filter(habit => habit.category === filterCategory)
     : habits;
 
-  const selectedHabit = habits && habits.length > 0 ? habits[selectedHabitIdx] : null;
   const selectedLogs = selectedHabit
-    ? habitLogs.filter((l) => l.habit_id === selectedHabit.id)
+    ? habitLogs
+        .filter((l) => l.habit_id === selectedHabit.id)
+        .map((l) => ({
+          ...l,
+          completed_at: l.completed_at || null,
+          date: l.date,
+          notes: l.notes ?? "",
+          mood: l.mood ?? "",
+        }))
     : [];
 
   return (
