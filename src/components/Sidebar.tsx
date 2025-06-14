@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -37,7 +36,6 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }
     { id: 'budget', label: 'Orçamento', icon: TrendingUp },
     { id: 'habits', label: 'Hábitos', icon: Target },
     { id: 'journals', label: 'Diário', icon: BookOpen },
-    { id: 'challenges', label: 'Desafios', icon: Target },
     { id: 'services', label: 'Serviços', icon: Briefcase },
     { id: 'projects', label: 'Projetos', icon: FileText },
     { id: 'profile', label: 'Perfil', icon: User },

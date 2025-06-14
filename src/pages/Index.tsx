@@ -30,7 +30,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AIAssistantTab } from "@/components/ai-chat/AIAssistantTab";
 import { AIChatWidget } from "@/components/ai-chat/AIChatWidget";
 
-type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
+type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -233,8 +233,6 @@ const Index = () => {
         return <HabitsTab />;
       case 'journals':
         return <JournalsTab />;
-      case 'challenges':
-        return <ChallengesTab />;
       case 'profile':
         return <ProfileTab />;
       case 'settings':
