@@ -69,6 +69,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { HabitShameDashboard } from "./habits/HabitShameDashboard";
 
 type Habit = {
   id: string;
@@ -453,6 +454,7 @@ export function HabitsTab() {
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedHabitIdx, setSelectedHabitIdx] = useState(0);
 
   useEffect(() => {
     fetchHabits();
@@ -758,8 +760,22 @@ export function HabitsTab() {
     ? habits.filter(habit => habit.category === filterCategory)
     : habits;
 
+  const selectedHabit = habits && habits.length > 0 ? habits[selectedHabitIdx] : null;
+  const selectedLogs = selectedHabit
+    ? habitLogs.filter((l) => l.habit_id === selectedHabit.id)
+    : [];
+
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="space-y-4 md:space-y-6 p-2 md:p-4">
+      {/* Mostra o Dashboard de Vergonha para o hábito selecionado */}
+      {selectedHabit && (
+        <HabitShameDashboard
+          habitLogs={selectedLogs}
+          habitTitle={selectedHabit.title}
+          createdAt={selectedHabit.created_at}
+        />
+      )}
+      
       {showTipDialog && (
         <Dialog open={showTipDialog} onOpenChange={setShowTipDialog}>
           <DialogContent>
