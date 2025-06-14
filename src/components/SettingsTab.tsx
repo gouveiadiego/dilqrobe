@@ -2,47 +2,14 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import {
-  Bell,
-  Shield,
-  Volume2,
-  Settings2,
-  Save,
-  RefreshCw,
-  Lock,
-  Eye,
-  BellDot,
-  CreditCard,
-} from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Bell, Shield, Volume2, Settings2, Save, RefreshCw, Lock, Eye, BellDot, CreditCard } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
-
 type Settings = {
   emailNotifications: boolean;
   pushNotifications: boolean;
@@ -53,7 +20,6 @@ type Settings = {
   notificationFrequency: "realtime" | "daily" | "weekly";
   volume: number;
 };
-
 const defaultSettings: Settings = {
   emailNotifications: true,
   pushNotifications: true,
@@ -62,54 +28,50 @@ const defaultSettings: Settings = {
   language: "pt-BR",
   autoSave: true,
   notificationFrequency: "daily",
-  volume: 80,
+  volume: 80
 };
-
 export function SettingsTab() {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
-
   useEffect(() => {
     const storedSettings = localStorage.getItem("appSettings");
     if (storedSettings) {
       const parsed = JSON.parse(storedSettings);
-      setSettings({ ...defaultSettings, ...parsed });
+      setSettings({
+        ...defaultSettings,
+        ...parsed
+      });
       document.documentElement.classList.toggle("dark", parsed.darkMode);
     } else {
-      const isSystemDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-      setSettings((s) => ({ ...s, darkMode: isSystemDark }));
+      const isSystemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setSettings(s => ({
+        ...s,
+        darkMode: isSystemDark
+      }));
       document.documentElement.classList.toggle("dark", isSystemDark);
     }
   }, []);
-
-  const handleSettingChange = <K extends keyof Settings>(
-    key: K,
-    value: Settings[K]
-  ) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+  const handleSettingChange = <K extends keyof Settings,>(key: K, value: Settings[K]) => {
+    setSettings(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
-
   const toggleDarkMode = (enabled: boolean) => {
     handleSettingChange("darkMode", enabled);
     document.documentElement.classList.toggle("dark", enabled);
     toast.success(`Modo ${enabled ? "escuro" : "claro"} ativado`);
   };
-
   const handleSaveSettings = () => {
     localStorage.setItem("appSettings", JSON.stringify(settings));
     toast.success("Configurações salvas com sucesso!");
   };
-
   const handleReset = () => {
     setSettings(defaultSettings);
     localStorage.removeItem("appSettings");
     document.documentElement.classList.toggle("dark", defaultSettings.darkMode);
     toast.success("Configurações redefinidas para os valores padrão");
   };
-
-  return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+  return <div className="space-y-6 max-w-5xl mx-auto">
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-dilq-purple/20 to-dilq-blue/20 rounded-2xl blur-3xl -z-10 opacity-70"></div>
         <div className="bg-gradient-to-r from-white/10 to-white/5 dark:from-gray-900/60 dark:to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-white/10 shadow-lg">
@@ -126,22 +88,9 @@ export function SettingsTab() {
             </div>
             
             <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={handleReset} 
-                className="group hover:border-dilq-blue/50 transition-all duration-300"
-              >
-                <RefreshCw className="mr-2 h-4 w-4 group-hover:rotate-180 transition-transform duration-500" />
-                Redefinir
-              </Button>
               
-              <Button 
-                onClick={handleSaveSettings} 
-                className="bg-gradient-to-r from-dilq-blue to-dilq-purple hover:from-dilq-blue/90 hover:to-dilq-purple/90 transition-all duration-300 shadow-md hover:shadow-dilq-purple/20 group"
-              >
-                <Save className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                Salvar
-              </Button>
+              
+              
             </div>
           </div>
         </div>
@@ -149,26 +98,17 @@ export function SettingsTab() {
 
       <Tabs defaultValue="notifications" className="space-y-6">
         <TabsList className="bg-gray-100 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700 w-full grid grid-cols-2 sm:grid-cols-3 gap-1">
-          <TabsTrigger 
-            value="notifications" 
-            className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-purple"
-          >
+          <TabsTrigger value="notifications" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-purple">
             <Bell className="h-4 w-4 mr-2" />
             Notificações
           </TabsTrigger>
           
-          <TabsTrigger 
-            value="privacy" 
-            className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-accent"
-          >
+          <TabsTrigger value="privacy" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-accent">
             <Shield className="h-4 w-4 mr-2" />
             Privacidade
           </TabsTrigger>
 
-          <TabsTrigger 
-            value="billing" 
-            className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-accent"
-          >
+          <TabsTrigger value="billing" className="rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm transition-all duration-200 data-[state=active]:border-b-2 data-[state=active]:border-dilq-accent">
             <CreditCard className="h-4 w-4 mr-2" />
             Faturamento
           </TabsTrigger>
@@ -197,12 +137,7 @@ export function SettingsTab() {
                       Receba atualizações importantes por email
                     </span>
                   </Label>
-                  <Switch
-                    id="email-notifications"
-                    checked={settings.emailNotifications}
-                    onCheckedChange={(val) => handleSettingChange('emailNotifications', val)}
-                    className="data-[state=checked]:bg-dilq-purple"
-                  />
+                  <Switch id="email-notifications" checked={settings.emailNotifications} onCheckedChange={val => handleSettingChange('emailNotifications', val)} className="data-[state=checked]:bg-dilq-purple" />
                 </div>
                 
                 <div className="flex items-center justify-between space-x-2 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -212,12 +147,7 @@ export function SettingsTab() {
                       Receba notificações em tempo real
                     </span>
                   </Label>
-                  <Switch
-                    id="push-notifications"
-                    checked={settings.pushNotifications}
-                    onCheckedChange={(val) => handleSettingChange('pushNotifications', val)}
-                    className="data-[state=checked]:bg-dilq-purple"
-                  />
+                  <Switch id="push-notifications" checked={settings.pushNotifications} onCheckedChange={val => handleSettingChange('pushNotifications', val)} className="data-[state=checked]:bg-dilq-purple" />
                 </div>
               </div>
             </CardContent>
@@ -333,14 +263,10 @@ export function SettingsTab() {
       </Tabs>
 
       <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
-        <Button 
-          onClick={handleSaveSettings} 
-          className="bg-gradient-to-r from-dilq-blue to-dilq-purple hover:from-dilq-blue/90 hover:to-dilq-purple/90 transition-all duration-300 shadow-md hover:shadow-lg group"
-        >
+        <Button onClick={handleSaveSettings} className="bg-gradient-to-r from-dilq-blue to-dilq-purple hover:from-dilq-blue/90 hover:to-dilq-purple/90 transition-all duration-300 shadow-md hover:shadow-lg group">
           <Save className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
           Salvar configurações
         </Button>
       </div>
-    </div>
-  );
+    </div>;
 }
