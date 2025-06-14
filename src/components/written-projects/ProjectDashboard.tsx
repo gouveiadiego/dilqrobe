@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +18,7 @@ import {
 type ProjectCompany = {
   id: string;
   name: string;
-  is_active: boolean;
+  is_active: boolean | null;
   user_id: string;
 };
 
@@ -30,8 +29,8 @@ type ProjectTask = {
   company_id: string;
   project_companies?: {
     name: string;
-    is_active: boolean;
-  };
+    is_active: boolean | null;
+  } | null;
 };
 
 export function ProjectDashboard() {
@@ -83,7 +82,7 @@ export function ProjectDashboard() {
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabase
         .from('project_companies')
-        .update({ is_active })
+        .update({ is_active } as any)
         .eq('id', id);
       
       if (error) throw error;
