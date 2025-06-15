@@ -30,85 +30,87 @@ const calculateNextDueDate = (currentDate: string, type: Task['recurrence_type']
   }
 };
 
-// Enhanced function to create or update a corresponding project task when a regular task is completed
-const createProjectTaskFromTask = async (task: Task) => {
+// Enhanced function to create or update a corresponding checklist item when a regular task is completed
+const createOrUpdateChecklistItemFromTask = async (task: Task) => {
   if (!task.project_company_id) {
-    console.log('⚠️ Task has no project_company_id, skipping project task creation');
+    console.log('⚠️ Task has no project_company_id, skipping checklist item sync');
     return;
   }
   
-  console.log('🔄 Syncing project task for:', {
+  console.log('🔄 Syncing checklist item for:', {
     taskTitle: task.title,
     companyId: task.project_company_id,
     taskId: task.id
   });
   
   try {
-    // First, check if a project task already exists for this regular task (by title and company)
-    const { data: existingTask, error: checkError } = await supabase
-      .from('project_tasks')
-      .select('id, status')
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated for checklist sync");
+
+    // First, check if a checklist item already exists for this regular task (by title and company)
+    const { data: existingItem, error: checkError } = await supabase
+      .from('project_checklist')
+      .select('id, completed')
       .eq('title', task.title)
       .eq('company_id', task.project_company_id)
       .maybeSingle();
     
     if (checkError) {
-      console.error('❌ Error checking for existing project task:', checkError);
-      toast.error('Erro ao verificar tarefa de projeto existente.');
+      console.error('❌ Error checking for existing checklist item:', checkError);
+      toast.error('Erro ao verificar item do checklist existente.');
       throw checkError;
     }
     
-    if (existingTask) {
-      console.log('ℹ️ Project task already exists for this task. Updating status.');
-      if (existingTask.status !== 'completed') {
+    if (existingItem) {
+      console.log('ℹ️ Checklist item already exists. Updating status to completed.');
+      if (!existingItem.completed) {
         const { error: updateError } = await supabase
-          .from('project_tasks')
-          .update({ status: 'completed' })
-          .eq('id', existingTask.id);
+          .from('project_checklist')
+          .update({ completed: true })
+          .eq('id', existingItem.id);
         
         if (updateError) {
-          console.error('❌ Error updating project task status:', updateError);
-          toast.error('Erro ao atualizar status da tarefa do projeto.');
+          console.error('❌ Error updating checklist item status:', updateError);
+          toast.error('Erro ao atualizar status do item do checklist.');
           throw updateError;
         }
-        toast.success('✅ Tarefa do projeto atualizada para Concluída!');
+        toast.success('✅ Item do checklist do projeto marcado como Concluído!');
       } else {
-        toast.info('Tarefa do projeto já está concluída.');
+        toast.info('Item do checklist do projeto já está concluído.');
       }
       return;
     }
 
-    // If it doesn't exist, create it.
+    // If it doesn't exist, create it as completed.
     const { data, error } = await supabase
-      .from('project_tasks')
+      .from('project_checklist')
       .insert({
         title: task.title,
-        description: `Tarefa criada automaticamente ao ser concluída: ${task.title}`,
-        status: 'completed',
         company_id: task.project_company_id,
-        due_date: task.due_date,
-        priority: task.priority
+        user_id: user.id,
+        completed: true,
+        category: task.category || 'geral',
       })
       .select()
       .single();
     
     if (error) {
-      console.error('❌ Error creating project task:', error);
-      toast.error('Erro ao sincronizar com projeto');
+      console.error('❌ Error creating checklist item:', error);
+      toast.error('Erro ao sincronizar com checklist do projeto');
       throw error;
     } else {
-      console.log('✅ Project task created successfully:', {
-        projectTaskId: data.id,
+      console.log('✅ Checklist item created successfully:', {
+        checklistItemId: data.id,
         title: data.title,
         companyId: data.company_id,
-        status: data.status
+        completed: data.completed
       });
-      toast.success('✅ Tarefa sincronizada com o projeto!');
+      toast.success('✅ Tarefa sincronizada com o checklist do projeto!');
       return data;
     }
   } catch (error) {
-    console.error('💥 Exception in createProjectTaskFromTask:', error);
-    toast.error('Erro ao sincronizar com projeto');
+    console.error('💥 Exception in createOrUpdateChecklistItemFromTask:', error);
+    toast.error('Erro ao sincronizar com checklist do projeto');
     throw error;
   }
 };
@@ -185,26 +187,25 @@ export const useTasks = () => {
         throw error;
       }
 
-      // If task has a company, create a corresponding project task
+      // If task has a company, create a corresponding project checklist item
       if (data && data.project_company_id) {
-        console.log('Task has company, creating corresponding project task...');
-        const { error: projectTaskError } = await supabase
-          .from('project_tasks')
+        console.log('Task has company, creating corresponding project checklist item...');
+        const { error: checklistError } = await supabase
+          .from('project_checklist')
           .insert({
             title: data.title,
-            description: `Tarefa criada automaticamente a partir da aba Execução.`,
-            status: 'pending',
             company_id: data.project_company_id,
-            due_date: data.due_date,
-            priority: data.priority,
+            user_id: user.id,
+            completed: false, // new tasks are not completed
+            category: data.category || 'geral'
           });
         
-        if (projectTaskError) {
-          console.error('Error creating project task on task creation:', projectTaskError);
-          toast.error('Erro ao sincronizar tarefa com projeto. A tarefa principal foi criada.');
+        if (checklistError) {
+          console.error('Error creating project checklist item on task creation:', checklistError);
+          toast.error('Erro ao sincronizar tarefa com checklist do projeto. A tarefa principal foi criada.');
         } else {
-          console.log('Project task created on task creation successfully.');
-          toast.success('Tarefa adicionada e sincronizada com projeto!');
+          console.log('Project checklist item created on task creation successfully.');
+          toast.success('Tarefa adicionada e sincronizada com checklist do projeto!');
         }
       } else {
         toast.success('Tarefa adicionada com sucesso');
@@ -215,8 +216,7 @@ export const useTasks = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['project-checklist-dashboard'] });
     }
   });
 
@@ -239,10 +239,8 @@ export const useTasks = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      // Aggressively invalidate project tasks to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
-      console.log('🔄 Cache invalidated for tasks and project-tasks');
+      queryClient.invalidateQueries({ queryKey: ['project-checklist-dashboard'] });
+      console.log('🔄 Cache invalidated for tasks and project-checklist');
     }
   });
 
@@ -278,8 +276,7 @@ export const useTasks = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['project-checklist-dashboard'] });
       toast.success('Tarefa atualizada com sucesso');
     }
   });
@@ -317,13 +314,12 @@ export const useTasks = () => {
         
         // Create project task if associated with a company
         if (task.project_company_id) {
-          console.log('🔗 Creating project task for completed recurring task');
+          console.log('🔗 Creating checklist item for completed recurring task');
           try {
-            await createProjectTaskFromTask(task);
-            queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-            queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
+            await createOrUpdateChecklistItemFromTask(task);
+            queryClient.invalidateQueries({ queryKey: ['project-checklist-dashboard'] });
           } catch (error) {
-            console.error('💥 Failed to create project task:', error);
+            console.error('💥 Failed to create checklist item:', error);
           }
         }
         
@@ -342,13 +338,12 @@ export const useTasks = () => {
 
         // Create project task if associated with a company
         if (task.project_company_id) {
-          console.log('🔗 Creating project task for recurring task completion');
+          console.log('🔗 Creating checklist item for recurring task completion');
           try {
-            await createProjectTaskFromTask(task);
-            queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-            queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
+            await createOrUpdateChecklistItemFromTask(task);
+            queryClient.invalidateQueries({ queryKey: ['project-checklist-dashboard'] });
           } catch (error) {
-            console.error('💥 Failed to create project task:', error);
+            console.error('💥 Failed to create checklist item:', error);
           }
         }
 
@@ -366,13 +361,12 @@ export const useTasks = () => {
       
       // Create project task if completing and associated with a company
       if (isCompleting && task.project_company_id) {
-        console.log('🔗 Creating project task for regular task completion');
+        console.log('🔗 Creating checklist item for regular task completion');
         try {
-          await createProjectTaskFromTask(task);
-          queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-          queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
+          await createOrUpdateChecklistItemFromTask(task);
+          queryClient.invalidateQueries({ queryKey: ['project-checklist-dashboard'] });
         } catch (error) {
-          console.error('💥 Failed to create project task:', error);
+          console.error('💥 Failed to create checklist item:', error);
         }
       }
     }
