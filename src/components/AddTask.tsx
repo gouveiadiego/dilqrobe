@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { Building } from "lucide-react";
@@ -19,6 +20,7 @@ interface AddTaskProps {
   categories: {
     id: string;
     name: string;
+    project_company_id?: string | null;
   }[];
   sections: {
     value: string;
@@ -28,7 +30,7 @@ interface AddTaskProps {
 
 export function AddTask({
   onAdd,
-  categories,
+  // categories prop is not used directly, we fetch from the hook
   sections
 }: AddTaskProps) {
   const {
@@ -54,15 +56,17 @@ export function AddTask({
   // Categorias do banco
   const { categories: allCategories } = useCategories();
 
-  // Personal Categories: sem type
+  // Personal Categories: sem type e sem company id
   const personalCategories = allCategories.filter(
-    cat => !cat.type
+    cat => !cat.type && !cat.project_company_id
   );
 
-  // Project Categories: sem type (same as above for now; you may want to extend your schema for true project segmentation)
-  const projectCategories = allCategories.filter(
-    cat => !cat.type
-  );
+  // Project Categories: sem type, com company id e filtrado pela empresa selecionada
+  const projectCategories = selectedCompanyId
+    ? allCategories.filter(
+        cat => !cat.type && cat.project_company_id === selectedCompanyId
+      )
+    : [];
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 space-y-4">
@@ -85,7 +89,6 @@ export function AddTask({
             {selectedCompanyId
               ? (
                 <ProjectCategorySelectorPopover
-                  // Passar apenas as categorias de projeto da empresa selecionada
                   projectCategories={projectCategories}
                   selectedProjectCategory={projectCategory}
                   onSelect={handleProjectCategorySelect}

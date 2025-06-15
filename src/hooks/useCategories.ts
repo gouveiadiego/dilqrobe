@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { handleApiError, handleSuccess } from "@/utils/errorHandler";
@@ -11,6 +10,7 @@ export interface Category {
   name: string;
   type?: CategoryType;
   user_id?: string;
+  project_company_id?: string | null;
 }
 
 export const useCategories = () => {
@@ -41,8 +41,8 @@ export const useCategories = () => {
   });
 
   const addCategoryMutation = useMutation({
-    mutationFn: async ({ name, type }: { name: string; type?: CategoryType }) => {
-      console.log("Adding category:", { name, type });
+    mutationFn: async ({ name, type, project_company_id }: { name: string; type?: CategoryType, project_company_id?: string | null }) => {
+      console.log("Adding category:", { name, type, project_company_id });
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -52,7 +52,8 @@ export const useCategories = () => {
         .insert([{
           name,
           type: type, // This allows creating categories without a type (for tasks)
-          user_id: user.id
+          user_id: user.id,
+          project_company_id
         }])
         .select()
         .single();
@@ -64,7 +65,8 @@ export const useCategories = () => {
 
       return {
         ...data,
-        type: (data.type === "income" || data.type === "expense") ? data.type as CategoryType : undefined
+        type: (data.type === "income" || data.type === "expense") ? data.type as CategoryType : undefined,
+        project_company_id: data.project_company_id
       } as Category;
     },
     onSuccess: () => {
@@ -77,10 +79,11 @@ export const useCategories = () => {
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: async ({ id, name, type }: { id: string; name?: string; type?: CategoryType }) => {
-      const updates: { name?: string; type?: CategoryType } = {};
+    mutationFn: async ({ id, name, type, project_company_id }: { id: string; name?: string; type?: CategoryType, project_company_id?: string | null }) => {
+      const updates: { name?: string; type?: CategoryType; project_company_id?: string | null } = {};
       if (name) updates.name = name;
       if (type) updates.type = type;
+      if (project_company_id !== undefined) updates.project_company_id = project_company_id;
 
       const { error } = await supabase
         .from('categories')
@@ -125,9 +128,14 @@ export const useCategories = () => {
   return {
     categories,
     isLoading,
-    addCategory: (params: { name: string; type?: CategoryType }) => {
+    addCategory: (params: { name: string; type?: CategoryType; project_company_id?: string | null }) => {
       console.log("addCategory called with params:", params);
-      if (!categories.some(cat => cat.name.toLowerCase() === params.name.toLowerCase())) {
+      const categoryExists = categories.some(cat => 
+        cat.name.toLowerCase() === params.name.toLowerCase() &&
+        (cat.project_company_id || null) === (params.project_company_id || null) &&
+        (!cat.type && !params.type || cat.type === params.type)
+      );
+      if (!categoryExists) {
         addCategoryMutation.mutate(params);
       } else {
         toast.error('Esta categoria já existe.');
@@ -137,4 +145,3 @@ export const useCategories = () => {
     deleteCategory: deleteCategoryMutation.mutate
   };
 };
-
