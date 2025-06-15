@@ -30,44 +30,60 @@ const calculateNextDueDate = (currentDate: string, type: Task['recurrence_type']
   }
 };
 
-// Enhanced function to create a corresponding project task when a regular task is completed
+// Enhanced function to create or update a corresponding project task when a regular task is completed
 const createProjectTaskFromTask = async (task: Task) => {
   if (!task.project_company_id) {
     console.log('⚠️ Task has no project_company_id, skipping project task creation');
     return;
   }
   
-  console.log('🔄 Creating project task for:', {
+  console.log('🔄 Syncing project task for:', {
     taskTitle: task.title,
     companyId: task.project_company_id,
     taskId: task.id
   });
   
   try {
-    // First, check if a project task already exists for this regular task
+    // First, check if a project task already exists for this regular task (by title and company)
     const { data: existingTask, error: checkError } = await supabase
       .from('project_tasks')
-      .select('id')
+      .select('id, status')
       .eq('title', task.title)
       .eq('company_id', task.project_company_id)
-      .eq('status', 'completed')
       .maybeSingle();
     
     if (checkError) {
       console.error('❌ Error checking for existing project task:', checkError);
+      toast.error('Erro ao verificar tarefa de projeto existente.');
+      throw checkError;
     }
     
     if (existingTask) {
-      console.log('ℹ️ Project task already exists for this task, skipping creation');
-      toast.info('Tarefa já sincronizada com o projeto');
+      console.log('ℹ️ Project task already exists for this task. Updating status.');
+      if (existingTask.status !== 'completed') {
+        const { error: updateError } = await supabase
+          .from('project_tasks')
+          .update({ status: 'completed' })
+          .eq('id', existingTask.id);
+        
+        if (updateError) {
+          console.error('❌ Error updating project task status:', updateError);
+          toast.error('Erro ao atualizar status da tarefa do projeto.');
+          throw updateError;
+        }
+        toast.success('✅ Tarefa do projeto atualizada para Concluída!');
+      } else {
+        toast.info('Tarefa do projeto já está concluída.');
+      }
       return;
     }
 
+    // If it doesn't exist, create it.
     const { data, error } = await supabase
       .from('project_tasks')
       .insert({
         title: task.title,
-        description: `Tarefa criada automaticamente: ${task.title}`,
+        description: `Tarefa criada automaticamente ao ser concluída: ${task.title}`,
         status: 'completed',
         company_id: task.project_company_id,
         due_date: task.due_date,
@@ -169,13 +185,37 @@ export const useTasks = () => {
         throw error;
       }
 
+      // If task has a company, create a corresponding project task
+      if (data && data.project_company_id) {
+        console.log('Task has company, creating corresponding project task...');
+        const { error: projectTaskError } = await supabase
+          .from('project_tasks')
+          .insert({
+            title: data.title,
+            description: `Tarefa criada automaticamente a partir da aba Execução.`,
+            status: 'pending',
+            company_id: data.project_company_id,
+            due_date: data.due_date,
+            priority: data.priority,
+          });
+        
+        if (projectTaskError) {
+          console.error('Error creating project task on task creation:', projectTaskError);
+          toast.error('Erro ao sincronizar tarefa com projeto. A tarefa principal foi criada.');
+        } else {
+          console.log('Project task created on task creation successfully.');
+          toast.success('Tarefa adicionada e sincronizada com projeto!');
+        }
+      } else {
+        toast.success('Tarefa adicionada com sucesso');
+      }
+
       console.log('Task added successfully:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-      toast.success('Tarefa adicionada com sucesso');
     }
   });
 
