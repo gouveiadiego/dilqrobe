@@ -12,6 +12,9 @@ import { CompanySelectorPopover } from "./tasks/CompanySelectorPopover";
 import { ProjectCategorySelectorPopover } from "./tasks/ProjectCategorySelectorPopover";
 import { RecurringTaskOptions } from "./tasks/RecurringTaskOptions";
 
+// new import
+import { useCategories } from "@/hooks/useCategories";
+
 interface AddTaskProps {
   onAdd: (task: Omit<Task, "id" | "completed" | "user_id" | "subtasks"> & { projectCategory?: string }) => void;
   categories: {
@@ -48,6 +51,14 @@ export function AddTask({
     isCompanyOpen, setIsCompanyOpen,
     selectedCompany,
   } = useAddTaskForm({ onAdd });
+
+  // --- NEW LOGIC: fetch categories using hook to always get up-to-date ones
+  const { categories: allCategories } = useCategories();
+
+  // filter categories without type ("personal/project" categories)
+  const projectCategories = allCategories.filter(
+    cat => !cat.type
+  );
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 space-y-4">
@@ -100,6 +111,8 @@ export function AddTask({
 
             {selectedCompanyId && (
               <ProjectCategorySelectorPopover
+                // main change: pass dynamic categories
+                projectCategories={projectCategories}
                 selectedProjectCategory={projectCategory}
                 onSelect={handleProjectCategorySelect}
                 isOpen={isProjectCategoryOpen}

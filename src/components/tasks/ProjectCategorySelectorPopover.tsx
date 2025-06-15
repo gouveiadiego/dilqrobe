@@ -4,9 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import React from "react";
 
-const PROJECT_CATEGORIES = ["Geral", "Conteúdo", "SEO", "Desenvolvimento"];
+interface ProjectCategory {
+  id: string;
+  name: string;
+}
 
 interface ProjectCategorySelectorPopoverProps {
+  projectCategories: ProjectCategory[];
   selectedProjectCategory: string | null;
   onSelect: (category: string) => void;
   isOpen: boolean;
@@ -14,6 +18,7 @@ interface ProjectCategorySelectorPopoverProps {
 }
 
 export function ProjectCategorySelectorPopover({
+  projectCategories,
   selectedProjectCategory,
   onSelect,
   isOpen,
@@ -28,10 +33,18 @@ export function ProjectCategorySelectorPopover({
       </PopoverTrigger>
       <PopoverContent className="w-48 p-2">
         <div className="flex flex-col gap-1">
-          {PROJECT_CATEGORIES.map((pCat) => (
-            <Button key={pCat} variant="ghost" className={`justify-start ${selectedProjectCategory === pCat ? 'text-purple-400' : ''}`} onClick={() => onSelect(pCat)}>
+          {projectCategories.length === 0 && (
+            <span className="text-sm text-gray-400 p-2">Nenhuma categoria criada</span>
+          )}
+          {projectCategories.map((pCat) => (
+            <Button 
+              key={pCat.id} 
+              variant="ghost" 
+              className={`justify-start ${selectedProjectCategory === pCat.id ? 'text-purple-400' : ''}`} 
+              onClick={() => onSelect(pCat.id)}
+            >
               <Briefcase className="h-4 w-4 mr-2" />
-              {pCat}
+              {pCat.name}
             </Button>
           ))}
         </div>

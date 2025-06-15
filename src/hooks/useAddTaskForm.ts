@@ -98,5 +98,6 @@ export function useAddTaskForm({ onAdd }: UseAddTaskFormProps) {
     isSectionOpen, setIsSectionOpen,
     isCompanyOpen, setIsCompanyOpen,
     selectedCompany
+    // Note: projectCategories will be provided by parent, see AddTask below
   };
 }
