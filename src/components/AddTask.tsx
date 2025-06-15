@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { Building } from "lucide-react";
@@ -52,11 +51,16 @@ export function AddTask({
     selectedCompany,
   } = useAddTaskForm({ onAdd });
 
-  // --- NEW LOGIC: fetch categories using hook to always get up-to-date ones
+  // Busque todas as categorias
   const { categories: allCategories } = useCategories();
 
-  // filter categories without type ("personal/project" categories)
+  // Categorias de projeto = sem type + (opcional: vinculadas a empresa)
   const projectCategories = allCategories.filter(
+    cat => !cat.type
+  );
+
+  // Categorias pessoais: sem empresa e sem type
+  const personalCategories = allCategories.filter(
     cat => !cat.type
   );
 
@@ -80,7 +84,7 @@ export function AddTask({
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             {!selectedCompanyId && (
               <CategorySelectorPopover
-                categories={categories}
+                categories={personalCategories}
                 selectedCategory={category}
                 onSelect={handleCategorySelect}
                 isOpen={isCategoryOpen}
@@ -111,7 +115,6 @@ export function AddTask({
 
             {selectedCompanyId && (
               <ProjectCategorySelectorPopover
-                // main change: pass dynamic categories
                 projectCategories={projectCategories}
                 selectedProjectCategory={projectCategory}
                 onSelect={handleProjectCategorySelect}
