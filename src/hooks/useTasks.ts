@@ -216,6 +216,7 @@ export const useTasks = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
     }
   });
 
@@ -240,6 +241,7 @@ export const useTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       // Aggressively invalidate project tasks to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
       console.log('🔄 Cache invalidated for tasks and project-tasks');
     }
   });
@@ -277,6 +279,7 @@ export const useTasks = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
       toast.success('Tarefa atualizada com sucesso');
     }
   });
@@ -317,9 +320,8 @@ export const useTasks = () => {
           console.log('🔗 Creating project task for completed recurring task');
           try {
             await createProjectTaskFromTask(task);
-            // Force refresh of project tasks
             queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-            queryClient.refetchQueries({ queryKey: ['project-tasks'] });
+            queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
           } catch (error) {
             console.error('💥 Failed to create project task:', error);
           }
@@ -343,9 +345,8 @@ export const useTasks = () => {
           console.log('🔗 Creating project task for recurring task completion');
           try {
             await createProjectTaskFromTask(task);
-            // Force refresh of project tasks
             queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-            queryClient.refetchQueries({ queryKey: ['project-tasks'] });
+            queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
           } catch (error) {
             console.error('💥 Failed to create project task:', error);
           }
@@ -368,11 +369,8 @@ export const useTasks = () => {
         console.log('🔗 Creating project task for regular task completion');
         try {
           await createProjectTaskFromTask(task);
-          // Force refresh of project tasks immediately
-          setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-            queryClient.refetchQueries({ queryKey: ['project-tasks'] });
-          }, 500); // Small delay to ensure the task creation is processed
+          queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+          queryClient.invalidateQueries({ queryKey: ['project-tasks-dashboard'] });
         } catch (error) {
           console.error('💥 Failed to create project task:', error);
         }
