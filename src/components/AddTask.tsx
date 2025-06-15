@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { Building } from "lucide-react";
@@ -60,10 +61,11 @@ export function AddTask({
     cat => !cat.type && !cat.project_company_id
   );
 
-  // Project Categories: sem type, com company id e filtrado pela empresa selecionada
+  // Project Categories: inclui categorias de projeto globais (sem ID de empresa)
+  // e categorias específicas da empresa selecionada.
   const projectCategories = selectedCompanyId
     ? allCategories.filter(
-        cat => !cat.type && cat.project_company_id === selectedCompanyId
+        cat => !cat.type && (!cat.project_company_id || cat.project_company_id === selectedCompanyId)
       )
     : [];
 
