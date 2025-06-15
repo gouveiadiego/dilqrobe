@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { useState } from "react";
@@ -68,8 +67,8 @@ export function AddTask({
     setSelectedCompanyId(null);
   };
 
-  const handleCategorySelect = (selectedCategory: string) => {
-    setCategory(selectedCategory);
+  const handleCategorySelect = (selectedCategoryId: string) => {
+    setCategory(selectedCategoryId);
     setIsOpen(false);
   };
 
@@ -123,7 +122,7 @@ export function AddTask({
               </PopoverTrigger>
               <PopoverContent className="w-40 p-2">
                 <div className="flex flex-col gap-1">
-                  {categories.map(cat => <Button key={cat.id} variant="ghost" className={`justify-start ${category === cat.name ? 'text-purple-400' : ''}`} onClick={() => handleCategorySelect(cat.name)}>
+                  {categories.map(cat => <Button key={cat.id} variant="ghost" className={`justify-start ${category === cat.id ? 'text-purple-400' : ''}`} onClick={() => handleCategorySelect(cat.id)}>
                       <Tag className="h-4 w-4 mr-2" />
                       {cat.name}
                     </Button>)}

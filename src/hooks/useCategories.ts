@@ -32,7 +32,7 @@ export const useCategories = () => {
       
       const transformedData = data.map(category => ({
         ...category,
-        type: (category.type === "income" ? "income" : "expense") as CategoryType
+        type: (category.type === "income" || category.type === "expense") ? category.type as CategoryType : undefined
       }));
       
       console.log("Fetched categories:", transformedData);
@@ -64,7 +64,7 @@ export const useCategories = () => {
 
       return {
         ...data,
-        type: (data.type === "income" ? "income" : "expense") as CategoryType
+        type: (data.type === "income" || data.type === "expense") ? data.type as CategoryType : undefined
       } as Category;
     },
     onSuccess: () => {
@@ -137,3 +137,4 @@ export const useCategories = () => {
     deleteCategory: deleteCategoryMutation.mutate
   };
 };
+
