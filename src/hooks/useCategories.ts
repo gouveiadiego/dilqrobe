@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { handleApiError, handleSuccess } from "@/utils/errorHandler";
@@ -7,7 +8,7 @@ export type CategoryType = "expense" | "income";
 
 export interface Category {
   id: string;
-  name: string;
+  name:string;
   type?: CategoryType;
   user_id?: string;
   project_company_id?: string | null;
@@ -63,10 +64,11 @@ export const useCategories = () => {
         throw error;
       }
 
+      // The Supabase-generated type for `data` might be stale after a migration.
+      // We cast to `any` before spreading to include the new `project_company_id` property.
       return {
-        ...data,
+        ...(data as any),
         type: (data.type === "income" || data.type === "expense") ? data.type as CategoryType : undefined,
-        project_company_id: data.project_company_id
       } as Category;
     },
     onSuccess: () => {

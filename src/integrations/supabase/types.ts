@@ -83,6 +83,7 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
+          project_company_id: string | null
           type: string | null
           user_id: string | null
         }
@@ -90,6 +91,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           name: string
+          project_company_id?: string | null
           type?: string | null
           user_id?: string | null
         }
@@ -97,10 +99,19 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
+          project_company_id?: string | null
           type?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_project_company_id_fkey"
+            columns: ["project_company_id"]
+            isOneToOne: false
+            referencedRelation: "project_companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       challenge_participants: {
         Row: {
