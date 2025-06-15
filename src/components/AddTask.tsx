@@ -54,17 +54,14 @@ export function AddTask({
   // Categorias do banco
   const { categories: allCategories } = useCategories();
 
-  // Filtro corrigido:
-  // Categorias pessoais: SEM EMPRESA e SEM TYPE (normalmente listadas na aba tarefas)
+  // Personal Categories: sem type
   const personalCategories = allCategories.filter(
-    cat => !cat.type && !cat.company_id
+    cat => !cat.type
   );
 
-  // Categorias de projeto: DEVEM estar na aba projetos. São todas as categorias sem type 
-  // mas que estão associadas a alguma empresa OU VOCÊ pode definir por company_id!=null OU por outro critério,
-  // mas aqui supomos que toda categoria "de projeto" tem o campo company_id definido
+  // Project Categories: sem type (same as above for now; you may want to extend your schema for true project segmentation)
   const projectCategories = allCategories.filter(
-    cat => !cat.type && cat.company_id && (selectedCompanyId ? cat.company_id === selectedCompanyId : true)
+    cat => !cat.type
   );
 
   return (
