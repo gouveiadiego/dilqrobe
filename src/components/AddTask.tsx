@@ -1,7 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { useState } from "react";
-import { CalendarIcon, Flag, LayoutGrid, Tag, Building } from "lucide-react";
+import { CalendarIcon, Flag, LayoutGrid, Tag, Building, Briefcase } from "lucide-react";
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { useProjectCompanies } from "@/hooks/useProjectCompanies";
 
 interface AddTaskProps {
-  onAdd: (task: Omit<Task, "id" | "completed" | "user_id" | "subtasks">) => void;
+  onAdd: (task: Omit<Task, "id" | "completed" | "user_id" | "subtasks"> & { projectCategory?: string }) => void;
   categories: {
     id: string;
     name: string;
@@ -22,6 +22,8 @@ interface AddTaskProps {
   }[];
 }
 
+const PROJECT_CATEGORIES = ["Geral", "Conteúdo", "SEO", "Desenvolvimento"];
+
 export function AddTask({
   onAdd,
   categories,
@@ -31,10 +33,12 @@ export function AddTask({
   const [priority, setPriority] = useState<Task["priority"]>("medium");
   const [date, setDate] = useState<Date | null>(null);
   const [category, setCategory] = useState<string | null>(null);
+  const [projectCategory, setProjectCategory] = useState<string | null>(null);
   const [section, setSection] = useState("inbox");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceCount, setRecurrenceCount] = useState<number | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isProjectCategoryOpen, setIsProjectCategoryOpen] = useState(false);
   const [isSectionOpen, setIsSectionOpen] = useState(false);
   const [recurrenceType, setRecurrenceType] = useState<Task["recurrence_type"]>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
@@ -54,7 +58,8 @@ export function AddTask({
       recurrence_count: recurrenceCount,
       recurrence_completed: 0,
       recurrence_type: isRecurring ? recurrenceType : null,
-      project_company_id: selectedCompanyId
+      project_company_id: selectedCompanyId,
+      projectCategory,
     });
     setTitle("");
     setDate(null);
@@ -65,11 +70,17 @@ export function AddTask({
     setRecurrenceCount(null);
     setRecurrenceType(null);
     setSelectedCompanyId(null);
+    setProjectCategory(null);
   };
 
   const handleCategorySelect = (selectedCategoryId: string) => {
     setCategory(selectedCategoryId);
     setIsOpen(false);
+  };
+
+  const handleProjectCategorySelect = (selectedProjectCategory: string) => {
+    setProjectCategory(selectedProjectCategory);
+    setIsProjectCategoryOpen(false);
   };
 
   const handleSectionSelect = (selectedSection: string) => {
@@ -79,6 +90,11 @@ export function AddTask({
 
   const handleCompanySelect = (companyId: string) => {
     setSelectedCompanyId(companyId);
+    if (companyId) {
+      setCategory(null); // Clear personal category
+    } else {
+      setProjectCategory(null); // Clear project category
+    }
     setIsCompanyOpen(false);
   };
 
@@ -114,24 +130,26 @@ export function AddTask({
             autoFocus 
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            <Popover open={isOpen} onOpenChange={setIsOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className={`h-8 w-8 ${category ? 'text-purple-400 hover:text-purple-500' : 'text-gray-400 hover:text-gray-500'}`}>
-                  <Tag className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-40 p-2">
-                <div className="flex flex-col gap-1">
-                  {categories.map(cat => <Button key={cat.id} variant="ghost" className={`justify-start ${category === cat.id ? 'text-purple-400' : ''}`} onClick={() => handleCategorySelect(cat.id)}>
-                      <Tag className="h-4 w-4 mr-2" />
-                      {cat.name}
-                    </Button>)}
-                  {categories.length === 0 && <span className="text-sm text-gray-400 p-2">
-                      Nenhuma categoria criada
-                    </span>}
-                </div>
-              </PopoverContent>
-            </Popover>
+            {!selectedCompanyId && (
+              <Popover open={isOpen} onOpenChange={setIsOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className={`h-8 w-8 ${category ? 'text-purple-400 hover:text-purple-500' : 'text-gray-400 hover:text-gray-500'}`}>
+                    <Tag className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-40 p-2">
+                  <div className="flex flex-col gap-1">
+                    {categories.map(cat => <Button key={cat.id} variant="ghost" className={`justify-start ${category === cat.id ? 'text-purple-400' : ''}`} onClick={() => handleCategorySelect(cat.id)}>
+                        <Tag className="h-4 w-4 mr-2" />
+                        {cat.name}
+                      </Button>)}
+                    {categories.length === 0 && <span className="text-sm text-gray-400 p-2">
+                        Nenhuma categoria criada
+                      </span>}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
 
             <Popover>
               <PopoverTrigger asChild>
@@ -228,6 +246,31 @@ export function AddTask({
                 </div>
               </PopoverContent>
             </Popover>
+
+            {selectedCompanyId && (
+              <Popover open={isProjectCategoryOpen} onOpenChange={setIsProjectCategoryOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className={`h-8 w-8 ${projectCategory ? 'text-purple-400 hover:text-purple-500' : 'text-gray-400 hover:text-gray-500'}`}>
+                    <Briefcase className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-48 p-2">
+                  <div className="flex flex-col gap-1">
+                    {PROJECT_CATEGORIES.map((pCat) => (
+                      <Button
+                        key={pCat}
+                        variant="ghost"
+                        className={`justify-start ${projectCategory === pCat ? 'text-purple-400' : ''}`}
+                        onClick={() => handleProjectCategorySelect(pCat)}
+                      >
+                        <Briefcase className="h-4 w-4 mr-2" />
+                        {pCat}
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
         </div>
       </div>

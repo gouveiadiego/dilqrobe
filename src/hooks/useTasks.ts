@@ -115,6 +115,8 @@ const createOrUpdateChecklistItemFromTask = async (task: Task) => {
   }
 };
 
+type AddTaskPayload = Omit<Task, "id" | "completed" | "user_id" | "subtasks"> & { projectCategory?: string };
+
 export const useTasks = () => {
   const queryClient = useQueryClient();
 
@@ -154,7 +156,7 @@ export const useTasks = () => {
   });
 
   const addTaskMutation = useMutation({
-    mutationFn: async (newTask: Omit<Task, "id" | "completed" | "user_id" | "subtasks">) => {
+    mutationFn: async (newTask: AddTaskPayload) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
@@ -197,7 +199,7 @@ export const useTasks = () => {
             company_id: data.project_company_id,
             user_id: user.id,
             completed: false, // new tasks are not completed
-            category: data.category || 'geral'
+            category: newTask.projectCategory || 'geral'
           });
         
         if (checklistError) {
