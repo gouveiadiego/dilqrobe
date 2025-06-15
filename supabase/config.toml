@@ -31,6 +31,9 @@ verify_jwt = true
 [functions.stripe-webhook]
 verify_jwt = false
 
+[functions.generate-with-ai]
+verify_jwt = true
+
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
