@@ -51,10 +51,10 @@ export function AddTask({
     selectedCompany,
   } = useAddTaskForm({ onAdd });
 
-  // Busque todas as categorias
+  // Categorias do banco
   const { categories: allCategories } = useCategories();
 
-  // Categorias de projeto = sem type + (opcional: vinculadas a empresa)
+  // Categorias de projeto = sem type
   const projectCategories = allCategories.filter(
     cat => !cat.type
   );
@@ -82,15 +82,25 @@ export function AddTask({
             autoFocus 
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            {!selectedCompanyId && (
-              <CategorySelectorPopover
-                categories={personalCategories}
-                selectedCategory={category}
-                onSelect={handleCategorySelect}
-                isOpen={isCategoryOpen}
-                onOpenChange={setIsCategoryOpen}
-              />
-            )}
+            {selectedCompanyId
+              ? (
+                <ProjectCategorySelectorPopover
+                  projectCategories={projectCategories}
+                  selectedProjectCategory={projectCategory}
+                  onSelect={handleProjectCategorySelect}
+                  isOpen={isProjectCategoryOpen}
+                  onOpenChange={setIsProjectCategoryOpen}
+                />
+              ) : (
+                <CategorySelectorPopover
+                  categories={personalCategories}
+                  selectedCategory={category}
+                  onSelect={handleCategorySelect}
+                  isOpen={isCategoryOpen}
+                  onOpenChange={setIsCategoryOpen}
+                />
+              )
+            }
 
             <PrioritySelectorPopover priority={priority} onSelect={setPriority} />
 
@@ -112,16 +122,6 @@ export function AddTask({
               isOpen={isCompanyOpen}
               onOpenChange={setIsCompanyOpen}
             />
-
-            {selectedCompanyId && (
-              <ProjectCategorySelectorPopover
-                projectCategories={projectCategories}
-                selectedProjectCategory={projectCategory}
-                onSelect={handleProjectCategorySelect}
-                isOpen={isProjectCategoryOpen}
-                onOpenChange={setIsProjectCategoryOpen}
-              />
-            )}
           </div>
         </div>
       </div>
