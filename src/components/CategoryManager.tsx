@@ -2,11 +2,8 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronRight } from "lucide-react";
-import { toast } from "sonner";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { CategoryType } from "@/hooks/useCategories";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 
 interface CategoryManagerProps {
   categories: { id: string; name: string; type?: CategoryType }[];
@@ -22,33 +19,27 @@ export function CategoryManager({
   onDeleteCategory
 }: CategoryManagerProps) {
   const [newCategory, setNewCategory] = useState("");
-  const [newCategoryType, setNewCategoryType] = useState<CategoryType>("expense");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [editType, setEditType] = useState<CategoryType>("expense");
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
 
   const handleAddCategory = () => {
     if (!newCategory.trim()) return;
     
-    // Explicitly log what we're sending to onAddCategory
-    console.log("Calling onAddCategory with:", { name: newCategory.trim(), type: newCategoryType });
+    console.log("Calling onAddCategory with:", { name: newCategory.trim() });
     
     onAddCategory({ 
       name: newCategory.trim(), 
-      type: newCategoryType 
     });
     
     setNewCategory("");
-    setNewCategoryType("expense");
     setShowAddForm(false);
   };
 
   const startEditing = (category: { id: string; name: string; type?: CategoryType }) => {
     setEditingCategoryId(category.id);
     setEditValue(category.name);
-    setEditType(category.type || "expense");
   };
 
   const handleDelete = (categoryId: string) => {
@@ -66,8 +57,7 @@ export function CategoryManager({
     if (onUpdateCategory) {
       onUpdateCategory({ 
         id: categoryId, 
-        name: editValue.trim(), 
-        type: editType 
+        name: editValue.trim(),
       });
     }
     setEditingCategoryId(null);
@@ -75,14 +65,6 @@ export function CategoryManager({
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
-  };
-
-  const getCategoryTypeLabel = (type?: CategoryType): string => {
-    switch (type) {
-      case "income": return "Recebimento";
-      case "expense": return "Despesa";
-      default: return "Despesa";
-    }
   };
 
   return (
@@ -93,7 +75,7 @@ export function CategoryManager({
           className="flex items-center gap-2 text-sm font-medium text-gray-700"
         >
           {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          Categorias ({categories.length})
+          Categorias de Tarefas ({categories.length})
         </button>
       </div>
 
@@ -122,21 +104,6 @@ export function CategoryManager({
                   }
                 }}
               />
-
-              <RadioGroup 
-                value={newCategoryType} 
-                onValueChange={(value) => setNewCategoryType(value as CategoryType)}
-                className="flex space-x-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="expense" id="new-expense" />
-                  <Label htmlFor="new-expense">Despesa</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="income" id="new-income" />
-                  <Label htmlFor="new-income">Recebimento</Label>
-                </div>
-              </RadioGroup>
 
               <div className="flex gap-2 justify-end">
                 <Button
@@ -169,21 +136,6 @@ export function CategoryManager({
                       autoFocus
                     />
                     
-                    <RadioGroup 
-                      value={editType} 
-                      onValueChange={(value) => setEditType(value as CategoryType)}
-                      className="flex space-x-4 mb-2"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="expense" id="edit-expense" />
-                        <Label htmlFor="edit-expense">Despesa</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="income" id="edit-income" />
-                        <Label htmlFor="edit-income">Recebimento</Label>
-                      </div>
-                    </RadioGroup>
-
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="outline"
@@ -206,13 +158,6 @@ export function CategoryManager({
                   <>
                     <div className="flex items-center">
                       <span className="text-sm text-gray-700 mr-2">{category.name}</span>
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${
-                        category.type === 'income' 
-                          ? 'bg-emerald-100 text-emerald-800' 
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {getCategoryTypeLabel(category.type)}
-                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button

@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { handleApiError, handleSuccess } from "@/utils/errorHandler";
+import { toast } from "sonner";
 
 export type CategoryType = "expense" | "income";
 
@@ -50,7 +51,7 @@ export const useCategories = () => {
         .from('categories')
         .insert([{
           name,
-          type: type || 'expense',
+          type: type, // This allows creating categories without a type (for tasks)
           user_id: user.id
         }])
         .select()
@@ -126,10 +127,10 @@ export const useCategories = () => {
     isLoading,
     addCategory: (params: { name: string; type?: CategoryType }) => {
       console.log("addCategory called with params:", params);
-      if (!categories.some(cat => cat.name === params.name)) {
+      if (!categories.some(cat => cat.name.toLowerCase() === params.name.toLowerCase())) {
         addCategoryMutation.mutate(params);
       } else {
-        handleApiError('Esta categoria já existe');
+        toast.error('Esta categoria já existe.');
       }
     },
     updateCategory: updateCategoryMutation.mutate,
