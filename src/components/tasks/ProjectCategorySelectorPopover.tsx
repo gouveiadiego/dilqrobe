@@ -1,8 +1,11 @@
 
-import { Briefcase } from "lucide-react";
+import { Briefcase, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import React from "react";
+import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { useCategories } from "@/hooks/useCategories";
 
 interface ProjectCategory {
   id: string;
@@ -15,6 +18,7 @@ interface ProjectCategorySelectorPopoverProps {
   onSelect: (category: string) => void;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  projectCompanyId: string | null;
 }
 
 export function ProjectCategorySelectorPopover({
@@ -23,7 +27,27 @@ export function ProjectCategorySelectorPopover({
   onSelect,
   isOpen,
   onOpenChange,
+  projectCompanyId,
 }: ProjectCategorySelectorPopoverProps) {
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const { addCategory } = useCategories();
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) {
+      toast.error("O nome da categoria não pode estar em branco.");
+      return;
+    }
+    if (!projectCompanyId) {
+      toast.error("Nenhuma empresa selecionada para adicionar a categoria.");
+      return;
+    }
+    addCategory({
+      name: newCategoryName.trim(),
+      project_company_id: projectCompanyId,
+    });
+    setNewCategoryName("");
+  };
+
   return (
     <Popover open={isOpen} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
@@ -31,11 +55,8 @@ export function ProjectCategorySelectorPopover({
           <Briefcase className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-48 p-2">
+      <PopoverContent className="w-56 p-2">
         <div className="flex flex-col gap-1">
-          {projectCategories.length === 0 && (
-            <span className="text-sm text-gray-400 p-2">Nenhuma categoria criada</span>
-          )}
           {projectCategories.map((pCat) => (
             <Button 
               key={pCat.id} 
@@ -47,6 +68,28 @@ export function ProjectCategorySelectorPopover({
               {pCat.name}
             </Button>
           ))}
+          {projectCategories.length === 0 && (
+            <span className="text-sm text-gray-400 p-2 text-center">Nenhuma categoria criada</span>
+          )}
+        </div>
+        <div className="mt-2 pt-2 border-t">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Nova categoria..."
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              className="h-8"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddCategory();
+                }
+              }}
+            />
+            <Button size="icon" className="h-8 w-8" onClick={handleAddCategory}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

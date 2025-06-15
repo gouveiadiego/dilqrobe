@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Task } from "@/types/task";
 import { Building } from "lucide-react";
@@ -94,6 +93,7 @@ export function AddTask({
                   onSelect={handleProjectCategorySelect}
                   isOpen={isProjectCategoryOpen}
                   onOpenChange={setIsProjectCategoryOpen}
+                  projectCompanyId={selectedCompanyId}
                 />
               ) : (
                 <CategorySelectorPopover
