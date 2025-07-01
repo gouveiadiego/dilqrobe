@@ -1,8 +1,7 @@
-import React, { useState } from "react";
-import { LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import React from "react";
+import { LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Activity, Wallet, Target, CheckCircle2, Calendar, TrendingUp, ChevronUp, ChevronDown, CircleDollarSign, List, Home, Sparkles, FileText, BookOpen, Briefcase, User, Settings } from "lucide-react";
+import { Activity, Wallet, Target, CheckCircle2, Calendar, TrendingUp, ChevronUp, ChevronDown, CircleDollarSign, List, Users, Clock, Award, DollarSign } from "lucide-react";
 import { useTasks } from "@/hooks/useTasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,23 +9,6 @@ import { UpcomingMeetings } from "@/components/dashboard/UpcomingMeetings";
 import { MonthlyProgress } from "@/components/dashboard/MonthlyProgress";
 import { TopClients } from "@/components/dashboard/TopClients";
 import FloatingChatButton from "./FloatingChatButton";
-
-// Import all tab components
-import { AIAssistantTab } from "./ai-chat/AIAssistantTab";
-import { FinanceTab } from "./FinanceTab";
-import { BudgetTab } from "./BudgetTab";
-import { HabitsTab } from "./HabitsTab";
-import { JournalsTab } from "./JournalsTab";
-import { ChallengesTab } from "./ChallengesTab";
-import { ServicesTab } from "./ServicesTab";
-import { WrittenProjectsTab } from "./WrittenProjectsTab";
-import { MeetingsTab } from "./MeetingsTab";
-import { ProfileTab } from "./ProfileTab";
-import { SettingsTab } from "./SettingsTab";
-import { TaskList } from "./TaskList";
-import { AddTask } from "./AddTask";
-import { TaskFilters } from "./TaskFilters";
-import { useCategories } from "@/hooks/useCategories";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -45,9 +27,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const DashboardTab = () => {
-  const [activeTab, setActiveTab] = useState("overview");
-  const { tasks, addTask, updateTask, deleteTask } = useTasks();
-  const { categories } = useCategories();
+  const { tasks } = useTasks();
   
   // Fetch transactions
   const { data: transactions } = useQuery({
@@ -63,12 +43,12 @@ const DashboardTab = () => {
     }
   });
 
-  // Fetch running challenges
-  const { data: challenges } = useQuery({
-    queryKey: ['running-challenges'],
+  // Fetch habits
+  const { data: habits } = useQuery({
+    queryKey: ['habits'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('running_challenges')
+        .from('habits')
         .select('*');
       
       if (error) throw error;
@@ -87,9 +67,9 @@ const DashboardTab = () => {
   const expenses = transactions?.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0;
   const balance = income - expenses;
 
-  // Calculate challenge metrics
-  const activeChallenge = challenges?.[0];
-  const totalChallenges = challenges?.length || 0;
+  // Calculate habit metrics
+  const activeHabits = habits?.filter(habit => habit.active).length || 0;
+  const avgStreak = habits?.length ? habits.reduce((sum, habit) => sum + (habit.streak || 0), 0) / habits.length : 0;
 
   // Financial trend data for line chart
   const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -121,400 +101,313 @@ const DashboardTab = () => {
   const incomeTrend = currentIncome - prevIncome;
   const incomePercentChange = prevIncome > 0 ? ((incomeTrend / prevIncome) * 100).toFixed(1) : "0";
 
-  // Sections for tasks
-  const sections = [
-    { value: "today", label: "Hoje" },
-    { value: "tomorrow", label: "Amanhã" },
-    { value: "week", label: "Esta Semana" },
-    { value: "later", label: "Mais Tarde" }
+  // Task analytics data
+  const tasksByPriority = [
+    { name: 'Alta', value: tasks?.filter(t => t.priority === 'high' && !t.completed).length || 0, color: '#ef4444' },
+    { name: 'Média', value: tasks?.filter(t => t.priority === 'medium' && !t.completed).length || 0, color: '#f59e0b' },
+    { name: 'Baixa', value: tasks?.filter(t => t.priority === 'low' && !t.completed).length || 0, color: '#10b981' }
   ];
 
-  // Overview content (current dashboard)
-  const OverviewContent = () => (
-    <div className="space-y-8 animate-fade-in">
-      {/* Main Stats */}
-      <div className="grid gap-5 md:grid-cols-4">
-        <Card className="!bg-white shadow-none border border-gray-100 hover:shadow transition-all duration-300 rounded-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-1">
-            <CardTitle className="text-xs font-medium text-gray-500">Total de Tarefas</CardTitle>
-            <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center">
-              <Activity className="h-4 w-4 text-gray-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-extrabold text-gray-800">{totalTasks}</div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`text-xs ${tasksTrend >= 0 ? 'text-green-500' : 'text-red-500'} flex items-center`}>
-                {tasksTrend >= 0 ? <ChevronUp className="h-3 w-3 mr-0.5" /> : <ChevronDown className="h-3 w-3 mr-0.5" />}
-                {Math.abs(Number(tasksPercentChange))}%
-              </span>
-              <span className="text-xs text-gray-400">vs ontem</span>
-            </div>
-            <p className="text-xs text-gray-400 mt-2">{activeTasks} ativas</p>
-          </CardContent>
-        </Card>
+  // Productivity trend (last 7 days)
+  const productivityData = last7Days.map(date => {
+    const completed = tasks?.filter(t => t.completed && t.updated_at?.split('T')[0] === date).length || 0;
+    return {
+      name: new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' }),
+      completadas: completed,
+      financeiro: financialTrendData.find(f => f.name === new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' }))?.saldo || 0
+    };
+  });
 
-        <Card className="!bg-white shadow-none border border-gray-100 hover:shadow transition-all duration-300 rounded-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-1">
-            <CardTitle className="text-xs font-medium text-gray-500">Saldo Financeiro</CardTitle>
-            <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center">
-              <CircleDollarSign className="h-4 w-4 text-gray-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-extrabold ${balance < 0 ? "text-red-600" : "text-gray-800"}`}>
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balance)}
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className={`text-xs ${incomeTrend >= 0 ? 'text-green-500' : 'text-red-500'} flex items-center`}>
-                {incomeTrend >= 0 ? <ChevronUp className="h-3 w-3 mr-0.5" /> : <ChevronDown className="h-3 w-3 mr-0.5" />}
-                {Math.abs(Number(incomePercentChange))}%
-              </span>
-              <span className="text-xs text-gray-400">receitas</span>
-            </div>
-            <p className="text-xs text-gray-400 mt-2">{transactions?.length} transações</p>
-          </CardContent>
-        </Card>
-
-        <Card className="!bg-white shadow-none border border-gray-100 hover:shadow transition-all duration-300 rounded-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-1">
-            <CardTitle className="text-xs font-medium text-gray-500">Desafios</CardTitle>
-            <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center">
-              <Target className="h-4 w-4 text-gray-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-extrabold text-gray-800">{totalChallenges}</div>
-            <div className="text-xs text-gray-400 mt-1">
-              {activeChallenge ? <>{activeChallenge.title}</> : 'Nenhum desafio ativo'}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="!bg-white shadow-none border border-gray-100 hover:shadow transition-all duration-300 rounded-xl">
-          <CardHeader className="flex flex-row items-center justify-between pb-1">
-            <CardTitle className="text-xs font-medium text-gray-500">Conclusão</CardTitle>
-            <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center">
-              <CheckCircle2 className="h-4 w-4 text-gray-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-extrabold text-gray-800">{taskCompletionRate}%</div>
-            <div className="w-full h-1 rounded-full bg-gray-100 mt-2">
-              <div className="h-full rounded-full bg-purple-400 transition-all duration-500" style={{ width: `${taskCompletionRate}%` }}></div>
-            </div>
-            <p className="text-xs text-gray-400 mt-2">{completedTasks} concluídas</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-1 space-y-6">
-          <MonthlyProgress />
-          <TopClients />
-        </div>
-        <div className="md:col-span-2 space-y-6">
-          <Card className="bg-white border border-gray-100 shadow-none hover:shadow-md">
-            <CardHeader className="bg-gray-50 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-gray-900">Resumo Financeiro</CardTitle>
-                  <CardDescription className="text-gray-600">Receitas e despesas</CardDescription>
-                </div>
-                <div className="h-8 w-8 rounded bg-white flex items-center justify-center">
-                  <TrendingUp className="h-4 w-4 text-gray-400" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 md:p-6">
-              <div className="h-[220px] md:h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={financialTrendData}>
-                    <CartesianGrid strokeDasharray="2 2" className="stroke-gray-100" />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="receitas" name="Receitas" stroke="#a78bfa" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="despesas" name="Despesas" stroke="#f87171" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#6366f1" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          <UpcomingMeetings />
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-white border border-gray-100 shadow-none hover:shadow">
-          <CardHeader className="bg-gray-50 pb-2 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs text-gray-700">Próximas Tarefas</CardTitle>
-              <div className="h-6 w-6 rounded-lg bg-white flex items-center justify-center">
-                <List className="h-4 w-4 text-gray-400" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="space-y-2">
-              {tasks?.filter(task => !task.completed).slice(0, 3).map(task => (
-                <div key={task.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                  <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="h-4 w-4 text-gray-300" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium truncate text-gray-700">{task.title}</span>
-                    {task.due_date && (
-                      <span className="text-xs text-gray-400 ml-2">
-                        {new Date(task.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                      </span>
-                    )}
-                  </div>
-                  <div className={`px-2 py-1 rounded-full text-xs ${task.priority === 'high' ? 'bg-red-50 text-red-500' : task.priority === 'medium' ? 'bg-yellow-50 text-yellow-500' : 'bg-green-50 text-green-500'}`}>
-                    {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Média' : 'Baixa'}
-                  </div>
-                </div>
-              ))}
-              {tasks?.filter(task => !task.completed).length === 0 && (
-                <div className="text-center py-6">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 mx-auto flex items-center justify-center mb-2">
-                    <CheckCircle2 className="h-5 w-5 text-gray-300" />
-                  </div>
-                  <span className="text-xs text-gray-400">Nenhuma tarefa pendente</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border border-gray-100 shadow-none hover:shadow">
-          <CardHeader className="bg-gray-50 pb-2 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs text-gray-700">Resumo Financeiro</CardTitle>
-              <div className="h-6 w-6 rounded-lg bg-white flex items-center justify-center">
-                <Wallet className="h-4 w-4 text-gray-400" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-1">
-                <span className="text-xs text-gray-600">Receitas</span>
-                <span className="text-xs font-semibold text-green-600">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(income)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-1">
-                <span className="text-xs text-gray-600">Despesas</span>
-                <span className="text-xs font-semibold text-red-500">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(expenses)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-1">
-                <span className="text-xs text-gray-600">Saldo</span>
-                <span className="text-xs font-semibold text-gray-700">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balance)}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white border border-gray-100 shadow-none hover:shadow">
-          <CardHeader className="bg-gray-50 pb-2 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs text-gray-700">Desafios</CardTitle>
-              <div className="h-6 w-6 rounded-lg bg-white flex items-center justify-center">
-                <Target className="h-4 w-4 text-gray-400" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="space-y-2">
-              {challenges?.slice(0, 3).map(challenge => (
-                <div key={challenge.id} className="flex items-center gap-2 p-1">
-                  <Calendar className="h-4 w-4 text-gray-300" />
-                  <span className="text-xs font-medium truncate text-gray-700">{challenge.title}</span>
-                </div>
-              ))}
-              {(!challenges || challenges.length === 0) && (
-                <div className="text-center py-4">
-                  <Target className="h-5 w-5 mx-auto text-gray-300" />
-                  <span className="text-xs text-gray-400 block mt-1">Nenhum desafio ativo</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-
-  // Tasks content
-  const TasksContent = () => {
-    const [search, setSearch] = React.useState("");
-    const [filter, setFilter] = React.useState<"all" | "active" | "completed">("all");
-    const [categoryFilter, setCategoryFilter] = React.useState<string | "all">("all");
-    const [priorityFilter, setPriorityFilter] = React.useState<"high" | "medium" | "low" | "all">("all");
-    const [dateFilter, setDateFilter] = React.useState<Date | null>(null);
-    const [sectionFilter, setSectionFilter] = React.useState("today");
-    const [showThisWeek, setShowThisWeek] = React.useState(true);
-    const [showThisMonth, setShowThisMonth] = React.useState(false);
-    const [showOlder, setShowOlder] = React.useState(false);
-
-    return (
-      <div className="space-y-6">
-        <AddTask 
-          onAdd={addTask}
-          categories={categories}
-          sections={sections}
-        />
-        <TaskFilters 
-          search={search}
-          setSearch={setSearch}
-          filter={filter}
-          setFilter={setFilter}
-          categoryFilter={categoryFilter}
-          setCategoryFilter={setCategoryFilter}
-          priorityFilter={priorityFilter}
-          setPriorityFilter={setPriorityFilter}
-          dateFilter={dateFilter}
-          setDateFilter={setDateFilter}
-          sectionFilter={sectionFilter}
-          setSectionFilter={setSectionFilter}
-          categories={categories}
-          sections={sections}
-        />
-        <TaskList 
-          tasks={tasks || []}
-          onToggleTask={(id: string) => updateTask({ id, updates: { completed: !tasks?.find(t => t.id === id)?.completed } })}
-          onDeleteTask={deleteTask}
-          onAddSubtask={(taskId: string, title: string) => {}}
-          onToggleSubtask={(taskId: string, subtaskId: string) => {}}
-          onUpdateTask={(taskId: string, updates: any) => updateTask({ id: taskId, updates })}
-          categories={categories}
-          showThisWeek={showThisWeek}
-          setShowThisWeek={setShowThisWeek}
-          showThisMonth={showThisMonth}
-          setShowThisMonth={setShowThisMonth}
-          showOlder={showOlder}
-          setShowOlder={setShowOlder}
-        />
-      </div>
-    );
-  };
-
+  
   return (
     <>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-8 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
-            Painel de Controle
-          </h1>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
+              Dashboard Analítico
+            </h1>
+            <p className="text-gray-500 mt-1">Visão consolidada dos seus dados mais importantes</p>
+          </div>
           <div className="text-xs md:text-sm text-gray-400">
             Atualizado {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 lg:grid-cols-12 gap-1 h-auto p-1">
-            <TabsTrigger value="overview" className="flex items-center gap-2 px-3 py-2">
-              <Home className="h-4 w-4" />
-              <span className="hidden sm:inline">Visão Geral</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai-assistant" className="flex items-center gap-2 px-3 py-2">
-              <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">IA</span>
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex items-center gap-2 px-3 py-2">
-              <CheckCircle2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Tarefas</span>
-            </TabsTrigger>
-            <TabsTrigger value="meetings" className="flex items-center gap-2 px-3 py-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Reuniões</span>
-            </TabsTrigger>
-            <TabsTrigger value="finance" className="flex items-center gap-2 px-3 py-2">
-              <Wallet className="h-4 w-4" />
-              <span className="hidden sm:inline">Financeiro</span>
-            </TabsTrigger>
-            <TabsTrigger value="budget" className="flex items-center gap-2 px-3 py-2">
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Orçamento</span>
-            </TabsTrigger>
-            <TabsTrigger value="habits" className="flex items-center gap-2 px-3 py-2">
-              <Target className="h-4 w-4" />
-              <span className="hidden sm:inline">Hábitos</span>
-            </TabsTrigger>
-            <TabsTrigger value="journals" className="flex items-center gap-2 px-3 py-2">
-              <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Diário</span>
-            </TabsTrigger>
-            <TabsTrigger value="services" className="flex items-center gap-2 px-3 py-2">
-              <Briefcase className="h-4 w-4" />
-              <span className="hidden sm:inline">Serviços</span>
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="flex items-center gap-2 px-3 py-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Projetos</span>
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2 px-3 py-2">
-              <User className="h-4 w-4" />
-              <span className="hidden sm:inline">Perfil</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2 px-3 py-2">
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Config</span>
-            </TabsTrigger>
-          </TabsList>
+        {/* KPIs Principais */}
+        <div className="grid gap-6 md:grid-cols-4">
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:shadow-lg transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-blue-700">Tarefas Ativas</CardTitle>
+              <Activity className="h-5 w-5 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-blue-900">{activeTasks}</div>
+              <div className="flex items-center gap-2 mt-2">
+                <span className={`text-xs ${tasksTrend >= 0 ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                  {tasksTrend >= 0 ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  {Math.abs(Number(tasksPercentChange))}%
+                </span>
+                <span className="text-xs text-blue-600">vs período anterior</span>
+              </div>
+              <p className="text-xs text-blue-600 mt-1">Taxa de conclusão: {taskCompletionRate}%</p>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="overview" className="mt-6">
-            <OverviewContent />
-          </TabsContent>
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:shadow-lg transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-green-700">Saldo Financeiro</CardTitle>
+              <DollarSign className="h-5 w-5 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-3xl font-bold ${balance < 0 ? "text-red-600" : "text-green-900"}`}>
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balance)}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <span className={`text-xs ${incomeTrend >= 0 ? 'text-green-600' : 'text-red-600'} flex items-center`}>
+                  {incomeTrend >= 0 ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  {Math.abs(Number(incomePercentChange))}%
+                </span>
+                <span className="text-xs text-green-600">receitas</span>
+              </div>
+              <p className="text-xs text-green-600 mt-1">{transactions?.length} transações</p>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="ai-assistant" className="mt-6">
-            <AIAssistantTab />
-          </TabsContent>
+          <Card className="bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200 hover:shadow-lg transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-purple-700">Hábitos Ativos</CardTitle>
+              <Target className="h-5 w-5 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-purple-900">{activeHabits}</div>
+              <div className="flex items-center gap-2 mt-2">
+                <Award className="h-3 w-3 text-purple-600" />
+                <span className="text-xs text-purple-600">Sequência média: {avgStreak.toFixed(0)} dias</span>
+              </div>
+              <p className="text-xs text-purple-600 mt-1">{habits?.length || 0} hábitos totais</p>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="tasks" className="mt-6">
-            <TasksContent />
-          </TabsContent>
+          <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200 hover:shadow-lg transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-orange-700">Produtividade</CardTitle>
+              <TrendingUp className="h-5 w-5 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-orange-900">{completedTasks}</div>
+              <div className="flex items-center gap-2 mt-2">
+                <Clock className="h-3 w-3 text-orange-600" />
+                <span className="text-xs text-orange-600">concluídas esta semana</span>
+              </div>
+              <p className="text-xs text-orange-600 mt-1">Meta: {Math.round(totalTasks * 0.8)} tarefas</p>
+            </CardContent>
+          </Card>
+        </div>
 
-          <TabsContent value="meetings" className="mt-6">
-            <MeetingsTab />
-          </TabsContent>
+        {/* Gráficos de Análise */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Gráfico de Produtividade */}
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900">Análise de Produtividade</CardTitle>
+                <CardDescription>Tarefas concluídas e tendência financeira nos últimos 7 dias</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={productivityData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
+                      <XAxis dataKey="name" className="text-xs" />
+                      <YAxis yAxisId="left" className="text-xs" />
+                      <YAxis yAxisId="right" orientation="right" className="text-xs" />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar yAxisId="left" dataKey="completadas" name="Tarefas Concluídas" fill="#8b5cf6" />
+                      <Line yAxisId="right" type="monotone" dataKey="financeiro" name="Saldo" stroke="#10b981" strokeWidth={3} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-          <TabsContent value="finance" className="mt-6">
-            <FinanceTab />
-          </TabsContent>
+            {/* Gráfico Financeiro */}
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900">Fluxo Financeiro</CardTitle>
+                <CardDescription>Receitas, despesas e saldo dos últimos 7 dias</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={financialTrendData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
+                      <XAxis dataKey="name" className="text-xs" />
+                      <YAxis className="text-xs" />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Line type="monotone" dataKey="receitas" name="Receitas" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981', r: 4 }} />
+                      <Line type="monotone" dataKey="despesas" name="Despesas" stroke="#ef4444" strokeWidth={3} dot={{ fill: '#ef4444', r: 4 }} />
+                      <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', r: 4 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-          <TabsContent value="budget" className="mt-6">
-            <BudgetTab />
-          </TabsContent>
+          <div className="space-y-6">
+            {/* Distribuição de Tarefas por Prioridade */}
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900">Tarefas por Prioridade</CardTitle>
+                <CardDescription>Distribuição das tarefas ativas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={tasksByPriority}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {tasksByPriority.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-4 mt-4">
+                  {tasksByPriority.map((item, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                      <span className="text-xs text-gray-600">{item.name}: {item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-          <TabsContent value="habits" className="mt-6">
-            <HabitsTab />
-          </TabsContent>
+            {/* Progresso Mensal */}
+            <MonthlyProgress />
 
-          <TabsContent value="journals" className="mt-6">
-            <JournalsTab />
-          </TabsContent>
+            {/* Top Clientes */}
+            <TopClients />
+          </div>
+        </div>
 
-          <TabsContent value="services" className="mt-6">
-            <ServicesTab />
-          </TabsContent>
+        {/* Cards de Resumo */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card className="bg-white shadow-lg">
+            <CardHeader className="bg-blue-50 border-b">
+              <CardTitle className="text-lg text-blue-900 flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                Próximas Tarefas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                {tasks?.filter(task => !task.completed).slice(0, 5).map(task => (
+                  <div key={task.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className={`w-3 h-3 rounded-full ${
+                      task.priority === 'high' ? 'bg-red-500' : 
+                      task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
+                      {task.due_date && (
+                        <p className="text-xs text-gray-500">
+                          {new Date(task.due_date).toLocaleDateString('pt-BR')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {(!tasks || tasks.filter(task => !task.completed).length === 0) && (
+                  <div className="text-center py-8">
+                    <CheckCircle2 className="h-12 w-12 mx-auto text-green-500 mb-2" />
+                    <p className="text-sm text-gray-500">Todas as tarefas concluídas!</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="projects" className="mt-6">
-            <WrittenProjectsTab />
-          </TabsContent>
+          <Card className="bg-white shadow-lg">
+            <CardHeader className="bg-green-50 border-b">
+              <CardTitle className="text-lg text-green-900 flex items-center gap-2">
+                <Wallet className="h-5 w-5" />
+                Resumo Financeiro
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <span className="text-sm font-medium text-green-800">Receitas</span>
+                  <span className="text-lg font-bold text-green-700">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(income)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                  <span className="text-sm font-medium text-red-800">Despesas</span>
+                  <span className="text-lg font-bold text-red-700">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(expenses)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
+                  <span className="text-sm font-medium text-blue-800">Saldo</span>
+                  <span className={`text-xl font-bold ${balance >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balance)}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="profile" className="mt-6">
-            <ProfileTab />
-          </TabsContent>
+          <Card className="bg-white shadow-lg">
+            <CardHeader className="bg-purple-50 border-b">
+              <CardTitle className="text-lg text-purple-900 flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Hábitos em Destaque
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                {habits?.filter(habit => habit.active).slice(0, 4).map(habit => (
+                  <div key={habit.id} className="p-3 bg-purple-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-purple-900 truncate">{habit.title}</span>
+                      <span className="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded-full">
+                        {habit.streak || 0} dias
+                      </span>
+                    </div>
+                    <div className="mt-2 w-full bg-purple-200 rounded-full h-2">
+                      <div 
+                        className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${Math.min(((habit.streak || 0) / 30) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+                {(!habits || habits.filter(habit => habit.active).length === 0) && (
+                  <div className="text-center py-8">
+                    <Target className="h-12 w-12 mx-auto text-purple-400 mb-2" />
+                    <p className="text-sm text-gray-500">Nenhum hábito ativo</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          <TabsContent value="settings" className="mt-6">
-            <SettingsTab />
-          </TabsContent>
-        </Tabs>
+        {/* Reuniões Próximas */}
+        <UpcomingMeetings />
       </div>
       <FloatingChatButton />
     </>
