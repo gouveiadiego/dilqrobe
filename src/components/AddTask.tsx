@@ -55,6 +55,13 @@ export function AddTask({
   // Categorias do banco
   const { categories: allCategories } = useCategories();
 
+  // Debug: Log das categorias e empresa selecionada
+  console.log('🔍 Debug AddTask:', {
+    allCategories,
+    selectedCompanyId,
+    selectedCompany: selectedCompany?.name
+  });
+
   // Personal Categories: sem type e sem company id
   const personalCategories = allCategories.filter(
     cat => !cat.type && !cat.project_company_id
@@ -66,6 +73,12 @@ export function AddTask({
         cat => !cat.type && cat.project_company_id === selectedCompanyId
       )
     : [];
+
+  // Debug: Log das categorias filtradas
+  console.log('🔍 Debug Categorias Filtradas:', {
+    personalCategories,
+    projectCategories
+  });
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 space-y-4">
