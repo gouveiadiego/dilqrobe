@@ -60,11 +60,10 @@ export function AddTask({
     cat => !cat.type && !cat.project_company_id
   );
 
-  // Project Categories: inclui categorias de projeto específicas da empresa selecionada
-  // e também categorias 'gerais' de projeto (sem empresa associada).
+  // Project Categories: apenas categorias específicas da empresa selecionada
   const projectCategories = selectedCompanyId
     ? allCategories.filter(
-        cat => !cat.type && (cat.project_company_id === selectedCompanyId || cat.project_company_id === null)
+        cat => !cat.type && cat.project_company_id === selectedCompanyId
       )
     : [];
 
