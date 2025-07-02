@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, ChevronDown, ChevronRight, Edit, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCategories } from "@/hooks/useCategories";
 
 interface ChecklistItem {
   id: string;
@@ -26,7 +27,6 @@ interface CompanyChecklistProps {
 export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
   const [newItemText, setNewItemText] = useState("");
   const [newItemCategory, setNewItemCategory] = useState<string>("geral");
-  const [categories, setCategories] = useState<string[]>(["geral", "design", "desenvolvimento", "conteúdo", "seo"]);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [customCategory, setCustomCategory] = useState("");
   const [showCustomCategoryInput, setShowCustomCategoryInput] = useState(false);
@@ -35,14 +35,26 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
   const [editingItemCategory, setEditingItemCategory] = useState("");
   const queryClient = useQueryClient();
 
+  // Hook para categorias do banco de dados
+  const { categories: allCategories, addCategory } = useCategories();
+  
+  // Filtrar categorias desta empresa específica + categorias padrão de projeto
+  const projectCategories = allCategories
+    .filter(cat => !cat.type && cat.project_company_id === companyId)
+    .map(cat => cat.name);
+  
+  // Categorias padrão caso não existam categorias criadas
+  const defaultCategories = ["geral", "design", "desenvolvimento", "conteúdo", "seo"];
+  const availableCategories = projectCategories.length > 0 ? projectCategories : defaultCategories;
+
   // Inicializa todas as categorias como expandidas
   useEffect(() => {
     const expanded: Record<string, boolean> = {};
-    categories.forEach(cat => {
+    availableCategories.forEach(cat => {
       expanded[cat] = true;
     });
     setExpandedCategories(expanded);
-  }, [categories]);
+  }, [availableCategories]);
 
   const { data: checklistItems = [], isLoading } = useQuery({
     queryKey: ['company-checklist', companyId],
@@ -198,8 +210,12 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
   };
 
   const handleAddCustomCategory = () => {
-    if (customCategory.trim() && !categories.includes(customCategory.trim())) {
-      setCategories([...categories, customCategory.trim()]);
+    if (customCategory.trim() && !availableCategories.includes(customCategory.trim())) {
+      // Salvar a nova categoria no banco de dados
+      addCategory({
+        name: customCategory.trim(),
+        project_company_id: companyId
+      });
       setNewItemCategory(customCategory.trim());
       setCustomCategory("");
       setShowCustomCategoryInput(false);
@@ -223,13 +239,10 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
     return acc;
   }, {});
 
-  // Garantir que todas as categorias existentes estejam no estado de categorias
-  useEffect(() => {
-    const existingCategories = Object.keys(groupedItems).filter(cat => cat && !categories.includes(cat));
-    if (existingCategories.length > 0) {
-      setCategories([...categories, ...existingCategories]);
-    }
-  }, [checklistItems]);
+  // Combinar categorias disponíveis com categorias que já têm itens (mas podem não estar no banco)
+  const allCategoriesWithItems = [
+    ...new Set([...availableCategories, ...Object.keys(groupedItems)])
+  ];
 
   if (isLoading) return <div>Carregando checklist...</div>;
 
@@ -278,7 +291,7 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((category) => (
+                  {allCategoriesWithItems.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category.charAt(0).toUpperCase() + category.slice(1)}
                     </SelectItem>
@@ -336,13 +349,13 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
                               <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Selecione uma categoria" />
                               </SelectTrigger>
-                              <SelectContent>
-                                {categories.map((cat) => (
-                                  <SelectItem key={cat} value={cat}>
-                                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
+                               <SelectContent>
+                                 {allCategoriesWithItems.map((cat) => (
+                                   <SelectItem key={cat} value={cat}>
+                                     {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                                   </SelectItem>
+                                 ))}
+                               </SelectContent>
                             </Select>
                           </div>
                           <div className="flex space-x-1">
