@@ -402,7 +402,7 @@ export function ProjectDashboard() {
                     </div>
 
                     <div className="mt-4 pt-3 border-t">
-                      <Link to={`/company-details/${company.id}`} className="w-full">
+                      <Link to={`/company/${company.id}`} className="w-full">
                         <Button variant="outline" size="sm" className="w-full">
                           Ver Detalhes
                           <ArrowRight className="ml-2 h-4 w-4" />
