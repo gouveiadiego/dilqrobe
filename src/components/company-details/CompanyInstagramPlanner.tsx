@@ -425,7 +425,7 @@ export function CompanyInstagramPlanner({ companyId, companyName }: CompanyInsta
                   <div className="text-xs text-muted-foreground">
                     {format(new Date(post.post_date), "dd 'de' MMMM", { locale: ptBR })}
                   </div>
-                  <p className="text-sm leading-relaxed line-clamp-4">
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
                     {post.idea}
                   </p>
                 </div>
