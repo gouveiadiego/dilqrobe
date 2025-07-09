@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Building2, User, Mail, Phone, Calendar, Shield, CheckSquare, ChevronDown, ChevronRight, Clock, FileText, Briefcase, TrendingUp, BarChart3 } from "lucide-react";
+import { Building2, User, Mail, Phone, Calendar, Shield, CheckSquare, ChevronDown, ChevronRight, Clock, FileText, Briefcase, TrendingUp, BarChart3, Instagram } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -58,12 +58,20 @@ interface WorkLogEntry {
   checklist_item_id: string | null;
 }
 
+interface InstagramPost {
+  id: string;
+  post_date: string;
+  idea: string;
+  status: string;
+}
+
 export default function SharedCompany() {
   const { token } = useParams();
   const [company, setCompany] = useState<Company | null>(null);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [contentTasks, setContentTasks] = useState<ContentTask[]>([]);
   const [workLogEntries, setWorkLogEntries] = useState<WorkLogEntry[]>([]);
+  const [instagramPosts, setInstagramPosts] = useState<InstagramPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
@@ -189,6 +197,21 @@ export default function SharedCompany() {
           setWorkLogEntries(workLogData);
         } else if (workLogError) {
           console.error('Work log error:', workLogError);
+        }
+
+        // Fetch Instagram posts
+        const { data: instagramData, error: instagramError } = await publicSupabase
+          .from('editorial_calendar_posts')
+          .select('id, post_date, idea, status')
+          .eq('company_id', shareLink.company_id)
+          .order('post_date', { ascending: true });
+
+        console.log('Instagram posts query result:', { instagramData, error: instagramError });
+
+        if (!instagramError && instagramData) {
+          setInstagramPosts(instagramData);
+        } else if (instagramError) {
+          console.error('Instagram posts error:', instagramError);
         }
 
       } catch (error) {
@@ -669,6 +692,65 @@ export default function SharedCompany() {
                     </div>
                   </div>
                 </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* Instagram Planning Section */}
+          {instagramPosts.length > 0 && (
+            <AccordionItem value="instagram">
+              <AccordionTrigger className="text-lg font-semibold">
+                <div className="flex items-center">
+                  <Instagram className="mr-2 h-5 w-5 text-pink-600" />
+                  Planejamento Instagram ({instagramPosts.length} posts)
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {instagramPosts.map((post) => {
+                    const getStatusColor = (status: string) => {
+                      switch (status) {
+                        case "planejado": return "bg-blue-100 text-blue-800 border-blue-200";
+                        case "produzindo": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+                        case "publicado": return "bg-green-100 text-green-800 border-green-200";
+                        case "cancelado": return "bg-red-100 text-red-800 border-red-200";
+                        default: return "bg-gray-100 text-gray-800 border-gray-200";
+                      }
+                    };
+
+                    return (
+                      <Card key={post.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <Badge className={getStatusColor(post.status)} variant="outline">
+                              {post.status}
+                            </Badge>
+                            <div className="text-xs text-gray-500">
+                              {format(new Date(post.post_date), "dd/MM", { locale: pt })}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            <div className="text-xs text-muted-foreground">
+                              {format(new Date(post.post_date), "dd 'de' MMMM", { locale: pt })}
+                            </div>
+                            <p className="text-sm leading-relaxed line-clamp-4">
+                              {post.idea}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+                
+                {instagramPosts.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Instagram className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhuma ideia de post encontrada</p>
+                  </div>
+                )}
               </AccordionContent>
             </AccordionItem>
           )}
