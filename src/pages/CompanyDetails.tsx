@@ -8,13 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ArrowLeft, Edit, X, Save, CheckSquare, Key, FileText, Link } from "lucide-react";
+import { ArrowLeft, Edit, X, Save, CheckSquare, Key, FileText, Link, Instagram } from "lucide-react";
 import { toast } from "sonner";
 import { CompanyCredentials } from "@/components/company-details/CompanyCredentials";
 import { CompanyChecklist } from "@/components/company-details/CompanyChecklist";
 import { CompanyNotes } from "@/components/company-details/CompanyNotes";
 import { CompanyContentTasks } from "@/components/company-details/CompanyContentTasks";
 import { CompanyWorkLog } from "@/components/company-details/CompanyWorkLog";
+import { CompanyInstagramPlanner } from "@/components/company-details/CompanyInstagramPlanner";
 
 interface Company {
   id: string;
@@ -321,6 +322,18 @@ export default function CompanyDetails() {
             </AccordionTrigger>
             <AccordionContent>
               <CompanyCredentials companyId={company.id} companyName={company.name} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="instagram">
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center">
+                <Instagram className="mr-2 h-5 w-5" />
+                Planejamento Instagram
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <CompanyInstagramPlanner companyId={company.id} companyName={company.name} />
             </AccordionContent>
           </AccordionItem>
 
