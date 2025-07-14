@@ -13,10 +13,11 @@ import {
   TrendingUp, 
   Briefcase, 
   FileText,
-  Sparkles
+  Sparkles,
+  FileImage
 } from "lucide-react";
 
-type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
+type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant' | 'ebook';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -38,6 +39,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }
     { id: 'journals', label: 'Diário', icon: BookOpen },
     { id: 'services', label: 'Serviços', icon: Briefcase },
     { id: 'projects', label: 'Projetos', icon: FileText },
+    { id: 'ebook', label: 'Criar Ebook', icon: FileImage },
     { id: 'profile', label: 'Perfil', icon: User },
     { id: 'settings', label: 'Configurações', icon: Settings },
   ];

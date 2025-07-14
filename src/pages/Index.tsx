@@ -30,8 +30,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AIAssistantTab } from "@/components/ai-chat/AIAssistantTab";
 import { AIChatWidget } from "@/components/ai-chat/AIChatWidget";
 import { QuickActionsMenu } from "@/components/QuickActionsMenu";
+import { EbookTab } from "@/components/EbookTab";
 
-type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
+type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant' | 'ebook';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -292,6 +293,8 @@ const Index = () => {
         return <ServicesTab />;
       case 'projects':
         return <WrittenProjectsTab />;
+      case 'ebook':
+        return <EbookTab />;
       default:
         return null;
     }
