@@ -51,9 +51,15 @@ export function ProjectDashboard() {
     queryKey: ['project-companies-dashboard'],
     queryFn: async () => {
       console.log('🏢 Fetching companies for dashboard...');
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('Not authenticated');
+      }
+      
       const { data, error } = await supabase
         .from('project_companies')
         .select('*')
+        .eq('user_id', sessionData.session.user.id)
         .order('name');
       
       if (error) {
@@ -69,9 +75,19 @@ export function ProjectDashboard() {
     queryKey: ['project-tasks-dashboard'],
     queryFn: async () => {
       console.log('📋 Fetching tasks for dashboard...');
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('Not authenticated');
+      }
+
+      // Buscar apenas tarefas de empresas do usuário logado
       const { data, error } = await supabase
         .from('project_tasks')
-        .select(`*`)
+        .select(`
+          *,
+          project_companies!inner(user_id)
+        `)
+        .eq('project_companies.user_id', sessionData.session.user.id)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -87,9 +103,15 @@ export function ProjectDashboard() {
     queryKey: ['project-checklist-dashboard'],
     queryFn: async () => {
       console.log('📋 Fetching checklist items for dashboard...');
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('Not authenticated');
+      }
+
       const { data, error } = await supabase
         .from('project_checklist')
-        .select('id, company_id, title, completed');
+        .select('id, company_id, title, completed, user_id')
+        .eq('user_id', sessionData.session.user.id);
       
       if (error) {
         console.error('❌ Error fetching checklist items:', error);

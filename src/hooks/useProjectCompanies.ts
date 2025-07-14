@@ -20,9 +20,15 @@ export const useProjectCompanies = () => {
   const { data: companies = [], isLoading } = useQuery({
     queryKey: ['project-companies'],
     queryFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('Not authenticated');
+      }
+      
       const { data, error } = await supabase
         .from('project_companies')
         .select('*')
+        .eq('user_id', sessionData.session.user.id)
         .order('name');
       
       if (error) {
