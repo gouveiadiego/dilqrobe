@@ -33,9 +33,15 @@ const DashboardTab = () => {
   const { data: transactions } = useQuery({
     queryKey: ['transactions'],
     queryFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('Not authenticated');
+      }
+      
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
+        .eq('user_id', sessionData.session.user.id)
         .order('date', { ascending: false });
       
       if (error) throw error;
@@ -47,9 +53,15 @@ const DashboardTab = () => {
   const { data: habits } = useQuery({
     queryKey: ['habits'],
     queryFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('Not authenticated');
+      }
+      
       const { data, error } = await supabase
         .from('habits')
-        .select('*');
+        .select('*')
+        .eq('user_id', sessionData.session.user.id);
       
       if (error) throw error;
       return data || [];
