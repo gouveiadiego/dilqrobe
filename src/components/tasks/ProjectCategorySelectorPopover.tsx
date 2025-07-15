@@ -61,8 +61,8 @@ export function ProjectCategorySelectorPopover({
             <Button 
               key={pCat.id} 
               variant="ghost" 
-              className={`justify-start ${selectedProjectCategory === pCat.id ? 'text-purple-400' : ''}`} 
-              onClick={() => onSelect(pCat.id)}
+              className={`justify-start ${selectedProjectCategory === pCat.name ? 'text-purple-400' : ''}`} 
+              onClick={() => onSelect(pCat.name)}
             >
               <Briefcase className="h-4 w-4 mr-2" />
               {pCat.name}

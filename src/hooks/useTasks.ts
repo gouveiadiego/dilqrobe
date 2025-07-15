@@ -47,6 +47,19 @@ const createOrUpdateChecklistItemFromTask = async (task: Task) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated for checklist sync");
 
+    // Get category name from category ID if needed
+    let categoryName = 'geral';
+    if (task.category) {
+      const { data: categoryData } = await supabase
+        .from('categories')
+        .select('name')
+        .eq('id', task.category)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      categoryName = categoryData?.name || task.category;
+    }
+
     // First, check if a checklist item already exists for this regular task (by title and company)
     const { data: existingItem, error: checkError } = await supabase
       .from('project_checklist')
@@ -89,7 +102,7 @@ const createOrUpdateChecklistItemFromTask = async (task: Task) => {
         company_id: task.project_company_id,
         user_id: user.id,
         completed: true,
-        category: task.category || 'geral',
+        category: categoryName,
       })
       .select()
       .single();
@@ -192,6 +205,13 @@ export const useTasks = () => {
       // If task has a company, create a corresponding project checklist item
       if (data && data.project_company_id) {
         console.log('Task has company, creating corresponding project checklist item...');
+        
+        // Get the category name if projectCategory is provided (it should be the name, not ID)
+        let categoryName = 'geral';
+        if (newTask.projectCategory) {
+          categoryName = newTask.projectCategory;
+        }
+        
         const { error: checklistError } = await supabase
           .from('project_checklist')
           .insert({
@@ -199,7 +219,7 @@ export const useTasks = () => {
             company_id: data.project_company_id,
             user_id: user.id,
             completed: false, // new tasks are not completed
-            category: newTask.projectCategory || 'geral'
+            category: categoryName
           });
         
         if (checklistError) {
