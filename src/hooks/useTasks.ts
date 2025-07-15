@@ -303,6 +303,28 @@ export const useTasks = () => {
     }
   });
 
+  // Function to sync checklist completion with tasks by title
+  const syncChecklistCompletionWithTasks = async (checklistTitle: string, completed: boolean, companyId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Update the corresponding task(s) with the same title
+      const { error } = await supabase
+        .from('tasks')
+        .update({ completed })
+        .eq('title', checklistTitle)
+        .eq('project_company_id', companyId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error syncing checklist completion with tasks:', error);
+      }
+    } catch (error) {
+      console.error('Error in syncChecklistCompletionWithTasks:', error);
+    }
+  };
+
   const toggleTask = async (id: string) => {
     const task = tasks.find(t => t.id === id);
     if (!task) {
@@ -381,16 +403,46 @@ export const useTasks = () => {
       console.log('📝 Toggling regular task completion');
       toggleTaskMutation.mutate({ id, completed: !task.completed });
       
-      // Create project task if completing and associated with a company
-      if (isCompleting && task.project_company_id) {
-        console.log('🔗 Creating checklist item for regular task completion');
+      // Sync with checklist if task is associated with a company
+      if (task.project_company_id) {
         try {
-          await createOrUpdateChecklistItemFromTask(task);
+          // Sync task completion with corresponding checklist items
+          await syncTaskCompletionWithChecklist(task.title, !task.completed, task.project_company_id);
+          
+          // Create project task if completing
+          if (isCompleting) {
+            console.log('🔗 Creating checklist item for regular task completion');
+            await createOrUpdateChecklistItemFromTask(task);
+          }
+          
           queryClient.invalidateQueries({ queryKey: ['project-checklist-dashboard'] });
+          queryClient.invalidateQueries({ queryKey: ['company-checklist', task.project_company_id] });
         } catch (error) {
-          console.error('💥 Failed to create checklist item:', error);
+          console.error('💥 Failed to sync with checklist:', error);
         }
       }
+    }
+  };
+
+  // Function to sync task completion with checklist by title
+  const syncTaskCompletionWithChecklist = async (taskTitle: string, completed: boolean, companyId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Update the corresponding checklist item(s) with the same title
+      const { error } = await supabase
+        .from('project_checklist')
+        .update({ completed })
+        .eq('title', taskTitle)
+        .eq('company_id', companyId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error syncing task completion with checklist:', error);
+      }
+    } catch (error) {
+      console.error('Error in syncTaskCompletionWithChecklist:', error);
     }
   };
 
@@ -401,5 +453,6 @@ export const useTasks = () => {
     toggleTask,
     deleteTask: deleteTaskMutation.mutate,
     updateTask: updateTaskMutation.mutate,
+    syncChecklistCompletionWithTasks,
   };
 };

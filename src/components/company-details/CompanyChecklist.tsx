@@ -10,6 +10,8 @@ import { Plus, Trash2, ChevronDown, ChevronRight, Edit, Save, X } from "lucide-r
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCategories } from "@/hooks/useCategories";
+import { useTasks } from "@/hooks/useTasks";
+import { CategoryManager } from "@/components/CategoryManager";
 
 interface ChecklistItem {
   id: string;
@@ -36,16 +38,20 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
   const queryClient = useQueryClient();
 
   // Hook para categorias do banco de dados
-  const { categories: allCategories, addCategory } = useCategories();
+  const { categories: allCategories, addCategory, deleteCategory } = useCategories();
+  
+  // Hook para sincronização com tasks
+  const { syncChecklistCompletionWithTasks } = useTasks();
   
   // Filtrar categorias desta empresa específica + categorias padrão de projeto
   const projectCategories = allCategories
-    .filter(cat => !cat.type && cat.project_company_id === companyId)
-    .map(cat => cat.name);
+    .filter(cat => !cat.type && cat.project_company_id === companyId);
+  
+  const projectCategoryNames = projectCategories.map(cat => cat.name);
   
   // Categorias padrão caso não existam categorias criadas
   const defaultCategories = ["geral", "design", "desenvolvimento", "conteúdo", "seo"];
-  const availableCategories = projectCategories.length > 0 ? projectCategories : defaultCategories;
+  const availableCategories = projectCategoryNames.length > 0 ? projectCategoryNames : defaultCategories;
 
   // Inicializa todas as categorias como expandidas
   useEffect(() => {
@@ -111,16 +117,20 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
   });
 
   const toggleItemMutation = useMutation({
-    mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
+    mutationFn: async ({ id, completed, title }: { id: string; completed: boolean; title: string }) => {
       const { error } = await supabase
         .from('project_checklist')
         .update({ completed })
         .eq('id', id);
 
       if (error) throw error;
+
+      // Sync with corresponding tasks
+      await syncChecklistCompletionWithTasks(title, completed, companyId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-checklist', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (error) => {
       toast.error('Erro ao atualizar item');
@@ -177,8 +187,8 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
     }
   };
 
-  const handleToggleItem = (id: string, currentStatus: boolean) => {
-    toggleItemMutation.mutate({ id, completed: !currentStatus });
+  const handleToggleItem = (id: string, currentStatus: boolean, title: string) => {
+    toggleItemMutation.mutate({ id, completed: !currentStatus, title });
   };
 
   const handleDeleteItem = (id: string) => {
@@ -249,6 +259,13 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Checklist do Projeto</h3>
+      
+      {/* Gerenciador de Categorias */}
+      <CategoryManager 
+        categories={projectCategories}
+        onAddCategory={(params) => addCategory({ ...params, project_company_id: companyId })}
+        onDeleteCategory={deleteCategory}
+      />
       
       <form onSubmit={handleAddItem} className="flex flex-col space-y-2">
         <div className="flex space-x-2">
@@ -381,7 +398,7 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
                             <Checkbox 
                               id={`check-${item.id}`}
                               checked={item.completed}
-                              onCheckedChange={() => handleToggleItem(item.id, item.completed)}
+                              onCheckedChange={() => handleToggleItem(item.id, item.completed, item.title)}
                             />
                             <Label 
                               htmlFor={`check-${item.id}`}
