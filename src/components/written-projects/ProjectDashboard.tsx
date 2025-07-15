@@ -53,7 +53,8 @@ export function ProjectDashboard() {
       console.log('🏢 Fetching companies for dashboard...');
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
-        throw new Error('Not authenticated');
+        console.log('⚠️ No session found, returning empty array');
+        return [];
       }
       
       const { data, error } = await supabase
@@ -64,7 +65,7 @@ export function ProjectDashboard() {
       
       if (error) {
         console.error('❌ Error fetching companies:', error);
-        throw error;
+        return [];
       }
       console.log('✅ Companies for dashboard loaded:', data?.length);
       return data as ProjectCompany[];
@@ -77,7 +78,8 @@ export function ProjectDashboard() {
       console.log('📋 Fetching tasks for dashboard...');
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
-        throw new Error('Not authenticated');
+        console.log('⚠️ No session found, returning empty array');
+        return [];
       }
 
       // Buscar apenas tarefas de empresas do usuário logado
@@ -92,7 +94,7 @@ export function ProjectDashboard() {
       
       if (error) {
         console.error('❌ Error fetching tasks for dashboard:', error);
-        throw error;
+        return [];
       }
       console.log('✅ Tasks for dashboard loaded:', data?.length);
       return data as ProjectTask[];
@@ -105,7 +107,8 @@ export function ProjectDashboard() {
       console.log('📋 Fetching checklist items for dashboard...');
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
-        throw new Error('Not authenticated');
+        console.log('⚠️ No session found, returning empty array');
+        return [];
       }
 
       const { data, error } = await supabase
@@ -115,7 +118,7 @@ export function ProjectDashboard() {
       
       if (error) {
         console.error('❌ Error fetching checklist items:', error);
-        throw error;
+        return [];
       }
       console.log('✅ Checklist items for dashboard loaded:', data?.length);
       return data as ChecklistItem[];
@@ -143,7 +146,6 @@ export function ProjectDashboard() {
     }
   });
 
-  // Calcular métricas
   const activeCompanies = companies.filter(c => c.is_active !== false);
   const inactiveCompanies = companies.filter(c => c.is_active === false);
   

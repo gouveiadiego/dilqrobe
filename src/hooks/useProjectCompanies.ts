@@ -22,7 +22,8 @@ export const useProjectCompanies = () => {
     queryFn: async () => {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
-        throw new Error('Not authenticated');
+        console.log('⚠️ No session found, returning empty array');
+        return [];
       }
       
       const { data, error } = await supabase
@@ -33,9 +34,10 @@ export const useProjectCompanies = () => {
       
       if (error) {
         console.error('Erro ao carregar empresas:', error);
-        throw error;
+        return [];
       }
       
+      console.log('✅ Project companies loaded for user:', sessionData.session.user.email, '- Count:', data?.length);
       return data as ProjectCompany[];
     }
   });
