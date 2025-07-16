@@ -1,11 +1,22 @@
 
-import { Briefcase, Plus } from "lucide-react";
+import { Briefcase, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useCategories } from "@/hooks/useCategories";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ProjectCategory {
   id: string;
@@ -30,7 +41,7 @@ export function ProjectCategorySelectorPopover({
   projectCompanyId,
 }: ProjectCategorySelectorPopoverProps) {
   const [newCategoryName, setNewCategoryName] = useState("");
-  const { addCategory } = useCategories();
+  const { addCategory, deleteCategory } = useCategories();
 
   const handleAddCategory = () => {
     if (!newCategoryName.trim()) {
@@ -58,15 +69,44 @@ export function ProjectCategorySelectorPopover({
       <PopoverContent className="w-56 p-2">
         <div className="flex flex-col gap-1">
           {projectCategories.map((pCat) => (
-            <Button 
-              key={pCat.id} 
-              variant="ghost" 
-              className={`justify-start ${selectedProjectCategory === pCat.name ? 'text-purple-400' : ''}`} 
-              onClick={() => onSelect(pCat.name)}
-            >
-              <Briefcase className="h-4 w-4 mr-2" />
-              {pCat.name}
-            </Button>
+            <div key={pCat.id} className="flex items-center justify-between group">
+              <Button 
+                variant="ghost" 
+                className={`flex-1 justify-start ${selectedProjectCategory === pCat.name ? 'text-purple-400' : ''}`} 
+                onClick={() => onSelect(pCat.name)}
+              >
+                <Briefcase className="h-4 w-4 mr-2" />
+                {pCat.name}
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir categoria</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir a categoria "{pCat.name}"? Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => deleteCategory(pCat.id)}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           ))}
           {projectCategories.length === 0 && (
             <span className="text-sm text-gray-400 p-2 text-center">Nenhuma categoria criada</span>
