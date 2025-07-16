@@ -38,7 +38,7 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
   const queryClient = useQueryClient();
 
   // Hook para categorias do banco de dados
-  const { categories: allCategories, addCategory, deleteCategory } = useCategories();
+  const { categories: allCategories, addCategory, updateCategory, deleteCategory } = useCategories();
   
   // Hook para sincronização com tasks
   const { syncChecklistCompletionWithTasks } = useTasks();
@@ -264,7 +264,16 @@ export function CompanyChecklist({ companyId }: CompanyChecklistProps) {
       <CategoryManager 
         categories={projectCategories}
         onAddCategory={(params) => addCategory({ ...params, project_company_id: companyId })}
+        onUpdateCategory={updateCategory}
         onDeleteCategory={deleteCategory}
+        categoryStats={Object.keys(groupedItems).reduce((acc, category) => {
+          const items = groupedItems[category];
+          acc[category] = {
+            total: items.length,
+            completed: items.filter(item => item.completed).length
+          };
+          return acc;
+        }, {} as Record<string, { total: number; completed: number }>)}
       />
       
       <form onSubmit={handleAddItem} className="flex flex-col space-y-2">
