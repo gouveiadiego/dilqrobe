@@ -286,20 +286,23 @@ export function CompanyChecklist({
       <h3 className="text-lg font-medium">Checklist do Projeto</h3>
       
       {/* Gerenciador de Categorias */}
-      <CategoryManager categories={projectCategories} onAddCategory={params => addCategory({
-      ...params,
-      project_company_id: companyId
-    })} onUpdateCategory={updateCategory} onDeleteCategory={deleteCategory} categoryStats={Object.keys(groupedItems).reduce((acc, category) => {
-      const items = groupedItems[category];
-      acc[category] = {
-        total: items.length,
-        completed: items.filter(item => item.completed).length
-      };
-      return acc;
-    }, {} as Record<string, {
-      total: number;
-      completed: number;
-    }>)} />
+      <CategoryManager 
+        categories={projectCategories} 
+        onAddCategory={params => addCategory({
+          ...params,
+          project_company_id: companyId
+        })} 
+        onUpdateCategory={updateCategory} 
+        onDeleteCategory={deleteCategory} 
+        categoryStats={Object.keys(groupedItems).reduce((acc, category) => {
+          const items = groupedItems[category];
+          acc[category] = {
+            total: items.length,
+            completed: items.filter(item => item.completed).length
+          };
+          return acc;
+        }, {} as Record<string, { total: number; completed: number }>)} 
+      />
       
       <form onSubmit={handleAddItem} className="flex flex-col space-y-2">
         <div className="flex space-x-2">
