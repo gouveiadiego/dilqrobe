@@ -56,14 +56,6 @@ export function CompanyChecklist({
   const defaultCategories = ["geral", "design", "desenvolvimento", "conteúdo", "seo"];
   const availableCategories = projectCategoryNames.length > 0 ? projectCategoryNames : defaultCategories;
 
-  // Inicializa todas as categorias como expandidas
-  useEffect(() => {
-    const expanded: Record<string, boolean> = {};
-    availableCategories.forEach(cat => {
-      expanded[cat] = true;
-    });
-    setExpandedCategories(expanded);
-  }, [availableCategories]);
   const {
     data: checklistItems = [],
     isLoading
@@ -281,6 +273,18 @@ export function CompanyChecklist({
 
   // Combinar categorias disponíveis com categorias que já têm itens (mas podem não estar no banco)
   const allCategoriesWithItems = [...new Set([...availableCategories, ...Object.keys(groupedItems)])];
+
+  // Inicializa todas as categorias como expandidas quando os dados carregam
+  useEffect(() => {
+    if (checklistItems.length > 0) {
+      const expanded: Record<string, boolean> = {};
+      allCategoriesWithItems.forEach(cat => {
+        expanded[cat] = true;
+      });
+      setExpandedCategories(expanded);
+    }
+  }, [checklistItems, availableCategories]);
+
   if (isLoading) return <div>Carregando checklist...</div>;
   return <div className="space-y-4">
       <h3 className="text-lg font-medium">Checklist do Projeto</h3>
