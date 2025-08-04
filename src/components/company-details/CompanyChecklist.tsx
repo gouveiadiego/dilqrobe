@@ -342,23 +342,49 @@ export function CompanyChecklist({
       </form>
 
       <div className="space-y-4">
-        {checklistItems.length === 0 ? <p className="text-gray-500 text-center py-4">Nenhum item na checklist ainda.</p> : Object.keys(groupedItems).sort().map(category => <div key={category} className="border rounded-lg overflow-hidden">
+        {checklistItems.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">Nenhum item na checklist ainda.</p>
+        ) : (
+          Object.keys(groupedItems).sort().map(category => (
+            <div key={category} className="border rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between p-3 bg-gray-50 border-b">
+                <button
+                  onClick={() => toggleCategoryExpansion(category)}
+                  className="flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                >
+                  {expandedCategories[category] ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                  <span>{category.charAt(0).toUpperCase() + category.slice(1)}</span>
+                  <span className="text-gray-500">({groupedItems[category].length})</span>
+                </button>
+              </div>
               
-              
-              {expandedCategories[category] && <div className="space-y-1 p-2 bg-white">
-                  {groupedItems[category].map(item => <div key={item.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                      {editingItemId === item.id ? <div className="flex items-center space-x-2 flex-1">
+              {expandedCategories[category] && (
+                <div className="space-y-1 p-2 bg-white">
+                  {groupedItems[category].map(item => (
+                    <div key={item.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                      {editingItemId === item.id ? (
+                        <div className="flex items-center space-x-2 flex-1">
                           <div className="flex-1 flex flex-col space-y-2">
-                            <Input value={editingItemText} onChange={e => setEditingItemText(e.target.value)} className="flex-1" />
+                            <Input 
+                              value={editingItemText} 
+                              onChange={e => setEditingItemText(e.target.value)} 
+                              className="flex-1" 
+                            />
                             <Select value={editingItemCategory} onValueChange={setEditingItemCategory}>
                               <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Selecione uma categoria" />
                               </SelectTrigger>
-                               <SelectContent>
-                                 {allCategoriesWithItems.map(cat => <SelectItem key={cat} value={cat}>
-                                     {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                                   </SelectItem>)}
-                               </SelectContent>
+                              <SelectContent>
+                                {allCategoriesWithItems.map(cat => (
+                                  <SelectItem key={cat} value={cat}>
+                                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
                             </Select>
                           </div>
                           <div className="flex space-x-1">
@@ -369,10 +395,19 @@ export function CompanyChecklist({
                               <X className="h-4 w-4 text-red-500" />
                             </Button>
                           </div>
-                        </div> : <>
+                        </div>
+                      ) : (
+                        <>
                           <div className="flex items-center space-x-2 flex-1">
-                            <Checkbox id={`check-${item.id}`} checked={item.completed} onCheckedChange={() => handleToggleItem(item.id, item.completed, item.title)} />
-                            <Label htmlFor={`check-${item.id}`} className={`${item.completed ? 'line-through text-gray-500' : ''} cursor-pointer`}>
+                            <Checkbox 
+                              id={`check-${item.id}`} 
+                              checked={item.completed} 
+                              onCheckedChange={() => handleToggleItem(item.id, item.completed, item.title)} 
+                            />
+                            <Label 
+                              htmlFor={`check-${item.id}`} 
+                              className={`${item.completed ? 'line-through text-gray-500' : ''} cursor-pointer`}
+                            >
                               {item.title}
                             </Label>
                           </div>
@@ -384,10 +419,15 @@ export function CompanyChecklist({
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </div>
-                        </>}
-                    </div>)}
-                </div>}
-            </div>)}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>;
 }
