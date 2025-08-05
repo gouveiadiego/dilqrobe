@@ -195,8 +195,18 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
                     </div>
                   </div>
                   
-                  <div className="bg-gray-50 p-2 rounded text-xs font-mono break-all">
-                    {generateShareUrl(link.share_token)}
+                  <div className="bg-muted p-3 rounded-md space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-foreground">
+                        Link para {companyName}
+                      </span>
+                      <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">
+                        {link.is_active ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </div>
+                    <div className="text-xs font-mono text-muted-foreground break-all border-t pt-2">
+                      {generateShareUrl(link.share_token)}
+                    </div>
                   </div>
                   
                   <div className="text-xs text-gray-500">
