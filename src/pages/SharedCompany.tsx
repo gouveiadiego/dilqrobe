@@ -86,14 +86,14 @@ export default function SharedCompany() {
       }
 
       try {
-        console.log('Fetching share link for token:', token);
+        console.log('Fetching share link for identifier:', token);
         
-        // First, get the share link to validate and get company_id
+        // Try to find share link by slug first, then by token
         const { data: shareLink, error: shareLinkError } = await publicSupabase
           .from('company_share_links')
           .select('*')
-          .eq('share_token', token)
           .eq('is_active', true)
+          .or(`slug.eq.${token},share_token.eq.${token}`)
           .maybeSingle();
 
         console.log('Share link query result:', { shareLink, error: shareLinkError });

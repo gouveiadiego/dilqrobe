@@ -355,6 +355,7 @@ export type Database = {
           id: string
           is_active: boolean
           share_token: string
+          slug: string | null
           updated_at: string
         }
         Insert: {
@@ -365,6 +366,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           share_token: string
+          slug?: string | null
           updated_at?: string
         }
         Update: {
@@ -375,6 +377,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           share_token?: string
+          slug?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1361,6 +1364,10 @@ export type Database = {
       delete_journal_entry: {
         Args: { entry_id_param: string; user_id_param: string }
         Returns: boolean
+      }
+      generate_company_slug: {
+        Args: { company_name: string; company_id: string }
+        Returns: string
       }
       get_user_payments: {
         Args: { user_id_param: string }

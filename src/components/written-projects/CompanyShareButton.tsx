@@ -18,6 +18,7 @@ interface CompanyShareButtonProps {
 interface ShareLink {
   id: string;
   share_token: string;
+  slug: string | null;
   is_active: boolean;
   expires_at: string | null;
   created_at: string;
@@ -55,11 +56,25 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
 
       const shareToken = crypto.randomUUID();
       
+      // Generate slug using the database function
+      const { data: slugData, error: slugError } = await supabase
+        .rpc('generate_company_slug', { 
+          company_name: companyName, 
+          company_id: companyId 
+        });
+
+      if (slugError) {
+        console.error('Error generating slug:', slugError);
+      }
+
+      const slug = slugData || null;
+      
       const { data, error } = await supabase
         .from('company_share_links')
         .insert([{
           company_id: companyId,
           share_token: shareToken,
+          slug: slug,
           created_by: user.id,
         }])
         .select()
@@ -103,15 +118,16 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
     }
   });
 
-  const generateShareUrl = (token: string) => {
-    return `${window.location.origin}/shared-company/${token}`;
+  const generateShareUrl = (link: ShareLink) => {
+    const identifier = link.slug || link.share_token;
+    return `${window.location.origin}/shared-company/${identifier}`;
   };
 
-  const copyToClipboard = async (token: string) => {
-    const shareUrl = generateShareUrl(token);
+  const copyToClipboard = async (link: ShareLink) => {
+    const shareUrl = generateShareUrl(link);
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setCopiedToken(token);
+      setCopiedToken(link.share_token);
       toast.success('Link copiado para a área de transferência');
       setTimeout(() => setCopiedToken(null), 2000);
     } catch (error) {
@@ -119,8 +135,8 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
     }
   };
 
-  const openInNewTab = (token: string) => {
-    const shareUrl = generateShareUrl(token);
+  const openInNewTab = (link: ShareLink) => {
+    const shareUrl = generateShareUrl(link);
     window.open(shareUrl, '_blank');
   };
 
@@ -175,7 +191,7 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => copyToClipboard(link.share_token)}
+                        onClick={() => copyToClipboard(link)}
                         title="Copiar link"
                       >
                         {copiedToken === link.share_token ? (
@@ -187,7 +203,7 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => openInNewTab(link.share_token)}
+                        onClick={() => openInNewTab(link)}
                         title="Abrir em nova aba"
                       >
                         <ExternalLink className="h-4 w-4" />
