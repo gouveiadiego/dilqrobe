@@ -221,22 +221,8 @@ const Index = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
-                <div className="lg:col-span-3 gradient-border p-4 md:p-6 bg-white/80 backdrop-blur-sm shadow-md rounded-xl transition-all duration-300 hover:shadow-lg">
-                  <AddTask onAdd={addTask} categories={taskCategories} sections={sections} />
-                </div>
-                <div className="futuristic-card transition-all duration-300 hover:shadow-lg">
-                  {categoriesLoading ? (
-                    <LoadingSpinner text="Carregando categorias..." />
-                  ) : (
-                    <CategoryManager 
-                      categories={taskCategories} 
-                      onAddCategory={addCategory}
-                      onUpdateCategory={updateCategory}
-                      onDeleteCategory={deleteCategory}
-                    />
-                  )}
-                </div>
+              <div className="gradient-border p-4 md:p-6 bg-white/80 backdrop-blur-sm shadow-md rounded-xl transition-all duration-300 hover:shadow-lg">
+                <AddTask onAdd={addTask} categories={taskCategories} sections={sections} />
               </div>
               
               <div className="p-4 md:p-6 bg-gradient-to-br from-white/80 to-gray-50/80 backdrop-blur-sm border border-gray-100 rounded-xl shadow-md">
