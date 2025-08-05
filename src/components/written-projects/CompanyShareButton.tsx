@@ -195,17 +195,24 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
                     </div>
                   </div>
                   
-                  <div className="bg-muted p-3 rounded-md space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-foreground">
-                        Link para {companyName}
-                      </span>
-                      <span className="text-xs text-muted-foreground bg-background px-2 py-1 rounded">
+                  <div className="bg-muted p-3 rounded-md">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="text-sm font-medium text-foreground">
+                          {companyName}
+                        </span>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        link.is_active 
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' 
+                          : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                      }`}>
                         {link.is_active ? 'Ativo' : 'Inativo'}
                       </span>
                     </div>
-                    <div className="text-xs font-mono text-muted-foreground break-all border-t pt-2">
-                      {generateShareUrl(link.share_token)}
+                    <div className="text-xs text-muted-foreground">
+                      Link público compartilhável
                     </div>
                   </div>
                   
