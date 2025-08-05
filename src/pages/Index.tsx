@@ -153,15 +153,34 @@ const Index = () => {
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
 
-    filteredTasks
+    console.log('🗓️ Postponing tasks:', {
+      today: today.toISOString(),
+      tomorrow: tomorrow.toISOString(),
+      totalFilteredTasks: filteredTasks.length
+    });
+
+    const tasksToPostpone = filteredTasks
       .filter(t => {
         if (t.completed) return false;
         if (!t.due_date) return false;
         const due = new Date(t.due_date);
         due.setHours(0, 0, 0, 0);
-        return due.getTime() === today.getTime();
-      })
-      .forEach(t => handleUpdateTask(t.id, { due_date: tomorrow.toISOString() }));
+        const isToday = due.getTime() === today.getTime();
+        console.log('📋 Task check:', {
+          taskTitle: t.title,
+          taskDueDate: t.due_date,
+          dueNormalized: due.toISOString(),
+          isToday
+        });
+        return isToday;
+      });
+
+    console.log('📅 Tasks to postpone:', tasksToPostpone.length, tasksToPostpone.map(t => ({ title: t.title, dueDate: t.due_date })));
+
+    tasksToPostpone.forEach(t => {
+      console.log('⏰ Postponing task:', t.title, 'from', t.due_date, 'to', tomorrow.toISOString());
+      handleUpdateTask(t.id, { due_date: tomorrow.toISOString() });
+    });
   };
 
   // Modo Foco: exibe só tarefas de prioridade alta ou vencidas

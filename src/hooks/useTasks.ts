@@ -296,9 +296,15 @@ export const useTasks = () => {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      console.log('✅ Task updated successfully:', {
+        taskId: variables.id,
+        updates: variables.updates
+      });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['project-checklist-dashboard'] });
+      // Force refetch to ensure UI updates immediately
+      queryClient.refetchQueries({ queryKey: ['tasks'] });
       toast.success('Tarefa atualizada com sucesso');
     }
   });

@@ -161,10 +161,21 @@ export function KanbanCalendar({
     const regularTasks = tasks.filter(task => {
       if (!task.due_date) return false;
       const taskDate = new Date(task.due_date);
-      return isEqual(
+      const isForThisDay = isEqual(
         new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate()),
         new Date(date.getFullYear(), date.getMonth(), date.getDate())
       );
+      
+      if (isForThisDay) {
+        console.log('📅 Task found for date:', {
+          date: date.toDateString(),
+          taskTitle: task.title,
+          taskDueDate: task.due_date,
+          taskId: task.id
+        });
+      }
+      
+      return isForThisDay;
     });
 
     let recurringInstances: Task[] = [];
