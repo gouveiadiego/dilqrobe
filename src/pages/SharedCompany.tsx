@@ -66,7 +66,7 @@ interface InstagramPost {
 }
 
 export default function SharedCompany() {
-  const { token } = useParams();
+  const { token, slug } = useParams();
   const [company, setCompany] = useState<Company | null>(null);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [contentTasks, setContentTasks] = useState<ContentTask[]>([]);
@@ -78,22 +78,23 @@ export default function SharedCompany() {
 
   useEffect(() => {
     async function fetchSharedCompanyData() {
-      if (!token) {
-        console.error('No token provided in URL');
-        setError('Token inválido');
+      const identifier = slug || token;
+      if (!identifier) {
+        console.error('No identifier provided in URL');
+        setError('Link inválido');
         setLoading(false);
         return;
       }
 
       try {
-        console.log('Fetching share link for identifier:', token);
+        console.log('Fetching share link for identifier:', identifier);
         
         // Try to find share link by slug first, then by token
         const { data: shareLink, error: shareLinkError } = await publicSupabase
           .from('company_share_links')
           .select('*')
           .eq('is_active', true)
-          .or(`slug.eq.${token},share_token.eq.${token}`)
+          .or(`slug.eq.${identifier},share_token.eq.${identifier}`)
           .maybeSingle();
 
         console.log('Share link query result:', { shareLink, error: shareLinkError });
@@ -223,7 +224,7 @@ export default function SharedCompany() {
     }
 
     fetchSharedCompanyData();
-  }, [token]);
+  }, [token, slug]);
 
   const toggleCategoryExpansion = (category: string) => {
     setExpandedCategories({

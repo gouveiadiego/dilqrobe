@@ -83,6 +83,8 @@ const App = () => {
             </ProtectedRoute>
           } 
         />
+        {/* Catch-all route for company slugs - must be last before NotFound */}
+        <Route path="/:slug" element={<SharedCompany />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </TooltipProvider>

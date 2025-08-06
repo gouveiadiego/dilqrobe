@@ -119,7 +119,7 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
 
   const generateShareUrl = (link: ShareLink) => {
     const identifier = link.slug || link.share_token;
-    return `${window.location.origin}/shared-company/${identifier}`;
+    return `${window.location.origin}/${identifier}`;
   };
 
   const copyToClipboard = async (link: ShareLink) => {
