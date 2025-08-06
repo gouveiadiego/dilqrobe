@@ -1366,7 +1366,9 @@ export type Database = {
         Returns: boolean
       }
       generate_company_slug: {
-        Args: { company_name: string; company_id: string }
+        Args:
+          | { company_name: string }
+          | { company_name: string; company_id: string }
         Returns: string
       }
       get_user_payments: {

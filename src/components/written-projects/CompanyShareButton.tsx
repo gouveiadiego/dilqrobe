@@ -59,8 +59,7 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
       // Generate slug using the database function
       const { data: slugData, error: slugError } = await supabase
         .rpc('generate_company_slug', { 
-          company_name: companyName, 
-          company_id: companyId 
+          company_name: companyName
         });
 
       if (slugError) {
