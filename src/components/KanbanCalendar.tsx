@@ -63,9 +63,23 @@ const generateRecurringInstances = (
   const baseDate = task.original_due_date ? new Date(task.original_due_date) : new Date(task.due_date);
   let instanceDate = new Date(baseDate);
   
-  const maxDate = task.recurrence_count !== null
-    ? addMonths(baseDate, task.recurrence_count)
-    : addMonths(endMonth, 6);
+  const maxDate = (() => {
+    if (task.recurrence_count === null) {
+      return addMonths(endMonth, 6);
+    }
+    const remaining = remainingInstances === Infinity ? 0 : remainingInstances;
+    switch (task.recurrence_type) {
+      case "daily":
+        return addDays(baseDate, remaining);
+      case "weekly":
+        return addDays(baseDate, 7 * remaining);
+      case "biweekly":
+        return addDays(baseDate, 14 * remaining);
+      case "monthly":
+      default:
+        return addMonths(baseDate, remaining);
+    }
+  })();
   
   let count = 0;
 
@@ -89,15 +103,13 @@ const generateRecurringInstances = (
     instanceDate = getNextDate(instanceDate, task.recurrence_type);
     if (instanceDate > maxDate) break;
 
-    if (isWithinInterval(instanceDate, { start: startOfMonth(startMonth), end: endOfMonth(maxDate) })) {
-      instances.push({
-        ...task,
-        due_date: instanceDate.toISOString(),
-        original_due_date: task.original_due_date || task.due_date,
-        _isRecurringInstance: true,
-        id: `${task.id}_instance_${count}`
-      } as Task);
-    }
+    instances.push({
+      ...task,
+      due_date: instanceDate.toISOString(),
+      original_due_date: task.original_due_date || task.due_date,
+      _isRecurringInstance: true,
+      id: `${task.id}_instance_${count}`
+    } as Task);
 
     count++;
   }
