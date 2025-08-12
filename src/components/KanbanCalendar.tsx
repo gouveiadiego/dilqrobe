@@ -71,6 +71,8 @@ const generateRecurringInstances = (
 
   const getNextDate = (date: Date, type: Task["recurrence_type"]) => {
     switch (type) {
+      case "daily":
+        return addDays(date, 1);
       case "weekly":
         return addDays(date, 7);
       case "biweekly":

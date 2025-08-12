@@ -25,7 +25,7 @@ export interface Task {
   recurrence_count?: number | null;
   recurrence_completed?: number;
   original_due_date?: string | null;
-  recurrence_type?: "weekly" | "biweekly" | "monthly" | null;
+  recurrence_type?: "daily" | "weekly" | "biweekly" | "monthly" | null;
   _isRecurringInstance?: boolean;
   project_company_id?: string | null;
 }

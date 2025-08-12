@@ -65,6 +65,7 @@ export function RecurringTaskOptions({
               <SelectValue placeholder="Tipo de recorrência" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="daily">Diária</SelectItem>
               <SelectItem value="weekly">Semanal</SelectItem>
               <SelectItem value="biweekly">Quinzenal</SelectItem>
               <SelectItem value="monthly">Mensal</SelectItem>

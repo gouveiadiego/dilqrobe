@@ -19,6 +19,8 @@ const calculateNextDueDate = (currentDate: string, type: Task['recurrence_type']
   const date = new Date(currentDate);
   
   switch (type) {
+    case 'daily':
+      return addDays(date, 1).toISOString();
     case 'weekly':
       return addWeeks(date, 1).toISOString();
     case 'biweekly':
@@ -398,6 +400,7 @@ export const useTasks = () => {
         }
 
         const recurrenceTypeText = {
+          daily: 'dia',
           weekly: 'semana',
           biweekly: 'quinzena',
           monthly: 'mês'
