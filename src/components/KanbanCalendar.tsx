@@ -84,23 +84,21 @@ const generateRecurringInstances = (
     }
   };
   
-  while (instanceDate <= maxDate && count < remainingInstances) {
-    if (!isEqual(
-      new Date(instanceDate.getFullYear(), instanceDate.getMonth(), instanceDate.getDate()),
-      new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate())
-    )) {
-      if (isWithinInterval(instanceDate, { start: startOfMonth(startMonth), end: endOfMonth(maxDate) })) {
-        instances.push({
-          ...task,
-          due_date: instanceDate.toISOString(),
-          original_due_date: task.original_due_date || task.due_date,
-          _isRecurringInstance: true,
-          id: `${task.id}_instance_${count}`
-        } as Task);
-      }
-    }
-    
+  while (count < remainingInstances) {
+    // Move to the next recurrence date first so we don't duplicate the base date
     instanceDate = getNextDate(instanceDate, task.recurrence_type);
+    if (instanceDate > maxDate) break;
+
+    if (isWithinInterval(instanceDate, { start: startOfMonth(startMonth), end: endOfMonth(maxDate) })) {
+      instances.push({
+        ...task,
+        due_date: instanceDate.toISOString(),
+        original_due_date: task.original_due_date || task.due_date,
+        _isRecurringInstance: true,
+        id: `${task.id}_instance_${count}`
+      } as Task);
+    }
+
     count++;
   }
   
@@ -181,28 +179,26 @@ export function KanbanCalendar({
     });
 
     let recurringInstances: Task[] = [];
-    
-    if (!isSameMonth(date, new Date())) {
-      const recurringTasks = tasks.filter(task => 
-        task.is_recurring && !task.completed && task.due_date
-      );
-      
-      recurringTasks.forEach(task => {
-        const instances = generateRecurringInstances(task, monthStart, monthEnd);
-        
-        const instancesForDay = instances.filter(instance => {
-          if (!instance.due_date) return false;
-          const instanceDate = new Date(instance.due_date);
-          return isEqual(
-            new Date(instanceDate.getFullYear(), instanceDate.getMonth(), instanceDate.getDate()),
-            new Date(date.getFullYear(), date.getMonth(), date.getDate())
-          );
-        });
-        
-        recurringInstances = [...recurringInstances, ...instancesForDay];
+
+    const recurringTasks = tasks.filter(task => 
+      task.is_recurring && !task.completed && task.due_date
+    );
+
+    recurringTasks.forEach(task => {
+      const instances = generateRecurringInstances(task, monthStart, monthEnd);
+
+      const instancesForDay = instances.filter(instance => {
+        if (!instance.due_date) return false;
+        const instanceDate = new Date(instance.due_date);
+        return isEqual(
+          new Date(instanceDate.getFullYear(), instanceDate.getMonth(), instanceDate.getDate()),
+          new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        );
       });
-    }
-    
+
+      recurringInstances = [...recurringInstances, ...instancesForDay];
+    });
+
     return [...regularTasks, ...recurringInstances];
   };
 
