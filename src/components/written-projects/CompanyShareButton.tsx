@@ -3,11 +3,12 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Share2, Copy, Check, ExternalLink } from "lucide-react";
+import { Share2, Copy, Check, ExternalLink, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface CompanyShareButtonProps {
@@ -117,6 +118,28 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
     }
   });
 
+  // Delete link mutation
+  const deleteLinkMutation = useMutation({
+    mutationFn: async (linkId: string) => {
+      const { error } = await supabase
+        .from('company_share_links')
+        .delete()
+        .eq('id', linkId);
+
+      if (error) {
+        console.error('Error deleting share link:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['company-share-links', companyId] });
+      toast.success('Link excluído');
+    },
+    onError: () => {
+      toast.error('Erro ao excluir link');
+    }
+  });
+
   const generateShareUrl = (link: ShareLink) => {
     const identifier = link.slug || link.share_token;
     return `${window.location.origin}/${identifier}`;
@@ -207,6 +230,18 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (window.confirm('Deseja excluir este link? Esta ação não pode ser desfeita.')) {
+                            deleteLinkMutation.mutate(link.id);
+                          }
+                        }}
+                        title="Excluir link"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </div>
                   
@@ -226,8 +261,13 @@ export function CompanyShareButton({ companyId, companyName }: CompanyShareButto
                         {link.is_active ? 'Ativo' : 'Inativo'}
                       </span>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Link público compartilhável
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs text-muted-foreground">
+                        {generateShareUrl(link)}
+                      </div>
+                      <Badge variant="outline" className="text-[10px]">
+                        {link.slug ? 'slug' : 'token antigo'}
+                      </Badge>
                     </div>
                   </div>
                   
