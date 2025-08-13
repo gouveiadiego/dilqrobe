@@ -56,8 +56,10 @@ const generateRecurringInstances = (
     return [];
   }
 
+  // Para tarefas recorrentes, a tarefa original já conta como 1 instância
+  // Então remainingInstances = total - completed - 1 (para não incluir a original)
   const remainingInstances = task.recurrence_count !== null 
-    ? task.recurrence_count - (task.recurrence_completed || 0)
+    ? Math.max(0, task.recurrence_count - (task.recurrence_completed || 0) - 1)
     : Infinity;
   
   const baseDate = task.original_due_date ? new Date(task.original_due_date) : new Date(task.due_date);
