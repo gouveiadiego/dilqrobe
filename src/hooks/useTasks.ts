@@ -180,6 +180,8 @@ export const useTasks = () => {
 
       console.log('Adding task with project_company_id:', newTask.project_company_id);
 
+      console.log('Creating task with recurrence_type:', newTask.recurrence_type);
+
       const { data, error } = await supabase
         .from('tasks')
         .insert([{
@@ -190,6 +192,8 @@ export const useTasks = () => {
           section: newTask.section,
           is_recurring: newTask.is_recurring,
           recurrence_count: newTask.recurrence_count,
+          recurrence_type: newTask.recurrence_type,
+          original_due_date: newTask.is_recurring ? taskDate : null,
           recurrence_completed: 0,
           user_id: user.id,
           subtasks: [],

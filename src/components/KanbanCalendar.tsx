@@ -63,6 +63,15 @@ const generateRecurringInstances = (
   const baseDate = task.original_due_date ? new Date(task.original_due_date) : new Date(task.due_date);
   let instanceDate = new Date(baseDate);
   
+  console.log(`Generating instances for task ${task.title}:`, {
+    recurrence_type: task.recurrence_type,
+    recurrence_count: task.recurrence_count,
+    remainingInstances,
+    baseDate: baseDate.toISOString(),
+    currentMonth: startMonth.toISOString(),
+    original_due_date: task.original_due_date
+  });
+  
   const maxDate = (() => {
     if (task.recurrence_count === null) {
       return addMonths(endMonth, 6);
