@@ -110,7 +110,13 @@ export function BudgetTab() {
         throw error;
       }
 
-      setBudgets(data as Budget[]);
+      // Convert Json items to BudgetItem[]
+      const budgets = data?.map(budget => ({
+        ...budget,
+        items: Array.isArray(budget.items) ? budget.items as unknown as BudgetItem[] : []
+      })) || [];
+
+      setBudgets(budgets);
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -179,7 +185,10 @@ export function BudgetTab() {
 
       const { data, error } = await supabase
         .from('budgets')
-        .insert([budgetToAdd])
+        .insert([{
+          ...budgetToAdd,
+          items: budgetToAdd.items as unknown as any
+        }])
         .select()
         .single();
 
@@ -188,7 +197,12 @@ export function BudgetTab() {
         throw error;
       }
 
-      setBudgets([data as Budget, ...budgets]);
+      const createdBudget = {
+        ...data,
+        items: Array.isArray(data.items) ? data.items as unknown as BudgetItem[] : []
+      };
+
+      setBudgets([createdBudget, ...budgets]);
       setNewBudget({
         client_name: "",
         client_email: "",
@@ -272,7 +286,10 @@ export function BudgetTab() {
 
       const { data, error } = await supabase
         .from('budgets')
-        .insert([duplicatedBudget])
+        .insert([{
+          ...duplicatedBudget,
+          items: duplicatedBudget.items as unknown as any
+        }])
         .select()
         .single();
 
@@ -281,7 +298,12 @@ export function BudgetTab() {
         throw error;
       }
 
-      setBudgets([data as Budget, ...budgets]);
+      const duplicatedBudgetResult = {
+        ...data,
+        items: Array.isArray(data.items) ? data.items as unknown as BudgetItem[] : []
+      };
+
+      setBudgets([duplicatedBudgetResult, ...budgets]);
       setBudgetToDuplicate(null);
       setShowDuplicateDialog(false);
       toast.success('Orçamento duplicado com sucesso');
