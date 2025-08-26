@@ -9,9 +9,11 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
-import { Pencil, Trash2, PlusCircle, FileText, Copy } from "lucide-react";
+import { Pencil, Trash2, PlusCircle, FileText, Copy, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface BudgetItem {
   id: string;
@@ -317,6 +319,213 @@ export function BudgetTab() {
     setShowDuplicateDialog(true);
   };
 
+  const generateProfessionalPDF = (budget: Budget) => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      
+      // Colors
+      const primaryColor = [79, 70, 229]; // Indigo
+      const secondaryColor = [100, 116, 139]; // Slate
+      const accentColor = [236, 254, 255]; // Light cyan
+      
+      // Header with gradient effect
+      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.rect(0, 0, pageWidth, 35, 'F');
+      
+      // Company title
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ORÇAMENTO PROFISSIONAL', pageWidth / 2, 22, { align: 'center' });
+      
+      // Subtle accent line
+      doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+      doc.rect(0, 35, pageWidth, 2, 'F');
+      
+      // Budget number and date
+      doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const budgetNumber = `#${budget.id.substring(0, 8).toUpperCase()}`;
+      const createdDate = format(new Date(budget.created_at), "dd/MM/yyyy", { locale: ptBR });
+      doc.text(`Orçamento: ${budgetNumber}`, 20, 45);
+      doc.text(`Data: ${createdDate}`, pageWidth - 20, 45, { align: 'right' });
+      
+      let yPosition = 60;
+      
+      // Company Information Section
+      if (budget.company_name) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(20, yPosition - 5, pageWidth - 40, 25, 'F');
+        
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('EMPRESA', 25, yPosition + 5);
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(budget.company_name, 25, yPosition + 15);
+        yPosition += 35;
+      }
+      
+      // Client Information Section
+      doc.setFillColor(248, 250, 252);
+      doc.rect(20, yPosition - 5, pageWidth - 40, 35, 'F');
+      
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CLIENTE', 25, yPosition + 5);
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(budget.client_name, 25, yPosition + 15);
+      if (budget.client_email) {
+        doc.text(`Email: ${budget.client_email}`, 25, yPosition + 22);
+      }
+      if (budget.client_phone) {
+        doc.text(`Telefone: ${budget.client_phone}`, 25, yPosition + 29);
+      }
+      
+      yPosition += 50;
+      
+      // Items Table Header
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ITENS DO ORÇAMENTO', 25, yPosition);
+      yPosition += 15;
+      
+      // Prepare table data
+      const tableData = budget.items.map(item => [
+        item.description,
+        item.quantity.toString(),
+        formatCurrency(item.unit_price),
+        formatCurrency(item.total)
+      ]);
+      
+      // Create table with professional styling
+      (doc as any).autoTable({
+        startY: yPosition,
+        head: [['Descrição', 'Qtd', 'Valor Unit.', 'Total']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: {
+          fillColor: primaryColor,
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 10
+        },
+        bodyStyles: {
+          fontSize: 9,
+          textColor: [51, 51, 51]
+        },
+        alternateRowStyles: {
+          fillColor: [249, 250, 251]
+        },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 30, halign: 'right' },
+          3: { cellWidth: 30, halign: 'right' }
+        },
+        margin: { left: 25, right: 25 }
+      });
+      
+      // Get table end position
+      const finalY = (doc as any).lastAutoTable.finalY || yPosition + 50;
+      
+      // Total amount with elegant styling
+      const totalBoxY = finalY + 10;
+      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.rect(pageWidth - 80, totalBoxY, 55, 20, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTAL GERAL', pageWidth - 52.5, totalBoxY + 8, { align: 'center' });
+      doc.setFontSize(14);
+      doc.text(formatCurrency(budget.total_amount), pageWidth - 52.5, totalBoxY + 17, { align: 'center' });
+      
+      let infoY = totalBoxY + 35;
+      
+      // Additional Information
+      if (budget.delivery_time || budget.payment_terms || budget.valid_until) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(20, infoY - 5, pageWidth - 40, 30, 'F');
+        
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('CONDIÇÕES', 25, infoY + 5);
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        
+        let conditionY = infoY + 12;
+        
+        if (budget.delivery_time) {
+          doc.text(`Prazo de Entrega: ${budget.delivery_time}`, 25, conditionY);
+          conditionY += 6;
+        }
+        
+        if (budget.payment_terms) {
+          doc.text(`Condições de Pagamento: ${budget.payment_terms}`, 25, conditionY);
+          conditionY += 6;
+        }
+        
+        if (budget.valid_until) {
+          const validDate = format(new Date(budget.valid_until), "dd/MM/yyyy", { locale: ptBR });
+          doc.text(`Válido até: ${validDate}`, 25, conditionY);
+        }
+        
+        infoY += 40;
+      }
+      
+      // Notes section
+      if (budget.notes) {
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('OBSERVAÇÕES', 25, infoY);
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        
+        const noteLines = doc.splitTextToSize(budget.notes, pageWidth - 50);
+        doc.text(noteLines, 25, infoY + 8);
+        infoY += noteLines.length * 4 + 15;
+      }
+      
+      // Professional footer
+      const footerY = pageHeight - 30;
+      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.rect(0, footerY, pageWidth, 30, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Orçamento gerado automaticamente', pageWidth / 2, footerY + 10, { align: 'center' });
+      doc.text(`Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, pageWidth / 2, footerY + 18, { align: 'center' });
+      
+      // Save the PDF
+      const fileName = `orcamento-${budget.client_name.replace(/\s+/g, '-').toLowerCase()}-${budgetNumber}.pdf`;
+      doc.save(fileName);
+      
+      toast.success('PDF gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF. Tente novamente.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -538,6 +747,15 @@ export function BudgetTab() {
               </div>
 
               <div className="flex justify-end gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateProfessionalPDF(budget)}
+                  className="gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0"
+                >
+                  <Download className="h-4 w-4" />
+                  PDF Profissional
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
