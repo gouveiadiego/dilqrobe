@@ -144,9 +144,13 @@ export function KanbanCalendar({
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 }); // Sunday
   
+  // Force showing at least 6 weeks (42 days) to ensure consistency across all months
+  const totalDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd }).length;
+  const finalCalendarEnd = totalDays < 42 ? addDays(calendarEnd, 42 - totalDays) : calendarEnd;
+  
   const monthDays = eachDayOfInterval({
     start: calendarStart,
-    end: calendarEnd
+    end: finalCalendarEnd
   });
 
   const handlePrevMonth = () => {
