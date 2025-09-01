@@ -326,25 +326,25 @@ export function KanbanCalendar({
                 className={cn(
                   "rounded-lg border min-h-[100px] h-full",
                   isCurrentDay ? "border-purple-500 shadow-lg shadow-purple-100" : "border-gray-200",
-                  isOutsideCurrentMonth ? "bg-gray-50/50" : ""
+                  isOutsideCurrentMonth ? "bg-gray-50/30 opacity-60" : ""
                 )}
                 onDragOver={handleDragOver}
                 onDrop={e => handleDrop(e, day)}
               >
                 <div className={cn(
                   "p-2 border-b text-xs font-medium",
-                  isCurrentDay ? "bg-purple-50" : isOutsideCurrentMonth ? "bg-gray-100/50" : "bg-gray-50"
+                  isCurrentDay ? "bg-purple-50" : isOutsideCurrentMonth ? "bg-gray-100/30" : "bg-gray-50"
                 )}>
                   <div className="flex flex-col">
                     <span className={cn(
                       "text-gray-600",
-                      isOutsideCurrentMonth && "text-gray-400"
+                      isOutsideCurrentMonth && "text-gray-500"
                     )}>
                       {format(day, "d", { locale: pt })}
                     </span>
                     <span className={cn(
                       "text-gray-400 text-[10px]",
-                      isOutsideCurrentMonth && "text-gray-400/70"
+                      isOutsideCurrentMonth && "text-gray-400"
                     )}>
                       {format(day, "EEEE", { locale: pt })}
                     </span>
