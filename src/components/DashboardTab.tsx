@@ -1,8 +1,9 @@
 import React from "react";
 import { LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Activity, Wallet, Target, CheckCircle2, Calendar, TrendingUp, ChevronUp, ChevronDown, CircleDollarSign, List, Users, Clock, Award, DollarSign } from "lucide-react";
+import { Activity, Wallet, Target, CheckCircle2, Calendar, TrendingUp, ChevronUp, ChevronDown, CircleDollarSign, List, Users, Clock, Award, DollarSign, Building2, BookOpen, FileText, Coffee, UserCheck } from "lucide-react";
 import { useTasks } from "@/hooks/useTasks";
+import { useTransactions } from "@/hooks/useTransactions";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { UpcomingMeetings } from "@/components/dashboard/UpcomingMeetings";
@@ -28,21 +29,72 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const DashboardTab = () => {
   const { tasks } = useTasks();
+  const { summaries, chartData } = useTransactions({ currentDate: new Date() });
   
-  // Fetch transactions
-  const { data: transactions } = useQuery({
-    queryKey: ['transactions'],
+  // Fetch companies data
+  const { data: companies } = useQuery({
+    queryKey: ['companies'],
     queryFn: async () => {
       const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        throw new Error('Not authenticated');
-      }
+      if (!sessionData.session) return [];
       
       const { data, error } = await supabase
-        .from('transactions')
+        .from('project_companies')
+        .select('*')
+        .eq('user_id', sessionData.session.user.id);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch services data
+  const { data: services } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return [];
+      
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('user_id', sessionData.session.user.id);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch meetings data
+  const { data: meetings } = useQuery({
+    queryKey: ['meetings'],
+    queryFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return [];
+      
+      const { data, error } = await supabase
+        .from('client_meetings')
         .select('*')
         .eq('user_id', sessionData.session.user.id)
-        .order('date', { ascending: false });
+        .order('meeting_date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch journal entries
+  const { data: journals } = useQuery({
+    queryKey: ['journals'],
+    queryFn: async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return [];
+      
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', sessionData.session.user.id)
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data || [];
@@ -54,9 +106,7 @@ const DashboardTab = () => {
     queryKey: ['habits'],
     queryFn: async () => {
       const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        throw new Error('Not authenticated');
-      }
+      if (!sessionData.session) return [];
       
       const { data, error } = await supabase
         .from('habits')
@@ -68,41 +118,72 @@ const DashboardTab = () => {
     }
   });
 
-  // Calculate task metrics
+  // Calculate metrics
   const activeTasks = tasks?.filter(task => !task.completed).length || 0;
   const completedTasks = tasks?.filter(task => task.completed).length || 0;
   const totalTasks = tasks?.length || 0;
   const taskCompletionRate = totalTasks ? (completedTasks / totalTasks * 100).toFixed(1) : 0;
 
-  // Calculate financial metrics
-  const income = transactions?.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0) || 0;
-  const expenses = transactions?.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0;
-  const balance = income - expenses;
-
-  // Calculate habit metrics
+  const activeCompanies = companies?.filter(c => c.is_active).length || 0;
   const activeHabits = habits?.filter(habit => habit.active).length || 0;
   const avgStreak = habits?.length ? habits.reduce((sum, habit) => sum + (habit.streak || 0), 0) / habits.length : 0;
+  
+  // Services metrics
+  const activeServices = services?.filter(s => s.status === 'active').length || 0;
+  const pendingServices = services?.filter(s => s.status === 'pending').length || 0;
+  const totalServiceValue = services?.reduce((sum, s) => sum + Number(s.amount || 0), 0) || 0;
+  
+  // Meetings metrics
+  const upcomingMeetings = meetings?.filter(m => new Date(m.meeting_date) > new Date()).length || 0;
+  const todayMeetings = meetings?.filter(m => {
+    const meetingDate = new Date(m.meeting_date);
+    const today = new Date();
+    return meetingDate.toDateString() === today.toDateString();
+  }).length || 0;
 
-  // Financial trend data for line chart
+  // Journal metrics
+  const weeklyJournals = journals?.filter(j => {
+    const journalDate = new Date(j.created_at);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return journalDate > weekAgo;
+  }).length || 0;
+
+  // Get last 7 days for trends
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() - i);
     return date.toISOString().split('T')[0];
-  });
+  }).reverse();
 
-  const financialTrendData = last7Days.map(date => {
-    const dayIncome = transactions?.filter(t => t.date === date && t.amount > 0).reduce((sum, t) => sum + t.amount, 0) || 0;
-    const dayExpenses = transactions?.filter(t => t.date === date && t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0;
-    
+  // Productivity data combining tasks and financial
+  const productivityData = last7Days.map(date => {
+    const completed = tasks?.filter(t => t.completed && t.updated_at?.split('T')[0] === date).length || 0;
+    const dayData = chartData?.find(c => c.date === date);
     return {
       name: new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' }),
-      receitas: dayIncome,
-      despesas: dayExpenses,
-      saldo: dayIncome - dayExpenses,
+      tarefas: completed,
+      receitas: dayData?.income || 0,
+      despesas: dayData?.expenses || 0,
     };
   });
 
-  // Get trends
+  // Task priority distribution
+  const tasksByPriority = [
+    { name: 'Alta', value: tasks?.filter(t => t.priority === 'high' && !t.completed).length || 0, color: '#ef4444' },
+    { name: 'Média', value: tasks?.filter(t => t.priority === 'medium' && !t.completed).length || 0, color: '#f59e0b' },
+    { name: 'Baixa', value: tasks?.filter(t => t.priority === 'low' && !t.completed).length || 0, color: '#10b981' }
+  ];
+
+  // Services by status
+  const servicesByStatus = [
+    { name: 'Ativo', value: activeServices, color: '#10b981' },
+    { name: 'Pendente', value: pendingServices, color: '#f59e0b' },
+    { name: 'Concluído', value: services?.filter(s => s.status === 'completed').length || 0, color: '#6366f1' }
+  ];
+
+  // Calculate financial trends
+  const { income, expenses, balance } = summaries;
   const currentTasksDay = activeTasks;
   const prevTasksDay = activeTasks > 0 ? Math.floor(activeTasks * 0.9) : 0;
   const tasksTrend = currentTasksDay - prevTasksDay;
@@ -113,22 +194,16 @@ const DashboardTab = () => {
   const incomeTrend = currentIncome - prevIncome;
   const incomePercentChange = prevIncome > 0 ? ((incomeTrend / prevIncome) * 100).toFixed(1) : "0";
 
-  // Task analytics data
-  const tasksByPriority = [
-    { name: 'Alta', value: tasks?.filter(t => t.priority === 'high' && !t.completed).length || 0, color: '#ef4444' },
-    { name: 'Média', value: tasks?.filter(t => t.priority === 'medium' && !t.completed).length || 0, color: '#f59e0b' },
-    { name: 'Baixa', value: tasks?.filter(t => t.priority === 'low' && !t.completed).length || 0, color: '#10b981' }
-  ];
+  // Financial trend data for line chart
+  const financialTrendData = chartData?.map(data => ({
+    name: new Date(data.date).toLocaleDateString('pt-BR', { weekday: 'short' }),
+    receitas: data.income,
+    despesas: data.expenses,
+    saldo: data.income - data.expenses,
+  })) || [];
 
-  // Productivity trend (last 7 days)
-  const productivityData = last7Days.map(date => {
-    const completed = tasks?.filter(t => t.completed && t.updated_at?.split('T')[0] === date).length || 0;
-    return {
-      name: new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' }),
-      completadas: completed,
-      financeiro: financialTrendData.find(f => f.name === new Date(date).toLocaleDateString('pt-BR', { weekday: 'short' }))?.saldo || 0
-    };
-  });
+  // Total transactions count
+  const totalTransactions = chartData?.reduce((sum, data) => sum + (data.income > 0 ? 1 : 0) + (data.expenses > 0 ? 1 : 0), 0) || 0;
 
   
   return (
@@ -182,7 +257,7 @@ const DashboardTab = () => {
                 </span>
                 <span className="text-xs text-green-600">receitas</span>
               </div>
-              <p className="text-xs text-green-600 mt-1">{transactions?.length} transações</p>
+              <p className="text-xs text-green-600 mt-1">{totalTransactions} transações</p>
             </CardContent>
           </Card>
 
@@ -198,6 +273,71 @@ const DashboardTab = () => {
                 <span className="text-xs text-purple-600">Sequência média: {avgStreak.toFixed(0)} dias</span>
               </div>
               <p className="text-xs text-purple-600 mt-1">{habits?.length || 0} hábitos totais</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200 hover:shadow-lg transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-orange-700">Empresas Ativas</CardTitle>
+              <Building2 className="h-5 w-5 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-orange-900">{activeCompanies}</div>
+              <div className="flex items-center gap-2 mt-2">
+                <Users className="h-3 w-3 text-orange-600" />
+                <span className="text-xs text-orange-600">{companies?.length || 0} empresas totais</span>
+              </div>
+              <p className="text-xs text-orange-600 mt-1">{activeServices} serviços ativos</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200 hover:shadow-lg transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-cyan-700">Reuniões Hoje</CardTitle>
+              <Calendar className="h-5 w-5 text-cyan-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-cyan-900">{todayMeetings}</div>
+              <div className="flex items-center gap-2 mt-2">
+                <Clock className="h-3 w-3 text-cyan-600" />
+                <span className="text-xs text-cyan-600">{upcomingMeetings} próximas</span>
+              </div>
+              <p className="text-xs text-cyan-600 mt-1">{meetings?.length || 0} reuniões total</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 hover:shadow-lg transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-indigo-700">Journals Semanais</CardTitle>
+              <BookOpen className="h-5 w-5 text-indigo-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-indigo-900">{weeklyJournals}</div>
+              <div className="flex items-center gap-2 mt-2">
+                <FileText className="h-3 w-3 text-indigo-600" />
+                <span className="text-xs text-indigo-600">{journals?.length || 0} entradas totais</span>
+              </div>
+              <p className="text-xs text-indigo-600 mt-1">Esta semana</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Segunda linha de KPIs */}
+        <div className="grid gap-6 md:grid-cols-4">
+          <Card className="bg-gradient-to-r from-emerald-50 to-green-50 border-emerald-200 hover:shadow-lg transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-emerald-700">Valor Total Serviços</CardTitle>
+              <CircleDollarSign className="h-5 w-5 text-emerald-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-emerald-900">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalServiceValue)}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <UserCheck className="h-3 w-3 text-emerald-600" />
+                <span className="text-xs text-emerald-600">{activeServices} ativos</span>
+              </div>
+              <p className="text-xs text-emerald-600 mt-1">{pendingServices} pendentes</p>
             </CardContent>
           </Card>
 
@@ -223,8 +363,8 @@ const DashboardTab = () => {
             {/* Gráfico de Produtividade */}
             <Card className="bg-white shadow-lg">
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900">Análise de Produtividade</CardTitle>
-                <CardDescription>Tarefas concluídas e tendência financeira nos últimos 7 dias</CardDescription>
+                <CardTitle className="text-lg text-gray-900">Análise de Produtividade e Financeiro</CardTitle>
+                <CardDescription>Tarefas concluídas, receitas e despesas dos últimos 7 dias</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
@@ -235,8 +375,9 @@ const DashboardTab = () => {
                       <YAxis yAxisId="left" className="text-xs" />
                       <YAxis yAxisId="right" orientation="right" className="text-xs" />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar yAxisId="left" dataKey="completadas" name="Tarefas Concluídas" fill="#8b5cf6" />
-                      <Line yAxisId="right" type="monotone" dataKey="financeiro" name="Saldo" stroke="#10b981" strokeWidth={3} />
+                      <Bar yAxisId="left" dataKey="tarefas" name="Tarefas Concluídas" fill="#8b5cf6" />
+                      <Bar yAxisId="right" dataKey="receitas" name="Receitas" fill="#10b981" />
+                      <Bar yAxisId="right" dataKey="despesas" name="Despesas" fill="#ef4444" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -300,6 +441,44 @@ const DashboardTab = () => {
                     <div key={index} className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
                       <span className="text-xs text-gray-600">{item.name}: {item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Distribuição de Serviços por Status */}
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900">Serviços por Status</CardTitle>
+                <CardDescription>Status dos serviços</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={servicesByStatus}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={70}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {servicesByStatus.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-2 mt-4 text-xs">
+                  {servicesByStatus.map((item, index) => (
+                    <div key={index} className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
+                      <span className="text-gray-600">{item.name}: {item.value}</span>
                     </div>
                   ))}
                 </div>
