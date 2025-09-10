@@ -87,100 +87,6 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     }
   }, [editingTransaction, selectedFilter]);
 
-  const createRecurringTransactions = async (parentId: string, transactionData: any) => {
-    try {
-      const startDate = new Date(transactionData.date);
-      const numberOfMonths = parseInt(formData.installments) || 12;
-      
-      console.log(`Preparing to create recurring transactions for ${numberOfMonths} months`);
-      
-      const transactionsByMonth: Record<string, any[]> = {};
-      
-      for (let i = 1; i < numberOfMonths; i++) {
-        const nextDate = new Date(startDate);
-        nextDate.setMonth(startDate.getMonth() + i);
-        
-        if (transactionData.recurring_day) {
-          nextDate.setDate(transactionData.recurring_day);
-        }
-
-        if (nextDate.getMonth() !== (startDate.getMonth() + i) % 12) {
-          nextDate.setDate(0);
-        }
-        
-        if (nextDate < new Date(2025, 1, 1)) {
-          continue;
-        }
-        
-        const monthKey = `${nextDate.getFullYear()}-${nextDate.getMonth() + 1}`;
-        
-        if (!transactionsByMonth[monthKey]) {
-          transactionsByMonth[monthKey] = [];
-        }
-        
-        transactionsByMonth[monthKey].push({
-          date: nextDate.toISOString().split('T')[0],
-          description: transactionData.description,
-          received_from: transactionData.received_from,
-          amount: transactionData.amount,
-          category: transactionData.category,
-          payment_type: transactionData.payment_type,
-          is_paid: false,
-          recurring: true,
-          recurring_day: transactionData.recurring_day,
-          user_id: transactionData.user_id
-        });
-      }
-      
-      for (const [monthKey, monthTransactions] of Object.entries(transactionsByMonth)) {
-        if (!monthTransactions.length) continue;
-        
-        const sampleDate = new Date(monthTransactions[0].date);
-        const startOfMonth = new Date(sampleDate.getFullYear(), sampleDate.getMonth(), 1);
-        const endOfMonth = new Date(sampleDate.getFullYear(), sampleDate.getMonth() + 1, 0);
-        
-        const { data: existingTransactions, error: fetchError } = await supabase
-          .from("transactions")
-          .select("description, received_from, category, payment_type, date, amount")
-          .gte("date", startOfMonth.toISOString())
-          .lte("date", endOfMonth.toISOString());
-        
-        if (fetchError) {
-          console.error("Error checking existing transactions:", fetchError);
-          continue;
-        }
-        
-        const existingKeys = new Set();
-        existingTransactions?.forEach(t => {
-          const key = `${t.date}|${t.description}|${t.received_from}|${t.payment_type}|${t.amount}`;
-          existingKeys.add(key);
-        });
-        
-        const uniqueTransactions = monthTransactions.filter(t => {
-          const key = `${t.date}|${t.description}|${t.received_from}|${t.payment_type}|${t.amount}`;
-          return !existingKeys.has(key);
-        });
-        
-        console.log(`Month ${monthKey}: Found ${monthTransactions.length} transactions, ${uniqueTransactions.length} are unique`);
-        
-        if (uniqueTransactions.length > 0) {
-          const { error } = await supabase
-            .from("transactions")
-            .insert(uniqueTransactions);
-          
-          if (error) {
-            console.error(`Error creating transactions for month ${monthKey}:`, error);
-          } else {
-            console.log(`Created ${uniqueTransactions.length} transactions for month ${monthKey}`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error creating recurring transactions:", error);
-      toast.error("Erro ao criar transações recorrentes");
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -255,9 +161,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
 
         if (error) throw error;
 
-        if (formData.recurring && newTransaction?.id) {
-          await createRecurringTransactions(newTransaction.id, transactionData);
-        }
+        // Não criar transações recorrentes aqui - deixar para o useTransactions handle automaticamente
 
         toast.success("Transação criada com sucesso.");
         
