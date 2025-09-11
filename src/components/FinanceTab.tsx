@@ -10,7 +10,8 @@ import {
   Download,
   LayoutDashboard, 
   List, 
-  CalendarDays
+  CalendarDays,
+  Settings
 } from "lucide-react";
 import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendarView } from "./finance/TransactionCalendarView";
@@ -27,12 +28,14 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { FinanceCategoryManager } from "./finance/FinanceCategoryManager";
 
 export const FinanceTab = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showNewTransactionForm, setShowNewTransactionForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "dashboard">("dashboard");
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   const {
     filteredTransactions,
@@ -255,6 +258,17 @@ export const FinanceTab = () => {
               <Download className="h-4 w-4 mr-2" />
               Exportar
             </Button>
+
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="order-2 sm:order-1"
+              onClick={() => setShowCategoryManager(true)}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Categorias</span>
+              <span className="sm:hidden">Cat.</span>
+            </Button>
             
             <Button 
               className="bg-black hover:bg-black/90 text-white order-1 sm:order-2" 
@@ -327,6 +341,12 @@ export const FinanceTab = () => {
           </div>
         )}
       </div>
+
+      {/* Category Manager */}
+      <FinanceCategoryManager 
+        open={showCategoryManager} 
+        onOpenChange={setShowCategoryManager} 
+      />
     </div>
   );
 };

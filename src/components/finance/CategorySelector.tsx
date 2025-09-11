@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, DollarSign, CreditCard } from "lucide-react";
 import { 
   Select, 
   SelectContent, 
@@ -174,7 +175,25 @@ export const CategorySelector = ({
             <SelectContent>
               {filteredCategories.map((category) => (
                 <SelectItem key={category.id} value={category.name || "category-fallback"}>
-                  {getCategoryLabel(category.name)}
+                  <div className="flex items-center justify-between w-full">
+                    <span>{getCategoryLabel(category.name)}</span>
+                    <div className="flex items-center gap-2 ml-2">
+                      {category.type === "income" ? (
+                        <DollarSign className="h-3 w-3 text-emerald-600" />
+                      ) : (
+                        <CreditCard className="h-3 w-3 text-rose-600" />
+                      )}
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${category.type === "income" 
+                          ? "text-emerald-700 border-emerald-200" 
+                          : "text-rose-700 border-rose-200"
+                        }`}
+                      >
+                        {category.type === "income" ? "Recebimento" : "Despesa"}
+                      </Badge>
+                    </div>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
