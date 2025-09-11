@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase, removeDuplicateTransactions } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CategorySelector } from "./finance/CategorySelector";
+import { SmartCategorySelector } from "./finance/SmartCategorySelector";
 import { useCategories } from "@/hooks/useCategories";
 
 interface Transaction {
@@ -29,19 +30,19 @@ interface NewTransactionFormProps {
 const getTransactionDefaults = (selectedFilter: string) => {
   switch (selectedFilter) {
     case "recebimentos":
-      return { category: "income" };
+      return { category: "income", isIncome: true };
     case "despesas-fixas":
-      return { category: "fixed" };
+      return { category: "fixed", isIncome: false };
     case "despesas-variaveis":
-      return { category: "variable" };
+      return { category: "variable", isIncome: false };
     case "pessoas":
-      return { category: "people" };
+      return { category: "people", isIncome: false };
     case "impostos":
-      return { category: "taxes" };
+      return { category: "taxes", isIncome: false };
     case "transferencias":
-      return { category: "transfer" };
+      return { category: "transfer", isIncome: false };
     default:
-      return { category: "income" };
+      return { category: "income", isIncome: true };
   }
 };
 
@@ -98,7 +99,11 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         return;
       }
 
-      const isIncome = formData.category === "income";
+      // Detectar automaticamente se é receita ou despesa baseado na categoria
+      const categoryData = categories.find(c => c.name === formData.category);
+      const isIncome = categoryData?.type === "income" || 
+                      formData.category === "income" || 
+                      selectedFilter === "recebimentos";
       
       const amount = isIncome 
         ? Math.abs(Number(formData.amount))
@@ -271,12 +276,10 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           </Select>
         </div>
         
-        <CategorySelector 
+        <SmartCategorySelector 
           value={formData.category}
           onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
           selectedFilter={selectedFilter}
-          categories={categories}
-          onAddCategory={addCategory}
         />
 
         <div className="space-y-2 col-span-full">
