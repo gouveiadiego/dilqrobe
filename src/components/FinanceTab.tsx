@@ -12,6 +12,11 @@ import {
   List, 
   CalendarDays,
   Settings
+  Building,
+  Settings,
+  LayoutDashboard,
+  List,
+  Calendar
 } from "lucide-react";
 import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendarView } from "./finance/TransactionCalendarView";
@@ -29,6 +34,8 @@ import {
 } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceCategoryManager } from "./finance/FinanceCategoryManager";
+import { BankAccountManager } from "./finance/BankAccountManager";
+import { AccountSummaryCards } from "./finance/AccountSummaryCards";
 
 export const FinanceTab = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -36,6 +43,7 @@ export const FinanceTab = () => {
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "dashboard">("dashboard");
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showBankAccountManager, setShowBankAccountManager] = useState(false);
 
   const {
     filteredTransactions,
@@ -259,13 +267,24 @@ export const FinanceTab = () => {
               Exportar
             </Button>
 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBankAccountManager(true)}
+              className="order-3 sm:order-2"
+            >
+              <Tag className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Contas</span>
+              <span className="sm:hidden">Contas</span>
+            </Button>
+
             <Button 
               variant="outline" 
               size="sm"
               className="order-2 sm:order-1"
               onClick={() => setShowCategoryManager(true)}
             >
-              <Settings className="h-4 w-4 mr-2" />
+              <Tag className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Categorias</span>
               <span className="sm:hidden">Cat.</span>
             </Button>

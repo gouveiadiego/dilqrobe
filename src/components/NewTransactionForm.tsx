@@ -8,6 +8,7 @@ import { supabase, removeDuplicateTransactions } from "@/integrations/supabase/c
 import { toast } from "sonner";
 import { CategorySelector } from "./finance/CategorySelector";
 import { SmartCategorySelector } from "./finance/SmartCategorySelector";
+import { BankAccountSelector } from "./finance/BankAccountSelector";
 import { useCategories } from "@/hooks/useCategories";
 
 interface Transaction {
@@ -19,6 +20,10 @@ interface Transaction {
   amount: number;
   payment_type: string;
   is_paid: boolean;
+  recurring?: boolean;
+  recurring_day?: number;
+  installments?: number;
+  bank_account_id?: string;
 }
 
 interface NewTransactionFormProps {
@@ -64,6 +69,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     recurring: false,
     recurring_day: '',
     installments: '12',
+    bank_account_id: '',
   });
 
   useEffect(() => {
@@ -79,6 +85,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         recurring: false,
         recurring_day: '',
         installments: '12',
+        bank_account_id: editingTransaction?.bank_account_id || '',
       });
     } else {
       setFormData(prev => ({
@@ -184,6 +191,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         recurring: false,
         recurring_day: '',
         installments: '12',
+        bank_account_id: '',
       });
 
       onTransactionCreated();
@@ -280,6 +288,12 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           value={formData.category}
           onChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
           selectedFilter={selectedFilter}
+        />
+
+        <BankAccountSelector
+          value={formData.bank_account_id}
+          onValueChange={(value) => setFormData(prev => ({ ...prev, bank_account_id: value }))}
+          required={true}
         />
 
         <div className="space-y-2 col-span-full">
