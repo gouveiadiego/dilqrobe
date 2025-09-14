@@ -11,12 +11,10 @@ import {
   LayoutDashboard, 
   List, 
   CalendarDays,
-  Settings
-  Building,
   Settings,
-  LayoutDashboard,
-  List,
-  Calendar
+  Building,
+  Calendar,
+  Tag
 } from "lucide-react";
 import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendarView } from "./finance/TransactionCalendarView";
