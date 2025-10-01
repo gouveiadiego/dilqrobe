@@ -58,8 +58,17 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     console.log("NewTransactionForm - Available categories:", categories);
   }, [categories]);
 
+  // Helper function to get local date in YYYY-MM-DD format
+  const getLocalDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDateString(),
     description: '',
     received_from: '',
     amount: '',
@@ -181,7 +190,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
       }
       
       setFormData({
-        date: new Date().toISOString().split('T')[0],
+        date: getLocalDateString(),
         description: '',
         received_from: '',
         amount: '',
