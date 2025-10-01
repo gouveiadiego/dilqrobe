@@ -42,6 +42,7 @@ export const FinanceTab = () => {
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "dashboard">("dashboard");
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showBankAccountManager, setShowBankAccountManager] = useState(false);
+  const formRef = useState<HTMLDivElement | null>(null)[0];
 
   const {
     filteredTransactions,
@@ -65,8 +66,17 @@ export const FinanceTab = () => {
   };
 
   const handleEditTransaction = (transaction: any) => {
+    console.log('handleEditTransaction called with:', transaction);
     setEditingTransaction(transaction);
     setShowNewTransactionForm(true);
+    
+    // Scroll to form after state update
+    setTimeout(() => {
+      const formElement = document.getElementById('transaction-form');
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
 
   const handlePreviousMonth = () => {
@@ -303,7 +313,10 @@ export const FinanceTab = () => {
 
         {/* Formulário */}
         {showNewTransactionForm && (
-          <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
+          <div 
+            id="transaction-form"
+            className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm"
+          >
             <NewTransactionForm 
               selectedFilter={selectedFilter} 
               onTransactionCreated={handleTransactionCreated} 
