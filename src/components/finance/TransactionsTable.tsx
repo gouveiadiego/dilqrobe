@@ -84,7 +84,13 @@ export const TransactionsTable = ({
         <TableBody>
           {transactions.map(transaction => (
             <TableRow key={transaction.id} className="hover:bg-slate-50/50">
-              <TableCell>{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
+              <TableCell>
+                {(() => {
+                  // Parse the date as local date (YYYY-MM-DD format)
+                  const [year, month, day] = transaction.date.split('-').map(Number);
+                  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+                })()}
+              </TableCell>
               <TableCell>
                 <TextEllipsis 
                   text={transaction.description}
@@ -124,21 +130,30 @@ export const TransactionsTable = ({
                   {transaction.is_paid ? 'Pago' : 'Pendente'}
                 </Button>
               </TableCell>
-              <TableCell>
+               <TableCell>
                 <div className="flex items-center gap-2">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    onClick={() => onEdit(transaction)} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Edit clicked for transaction:', transaction);
+                      onEdit(transaction);
+                    }}
                     className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                    title="Editar transação"
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    onClick={() => confirmDelete(transaction)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      confirmDelete(transaction);
+                    }}
                     className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                    title="Excluir transação"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
