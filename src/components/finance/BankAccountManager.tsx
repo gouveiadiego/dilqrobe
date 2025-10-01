@@ -240,7 +240,15 @@ export const BankAccountManager = ({ open, onOpenChange }: BankAccountManagerPro
                           {editingAccount && (
                             <BankAccountForm
                               account={editingAccount}
-                              onSubmit={(data) => updateBankAccount(editingAccount.id, data)}
+                              onSubmit={(data) => {
+                                // Se o saldo inicial mudou, ajustar o saldo atual pela diferença
+                                const updates = { ...data };
+                                if (data.initial_balance !== undefined && data.initial_balance !== editingAccount.initial_balance) {
+                                  const difference = data.initial_balance - editingAccount.initial_balance;
+                                  updates.current_balance = Number(editingAccount.current_balance) + difference;
+                                }
+                                return updateBankAccount(editingAccount.id, updates);
+                              }}
                               onClose={() => setEditingAccount(null)}
                             />
                           )}
