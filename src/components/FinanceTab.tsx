@@ -364,6 +364,12 @@ export const FinanceTab = () => {
         open={showCategoryManager} 
         onOpenChange={setShowCategoryManager} 
       />
+
+      {/* Bank Account Manager */}
+      <BankAccountManager 
+        open={showBankAccountManager} 
+        onOpenChange={setShowBankAccountManager} 
+      />
     </div>
   );
 };

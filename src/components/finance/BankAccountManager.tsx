@@ -97,7 +97,12 @@ const BankAccountForm = ({ account, onSubmit, onClose }: BankAccountFormProps) =
   );
 };
 
-export const BankAccountManager = () => {
+interface BankAccountManagerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const BankAccountManager = ({ open, onOpenChange }: BankAccountManagerProps) => {
   const { bankAccounts, loading, createBankAccount, updateBankAccount, deleteBankAccount, getTotalBalance } = useBankAccounts();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
@@ -132,140 +137,149 @@ export const BankAccountManager = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header com Resumo */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Contas Bancárias</h2>
-          <p className="text-muted-foreground">
-            {bankAccounts.length} contas • Saldo total: {formatCurrency(getTotalBalance())}
-          </p>
-        </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Gerenciar Contas Bancárias</DialogTitle>
+        </DialogHeader>
         
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Conta
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nova Conta Bancária</DialogTitle>
-            </DialogHeader>
-            <BankAccountForm
-              onSubmit={createBankAccount}
-              onClose={() => setShowCreateDialog(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
+        <div className="space-y-6">
+          {/* Header com Resumo */}
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-muted-foreground">
+                {bankAccounts.length} contas • Saldo total: {formatCurrency(getTotalBalance())}
+              </p>
+            </div>
+            
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Conta
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Nova Conta Bancária</DialogTitle>
+                </DialogHeader>
+                <BankAccountForm
+                  onSubmit={createBankAccount}
+                  onClose={() => setShowCreateDialog(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
 
-      {/* Lista de Contas */}
-      {bankAccounts.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Wallet className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhuma conta cadastrada</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Adicione suas contas bancárias para controlar melhor suas finanças
-            </p>
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Primeira Conta
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {bankAccounts.map((account) => (
-            <Card key={account.id} className="relative">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <CardTitle className="text-base">{account.bank_name}</CardTitle>
-                  </div>
-                  <Badge variant={getAccountTypeColor(account.account_type) as any}>
-                    {getAccountTypeLabel(account.account_type)}
-                  </Badge>
-                </div>
-                {account.account_number && (
-                  <CardDescription>Conta: {account.account_number}</CardDescription>
-                )}
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold">
-                    {formatCurrency(Number(account.current_balance))}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Saldo Atual</p>
-                </div>
-
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Saldo Inicial:</span>
-                  <span>{formatCurrency(Number(account.initial_balance))}</span>
-                </div>
-
-                <div className="flex space-x-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => setEditingAccount(account)}
-                      >
-                        <Edit className="h-3 w-3 mr-1" />
-                        Editar
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Editar Conta Bancária</DialogTitle>
-                      </DialogHeader>
-                      {editingAccount && (
-                        <BankAccountForm
-                          account={editingAccount}
-                          onSubmit={(data) => updateBankAccount(editingAccount.id, data)}
-                          onClose={() => setEditingAccount(null)}
-                        />
-                      )}
-                    </DialogContent>
-                  </Dialog>
-
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Remover Conta</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Tem certeza que deseja remover a conta "{account.bank_name}"? 
-                          Esta ação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteBankAccount(account.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Remover
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+          {/* Lista de Contas */}
+          {loading ? (
+            <div>Carregando contas bancárias...</div>
+          ) : bankAccounts.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Wallet className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhuma conta cadastrada</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  Adicione suas contas bancárias para controlar melhor suas finanças
+                </p>
+                <Button onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Primeira Conta
+                </Button>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {bankAccounts.map((account) => (
+                <Card key={account.id} className="relative">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-base">{account.bank_name}</CardTitle>
+                      </div>
+                      <Badge variant={getAccountTypeColor(account.account_type) as any}>
+                        {getAccountTypeLabel(account.account_type)}
+                      </Badge>
+                    </div>
+                    {account.account_number && (
+                      <CardDescription>Conta: {account.account_number}</CardDescription>
+                    )}
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold">
+                        {formatCurrency(Number(account.current_balance))}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Saldo Atual</p>
+                    </div>
+
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Saldo Inicial:</span>
+                      <span>{formatCurrency(Number(account.initial_balance))}</span>
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => setEditingAccount(account)}
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Editar
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Editar Conta Bancária</DialogTitle>
+                          </DialogHeader>
+                          {editingAccount && (
+                            <BankAccountForm
+                              account={editingAccount}
+                              onSubmit={(data) => updateBankAccount(editingAccount.id, data)}
+                              onClose={() => setEditingAccount(null)}
+                            />
+                          )}
+                        </DialogContent>
+                      </Dialog>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remover Conta</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja remover a conta "{account.bank_name}"? 
+                              Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteBankAccount(account.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remover
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
