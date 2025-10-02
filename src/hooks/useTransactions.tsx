@@ -316,17 +316,22 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
         const recurrenceType = transaction.recurrence_type || 'monthly';
         const monthsDiff = (currentYear - originalDate.getFullYear()) * 12 + (currentMonth - originalDate.getMonth());
         
+        // Only create for current month or future months (monthsDiff >= 0)
+        if (monthsDiff < 0) {
+          return false;
+        }
+        
         switch (recurrenceType) {
           case 'monthly':
-            return true; // Create every month
+            return monthsDiff >= 0; // Create every month from original date forward
           case 'quarterly':
-            return monthsDiff % 3 === 0; // Create every 3 months
+            return monthsDiff >= 0 && monthsDiff % 3 === 0; // Create every 3 months
           case 'semiannual':
-            return monthsDiff % 6 === 0; // Create every 6 months
+            return monthsDiff >= 0 && monthsDiff % 6 === 0; // Create every 6 months
           case 'annual':
-            return monthsDiff % 12 === 0; // Create every 12 months
+            return monthsDiff >= 0 && monthsDiff % 12 === 0; // Create every 12 months
           default:
-            return true;
+            return monthsDiff >= 0;
         }
       };
 
