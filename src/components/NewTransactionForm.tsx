@@ -186,9 +186,65 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
 
         if (error) throw error;
 
-        // Não criar transações recorrentes aqui - deixar para o useTransactions handle automaticamente
-
-        toast.success("Transação criada com sucesso.");
+        // Se for recorrente, criar transações para os próximos meses
+        if (formData.recurring && formData.installments) {
+          const installmentsCount = Number(formData.installments);
+          const recurringTransactions = [];
+          const baseDate = new Date(formData.date);
+          const recurrenceType = formData.recurrence_type || 'monthly';
+          
+          // Calcular o incremento de meses baseado no tipo de recorrência
+          let monthIncrement = 1;
+          switch (recurrenceType) {
+            case 'quarterly':
+              monthIncrement = 3;
+              break;
+            case 'semiannual':
+              monthIncrement = 6;
+              break;
+            case 'annual':
+              monthIncrement = 12;
+              break;
+            default:
+              monthIncrement = 1;
+          }
+          
+          // Criar transações para os próximos períodos (começando do próximo mês/período)
+          for (let i = 1; i < installmentsCount; i++) {
+            const nextDate = new Date(baseDate);
+            nextDate.setMonth(nextDate.getMonth() + (i * monthIncrement));
+            
+            // Ajustar para o último dia do mês se o dia não existir
+            const targetDay = Number(formData.recurring_day);
+            nextDate.setDate(targetDay);
+            
+            if (nextDate.getDate() !== targetDay) {
+              // Se o dia não existe no mês (ex: 31 em fevereiro), usar último dia do mês
+              nextDate.setDate(0);
+            }
+            
+            recurringTransactions.push({
+              ...transactionData,
+              date: nextDate.toISOString().split('T')[0],
+              is_paid: false, // Futuras transações sempre começam como não pagas
+            });
+          }
+          
+          if (recurringTransactions.length > 0) {
+            const { error: recurringError } = await supabase
+              .from("transactions")
+              .insert(recurringTransactions);
+              
+            if (recurringError) {
+              console.error("Error creating recurring transactions:", recurringError);
+              toast.error("Transação criada, mas houve erro ao criar as recorrências");
+            } else {
+              toast.success(`Transação criada com ${installmentsCount} repetições!`);
+            }
+          }
+        } else {
+          toast.success("Transação criada com sucesso.");
+        }
         
         await removeDuplicateTransactions();
       }
