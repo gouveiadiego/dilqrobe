@@ -16,6 +16,7 @@ export interface Transaction {
   is_paid: boolean;
   recurring?: boolean;
   recurring_day?: number;
+  recurrence_type?: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
 }
 
 interface UseTransactionsProps {
@@ -73,7 +74,8 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
           payment_type,
           is_paid,
           recurring,
-          recurring_day
+          recurring_day,
+          recurrence_type
         `)
         .eq("user_id", user.id)
         .gte("date", start.toISOString())
@@ -84,14 +86,8 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       
       console.log("Fetched transactions:", data);
       
-      // Removendo o filtro de data mínima
-      // const filteredData = data?.filter(transaction => {
-      //   const transactionDate = new Date(transaction.date);
-      //   return transactionDate >= MINIMUM_ALLOWED_DATE;
-      // }) || [];
-      
       // Remove potential duplicates based on description, date, amount, and payment_type
-      const uniqueTransactions = removeDuplicateTransactions(data || []);
+      const uniqueTransactions = removeDuplicateTransactions(data || []) as Transaction[];
       console.log(`Removed ${(data || []).length - uniqueTransactions.length} duplicate transactions`);
       
       setTransactions(uniqueTransactions);
@@ -104,7 +100,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
   };
 
   // New function to remove duplicate transactions
-  const removeDuplicateTransactions = (transactions: Transaction[]): Transaction[] => {
+  const removeDuplicateTransactions = (transactions: any[]): Transaction[] => {
     const seen = new Map();
     return transactions.filter(transaction => {
       // Create a unique key for each transaction
@@ -268,12 +264,6 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
 
   const createRecurringTransactions = async () => {
     try {
-      // Removendo a verificação de data mínima
-      // if (currentDate < MINIMUM_ALLOWED_DATE) {
-      //   console.log("Skipping recurring transaction creation for dates before Feb 2025");
-      //   return;
-      // }
-      
       // Get user id
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -321,10 +311,35 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
 
       console.log(`Found ${existingKeys.size} existing transactions for this month`);
 
+      // Helper function to check if transaction should be created this month based on recurrence type
+      const shouldCreateThisMonth = (transaction: any, originalDate: Date): boolean => {
+        const recurrenceType = transaction.recurrence_type || 'monthly';
+        const monthsDiff = (currentYear - originalDate.getFullYear()) * 12 + (currentMonth - originalDate.getMonth());
+        
+        switch (recurrenceType) {
+          case 'monthly':
+            return true; // Create every month
+          case 'quarterly':
+            return monthsDiff % 3 === 0; // Create every 3 months
+          case 'semiannual':
+            return monthsDiff % 6 === 0; // Create every 6 months
+          case 'annual':
+            return monthsDiff % 12 === 0; // Create every 12 months
+          default:
+            return true;
+        }
+      };
+
       // Filter transactions that need to be created for the current month
       const transactionsToCreate = recurringTransactions.filter(transaction => {
         // Skip if the recurring day is not set
         if (!transaction.recurring_day) return false;
+
+        // Get original transaction date
+        const originalDate = new Date(transaction.date);
+        
+        // Check if this transaction should be created based on recurrence type
+        if (!shouldCreateThisMonth(transaction, originalDate)) return false;
 
         // Create a new date for this month with the recurring day
         const newDate = new Date(currentYear, currentMonth, transaction.recurring_day);
@@ -371,6 +386,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
           is_paid: false, // Always set to false (pending) for new months
           recurring: true,
           recurring_day: transaction.recurring_day,
+          recurrence_type: transaction.recurrence_type || 'monthly',
           user_id: user.id
         };
       });

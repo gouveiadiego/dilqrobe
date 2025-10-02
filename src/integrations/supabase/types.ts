@@ -1362,6 +1362,7 @@ export type Database = {
           is_paid: boolean | null
           payment_type: string
           received_from: string
+          recurrence_type: string | null
           recurring: boolean | null
           recurring_day: number | null
           updated_at: string | null
@@ -1378,6 +1379,7 @@ export type Database = {
           is_paid?: boolean | null
           payment_type: string
           received_from: string
+          recurrence_type?: string | null
           recurring?: boolean | null
           recurring_day?: number | null
           updated_at?: string | null
@@ -1394,6 +1396,7 @@ export type Database = {
           is_paid?: boolean | null
           payment_type?: string
           received_from?: string
+          recurrence_type?: string | null
           recurring?: boolean | null
           recurring_day?: number | null
           updated_at?: string | null

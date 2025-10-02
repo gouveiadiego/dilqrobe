@@ -24,6 +24,7 @@ interface Transaction {
   recurring_day?: number;
   installments?: number;
   bank_account_id?: string;
+  recurrence_type?: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
 }
 
 interface NewTransactionFormProps {
@@ -79,6 +80,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     recurring_day: '',
     installments: '12',
     bank_account_id: '',
+    recurrence_type: 'monthly' as 'monthly' | 'quarterly' | 'semiannual' | 'annual',
   });
 
   useEffect(() => {
@@ -95,6 +97,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         recurring_day: '',
         installments: '12',
         bank_account_id: editingTransaction?.bank_account_id || '',
+        recurrence_type: editingTransaction.recurrence_type || 'monthly',
       });
     } else {
       setFormData(prev => ({
@@ -135,6 +138,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         is_paid: formData.is_paid,
         recurring: formData.recurring,
         recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
+        recurrence_type: formData.recurring ? formData.recurrence_type : null,
         user_id: user.id
       };
 
@@ -201,6 +205,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         recurring_day: '',
         installments: '12',
         bank_account_id: '',
+        recurrence_type: 'monthly',
       });
 
       onTransactionCreated();
@@ -337,7 +342,26 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="installments">Número de meses</Label>
+              <Label htmlFor="recurrence_type">Tipo de Recorrência</Label>
+              <Select
+                value={formData.recurrence_type}
+                onValueChange={(value: 'monthly' | 'quarterly' | 'semiannual' | 'annual') => 
+                  setFormData(prev => ({ ...prev, recurrence_type: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo de recorrência" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Mensal</SelectItem>
+                  <SelectItem value="quarterly">Trimestral (a cada 3 meses)</SelectItem>
+                  <SelectItem value="semiannual">Semestral (a cada 6 meses)</SelectItem>
+                  <SelectItem value="annual">Anual (a cada 12 meses)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="installments">Número de repetições</Label>
               <Input
                 id="installments"
                 type="number"
