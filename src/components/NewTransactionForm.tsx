@@ -140,6 +140,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         recurring: formData.recurring,
         recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
         recurrence_type: formData.recurring ? formData.recurrence_type : null,
+        bank_account_id: formData.bank_account_id || null,
         user_id: user.id
       };
 
