@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FinanceCategoryManager } from "./finance/FinanceCategoryManager";
 import { BankAccountManager } from "./finance/BankAccountManager";
 import { AccountSummaryCards } from "./finance/AccountSummaryCards";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
 
 export const FinanceTab = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -58,6 +59,8 @@ export const FinanceTab = () => {
     formatMonth,
     fetchTransactions
   } = useTransactions({ currentDate });
+
+  const { fetchBankAccounts } = useBankAccounts();
 
   const handleTransactionCreated = () => {
     setShowNewTransactionForm(false);
@@ -320,7 +323,8 @@ export const FinanceTab = () => {
             <NewTransactionForm 
               selectedFilter={selectedFilter} 
               onTransactionCreated={handleTransactionCreated} 
-              editingTransaction={editingTransaction} 
+              editingTransaction={editingTransaction}
+              onBankAccountUpdate={fetchBankAccounts}
             />
           </div>
         )}

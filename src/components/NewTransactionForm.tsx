@@ -31,6 +31,7 @@ interface NewTransactionFormProps {
   selectedFilter: string;
   onTransactionCreated: () => void;
   editingTransaction?: Transaction | null;
+  onBankAccountUpdate?: () => void;
 }
 
 const getTransactionDefaults = (selectedFilter: string) => {
@@ -52,7 +53,7 @@ const getTransactionDefaults = (selectedFilter: string) => {
   }
 };
 
-export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editingTransaction }: NewTransactionFormProps) => {
+export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editingTransaction, onBankAccountUpdate }: NewTransactionFormProps) => {
   const { categories, addCategory } = useCategories();
   
   useEffect(() => {
@@ -193,6 +194,13 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           const baseDate = new Date(formData.date);
           const recurrenceType = formData.recurrence_type || 'monthly';
           
+          console.log('🔄 Criando transações recorrentes:', {
+            installmentsCount,
+            recurrenceType,
+            baseDate: baseDate.toISOString(),
+            recurringDay: formData.recurring_day
+          });
+          
           // Calcular o incremento de meses baseado no tipo de recorrência
           let monthIncrement = 1;
           switch (recurrenceType) {
@@ -209,26 +217,34 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               monthIncrement = 1;
           }
           
-          // Criar transações para os próximos períodos (começando do próximo mês/período)
+          // Criar transações para os próximos períodos
+          // A primeira transação já foi criada acima, então criamos installmentsCount - 1 adicionais
           for (let i = 1; i < installmentsCount; i++) {
             const nextDate = new Date(baseDate);
-            nextDate.setMonth(nextDate.getMonth() + (i * monthIncrement));
+            nextDate.setMonth(baseDate.getMonth() + (i * monthIncrement));
             
-            // Ajustar para o último dia do mês se o dia não existir
+            // Ajustar para o dia específico da recorrência
             const targetDay = Number(formData.recurring_day);
+            const originalMonth = nextDate.getMonth();
             nextDate.setDate(targetDay);
             
-            if (nextDate.getDate() !== targetDay) {
-              // Se o dia não existe no mês (ex: 31 em fevereiro), usar último dia do mês
+            // Se mudou de mês (dia não existe), usar último dia do mês anterior
+            if (nextDate.getMonth() !== originalMonth) {
+              nextDate.setMonth(originalMonth + 1);
               nextDate.setDate(0);
             }
             
+            const dateStr = nextDate.toISOString().split('T')[0];
+            console.log(`📅 Criando parcela ${i + 1}/${installmentsCount} para ${dateStr}`);
+            
             recurringTransactions.push({
               ...transactionData,
-              date: nextDate.toISOString().split('T')[0],
-              is_paid: false, // Futuras transações sempre começam como não pagas
+              date: dateStr,
+              is_paid: false,
             });
           }
+          
+          console.log('📝 Total de transações a criar:', recurringTransactions.length);
           
           if (recurringTransactions.length > 0) {
             const { error: recurringError } = await supabase
@@ -236,9 +252,10 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               .insert(recurringTransactions);
               
             if (recurringError) {
-              console.error("Error creating recurring transactions:", recurringError);
+              console.error("❌ Error creating recurring transactions:", recurringError);
               toast.error("Transação criada, mas houve erro ao criar as recorrências");
             } else {
+              console.log(`✅ ${recurringTransactions.length + 1} transações criadas com sucesso!`);
               toast.success(`Transação criada com ${installmentsCount} repetições!`);
             }
           }
@@ -247,6 +264,12 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         }
         
         await removeDuplicateTransactions();
+        
+        // Atualizar saldo das contas bancárias
+        if (onBankAccountUpdate) {
+          console.log('🔄 Atualizando saldo das contas bancárias...');
+          onBankAccountUpdate();
+        }
       }
       
       setFormData({
