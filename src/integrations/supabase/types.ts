@@ -1360,11 +1360,14 @@ export type Database = {
           description: string
           id: string
           is_paid: boolean | null
+          is_transfer: boolean | null
           payment_type: string
           received_from: string
           recurrence_type: string | null
           recurring: boolean | null
           recurring_day: number | null
+          transfer_destination_account_id: string | null
+          transfer_id: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -1377,11 +1380,14 @@ export type Database = {
           description: string
           id?: string
           is_paid?: boolean | null
+          is_transfer?: boolean | null
           payment_type: string
           received_from: string
           recurrence_type?: string | null
           recurring?: boolean | null
           recurring_day?: number | null
+          transfer_destination_account_id?: string | null
+          transfer_id?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1394,11 +1400,14 @@ export type Database = {
           description?: string
           id?: string
           is_paid?: boolean | null
+          is_transfer?: boolean | null
           payment_type?: string
           received_from?: string
           recurrence_type?: string | null
           recurring?: boolean | null
           recurring_day?: number | null
+          transfer_destination_account_id?: string | null
+          transfer_id?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1406,6 +1415,13 @@ export type Database = {
           {
             foreignKeyName: "transactions_bank_account_id_fkey"
             columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_transfer_destination_account_id_fkey"
+            columns: ["transfer_destination_account_id"]
             isOneToOne: false
             referencedRelation: "bank_accounts"
             referencedColumns: ["id"]

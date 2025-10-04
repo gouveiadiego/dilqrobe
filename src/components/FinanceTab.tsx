@@ -14,7 +14,8 @@ import {
   Settings,
   Building,
   Calendar,
-  Tag
+  Tag,
+  ArrowLeftRight
 } from "lucide-react";
 import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendarView } from "./finance/TransactionCalendarView";
@@ -35,6 +36,7 @@ import { FinanceCategoryManager } from "./finance/FinanceCategoryManager";
 import { BankAccountManager } from "./finance/BankAccountManager";
 import { AccountSummaryCards } from "./finance/AccountSummaryCards";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
+import { TransferDialog } from "./finance/TransferDialog";
 
 export const FinanceTab = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -43,6 +45,7 @@ export const FinanceTab = () => {
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "dashboard">("dashboard");
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showBankAccountManager, setShowBankAccountManager] = useState(false);
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
   const formRef = useState<HTMLDivElement | null>(null)[0];
 
   const {
@@ -281,10 +284,21 @@ export const FinanceTab = () => {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setShowTransferDialog(true)}
+              className="order-3 sm:order-2 bg-gradient-to-r from-dilq-purple to-dilq-accent text-white hover:opacity-90"
+            >
+              <ArrowLeftRight className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Transferir</span>
+              <span className="sm:hidden">Transf.</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setShowBankAccountManager(true)}
               className="order-3 sm:order-2"
             >
-              <Tag className="h-4 w-4 mr-2" />
+              <Building className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Contas</span>
               <span className="sm:hidden">Contas</span>
             </Button>
@@ -386,6 +400,16 @@ export const FinanceTab = () => {
       <BankAccountManager 
         open={showBankAccountManager} 
         onOpenChange={setShowBankAccountManager} 
+      />
+
+      {/* Transfer Dialog */}
+      <TransferDialog 
+        open={showTransferDialog} 
+        onOpenChange={setShowTransferDialog}
+        onTransferComplete={() => {
+          fetchTransactions();
+          fetchBankAccounts();
+        }}
       />
     </div>
   );

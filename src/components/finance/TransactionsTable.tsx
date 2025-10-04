@@ -1,7 +1,8 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Pencil, Trash2, ArrowLeftRight } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { 
@@ -92,16 +93,26 @@ export const TransactionsTable = ({
                 })()}
               </TableCell>
               <TableCell>
-                <TextEllipsis 
-                  text={transaction.description}
-                  maxLength={40}
-                  className="block max-w-[200px]"
-                />
-                {transaction.recurring && (
-                  <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    Recorrente
-                  </span>
-                )}
+                <div className="flex flex-col gap-1">
+                  <TextEllipsis 
+                    text={transaction.description}
+                    maxLength={40}
+                    className="block max-w-[200px]"
+                  />
+                  <div className="flex items-center gap-1">
+                    {transaction.recurring && (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                        Recorrente
+                      </span>
+                    )}
+                    {(transaction as any).is_transfer && (
+                      <Badge variant="outline" className="text-xs bg-gradient-to-r from-dilq-purple/10 to-dilq-accent/10 text-dilq-purple border-dilq-purple/30">
+                        <ArrowLeftRight className="h-3 w-3 mr-1" />
+                        Transferência
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               </TableCell>
               <TableCell>
                 <TextEllipsis 
