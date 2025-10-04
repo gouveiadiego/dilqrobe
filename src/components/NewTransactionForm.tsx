@@ -221,17 +221,21 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           // Criar transações para os próximos períodos
           // A primeira transação já foi criada acima, então criamos installmentsCount - 1 adicionais
           for (let i = 1; i < installmentsCount; i++) {
-            const nextDate = new Date(baseDate);
-            nextDate.setMonth(baseDate.getMonth() + (i * monthIncrement));
+            // Calcular o ano e mês alvo
+            const targetMonth = baseDate.getMonth() + (i * monthIncrement);
+            const targetYear = baseDate.getFullYear() + Math.floor(targetMonth / 12);
+            const normalizedMonth = targetMonth % 12;
             
             // Ajustar para o dia específico da recorrência
             const targetDay = Number(formData.recurring_day);
-            const originalMonth = nextDate.getMonth();
-            nextDate.setDate(targetDay);
             
-            // Se mudou de mês (dia não existe), usar último dia do mês anterior
-            if (nextDate.getMonth() !== originalMonth) {
-              nextDate.setMonth(originalMonth + 1);
+            // Criar a data diretamente com ano, mês e dia corretos
+            const nextDate = new Date(targetYear, normalizedMonth, targetDay);
+            
+            // Se o dia não existe no mês (ex: 31 de fevereiro), JS ajusta automaticamente
+            // Vamos forçar para o último dia do mês se isso acontecer
+            if (nextDate.getDate() !== targetDay) {
+              // Ir para o último dia do mês anterior ao ajustado
               nextDate.setDate(0);
             }
             
