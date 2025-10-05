@@ -202,45 +202,41 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
             recurringDay: formData.recurring_day
           });
           
-          // Calcular o incremento de meses baseado no tipo de recorrência
-          let monthIncrement = 1;
-          switch (recurrenceType) {
-            case 'quarterly':
-              monthIncrement = 3;
-              break;
-            case 'semiannual':
-              monthIncrement = 6;
-              break;
-            case 'annual':
-              monthIncrement = 12;
-              break;
-            default:
-              monthIncrement = 1;
-          }
-          
           // Criar transações para os próximos períodos
           // A primeira transação já foi criada acima, então criamos installmentsCount - 1 adicionais
           for (let i = 1; i < installmentsCount; i++) {
-            // Calcular o ano e mês alvo
-            const targetMonth = baseDate.getMonth() + (i * monthIncrement);
-            const targetYear = baseDate.getFullYear() + Math.floor(targetMonth / 12);
-            const normalizedMonth = targetMonth % 12;
+            // Criar uma nova data baseada na data original
+            const nextDate = new Date(baseDate);
+            
+            // Adicionar períodos de acordo com o tipo de recorrência
+            switch (recurrenceType) {
+              case 'monthly':
+                nextDate.setMonth(baseDate.getMonth() + i);
+                break;
+              case 'quarterly':
+                nextDate.setMonth(baseDate.getMonth() + (i * 3));
+                break;
+              case 'semiannual':
+                nextDate.setMonth(baseDate.getMonth() + (i * 6));
+                break;
+              case 'annual':
+                nextDate.setFullYear(baseDate.getFullYear() + i);
+                break;
+            }
             
             // Ajustar para o dia específico da recorrência
             const targetDay = Number(formData.recurring_day);
+            nextDate.setDate(targetDay);
             
-            // Criar a data diretamente com ano, mês e dia corretos
-            const nextDate = new Date(targetYear, normalizedMonth, targetDay);
-            
-            // Se o dia não existe no mês (ex: 31 de fevereiro), JS ajusta automaticamente
-            // Vamos forçar para o último dia do mês se isso acontecer
+            // Se o dia não existe no mês (ex: 31 de fevereiro)
+            // O JavaScript automaticamente ajusta para o próximo mês
+            // Vamos forçar para o último dia do mês correto
             if (nextDate.getDate() !== targetDay) {
-              // Ir para o último dia do mês anterior ao ajustado
-              nextDate.setDate(0);
+              nextDate.setDate(0); // Volta para o último dia do mês anterior
             }
             
             const dateStr = nextDate.toISOString().split('T')[0];
-            console.log(`📅 Criando parcela ${i + 1}/${installmentsCount} para ${dateStr}`);
+            console.log(`📅 Criando parcela ${i + 1}/${installmentsCount} para ${dateStr} (tipo: ${recurrenceType})`);
             
             recurringTransactions.push({
               ...transactionData,
