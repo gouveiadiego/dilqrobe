@@ -276,19 +276,24 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
 
       console.log("Checking for recurring transactions to create for:", formatMonth(currentDate));
 
-      // Get recurring transactions from previous months
+      // Buscar apenas transações verdadeiramente recorrentes (sem installments_total)
+      // Transações com installments_total são parcelas fixas criadas manualmente pelo NewTransactionForm
       const { data: recurringTransactions, error: fetchError } = await supabase
         .from("transactions")
         .select("*")
         .eq("recurring", true)
         .eq("user_id", user.id)
+        .is("installments_total", null) // CRÍTICO: Ignorar transações com parcelas fixas
         .not("recurring_day", "is", null);
 
       if (fetchError) throw fetchError;
       if (!recurringTransactions || recurringTransactions.length === 0) {
-        console.log("No recurring transactions found");
+        console.log("No infinite recurring transactions found (fixed installments are ignored)");
         return;
       }
+
+      console.log(`✅ Found ${recurringTransactions.length} infinite recurring transactions (excluding fixed installments)`);
+
 
       // Check if we already have transactions for this month
       const currentMonth = currentDate.getMonth();

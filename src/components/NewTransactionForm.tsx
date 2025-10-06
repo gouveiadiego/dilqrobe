@@ -188,7 +188,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
 
         if (error) throw error;
 
-        // Se for recorrente, criar transações para os próximos meses
+          // Se for recorrente, criar transações para os próximos meses
         if (formData.recurring && formData.installments) {
           const installmentsCount = Number(formData.installments);
           const recurringTransactions = [];
@@ -201,6 +201,20 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
             baseDate: baseDate.toISOString(),
             recurringDay: formData.recurring_day
           });
+          
+          // Atualizar a primeira transação com os dados de parcela
+          const { error: updateError } = await supabase
+            .from("transactions")
+            .update({
+              installments_total: installmentsCount,
+              installment_number: 1,
+              recurring: false // Marcar como false pois é uma parcela fixa, não infinita
+            })
+            .eq('id', newTransaction.id);
+            
+          if (updateError) {
+            console.error("❌ Erro ao atualizar primeira transação:", updateError);
+          }
           
           // Criar transações para os próximos períodos
           // A primeira transação já foi criada acima, então criamos installmentsCount - 1 adicionais
@@ -242,6 +256,9 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               ...transactionData,
               date: dateStr,
               is_paid: false,
+              recurring: false, // Parcelas fixas não são marcadas como recorrentes
+              installments_total: installmentsCount,
+              installment_number: i + 1,
             });
           }
           

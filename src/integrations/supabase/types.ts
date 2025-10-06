@@ -1359,6 +1359,8 @@ export type Database = {
           date: string
           description: string
           id: string
+          installment_number: number | null
+          installments_total: number | null
           is_paid: boolean | null
           is_transfer: boolean | null
           payment_type: string
@@ -1379,6 +1381,8 @@ export type Database = {
           date: string
           description: string
           id?: string
+          installment_number?: number | null
+          installments_total?: number | null
           is_paid?: boolean | null
           is_transfer?: boolean | null
           payment_type: string
@@ -1399,6 +1403,8 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          installment_number?: number | null
+          installments_total?: number | null
           is_paid?: boolean | null
           is_transfer?: boolean | null
           payment_type?: string
