@@ -52,6 +52,12 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       const start = startOfMonth(currentDate);
       const end = endOfMonth(currentDate);
       
+      // Converter para formato YYYY-MM-DD sem timezone
+      const startDate = format(start, 'yyyy-MM-dd');
+      const endDate = format(end, 'yyyy-MM-dd');
+      
+      console.log(`📅 Buscando transações de ${startDate} até ${endDate}`);
+      
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -78,8 +84,8 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
           recurrence_type
         `)
         .eq("user_id", user.id)
-        .gte("date", start.toISOString())
-        .lte("date", end.toISOString())
+        .gte("date", startDate)
+        .lte("date", endDate)
         .order("date", { ascending: false });
         
       if (error) throw error;
