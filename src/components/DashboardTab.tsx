@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Activity, Wallet, Target, CheckCircle2, Calendar, TrendingUp, ChevronUp, ChevronDown, CircleDollarSign, List, Users, Clock, Award, DollarSign, Building2, BookOpen, FileText, Coffee, UserCheck } from "lucide-react";
 import { useTasks } from "@/hooks/useTasks";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { UpcomingMeetings } from "@/components/dashboard/UpcomingMeetings";
@@ -29,7 +30,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const DashboardTab = () => {
   const { tasks } = useTasks();
-  const { summaries, chartData } = useTransactions({ currentDate: new Date() });
+  const { summaries, chartData, transactions } = useTransactions({ currentDate: new Date() });
+  const { bankAccounts, getTotalBalance } = useBankAccounts();
   
   // Fetch companies data
   const { data: companies } = useQuery({
@@ -183,7 +185,11 @@ const DashboardTab = () => {
   ];
 
   // Calculate financial trends
-  const { income, expenses, balance } = summaries;
+  const { income, expenses, balance: monthBalance } = summaries;
+  
+  // Saldo total real das contas bancárias
+  const totalBankBalance = getTotalBalance();
+  
   const currentTasksDay = activeTasks;
   const prevTasksDay = activeTasks > 0 ? Math.floor(activeTasks * 0.9) : 0;
   const tasksTrend = currentTasksDay - prevTasksDay;
@@ -194,16 +200,16 @@ const DashboardTab = () => {
   const incomeTrend = currentIncome - prevIncome;
   const incomePercentChange = prevIncome > 0 ? ((incomeTrend / prevIncome) * 100).toFixed(1) : "0";
 
-  // Financial trend data for line chart
-  const financialTrendData = chartData?.map(data => ({
-    name: new Date(data.date).toLocaleDateString('pt-BR', { weekday: 'short' }),
+  // Financial trend data for line chart - últimos 7 dias apenas
+  const financialTrendData = chartData?.slice(-7).map(data => ({
+    name: new Date(data.date.split('/').reverse().join('-')).toLocaleDateString('pt-BR', { weekday: 'short' }),
     receitas: data.income,
     despesas: data.expenses,
     saldo: data.income - data.expenses,
   })) || [];
 
-  // Total transactions count
-  const totalTransactions = chartData?.reduce((sum, data) => sum + (data.income > 0 ? 1 : 0) + (data.expenses > 0 ? 1 : 0), 0) || 0;
+  // Total de transações do mês
+  const totalTransactions = transactions?.length || 0;
 
   
   return (
@@ -243,21 +249,22 @@ const DashboardTab = () => {
 
           <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-green-700">Saldo Financeiro</CardTitle>
+              <CardTitle className="text-sm font-medium text-green-700">Saldo Total Contas</CardTitle>
               <DollarSign className="h-5 w-5 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className={`text-3xl font-bold ${balance < 0 ? "text-red-600" : "text-green-900"}`}>
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balance)}
+              <div className={`text-3xl font-bold ${totalBankBalance < 0 ? "text-red-600" : "text-green-900"}`}>
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalBankBalance)}
               </div>
               <div className="flex items-center gap-2 mt-2">
-                <span className={`text-xs ${incomeTrend >= 0 ? 'text-green-600' : 'text-red-600'} flex items-center`}>
-                  {incomeTrend >= 0 ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  {Math.abs(Number(incomePercentChange))}%
+                <span className="text-xs text-green-600 flex items-center">
+                  <Wallet className="h-3 w-3 mr-1" />
+                  {bankAccounts.length} conta{bankAccounts.length !== 1 ? 's' : ''} ativa{bankAccounts.length !== 1 ? 's' : ''}
                 </span>
-                <span className="text-xs text-green-600">receitas</span>
               </div>
-              <p className="text-xs text-green-600 mt-1">{totalTransactions} transações</p>
+              <p className="text-xs text-green-600 mt-1">
+                Mês: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(monthBalance)}
+              </p>
             </CardContent>
           </Card>
 
@@ -552,9 +559,9 @@ const DashboardTab = () => {
                   </span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
-                  <span className="text-sm font-medium text-blue-800">Saldo</span>
-                  <span className={`text-xl font-bold ${balance >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balance)}
+                  <span className="text-sm font-medium text-blue-800">Saldo do Mês</span>
+                  <span className={`text-xl font-bold ${monthBalance >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(monthBalance)}
                   </span>
                 </div>
               </div>
