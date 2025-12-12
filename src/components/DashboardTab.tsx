@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Activity, Wallet, Target, CheckCircle2, Calendar, TrendingUp, ChevronUp, ChevronDown, CircleDollarSign, List, Users, Clock, Award, DollarSign, Building2, BookOpen, FileText, Coffee, UserCheck } from "lucide-react";
@@ -30,7 +30,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const DashboardTab = () => {
   const { tasks } = useTasks();
-  const { summaries, chartData, transactions } = useTransactions({ currentDate: new Date() });
+  
+  // Memoizar a data para evitar re-renders infinitos
+  const currentDate = useMemo(() => new Date(), []);
+  
+  const { summaries, chartData, transactions } = useTransactions({ currentDate });
   const { bankAccounts, getTotalBalance } = useBankAccounts();
   
   // Fetch companies data
