@@ -1443,12 +1443,12 @@ export type Database = {
         Args: { entry_id_param: string; user_id_param: string }
         Returns: boolean
       }
-      generate_company_slug: {
-        Args:
-          | { company_id: string; company_name: string }
-          | { company_name: string }
-        Returns: string
-      }
+      generate_company_slug:
+        | { Args: { company_name: string }; Returns: string }
+        | {
+            Args: { company_id: string; company_name: string }
+            Returns: string
+          }
       get_user_payments: {
         Args: { user_id_param: string }
         Returns: {
@@ -1460,6 +1460,12 @@ export type Database = {
           stripe_payment_id: string | null
           user_id: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       update_challenge_rankings: {
         Args: { challenge_id: string }
