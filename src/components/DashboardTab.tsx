@@ -184,12 +184,12 @@ const DashboardTab = () => {
     { name: 'Concluído', value: services?.filter(s => s.status === 'completed').length || 0, color: '#6366f1' }
   ];
 
-  // Calculate financial trends
-  const { income, expenses, balance: monthBalance } = summaries;
+  // Calculate financial trends - using renamed variable to avoid conflicts
+  const { income, expenses, balance: monthBalance } = summaries || { income: 0, expenses: 0, balance: 0 };
   
   // Saldo total real das contas bancárias
-  const totalBankBalance = getTotalBalance();
-  
+  const totalBankBalance = getTotalBalance() || 0;
+
   const currentTasksDay = activeTasks;
   const prevTasksDay = activeTasks > 0 ? Math.floor(activeTasks * 0.9) : 0;
   const tasksTrend = currentTasksDay - prevTasksDay;
