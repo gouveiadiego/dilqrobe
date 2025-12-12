@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useClients } from "@/hooks/useClients";
@@ -16,7 +16,8 @@ interface ClientScore {
 }
 
 export const TopClients = () => {
-  const currentDate = new Date();
+  // Memoizar currentDate para evitar re-renders infinitos
+  const currentDate = useMemo(() => new Date(), []);
   const { transactions } = useTransactions({ currentDate });
   const { clients } = useClients();
   const { meetings } = useMeetings();

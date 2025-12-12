@@ -1,8 +1,8 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, isSameDay, isAfter, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export interface Transaction {
@@ -268,11 +268,35 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
     }
   };
 
+  // Ref para evitar chamadas múltiplas simultâneas
+  const isCreatingRecurringRef = useRef(false);
+
   const createRecurringTransactions = async () => {
+    // Proteção contra chamadas múltiplas simultâneas
+    if (isCreatingRecurringRef.current) {
+      console.log("⏳ createRecurringTransactions já em execução, ignorando...");
+      return;
+    }
+
+    // Verificar se já foi executado neste mês (localStorage)
+    const monthKey = format(currentDate, 'yyyy-MM');
+    const storageKey = `recurring-check-${monthKey}`;
+    const lastCheck = localStorage.getItem(storageKey);
+    
+    if (lastCheck) {
+      console.log(`✅ Transações recorrentes já verificadas para ${monthKey}`);
+      return;
+    }
+
+    isCreatingRecurringRef.current = true;
+
     try {
       // Get user id
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        isCreatingRecurringRef.current = false;
+        return;
+      }
 
       console.log("Checking for recurring transactions to create for:", formatMonth(currentDate));
 
@@ -418,9 +442,14 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
         // Refresh transactions after adding recurring ones
         fetchTransactions();
       }
+
+      // Marcar como verificado neste mês
+      localStorage.setItem(storageKey, new Date().toISOString());
     } catch (error) {
       console.error("Error creating recurring transactions:", error);
       toast.error("Erro ao criar transações recorrentes");
+    } finally {
+      isCreatingRecurringRef.current = false;
     }
   };
 
