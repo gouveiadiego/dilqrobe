@@ -156,7 +156,7 @@ export const FinancialSummaryView = ({
         
         <Card className="overflow-hidden border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Saldo</CardTitle>
+            <CardTitle className="text-sm font-medium">Balanço Mensal</CardTitle>
             <PiggyBank className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -165,7 +165,7 @@ export const FinancialSummaryView = ({
             </div>
             <div className="flex items-center justify-between mt-1">
               <p className="text-xs text-muted-foreground">
-                Saldo do período
+                Receitas - Despesas do mês
               </p>
               {growthRates.balance !== 0 && (
                 <div className={`flex items-center text-xs ${growthRates.balance > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
