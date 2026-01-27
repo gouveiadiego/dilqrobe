@@ -71,49 +71,19 @@ export const AccountSummaryCards = () => {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2">
       {/* Saldo Total */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Saldo Total</CardTitle>
+          <CardTitle className="text-sm font-medium">Saldo Total das Contas</CardTitle>
           <Wallet className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
+          <div className={`text-2xl font-bold ${totalBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {formatCurrency(totalBalance)}
+          </div>
           <p className="text-xs text-muted-foreground">
             {bankAccounts.length} conta{bankAccounts.length !== 1 ? 's' : ''} ativa{bankAccounts.length !== 1 ? 's' : ''}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Saldos Positivos */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Saldos Positivos</CardTitle>
-          <TrendingUp className="h-4 w-4 text-green-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-600">
-            {formatCurrency(totalPositiveBalance)}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {bankAccounts.filter(acc => Number(acc.current_balance) > 0).length} contas
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Saldos Negativos */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Saldos Negativos</CardTitle>
-          <TrendingDown className="h-4 w-4 text-red-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-red-600">
-            {formatCurrency(totalNegativeBalance)}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {bankAccounts.filter(acc => Number(acc.current_balance) < 0).length} contas
           </p>
         </CardContent>
       </Card>
@@ -121,24 +91,28 @@ export const AccountSummaryCards = () => {
       {/* Contas por Tipo */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Por Tipo</CardTitle>
+          <CardTitle className="text-sm font-medium">Por Tipo de Conta</CardTitle>
           <Building className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {Object.entries(accountsByType).map(([type, data]) => (
-              <div key={type} className="flex items-center justify-between">
-                <Badge variant={getAccountTypeColor(type) as any} className="text-xs">
-                  {getAccountTypeLabel(type)}
-                </Badge>
-                <div className="text-sm">
-                  <span className="font-medium">{data.count}</span>
-                  <span className="text-muted-foreground ml-1">
-                    • {formatCurrency(data.total)}
-                  </span>
+            {Object.entries(accountsByType).length > 0 ? (
+              Object.entries(accountsByType).map(([type, data]) => (
+                <div key={type} className="flex items-center justify-between">
+                  <Badge variant={getAccountTypeColor(type) as any} className="text-xs">
+                    {getAccountTypeLabel(type)}
+                  </Badge>
+                  <div className="text-sm">
+                    <span className="font-medium">{data.count}</span>
+                    <span className="text-muted-foreground ml-1">
+                      • {formatCurrency(data.total)}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground">Nenhuma conta cadastrada</p>
+            )}
           </div>
         </CardContent>
       </Card>
