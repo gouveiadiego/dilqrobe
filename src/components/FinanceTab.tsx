@@ -1,19 +1,15 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Search, 
-  ChevronLeft, 
-  ChevronRight, 
   Plus, 
   Download,
   LayoutDashboard, 
   List, 
   CalendarDays,
-  Settings,
   Building,
-  Calendar,
   Tag,
   ArrowLeftRight
 } from "lucide-react";
@@ -21,13 +17,12 @@ import { NewTransactionForm } from "./NewTransactionForm";
 import { TransactionCalendarView } from "./finance/TransactionCalendarView";
 import { FinancialSummaryView } from "./finance/FinancialSummaryView";
 import { TransactionsTable } from "./finance/TransactionsTable";
-import { useTransactions } from "@/hooks/useTransactions";
+import { useTransactions, DateRangeFilter } from "@/hooks/useTransactions";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { handleApiError, handleSuccess } from "@/utils/errorHandler";
 import {
   Tabs,
-  TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
@@ -37,16 +32,28 @@ import { BankAccountManager } from "./finance/BankAccountManager";
 import { AccountSummaryCards } from "./finance/AccountSummaryCards";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { TransferDialog } from "./finance/TransferDialog";
+import { PeriodFilter, DateRange } from "./finance/PeriodFilter";
+import { startOfMonth, endOfMonth, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export const FinanceTab = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Initialize with current month
+  const initialDateRange = useMemo((): DateRange => {
+    const today = new Date();
+    return {
+      startDate: startOfMonth(today),
+      endDate: endOfMonth(today),
+      label: format(today, "MMMM 'de' yyyy", { locale: ptBR }),
+    };
+  }, []);
+
+  const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
   const [showNewTransactionForm, setShowNewTransactionForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "dashboard">("dashboard");
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showBankAccountManager, setShowBankAccountManager] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
-  const formRef = useState<HTMLDivElement | null>(null)[0];
 
   const {
     filteredTransactions,
@@ -61,7 +68,7 @@ export const FinanceTab = () => {
     togglePaymentStatus,
     formatMonth,
     fetchTransactions
-  } = useTransactions({ currentDate });
+  } = useTransactions({ dateRange });
 
   const { fetchBankAccounts } = useBankAccounts();
 
@@ -85,21 +92,7 @@ export const FinanceTab = () => {
     }, 100);
   };
 
-  const handlePreviousMonth = () => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() - 1);
-      return newDate;
-    });
-  };
-
-  const handleNextMonth = () => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + 1);
-      return newDate;
-    });
-  };
+  // Removed - using PeriodFilter instead of month navigation
 
   const handleDeleteRecurringTransaction = async (id: string, deleteAll: boolean) => {
     try {
@@ -187,7 +180,7 @@ export const FinanceTab = () => {
       const link = document.createElement('a');
       
       link.setAttribute('href', url);
-      link.setAttribute('download', `transacoes-${formatMonth(currentDate).toLowerCase()}.csv`);
+      link.setAttribute('download', `transacoes-${dateRange.label.toLowerCase().replace(/\s+/g, '-')}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -207,17 +200,7 @@ export const FinanceTab = () => {
     <div className="space-y-4 md:space-y-6 p-2 md:p-0">
       {/* Header responsivo */}
       <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-        <div className="flex items-center justify-center md:justify-start space-x-2">
-          <Button variant="ghost" size="icon" onClick={handlePreviousMonth} className="hover:bg-gray-100">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="text-white px-3 py-2 rounded-md bg-dilq-purple hover:bg-dilq-accent transition-colors text-sm md:text-base">
-            {formatMonth(currentDate)}
-          </div>
-          <Button variant="ghost" size="icon" onClick={handleNextMonth} className="hover:bg-gray-100">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        <PeriodFilter value={dateRange} onChange={setDateRange} />
 
         {/* Tabs responsivas */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)} className="w-full md:w-auto">
