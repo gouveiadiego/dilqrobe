@@ -17,16 +17,21 @@ export interface Transaction {
   recurring?: boolean;
   recurring_day?: number;
   recurrence_type?: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
+  bank_account_id?: string;
+}
+
+export interface DateRangeFilter {
+  startDate: Date;
+  endDate: Date;
+  label: string;
 }
 
 interface UseTransactionsProps {
-  currentDate: Date;
+  currentDate?: Date;
+  dateRange?: DateRangeFilter;
 }
 
-// Removendo a restrição de data mínima
-// const MINIMUM_ALLOWED_DATE = new Date(2025, 1, 1); // February 1, 2025
-
-export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
+export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,23 +43,32 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
       .replace(/^\w/, (c) => c.toUpperCase());
   };
 
+  // Determine the effective date range
+  const effectiveDateRange = useMemo(() => {
+    if (dateRange) {
+      return {
+        start: dateRange.startDate,
+        end: dateRange.endDate,
+      };
+    }
+    if (currentDate) {
+      return {
+        start: startOfMonth(currentDate),
+        end: endOfMonth(currentDate),
+      };
+    }
+    // Default to current month
+    const now = new Date();
+    return {
+      start: startOfMonth(now),
+      end: endOfMonth(now),
+    };
+  }, [currentDate, dateRange]);
+
   const fetchTransactions = async () => {
     try {
-      // Removendo a verificação de data mínima
-      // if (currentDate < MINIMUM_ALLOWED_DATE) {
-      //   console.log("Skipping fetch for dates before Feb 2025");
-      //   setTransactions([]);
-      //   setLoading(false);
-      //   return;
-      // }
-      
-      console.log("Fetching transactions for:", formatMonth(currentDate));
-      const start = startOfMonth(currentDate);
-      const end = endOfMonth(currentDate);
-      
-      // Converter para formato YYYY-MM-DD sem timezone
-      const startDate = format(start, 'yyyy-MM-dd');
-      const endDate = format(end, 'yyyy-MM-dd');
+      const startDate = format(effectiveDateRange.start, 'yyyy-MM-dd');
+      const endDate = format(effectiveDateRange.end, 'yyyy-MM-dd');
       
       console.log(`📅 Buscando transações de ${startDate} até ${endDate}`);
       
@@ -67,7 +81,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
         return;
       }
       
-      // We'll fetch all transactions for the month
+      // We'll fetch all transactions for the period
       const { data, error } = await supabase
         .from("transactions")
         .select(`
@@ -81,7 +95,8 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
           is_paid,
           recurring,
           recurring_day,
-          recurrence_type
+          recurrence_type,
+          bank_account_id
         `)
         .eq("user_id", user.id)
         .gte("date", startDate)
@@ -90,7 +105,7 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
         
       if (error) throw error;
       
-      console.log("Fetched transactions:", data);
+      console.log("Fetched transactions:", data?.length || 0, "records");
       
       // Remove potential duplicates based on description, date, amount, and payment_type
       const uniqueTransactions = removeDuplicateTransactions(data || []) as Transaction[];
@@ -453,20 +468,25 @@ export const useTransactions = ({ currentDate }: UseTransactionsProps) => {
     }
   };
 
+  // Dependency key for fetching - memoized to prevent unnecessary re-renders
+  const fetchKey = useMemo(() => {
+    const start = format(effectiveDateRange.start, 'yyyy-MM-dd');
+    const end = format(effectiveDateRange.end, 'yyyy-MM-dd');
+    return `${start}-${end}`;
+  }, [effectiveDateRange]);
+
   useEffect(() => {
     setLoading(true);
     // Clear existing transactions before fetching new ones
     setTransactions([]);
     
-    // Removendo a verificação de data mínima
-    // if (currentDate < MINIMUM_ALLOWED_DATE) {
-    //   setLoading(false);
-    //   return;
-    // }
-    
     fetchTransactions();
-    createRecurringTransactions();
-  }, [currentDate]);
+    
+    // Only run recurring transaction creation for single month views
+    if (currentDate && !dateRange) {
+      createRecurringTransactions();
+    }
+  }, [fetchKey]);
 
   return {
     transactions,
