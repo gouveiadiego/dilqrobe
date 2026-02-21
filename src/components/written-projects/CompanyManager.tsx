@@ -32,9 +32,19 @@ export function CompanyManager() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [newCompany, setNewCompany] = useState({
+    name: "",
+    description: "",
+    contact_person: "",
+    contact_email: "",
+    contact_phone: "",
+    project_type: "fixed_monthly"
+  });
+  const [editingCompany, setEditingCompany] = useState<Company & { project_type?: string | null }>({
+    id: "",
     name: "",
     description: "",
     contact_person: "",
@@ -124,6 +134,32 @@ export function CompanyManager() {
     }
   });
 
+  // Update company mutation
+  const updateCompanyMutation = useMutation({
+    mutationFn: async (company: Company & { project_type?: string | null }) => {
+      const { id, ...updateData } = company;
+      const { data, error } = await supabase
+        .from('project_companies')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        toast.error('Erro ao atualizar empresa');
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      setIsEditDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['project-companies'] });
+      queryClient.invalidateQueries({ queryKey: ['project-companies-dashboard'] });
+      toast.success('Empresa atualizada com sucesso');
+    }
+  });
+
   // Delete company mutation
   const deleteCompanyMutation = useMutation({
     mutationFn: async (companyId: string) => {
@@ -184,6 +220,22 @@ export function CompanyManager() {
     });
   };
 
+  const handleEditCompany = (company: Company & { project_type?: string | null }) => {
+    setEditingCompany({
+      ...company,
+      project_type: company.project_type || "fixed_monthly"
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const submitEditCompany = async () => {
+    if (!editingCompany.name.trim()) {
+      toast.error('O nome da empresa é obrigatório');
+      return;
+    }
+    updateCompanyMutation.mutate(editingCompany);
+  };
+
   const handleDeleteCompany = (companyId: string) => {
     setSelectedCompanyId(companyId);
     setIsDeleteConfirmOpen(true);
@@ -209,6 +261,21 @@ export function CompanyManager() {
 
   const handleProjectTypeChange = (value: string) => {
     setNewCompany(prev => ({
+      ...prev,
+      project_type: value
+    }));
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditingCompany(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEditProjectTypeChange = (value: string) => {
+    setEditingCompany(prev => ({
       ...prev,
       project_type: value
     }));
@@ -338,6 +405,89 @@ export function CompanyManager() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Company Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Empresa / Projeto</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <label htmlFor="edit_name" className="block text-sm font-medium mb-1">Nome da Empresa*</label>
+                <Input
+                  id="edit_name"
+                  name="name"
+                  value={editingCompany.name}
+                  onChange={handleEditInputChange}
+                  placeholder="Nome da empresa"
+                />
+              </div>
+              <div>
+                <label htmlFor="edit_description" className="block text-sm font-medium mb-1">Descrição</label>
+                <Textarea
+                  id="edit_description"
+                  name="description"
+                  value={editingCompany.description || ""}
+                  onChange={handleEditInputChange}
+                  placeholder="Descrição da empresa ou projeto"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label htmlFor="edit_contact_person" className="block text-sm font-medium mb-1">Pessoa de Contato</label>
+                <Input
+                  id="edit_contact_person"
+                  name="contact_person"
+                  value={editingCompany.contact_person || ""}
+                  onChange={handleEditInputChange}
+                  placeholder="Nome da pessoa de contato"
+                />
+              </div>
+              <div>
+                <label htmlFor="edit_contact_email" className="block text-sm font-medium mb-1">Email de Contato</label>
+                <Input
+                  id="edit_contact_email"
+                  name="contact_email"
+                  type="email"
+                  value={editingCompany.contact_email || ""}
+                  onChange={handleEditInputChange}
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+              <div>
+                <label htmlFor="edit_contact_phone" className="block text-sm font-medium mb-1">Telefone de Contato</label>
+                <Input
+                  id="edit_contact_phone"
+                  name="contact_phone"
+                  value={editingCompany.contact_phone || ""}
+                  onChange={handleEditInputChange}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Tipo de Projeto</label>
+                <Select
+                  value={editingCompany.project_type || "fixed_monthly"}
+                  onValueChange={handleEditProjectTypeChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed_monthly">Cliente Mensal Premium</SelectItem>
+                    <SelectItem value="parallel">Projeto Paralelo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={submitEditCompany}>Salvar Alterações</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Delete Confirmation Dialog */}
@@ -382,6 +532,14 @@ export function CompanyManager() {
                       title="Ver detalhes"
                     >
                       <ExternalLink className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditCompany(company)}
+                      title="Editar empresa"
+                    >
+                      <Edit className="h-4 w-4 text-blue-500" />
                     </Button>
                     <Button
                       variant="ghost"
