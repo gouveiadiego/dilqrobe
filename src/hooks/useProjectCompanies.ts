@@ -14,6 +14,7 @@ export interface ProjectCompany {
   created_at?: string;
   updated_at?: string;
   is_active?: boolean | null;
+  project_type?: 'fixed_monthly' | 'parallel';
 }
 
 export const useProjectCompanies = () => {
@@ -25,18 +26,18 @@ export const useProjectCompanies = () => {
         console.log('⚠️ No session found, returning empty array');
         return [];
       }
-      
+
       const { data, error } = await supabase
         .from('project_companies')
         .select('*')
         .eq('user_id', sessionData.session.user.id)
         .order('name');
-      
+
       if (error) {
         console.error('Erro ao carregar empresas:', error);
         return [];
       }
-      
+
       console.log('✅ Project companies loaded for user:', sessionData.session.user.email, '- Count:', data?.length);
       return data as ProjectCompany[];
     }

@@ -1,23 +1,23 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Home, 
-  CheckSquare, 
-  Wallet, 
-  Calendar, 
-  Target, 
-  User, 
-  Settings, 
-  LogOut, 
-  BookOpen, 
-  TrendingUp, 
-  Briefcase, 
+import {
+  Home,
+  CheckSquare,
+  Wallet,
+  Calendar,
+  Target,
+  User,
+  Settings,
+  LogOut,
+  BookOpen,
+  TrendingUp,
+  Briefcase,
   FileText,
   Sparkles,
-  FileImage
+  Trophy
 } from "lucide-react";
 
-type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant' | 'ebook';
+type TabType = 'dashboard' | 'motivation' | 'tasks' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -30,6 +30,7 @@ interface SidebarProps {
 export const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }: SidebarProps) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'motivation', label: 'Foco Mensal', icon: Trophy },
     { id: 'ai-assistant', label: 'Assistente IA', icon: Sparkles },
     { id: 'tasks', label: 'Tarefas', icon: CheckSquare },
     { id: 'meetings', label: 'Reuniões', icon: Calendar },
@@ -39,7 +40,6 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }
     { id: 'journals', label: 'Diário', icon: BookOpen },
     { id: 'services', label: 'Serviços', icon: Briefcase },
     { id: 'projects', label: 'Projetos', icon: FileText },
-    { id: 'ebook', label: 'Criar Ebook', icon: FileImage },
     { id: 'profile', label: 'Perfil', icon: User },
     { id: 'settings', label: 'Configurações', icon: Settings },
   ];
@@ -59,16 +59,15 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
-          
+
           return (
             <Button
               key={item.id}
               variant={isActive ? "default" : "ghost"}
-              className={`w-full justify-start text-left transition-all duration-200 ${
-                isActive 
-                  ? 'bg-gradient-to-r from-dilq-accent to-dilq-teal text-white shadow-md' 
-                  : 'hover:bg-gray-100 text-gray-700'
-              } ${item.id === 'ai-assistant' ? 'border border-[#9b87f5]/30 bg-gradient-to-r from-[#9b87f5]/10 to-[#33C3F0]/10' : ''}`}
+              className={`w-full justify-start text-left transition-all duration-200 ${isActive
+                ? 'bg-gradient-to-r from-dilq-accent to-dilq-teal text-white shadow-md'
+                : 'hover:bg-gray-100 text-gray-700'
+                } ${item.id === 'ai-assistant' ? 'border border-[#9b87f5]/30 bg-gradient-to-r from-[#9b87f5]/10 to-[#33C3F0]/10' : ''}`}
               onClick={() => {
                 setActiveTab(item.id as TabType);
                 if (window.innerWidth < 768) {

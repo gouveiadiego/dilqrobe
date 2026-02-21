@@ -30,9 +30,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AIAssistantTab } from "@/components/ai-chat/AIAssistantTab";
 import { AIChatWidget } from "@/components/ai-chat/AIChatWidget";
 import { QuickActionsMenu } from "@/components/QuickActionsMenu";
-import { EbookTab } from "@/components/EbookTab";
+import { MotivationDashboardTab } from "@/components/motivation-dashboard/MotivationDashboardTab";
 
-type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant' | 'ebook';
+type TabType = 'dashboard' | 'motivation' | 'tasks' | 'finance' | 'habits' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -106,7 +106,7 @@ const Index = () => {
       if (filter === "active") return !task.completed;
       if (filter === "completed") return task.completed;
       return true;
-    }).filter(task => 
+    }).filter(task =>
       task.title.toLowerCase().includes(search.toLowerCase())
     ).filter(task => {
       if (categoryFilter === "all") return true;
@@ -118,9 +118,9 @@ const Index = () => {
       if (!dateFilter) return true;
       if (!task.due_date) return false;
       const taskDate = new Date(task.due_date);
-      return taskDate.getFullYear() === dateFilter.getFullYear() && 
-             taskDate.getMonth() === dateFilter.getMonth() && 
-             taskDate.getDate() === dateFilter.getDate();
+      return taskDate.getFullYear() === dateFilter.getFullYear() &&
+        taskDate.getMonth() === dateFilter.getMonth() &&
+        taskDate.getDate() === dateFilter.getDate();
     }).filter(task => {
       if (sectionFilter === "all") return true;
       return task.section === sectionFilter;
@@ -186,12 +186,12 @@ const Index = () => {
   // Modo Foco: exibe só tarefas de prioridade alta ou vencidas
   const tasksFocusFiltered = focusMode
     ? filteredTasks.filter(task =>
-        (!task.completed &&
-          (
-            task.priority === "high" ||
-            (task.due_date && new Date(task.due_date) < new Date())
-          )
-        ))
+    (!task.completed &&
+      (
+        task.priority === "high" ||
+        (task.due_date && new Date(task.due_date) < new Date())
+      )
+    ))
     : filteredTasks;
 
   if (isLoading) {
@@ -202,6 +202,8 @@ const Index = () => {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardTab />;
+      case 'motivation':
+        return <MotivationDashboardTab />;
       case 'ai-assistant':
         return <AIAssistantTab />;
       case 'tasks':
@@ -218,7 +220,7 @@ const Index = () => {
                 <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-dilq-accent to-dilq-teal bg-clip-text text-transparent">Execução</h2>
                 <div className="h-1 flex-grow ml-4 bg-gradient-to-r from-dilq-accent to-dilq-teal rounded-full opacity-50"></div>
               </div>
-              
+
               <div className="grid grid-cols-1 gap-4 md:gap-6">
                 <div className="glass-card p-3 md:p-4 backdrop-blur-md bg-white/50 border border-gray-200/50 rounded-xl shadow-lg">
                   <TaskFilters
@@ -239,11 +241,11 @@ const Index = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="gradient-border p-4 md:p-6 bg-white/80 backdrop-blur-sm shadow-md rounded-xl transition-all duration-300 hover:shadow-lg">
                 <AddTask onAdd={addTask} categories={taskCategories} sections={sections} />
               </div>
-              
+
               <div className="p-4 md:p-6 bg-gradient-to-br from-white/80 to-gray-50/80 backdrop-blur-sm border border-gray-100 rounded-xl shadow-md">
                 {tasksFocusFiltered.length === 0 ? (
                   <EmptyState
@@ -251,7 +253,7 @@ const Index = () => {
                     description="Adicione sua primeira tarefa para começar a organizar seu trabalho."
                     action={{
                       label: "Nova Tarefa",
-                      onClick: () => {}
+                      onClick: () => { }
                     }}
                   />
                 ) : (
@@ -267,8 +269,8 @@ const Index = () => {
                     setShowThisMonth={setShowThisMonth}
                     showOlder={showOlder}
                     setShowOlder={setShowOlder}
-                    onAddSubtask={() => {}}
-                    onToggleSubtask={() => {}}
+                    onAddSubtask={() => { }}
+                    onToggleSubtask={() => { }}
                   />
                 )}
               </div>
@@ -296,10 +298,8 @@ const Index = () => {
         return <BudgetTab />;
       case 'services':
         return <ServicesTab />;
-      case 'projects':
-        return <WrittenProjectsTab />;
-      case 'ebook':
-        return <EbookTab />;
+      case 'ai-assistant':
+        return <AIAssistantTab />;
       default:
         return null;
     }
@@ -308,14 +308,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white text-gray-900 transition-colors duration-300">
       <HabitReminder />
-      
+
       <aside className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out z-30 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <Sidebar 
-          activeTab={activeTab} 
-          setActiveTab={handleTabChange} 
-          onLogout={handleLogout} 
-          isOpen={sidebarOpen} 
-          setIsOpen={setSidebarOpen} 
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={handleTabChange}
+          onLogout={handleLogout}
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
         />
       </aside>
 
