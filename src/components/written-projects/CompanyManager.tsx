@@ -161,9 +161,23 @@ export function CompanyManager() {
     }
   });
 
-  // Delete company mutation
   const deleteCompanyMutation = useMutation({
     mutationFn: async (companyId: string) => {
+      // Excluir registros dependentes primeiro (simulando ON DELETE CASCADE no Frontend)
+      const tablesToDeleteFrom = [
+        'project_tasks',
+        'project_checklist',
+        'project_credentials',
+        'project_notes',
+        'project_work_log',
+        'project_share_links'
+      ];
+
+      for (const table of tablesToDeleteFrom) {
+        await supabase.from(table as any).delete().eq('company_id', companyId);
+      }
+
+      // Por fim, excluir a própria empresa
       const { error } = await supabase
         .from('project_companies')
         .delete()
