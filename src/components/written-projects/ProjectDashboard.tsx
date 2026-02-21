@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { 
+import {
   Building2,
   CheckCircle,
   AlertCircle,
@@ -24,8 +24,11 @@ import {
   ToggleRight,
   ArrowRight,
   Filter,
-  ArrowDownUp
+  ArrowDownUp,
+  Trophy,
+  Rocket
 } from "lucide-react";
+import confetti from "canvas-confetti";
 import { ProjectCompany } from "@/hooks/useProjectCompanies";
 
 type ProjectTask = {
@@ -56,13 +59,13 @@ export function ProjectDashboard() {
         console.log('⚠️ No session found, returning empty array');
         return [];
       }
-      
+
       const { data, error } = await supabase
         .from('project_companies')
         .select('*')
         .eq('user_id', sessionData.session.user.id)
         .order('name');
-      
+
       if (error) {
         console.error('❌ Error fetching companies:', error);
         return [];
@@ -91,7 +94,7 @@ export function ProjectDashboard() {
         `)
         .eq('project_companies.user_id', sessionData.session.user.id)
         .order('created_at', { ascending: false });
-      
+
       if (error) {
         console.error('❌ Error fetching tasks for dashboard:', error);
         return [];
@@ -115,7 +118,7 @@ export function ProjectDashboard() {
         .from('project_checklist')
         .select('id, company_id, title, completed, user_id')
         .eq('user_id', sessionData.session.user.id);
-      
+
       if (error) {
         console.error('❌ Error fetching checklist items:', error);
         return [];
@@ -131,7 +134,7 @@ export function ProjectDashboard() {
         .from('project_companies')
         .update({ is_active } as any)
         .eq('id', id);
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -148,25 +151,25 @@ export function ProjectDashboard() {
 
   const activeCompanies = companies.filter(c => c.is_active !== false);
   const inactiveCompanies = companies.filter(c => c.is_active === false);
-  
+
   const companiesById = new Map(companies.map(c => [c.id, c]));
-  
+
   // Itens por empresa ativa
   const activeTasks = tasks.filter(task => {
     const company = companiesById.get(task.company_id);
     return company?.is_active !== false;
   });
-  
+
   const activeChecklistItems = checklistItems.filter(item => {
     const company = companiesById.get(item.company_id);
     return company?.is_active !== false;
   });
 
-  const pendingItemsCount = activeTasks.filter(task => 
+  const pendingItemsCount = activeTasks.filter(task =>
     task.status === 'pending' || task.status === 'in_progress'
   ).length + activeChecklistItems.filter(item => !item.completed).length;
-  
-  const completedItemsCount = activeTasks.filter(task => 
+
+  const completedItemsCount = activeTasks.filter(task =>
     task.status === 'completed'
   ).length + activeChecklistItems.filter(item => item.completed).length;
 
@@ -176,8 +179,8 @@ export function ProjectDashboard() {
   // Empresas que precisam finalizar itens
   const companiesWithPendingItems = companies.filter(company => {
     if (company.is_active === false) return false;
-    const hasPendingTask = tasks.some(task => 
-      task.company_id === company.id && 
+    const hasPendingTask = tasks.some(task =>
+      task.company_id === company.id &&
       (task.status === 'pending' || task.status === 'in_progress')
     );
     const hasPendingChecklistItem = checklistItems.some(item =>
@@ -195,10 +198,10 @@ export function ProjectDashboard() {
     }
 
     const companyMetrics = filtered.map(company => {
-      const pendingCompanyTasks = tasks.filter(task => 
+      const pendingCompanyTasks = tasks.filter(task =>
         task.company_id === company.id && (task.status === 'pending' || task.status === 'in_progress')
       ).length;
-      const completedCompanyTasks = tasks.filter(task => 
+      const completedCompanyTasks = tasks.filter(task =>
         task.company_id === company.id && task.status === 'completed'
       ).length;
       const pendingCompanyChecklistItems = checklistItems.filter(item =>
@@ -212,12 +215,12 @@ export function ProjectDashboard() {
       const totalCompleted = completedCompanyTasks + completedCompanyChecklistItems;
       const totalItems = totalPending + totalCompleted;
       const progress = totalItems > 0 ? Math.round((totalCompleted / totalItems) * 100) : 0;
-      
-      return { 
-        ...company, 
+
+      return {
+        ...company,
         totalPendingForCompany: totalPending,
         totalCompletedForCompany: totalCompleted,
-        progressPercentage: progress 
+        progressPercentage: progress
       };
     });
 
@@ -232,17 +235,135 @@ export function ProjectDashboard() {
     }
   }, [companies, tasks, checklistItems, statusFilter, sortBy]);
 
+  const fixedClients = displayedCompanies.filter(c => !c.project_type || c.project_type === 'fixed_monthly');
+  const parallelProjects = displayedCompanies.filter(c => c.project_type === 'parallel');
+
   const handleToggleCompanyStatus = (company: ProjectCompany) => {
     const newStatus = !company.is_active;
-    toggleCompanyStatusMutation.mutate({ 
-      id: company.id, 
-      is_active: newStatus 
+    toggleCompanyStatusMutation.mutate({
+      id: company.id,
+      is_active: newStatus
     });
   };
 
   if (isLoadingCompanies || isLoadingTasks || isLoadingChecklist) {
     return <div className="text-center p-4">Carregando dashboard...</div>;
   }
+
+  const handleCelebrate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#9b87f5', '#33C3F0', '#10B981']
+    });
+  };
+
+  const renderCompanyCard = (company: any) => {
+    const isPremium = !company.project_type || company.project_type === 'fixed_monthly';
+    const hasManyPending = company.totalPendingForCompany > 5;
+
+    const premiumStyles = "bg-gradient-to-br from-white to-purple-50/50 border-purple-200 shadow-md";
+    const standardStyles = "bg-white border-gray-200 shadow-sm";
+    const errorStyles = hasManyPending ? "border-red-200 ring-2 ring-red-100" : "";
+
+    // Top border accent for premium
+    const premiumAccent = isPremium ? "before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-[#9b87f5] before:to-[#33C3F0]" : "";
+
+    const companyCardClass = `p-4 border rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col relative overflow-hidden ${isPremium ? premiumStyles : standardStyles} ${premiumAccent} ${errorStyles}`;
+
+    return (
+      <div key={company.id} className={companyCardClass}>
+        <div className="flex-grow">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h4 className={`font-medium text-lg ${isPremium ? 'text-gray-900' : 'text-gray-800'}`}>
+                {company.name}
+              </h4>
+              <div className="flex gap-2 mt-2">
+                <Badge
+                  variant={company.is_active !== false ? "default" : "secondary"}
+                  className={
+                    company.is_active !== false
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
+                  }
+                >
+                  {company.is_active !== false ? "Ativo" : "Inativo"}
+                </Badge>
+                {company.totalPendingForCompany > 0 && (
+                  <Badge variant="destructive">
+                    {company.totalPendingForCompany} pendente{company.totalPendingForCompany !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.preventDefault();
+                handleToggleCompanyStatus(company);
+              }}
+              className="text-gray-400 hover:text-gray-600 h-8 w-8"
+              title={company.is_active !== false ? "Desativar" : "Ativar"}
+            >
+              {company.is_active !== false ? (
+                <ToggleRight className="h-5 w-5 text-green-600" />
+              ) : (
+                <ToggleLeft className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+
+          <div className="mb-3 mt-4">
+            <div className="flex justify-between items-center text-xs text-gray-500 mb-1">
+              <span>Progresso Realizado</span>
+              <span className={`font-bold ${isPremium ? 'text-purple-600' : ''}`}>{company.progressPercentage}%</span>
+            </div>
+            <Progress
+              value={company.progressPercentage}
+              className="h-2.5"
+              indicatorClassName={
+                company.progressPercentage < 30 ? 'bg-red-500' :
+                  company.progressPercentage < 70 ? 'bg-yellow-500' :
+                    company.progressPercentage === 100 && isPremium ? 'bg-gradient-to-r from-[#9b87f5] to-[#33C3F0]' : 'bg-green-500'
+              }
+            />
+          </div>
+
+          <div className="text-sm text-gray-600 space-y-2 mt-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100">
+            <div className="flex justify-between items-center">
+              <span className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-green-500" /> Concluídas:</span>
+              <span className="font-semibold text-green-600">{company.totalCompletedForCompany}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="flex items-center gap-1.5"><AlertCircle className="h-3.5 w-3.5 text-orange-500" /> Pendentes:</span>
+              <span className="font-semibold text-orange-600">{company.totalPendingForCompany}</span>
+            </div>
+          </div>
+
+          {isPremium && company.progressPercentage === 100 && company.totalCompletedForCompany > 0 && (
+            <div className="mt-3">
+              <Button onClick={handleCelebrate} variant="outline" size="sm" className="w-full bg-gradient-to-r from-green-50 to-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100">
+                🎉 Tudo Concluído! Comemorar
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-5 pt-4 border-t border-gray-100">
+          <Link to={`/company/${company.id}`} className="w-full h-full block">
+            <Button variant={isPremium ? "default" : "outline"} className={`w-full ${isPremium ? 'bg-[#9b87f5] hover:bg-[#8B75E5] text-white shadow-sm' : ''}`}>
+              Acessar Painel
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -345,97 +466,32 @@ export function ProjectDashboard() {
               Nenhuma empresa encontrada para os filtros selecionados.
             </p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {displayedCompanies.map((company) => {
-                const hasManyPending = company.totalPendingForCompany > 5;
-                const companyCardClass = `p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-300 flex flex-col ${hasManyPending ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-200'}`;
-                
-                return (
-                  <div 
-                    key={company.id} 
-                    className={companyCardClass}
-                  >
-                    <div className="flex-grow">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-medium text-lg">{company.name}</h4>
-                          <div className="flex gap-2 mt-2">
-                            <Badge 
-                              variant={company.is_active !== false ? "default" : "secondary"}
-                              className={
-                                company.is_active !== false 
-                                  ? "bg-green-100 text-green-800" 
-                                  : "bg-gray-100 text-gray-800"
-                              }
-                            >
-                              {company.is_active !== false ? "Ativo" : "Inativo"}
-                            </Badge>
-                            {company.totalPendingForCompany > 0 && (
-                              <Badge variant="destructive">
-                                {company.totalPendingForCompany} pendente{company.totalPendingForCompany !== 1 ? 's' : ''}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleCompanyStatus(company)}
-                          className="flex items-center gap-1 text-xs"
-                        >
-                          {company.is_active !== false ? (
-                            <>
-                              <ToggleRight className="h-4 w-4 text-green-600" />
-                              <span>Desativar</span>
-                            </>
-                          ) : (
-                            <>
-                              <ToggleLeft className="h-4 w-4 text-gray-600" />
-                              <span>Ativar</span>
-                            </>
-                          )}
-                        </Button>
-                      </div>
-
-                      <div className="mb-3">
-                        <div className="flex justify-between items-center text-xs text-gray-500 mb-1">
-                          <span>Progresso</span>
-                          <span className="font-semibold">{company.progressPercentage}%</span>
-                        </div>
-                        <Progress 
-                          value={company.progressPercentage} 
-                          className="h-2" 
-                          indicatorClassName={
-                            company.progressPercentage < 30 ? 'bg-red-500' : 
-                            company.progressPercentage < 70 ? 'bg-yellow-500' : 
-                            'bg-green-500'
-                          }
-                        />
-                      </div>
-
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <div className="flex justify-between">
-                          <span>Concluídas:</span>
-                          <span className="font-medium text-green-600">{company.totalCompletedForCompany}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Pendentes:</span>
-                          <span className="font-medium text-orange-600">{company.totalPendingForCompany}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-3 border-t">
-                      <Link to={`/company/${company.id}`} className="w-full">
-                        <Button variant="outline" size="sm" className="w-full">
-                          Ver Detalhes
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
+            <div className="space-y-8">
+              {/* Clientes Fixos */}
+              {fixedClients.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-[#9b87f5] to-[#33C3F0] px-1">
+                    <Trophy className="h-6 w-6 text-[#9b87f5]" />
+                    Clientes Mensais Premium
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {fixedClients.map(renderCompanyCard)}
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              {/* Projetos Paralelos */}
+              {parallelProjects.length > 0 && (
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                  <h3 className="text-xl font-bold flex items-center gap-2 text-gray-700 px-1">
+                    <Target className="h-6 w-6 text-gray-500" />
+                    Projetos Paralelos
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {parallelProjects.map(renderCompanyCard)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -453,8 +509,8 @@ export function ProjectDashboard() {
           <CardContent>
             <div className="space-y-2">
               {companiesWithPendingItems.map((company) => {
-                const pendingTaskCount = tasks.filter(task => 
-                  task.company_id === company.id && 
+                const pendingTaskCount = tasks.filter(task =>
+                  task.company_id === company.id &&
                   (task.status === 'pending' || task.status === 'in_progress')
                 ).length;
                 const pendingChecklistItemCount = checklistItems.filter(item =>

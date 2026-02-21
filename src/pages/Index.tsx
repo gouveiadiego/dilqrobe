@@ -30,9 +30,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AIAssistantTab } from "@/components/ai-chat/AIAssistantTab";
 import { AIChatWidget } from "@/components/ai-chat/AIChatWidget";
 import { QuickActionsMenu } from "@/components/QuickActionsMenu";
-import { MotivationDashboardTab } from "@/components/motivation-dashboard/MotivationDashboardTab";
 
-type TabType = 'dashboard' | 'motivation' | 'tasks' | 'finance' | 'habits' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
+type TabType = 'dashboard' | 'tasks' | 'finance' | 'habits' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -202,8 +201,6 @@ const Index = () => {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardTab />;
-      case 'motivation':
-        return <MotivationDashboardTab />;
       case 'ai-assistant':
         return <AIAssistantTab />;
       case 'tasks':
