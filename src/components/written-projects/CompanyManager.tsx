@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { Plus, ExternalLink, Trash2, Edit, ListCheck } from "lucide-react";
 import { toast } from "sonner";
 import { CompanyShareButton } from "./CompanyShareButton";
@@ -18,6 +25,7 @@ interface Company {
   contact_person: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  project_type?: string | null;
 }
 
 export function CompanyManager() {
@@ -32,6 +40,7 @@ export function CompanyManager() {
     contact_person: "",
     contact_email: "",
     contact_phone: "",
+    project_type: "fixed_monthly"
   });
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
@@ -107,6 +116,7 @@ export function CompanyManager() {
         contact_person: "",
         contact_email: "",
         contact_phone: "",
+        project_type: "fixed_monthly"
       });
       setIsAddDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['project-companies'] });
@@ -149,6 +159,7 @@ export function CompanyManager() {
           contact_person: "",
           contact_email: "",
           contact_phone: "",
+          project_type: "fixed_monthly"
         });
         setIsAddDialogOpen(false);
         queryClient.invalidateQueries({ queryKey: ['project-companies'] });
@@ -193,6 +204,13 @@ export function CompanyManager() {
     setNewCompany(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleProjectTypeChange = (value: string) => {
+    setNewCompany(prev => ({
+      ...prev,
+      project_type: value
     }));
   };
 
@@ -268,6 +286,24 @@ export function CompanyManager() {
                   placeholder="(00) 00000-0000"
                 />
               </div>
+
+              {/* Novo campo: Tipo de Projeto */}
+              <div>
+                <label className="block text-sm font-medium mb-1">Tipo de Projeto</label>
+                <Select
+                  value={newCompany.project_type || "fixed_monthly"}
+                  onValueChange={handleProjectTypeChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed_monthly">Cliente Mensal Premium</SelectItem>
+                    <SelectItem value="parallel">Projeto Paralelo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Novo campo: selecionar template */}
               <div>
                 <label htmlFor="template" className="block text-sm font-medium mb-1 flex items-center gap-1">
@@ -324,8 +360,8 @@ export function CompanyManager() {
         {companies.length === 0 ? (
           <div className="col-span-full text-center p-8 bg-gray-50 rounded-lg">
             <p className="text-gray-500">Nenhuma empresa cadastrada</p>
-            <Button 
-              variant="link" 
+            <Button
+              variant="link"
               onClick={() => setIsAddDialogOpen(true)}
               className="mt-2"
             >
@@ -339,17 +375,17 @@ export function CompanyManager() {
                 <div className="flex justify-between items-start">
                   <h3 className="font-medium truncate">{company.name}</h3>
                   <div className="flex space-x-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleViewCompanyDetails(company.id)}
                       title="Ver detalhes"
                     >
                       <ExternalLink className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleDeleteCompany(company.id)}
                       title="Excluir empresa"
                     >
@@ -380,17 +416,17 @@ export function CompanyManager() {
                 )}
               </CardContent>
               <CardFooter className="bg-gray-50 p-3 border-t space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="flex-1"
                   onClick={() => handleViewCompanyDetails(company.id)}
                 >
                   Ver Detalhes
                 </Button>
-                <CompanyShareButton 
-                  companyId={company.id} 
-                  companyName={company.name} 
+                <CompanyShareButton
+                  companyId={company.id}
+                  companyName={company.name}
                 />
               </CardFooter>
             </Card>
