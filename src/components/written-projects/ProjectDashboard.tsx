@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -26,7 +29,8 @@ import {
   Filter,
   ArrowDownUp,
   Trophy,
-  Rocket
+  Rocket,
+  Edit
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { ProjectCompany } from "@/hooks/useProjectCompanies";
@@ -49,6 +53,22 @@ export function ProjectDashboard() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'pending' | 'progress'>('name');
+
+  // Edit State
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<ProjectCompany & { project_type?: 'fixed_monthly' | 'parallel' | null | string }>({
+    id: "",
+    name: "",
+    description: "",
+    contact_person: "",
+    contact_email: "",
+    contact_phone: "",
+    created_at: "",
+    updated_at: "",
+    is_active: true,
+    user_id: "",
+    project_type: "fixed_monthly"
+  });
 
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({
     queryKey: ['project-companies-dashboard'],
@@ -149,6 +169,31 @@ export function ProjectDashboard() {
     }
   });
 
+  const updateCompanyMutation = useMutation({
+    mutationFn: async (company: ProjectCompany & { project_type?: 'fixed_monthly' | 'parallel' | null | string }) => {
+      const { id, ...updateData } = company;
+      const { data, error } = await supabase
+        .from('project_companies')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        toast.error('Erro ao atualizar empresa');
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      setIsEditDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['project-companies-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['project-companies'] });
+      toast.success('Empresa atualizada com sucesso');
+    }
+  });
+
   const activeCompanies = companies.filter(c => c.is_active !== false);
   const inactiveCompanies = companies.filter(c => c.is_active === false);
 
@@ -246,6 +291,37 @@ export function ProjectDashboard() {
     });
   };
 
+  const handleEditCompany = (company: ProjectCompany) => {
+    setEditingCompany({
+      ...company,
+      project_type: company.project_type || "fixed_monthly"
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const submitEditCompany = async () => {
+    if (!editingCompany.name.trim()) {
+      toast.error('O nome da empresa é obrigatório');
+      return;
+    }
+    updateCompanyMutation.mutate(editingCompany);
+  };
+
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditingCompany(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEditProjectTypeChange = (value: string) => {
+    setEditingCompany(prev => ({
+      ...prev,
+      project_type: value as 'fixed_monthly' | 'parallel'
+    }));
+  };
+
   if (isLoadingCompanies || isLoadingTasks || isLoadingChecklist) {
     return <div className="text-center p-4">Carregando dashboard...</div>;
   }
@@ -299,22 +375,36 @@ export function ProjectDashboard() {
                 )}
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.preventDefault();
-                handleToggleCompanyStatus(company);
-              }}
-              className="text-gray-400 hover:text-gray-600 h-8 w-8"
-              title={company.is_active !== false ? "Desativar" : "Ativar"}
-            >
-              {company.is_active !== false ? (
-                <ToggleRight className="h-5 w-5 text-green-600" />
-              ) : (
-                <ToggleLeft className="h-5 w-5" />
-              )}
-            </Button>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleEditCompany(company);
+                }}
+                className="text-gray-400 hover:text-blue-600 h-8 w-8"
+                title="Editar projeto"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleToggleCompanyStatus(company);
+                }}
+                className="text-gray-400 hover:text-gray-600 h-8 w-8"
+                title={company.is_active !== false ? "Desativar" : "Ativar"}
+              >
+                {company.is_active !== false ? (
+                  <ToggleRight className="h-5 w-5 text-green-600" />
+                ) : (
+                  <ToggleLeft className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
           </div>
 
           <div className="mb-3 mt-4">
@@ -496,6 +586,57 @@ export function ProjectDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Company Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Empresa / Projeto</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label htmlFor="edit_name" className="block text-sm font-medium mb-1">Nome da Empresa*</label>
+              <Input
+                id="edit_name"
+                name="name"
+                value={editingCompany.name}
+                onChange={handleEditInputChange}
+                placeholder="Nome da empresa"
+              />
+            </div>
+            <div>
+              <label htmlFor="edit_description" className="block text-sm font-medium mb-1">Descrição</label>
+              <Textarea
+                id="edit_description"
+                name="description"
+                value={editingCompany.description || ""}
+                onChange={handleEditInputChange}
+                placeholder="Descrição da empresa ou projeto"
+                rows={3}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Tipo de Projeto</label>
+              <Select
+                value={editingCompany.project_type || "fixed_monthly"}
+                onValueChange={handleEditProjectTypeChange}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed_monthly">Cliente Mensal Premium</SelectItem>
+                  <SelectItem value="parallel">Projeto Paralelo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={submitEditCompany}>Salvar Alterações</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Empresas que precisam finalizar tarefas */}
       {companiesWithPendingItems.length > 0 && (
