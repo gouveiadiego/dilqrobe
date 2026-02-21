@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import {
   Select,
@@ -506,9 +507,9 @@ export function CompanyManager() {
         </DialogContent>
       </Dialog>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="flex flex-col space-y-4">
         {companies.length === 0 ? (
-          <div className="col-span-full text-center p-8 bg-gray-50 rounded-lg">
+          <div className="text-center p-8 bg-gray-50 rounded-lg">
             <p className="text-gray-500">Nenhuma empresa cadastrada</p>
             <Button
               variant="link"
@@ -520,73 +521,80 @@ export function CompanyManager() {
           </div>
         ) : (
           companies.map((company) => (
-            <Card key={company.id} className="overflow-hidden">
-              <CardHeader className="bg-gray-50 p-4 border-b">
-                <div className="flex justify-between items-start">
-                  <h3 className="font-medium truncate">{company.name}</h3>
-                  <div className="flex space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleViewCompanyDetails(company.id)}
-                      title="Ver detalhes"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditCompany(company)}
-                      title="Editar empresa"
-                    >
-                      <Edit className="h-4 w-4 text-blue-500" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteCompany(company.id)}
-                      title="Excluir empresa"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
+            <Card key={company.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 gap-4 hover:shadow-md transition-all duration-300">
+              {/* Company Info (Left) */}
+              <div className="flex-1 min-w-0 w-full md:w-auto">
+                <div className="flex gap-2 items-center mb-1">
+                  <h3 className="font-medium text-lg truncate">{company.name}</h3>
+                  {company.project_type === 'fixed_monthly' ? (
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-700 whitespace-nowrap">
+                      Premium
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-gray-500 whitespace-nowrap">
+                      Paralelo
+                    </Badge>
+                  )}
                 </div>
-                <p className="text-sm text-gray-500 truncate">{company.description || "Sem descrição"}</p>
-              </CardHeader>
-              <CardContent className="p-4">
+                <p className="text-sm text-gray-500 line-clamp-2">{company.description || "Sem descrição"}</p>
+              </div>
+
+              {/* Contact Info (Middle) */}
+              <div className="flex-1 min-w-0 w-full md:w-auto text-sm text-gray-600 bg-gray-50 p-2 rounded-md">
                 {company.contact_person && (
-                  <div className="mb-2">
-                    <span className="text-sm font-medium text-gray-500">Contato:</span>{" "}
-                    <span>{company.contact_person}</span>
-                  </div>
+                  <div className="truncate"><span className="font-medium text-gray-500">Contato:</span> {company.contact_person}</div>
                 )}
                 {company.contact_email && (
-                  <div className="mb-2">
-                    <span className="text-sm font-medium text-gray-500">Email:</span>{" "}
-                    <span className="truncate block">{company.contact_email}</span>
-                  </div>
+                  <div className="truncate"><span className="font-medium text-gray-500">Email:</span> {company.contact_email}</div>
                 )}
                 {company.contact_phone && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">Telefone:</span>{" "}
-                    <span>{company.contact_phone}</span>
-                  </div>
+                  <div className="truncate"><span className="font-medium text-gray-500">Tel:</span> {company.contact_phone}</div>
                 )}
-              </CardContent>
-              <CardFooter className="bg-gray-50 p-3 border-t space-x-2">
+                {!company.contact_person && !company.contact_email && !company.contact_phone && (
+                  <div className="text-gray-400 italic">Nenhum contato cadastrado</div>
+                )}
+              </div>
+
+              {/* Actions (Right) */}
+              <div className="flex items-center gap-2 shrink-0 self-end md:self-auto mt-2 md:mt-0">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1"
                   onClick={() => handleViewCompanyDetails(company.id)}
+                  title="Ver Detalhes do Projeto"
                 >
-                  Ver Detalhes
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Painel
                 </Button>
-                <CompanyShareButton
-                  companyId={company.id}
-                  companyName={company.name}
-                />
-              </CardFooter>
+
+                <div className="hidden sm:block">
+                  <CompanyShareButton
+                    companyId={company.id}
+                    companyName={company.name}
+                  />
+                </div>
+
+                <div className="flex items-center space-x-1 border-l pl-2 ml-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => handleEditCompany(company)}
+                    title="Editar empresa"
+                  >
+                    <Edit className="h-4 w-4 text-blue-500" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => handleDeleteCompany(company.id)}
+                    title="Excluir empresa"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              </div>
             </Card>
           ))
         )}
