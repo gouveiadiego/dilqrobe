@@ -164,17 +164,29 @@ export function CompanyManager() {
   const deleteCompanyMutation = useMutation({
     mutationFn: async (companyId: string) => {
       // Excluir registros dependentes primeiro (simulando ON DELETE CASCADE no Frontend)
-      const tablesToDeleteFrom = [
+
+      const tablesWithCompanyId = [
         'project_tasks',
         'project_checklist',
         'project_credentials',
         'project_notes',
-        'project_work_log',
-        'project_share_links'
+        'company_work_log',
+        'company_share_links',
+        'client_portal_links',
+        'company_content_tasks'
       ];
 
-      for (const table of tablesToDeleteFrom) {
+      for (const table of tablesWithCompanyId) {
         await supabase.from(table as any).delete().eq('company_id', companyId);
+      }
+
+      const tablesWithProjectCompanyId = [
+        'tasks',
+        'categories'
+      ];
+
+      for (const table of tablesWithProjectCompanyId) {
+        await supabase.from(table as any).delete().eq('project_company_id', companyId);
       }
 
       // Por fim, excluir a própria empresa
