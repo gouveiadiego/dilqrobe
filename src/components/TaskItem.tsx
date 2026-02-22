@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "./ui/command";
 import { Calendar } from "./ui/calendar";
 import { TextEllipsis } from "./ui/text-ellipsis";
 import { useProjectCompanies } from "@/hooks/useProjectCompanies";
@@ -40,6 +41,7 @@ export function TaskItem({
   const [editDate, setEditDate] = useState<Date | null>(task.due_date ? new Date(task.due_date) : null);
   const [editCategory, setEditCategory] = useState(task.category || "none");
   const [editCompanyId, setEditCompanyId] = useState(task.project_company_id || "none");
+  const [openCompanySelect, setOpenCompanySelect] = useState(false);
   const { companies } = useProjectCompanies();
 
   const priorityClass = {
@@ -204,19 +206,64 @@ export function TaskItem({
                   </SelectContent>
                 </Select>
 
-                <Select value={editCompanyId} onValueChange={setEditCompanyId}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Empresa / Projeto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhuma empresa</SelectItem>
-                    {companies.map((comp) => (
-                      <SelectItem key={comp.id} value={comp.id}>
-                        {comp.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={openCompanySelect} onOpenChange={setOpenCompanySelect}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCompanySelect}
+                      className="w-[180px] justify-between font-normal"
+                    >
+                      {editCompanyId !== "none"
+                        ? companies.find((comp) => comp.id === editCompanyId)?.name || "Empresa / Projeto"
+                        : "Nenhuma empresa"}
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[180px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar empresa..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhuma empresa encontrada.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="none"
+                            onSelect={() => {
+                              setEditCompanyId("none");
+                              setOpenCompanySelect(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                editCompanyId === "none" ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            Nenhuma empresa
+                          </CommandItem>
+                          {companies.map((comp) => (
+                            <CommandItem
+                              key={comp.id}
+                              value={comp.name}
+                              onSelect={() => {
+                                setEditCompanyId(comp.id);
+                                setOpenCompanySelect(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  editCompanyId === comp.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {comp.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleSaveEdit} className="bg-dilq-accent hover:bg-dilq-accent/90">
