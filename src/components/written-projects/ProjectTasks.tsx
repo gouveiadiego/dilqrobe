@@ -5,22 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogFooter,
   DialogTrigger
 } from "@/components/ui/dialog";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue 
+  SelectValue
 } from "@/components/ui/select";
-import { 
+import {
   Edit,
   Trash2,
   Plus,
@@ -43,8 +43,8 @@ type ProjectTask = {
   id: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  company_id: string;
+  completed: boolean;
+  project_company_id: string;
   due_date?: string;
   priority?: string;
   assigned_to?: string;
@@ -60,8 +60,8 @@ export function ProjectTasks() {
   const [newTask, setNewTask] = useState<Omit<ProjectTask, 'id'>>({
     title: '',
     description: '',
-    status: 'pending',
-    company_id: '',
+    completed: false,
+    project_company_id: '',
     priority: 'medium',
   });
   const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
@@ -74,7 +74,7 @@ export function ProjectTasks() {
         .from('project_companies')
         .select('*')
         .order('name');
-      
+
       if (error) {
         console.error('❌ Error fetching companies:', error);
         throw error;
@@ -88,45 +88,47 @@ export function ProjectTasks() {
     queryKey: ['project-tasks'],
     queryFn: async () => {
       console.log('📋 Fetching project tasks...');
-      
-      // First, let's see what's in the project_tasks table
+
+      // First, let's see what's in the tasks table for projects
       const { data: allTasks, error: allTasksError } = await supabase
-        .from('project_tasks')
+        .from('tasks')
         .select('*')
+        .not('project_company_id', 'is', null)
         .order('created_at', { ascending: false });
-        
+
       console.log('📊 ALL project tasks in database:', allTasks);
       console.log('🔢 Total project tasks count:', allTasks?.length || 0);
-      
+
       if (allTasksError) {
         console.error('❌ Error fetching all tasks:', allTasksError);
       }
 
       // Now fetch with JOIN
       const { data, error } = await supabase
-        .from('project_tasks')
+        .from('tasks')
         .select(`
           *,
           project_companies (
             name
           )
         `)
+        .not('project_company_id', 'is', null)
         .order('created_at', { ascending: false });
-      
+
       if (error) {
         console.error('❌ Error fetching project tasks with JOIN:', error);
         throw error;
       }
-      
+
       console.log('✅ Project tasks with companies loaded:', data?.length, 'tasks found');
       console.log('📝 Detailed tasks data:', data);
-      
+
       // Let's also check if there are tasks without companies
       const tasksWithoutCompanies = data?.filter(task => !task.project_companies?.name);
       if (tasksWithoutCompanies && tasksWithoutCompanies.length > 0) {
         console.warn('⚠️ Tasks without company data:', tasksWithoutCompanies);
       }
-      
+
       return data as ProjectTask[];
     }
   });
@@ -140,12 +142,18 @@ export function ProjectTasks() {
 
   const addTaskMutation = useMutation({
     mutationFn: async (task: Omit<ProjectTask, 'id'>) => {
+      // Get the current user to satisfy tasks table RLS
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const taskToInsert = { ...task, user_id: user.id };
+
       const { data, error } = await supabase
-        .from('project_tasks')
-        .insert(task)
+        .from('tasks')
+        .insert(taskToInsert as any)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
@@ -164,20 +172,20 @@ export function ProjectTasks() {
   const updateTaskMutation = useMutation({
     mutationFn: async (task: ProjectTask) => {
       const { data, error } = await supabase
-        .from('project_tasks')
+        .from('tasks')
         .update({
           title: task.title,
           description: task.description,
-          status: task.status,
-          company_id: task.company_id,
+          completed: task.completed,
+          project_company_id: task.project_company_id,
           due_date: task.due_date,
           priority: task.priority,
           assigned_to: task.assigned_to
-        })
+        } as any)
         .eq('id', task.id)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
@@ -196,10 +204,10 @@ export function ProjectTasks() {
   const deleteTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
       const { error } = await supabase
-        .from('project_tasks')
+        .from('tasks')
         .delete()
         .eq('id', taskId);
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -216,14 +224,14 @@ export function ProjectTasks() {
     setNewTask({
       title: '',
       description: '',
-      status: 'pending',
-      company_id: '',
+      completed: false,
+      project_company_id: '',
       priority: 'medium',
     });
   };
 
   const handleAddTask = () => {
-    if (!newTask.title || !newTask.company_id) {
+    if (!newTask.title || !newTask.project_company_id) {
       toast.error('Título e empresa são obrigatórios');
       return;
     }
@@ -231,7 +239,7 @@ export function ProjectTasks() {
   };
 
   const handleUpdateTask = () => {
-    if (!editingTask || !editingTask.title || !editingTask.company_id) {
+    if (!editingTask || !editingTask.title || !editingTask.project_company_id) {
       toast.error('Título e empresa são obrigatórios');
       return;
     }
@@ -240,24 +248,6 @@ export function ProjectTasks() {
 
   const handleDeleteTask = (taskId: string) => {
     deleteTaskMutation.mutate(taskId);
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'pending': return 'Pendente';
-      case 'in_progress': return 'Em Andamento';
-      case 'completed': return 'Concluída';
-      default: return status;
-    }
-  };
-
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
   };
 
   const getPriorityLabel = (priority?: string) => {
@@ -322,8 +312,8 @@ export function ProjectTasks() {
                 <div className="grid gap-2">
                   <label htmlFor="company" className="text-sm font-medium">Empresa</label>
                   <Select
-                    value={newTask.company_id}
-                    onValueChange={(value) => setNewTask({ ...newTask, company_id: value })}
+                    value={newTask.project_company_id}
+                    onValueChange={(value) => setNewTask({ ...newTask, project_company_id: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione uma empresa" />
@@ -340,17 +330,16 @@ export function ProjectTasks() {
                 <div className="grid gap-2">
                   <label htmlFor="status" className="text-sm font-medium">Status</label>
                   <Select
-                    value={newTask.status}
-                    onValueChange={(value: 'pending' | 'in_progress' | 'completed') => 
-                      setNewTask({ ...newTask, status: value })
+                    value={newTask.completed ? 'completed' : 'pending'}
+                    onValueChange={(value: 'pending' | 'in_progress' | 'completed') =>
+                      setNewTask({ ...newTask, completed: value === 'completed' })
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="in_progress">Em Andamento</SelectItem>
+                      <SelectItem value="pending">Pendente/Em Andamento</SelectItem>
                       <SelectItem value="completed">Concluída</SelectItem>
                     </SelectContent>
                   </Select>
@@ -427,8 +416,8 @@ export function ProjectTasks() {
                       if (!open) setEditingTask(null);
                     }}>
                       <DialogTrigger asChild>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-blue-600"
                           onClick={() => setEditingTask(task)}
@@ -461,8 +450,8 @@ export function ProjectTasks() {
                             <div className="grid gap-2">
                               <label htmlFor="edit-company" className="text-sm font-medium">Empresa</label>
                               <Select
-                                value={editingTask.company_id}
-                                onValueChange={(value) => setEditingTask({ ...editingTask, company_id: value })}
+                                value={editingTask.project_company_id}
+                                onValueChange={(value) => setEditingTask({ ...editingTask, project_company_id: value })}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Selecione uma empresa" />
@@ -479,9 +468,9 @@ export function ProjectTasks() {
                             <div className="grid gap-2">
                               <label htmlFor="edit-status" className="text-sm font-medium">Status</label>
                               <Select
-                                value={editingTask.status}
-                                onValueChange={(value: 'pending' | 'in_progress' | 'completed') => 
-                                  setEditingTask({ ...editingTask, status: value })
+                                value={editingTask.completed ? 'completed' : 'pending'}
+                                onValueChange={(value: 'pending' | 'in_progress' | 'completed') =>
+                                  setEditingTask({ ...editingTask, completed: value === 'completed' })
                                 }
                               >
                                 <SelectTrigger>
@@ -489,7 +478,6 @@ export function ProjectTasks() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="pending">Pendente</SelectItem>
-                                  <SelectItem value="in_progress">Em Andamento</SelectItem>
                                   <SelectItem value="completed">Concluída</SelectItem>
                                 </SelectContent>
                               </Select>
@@ -543,7 +531,7 @@ export function ProjectTasks() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction 
+                          <AlertDialogAction
                             onClick={() => handleDeleteTask(task.id)}
                             className="bg-red-600 hover:bg-red-700"
                           >
@@ -560,8 +548,11 @@ export function ProjectTasks() {
                 )}
 
                 <div className="flex flex-wrap gap-2 mt-3">
-                  <span className={`text-xs px-2 py-1 rounded-full border ${getStatusClass(task.status)}`}>
-                    {getStatusLabel(task.status)}
+                  <span className={`text-xs px-2 py-1 rounded-full border ${task.completed
+                    ? 'bg-green-100 text-green-800 border-green-200'
+                    : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                    }`}>
+                    {task.completed ? 'Concluída' : 'Pendente'}
                   </span>
                   {task.priority && (
                     <span className={`text-xs px-2 py-1 rounded-full ${getPriorityClass(task.priority)}`}>

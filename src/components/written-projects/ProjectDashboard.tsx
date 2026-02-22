@@ -38,8 +38,8 @@ import { ProjectCompany } from "@/hooks/useProjectCompanies";
 type ProjectTask = {
   id: string;
   title: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  company_id: string;
+  completed: boolean;
+  project_company_id: string;
 };
 
 type ChecklistItem = {
@@ -107,9 +107,12 @@ export function ProjectDashboard() {
 
       // Buscar apenas tarefas de empresas do usuário logado
       const { data, error } = await supabase
-        .from('project_tasks')
+        .from('tasks')
         .select(`
-          *,
+          id,
+          title,
+          completed,
+          project_company_id,
           project_companies!inner(user_id)
         `)
         .eq('project_companies.user_id', sessionData.session.user.id)
@@ -201,7 +204,7 @@ export function ProjectDashboard() {
 
   // Itens por empresa ativa
   const activeTasks = tasks.filter(task => {
-    const company = companiesById.get(task.company_id);
+    const company = companiesById.get(task.project_company_id);
     return company?.is_active !== false;
   });
 
@@ -211,11 +214,11 @@ export function ProjectDashboard() {
   });
 
   const pendingItemsCount = activeTasks.filter(task =>
-    task.status === 'pending' || task.status === 'in_progress'
+    !task.completed
   ).length + activeChecklistItems.filter(item => !item.completed).length;
 
   const completedItemsCount = activeTasks.filter(task =>
-    task.status === 'completed'
+    task.completed
   ).length + activeChecklistItems.filter(item => item.completed).length;
 
   const totalItemsCount = pendingItemsCount + completedItemsCount;
@@ -225,8 +228,7 @@ export function ProjectDashboard() {
   const companiesWithPendingItems = companies.filter(company => {
     if (company.is_active === false) return false;
     const hasPendingTask = tasks.some(task =>
-      task.company_id === company.id &&
-      (task.status === 'pending' || task.status === 'in_progress')
+      task.project_company_id === company.id && !task.completed
     );
     const hasPendingChecklistItem = checklistItems.some(item =>
       item.company_id === company.id && !item.completed
@@ -244,10 +246,10 @@ export function ProjectDashboard() {
 
     const companyMetrics = filtered.map(company => {
       const pendingCompanyTasks = tasks.filter(task =>
-        task.company_id === company.id && (task.status === 'pending' || task.status === 'in_progress')
+        task.project_company_id === company.id && !task.completed
       ).length;
       const completedCompanyTasks = tasks.filter(task =>
-        task.company_id === company.id && task.status === 'completed'
+        task.project_company_id === company.id && task.completed
       ).length;
       const pendingCompanyChecklistItems = checklistItems.filter(item =>
         item.company_id === company.id && !item.completed
@@ -651,8 +653,7 @@ export function ProjectDashboard() {
             <div className="space-y-2">
               {companiesWithPendingItems.map((company) => {
                 const pendingTaskCount = tasks.filter(task =>
-                  task.company_id === company.id &&
-                  (task.status === 'pending' || task.status === 'in_progress')
+                  task.project_company_id === company.id && !task.completed
                 ).length;
                 const pendingChecklistItemCount = checklistItems.filter(item =>
                   item.company_id === company.id && !item.completed
