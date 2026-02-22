@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { TextEllipsis } from "./ui/text-ellipsis";
+import { useProjectCompanies } from "@/hooks/useProjectCompanies";
 
 interface TaskItemProps {
   task: Task;
@@ -23,14 +24,14 @@ interface TaskItemProps {
   categories: { id: string; name: string; }[];
 }
 
-export function TaskItem({ 
-  task, 
-  onToggle, 
-  onDelete, 
-  onAddSubtask, 
+export function TaskItem({
+  task,
+  onToggle,
+  onDelete,
+  onAddSubtask,
   onToggleSubtask,
   onUpdateTask,
-  categories 
+  categories
 }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [newSubtask, setNewSubtask] = useState("");
@@ -38,7 +39,9 @@ export function TaskItem({
   const [editTitle, setEditTitle] = useState(task.title);
   const [editDate, setEditDate] = useState<Date | null>(task.due_date ? new Date(task.due_date) : null);
   const [editCategory, setEditCategory] = useState(task.category || "none");
-  
+  const [editCompanyId, setEditCompanyId] = useState(task.project_company_id || "none");
+  const { companies } = useProjectCompanies();
+
   const priorityClass = {
     high: "text-red-500 bg-gradient-to-br from-red-50 to-red-100 border-red-200 shadow-sm",
     medium: "text-yellow-600 bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 shadow-sm",
@@ -61,13 +64,14 @@ export function TaskItem({
 
   const handleSaveEdit = () => {
     if (!onUpdateTask) return;
-    
+
     const updates: TaskUpdate = {
       title: editTitle,
       due_date: editDate?.toISOString() || null,
-      category: editCategory === "none" ? null : editCategory
+      category: editCategory === "none" ? null : editCategory,
+      project_company_id: editCompanyId === "none" ? null : editCompanyId
     };
-    
+
     onUpdateTask(task.id, updates);
     setIsEditing(false);
   };
@@ -76,6 +80,7 @@ export function TaskItem({
     setEditTitle(task.title);
     setEditDate(task.due_date ? new Date(task.due_date) : null);
     setEditCategory(task.category || "none");
+    setEditCompanyId(task.project_company_id || "none");
     setIsEditing(false);
   };
 
@@ -85,7 +90,7 @@ export function TaskItem({
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     if (dueDate < today) {
       return "text-red-500";
     } else if (dueDate.toDateString() === today.toDateString()) {
@@ -196,6 +201,20 @@ export function TaskItem({
                     ))}
                   </SelectContent>
                 </Select>
+
+                <Select value={editCompanyId} onValueChange={setEditCompanyId}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Empresa / Projeto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma empresa</SelectItem>
+                    {companies.map((comp) => (
+                      <SelectItem key={comp.id} value={comp.id}>
+                        {comp.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleSaveEdit} className="bg-dilq-accent hover:bg-dilq-accent/90">
@@ -221,7 +240,7 @@ export function TaskItem({
                     )}
                   />
                 </div>
-                
+
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {task.subtasks.length > 0 && (
                     <Button
@@ -293,7 +312,7 @@ export function TaskItem({
                 className="h-4 w-4 border-2 border-gray-300 rounded-full
                         data-[state=checked]:border-dilq-accent data-[state=checked]:bg-dilq-accent"
               />
-              <TextEllipsis 
+              <TextEllipsis
                 text={subtask.title}
                 maxLength={80}
                 className={cn(
