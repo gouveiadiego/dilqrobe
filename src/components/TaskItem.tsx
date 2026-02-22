@@ -2,7 +2,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { SubTask, Task, TaskUpdate } from "@/types/task";
-import { Trash2, Tag, Plus, ChevronDown, ChevronUp, Bell, Pencil, Check, X } from "lucide-react";
+import { Trash2, Tag, Plus, ChevronDown, ChevronUp, Bell, Pencil, Check, X, Building2 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -53,6 +53,8 @@ export function TaskItem({
     medium: "Média",
     low: "Baixa",
   }[task.priority];
+
+  const company = companies.find(c => c.id === task.project_company_id);
 
   const completedClass = task.completed ? "opacity-75" : "";
 
@@ -286,6 +288,12 @@ export function TaskItem({
                 {task.category && (
                   <span className="text-xs px-2 py-1 rounded-full bg-purple-50 text-purple-700">
                     {task.category}
+                  </span>
+                )}
+                {company && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 flex items-center gap-1">
+                    <Building2 className="h-3 w-3" />
+                    <TextEllipsis text={company.name} maxLength={25} />
                   </span>
                 )}
                 {task.due_date && (
