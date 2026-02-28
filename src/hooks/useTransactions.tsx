@@ -69,9 +69,9 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
     try {
       const startDate = format(effectiveDateRange.start, 'yyyy-MM-dd');
       const endDate = format(effectiveDateRange.end, 'yyyy-MM-dd');
-      
+
       console.log(`📅 Buscando transações de ${startDate} até ${endDate}`);
-      
+
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -80,7 +80,7 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
         setLoading(false);
         return;
       }
-      
+
       // We'll fetch all transactions for the period
       const { data, error } = await supabase
         .from("transactions")
@@ -102,15 +102,15 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
         .gte("date", startDate)
         .lte("date", endDate)
         .order("date", { ascending: false });
-        
+
       if (error) throw error;
-      
+
       console.log("Fetched transactions:", data?.length || 0, "records");
-      
+
       // Remove potential duplicates based on description, date, amount, and payment_type
       const uniqueTransactions = removeDuplicateTransactions(data || []) as Transaction[];
       console.log(`Removed ${(data || []).length - uniqueTransactions.length} duplicate transactions`);
-      
+
       setTransactions(uniqueTransactions);
     } catch (error) {
       console.error("Error fetching transactions:", error);
@@ -126,12 +126,12 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
     return transactions.filter(transaction => {
       // Create a unique key for each transaction
       const key = `${transaction.date}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
-      
+
       // If we've seen this key before, filter it out
       if (seen.has(key)) {
         return false;
       }
-      
+
       // Otherwise, mark this key as seen and keep the transaction
       seen.set(key, true);
       return true;
@@ -145,12 +145,15 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
 
   const filterTransactions = () => {
     let filtered = [...transactions];
-    
+
     if (selectedFilter !== "all") {
       filtered = filtered.filter(transaction => {
         switch (selectedFilter) {
+          case "receitas":
           case "recebimentos":
             return transaction.amount > 0;
+          case "despesas":
+            return transaction.amount < 0;
           case "despesas-fixas":
             return transaction.amount < 0 && transaction.category === "fixed";
           case "despesas-variaveis":
@@ -166,18 +169,18 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
         }
       });
     }
-    
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(transaction => 
-        transaction.description.toLowerCase().includes(query) || 
+      filtered = filtered.filter(transaction =>
+        transaction.description.toLowerCase().includes(query) ||
         transaction.received_from.toLowerCase().includes(query) ||
         transaction.payment_type.toLowerCase().includes(query) ||
         new Date(transaction.date).toLocaleDateString('pt-BR').includes(query) ||
         (transaction.amount.toString().includes(query))
       );
     }
-    
+
     setFilteredTransactions(filtered);
   };
 
@@ -186,24 +189,24 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
     const income = transactions
       .filter((t) => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
-      
+
     const expenses = transactions
       .filter((t) => t.amount < 0)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-      
+
     const balance = income - expenses;
-    
+
     const pending = transactions
       .filter((t) => !t.is_paid)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    
+
     return { income, expenses, balance, pending };
   }, [transactions]);
 
   // Get chart data for visualizations
   const chartData = useMemo(() => {
     const data: { date: string; income: number; expenses: number }[] = [];
-    
+
     // Create all dates in the month for complete chart data
     const daysInMonth = Array.from(
       { length: endOfMonth(currentDate).getDate() },
@@ -212,23 +215,23 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
         return format(date, 'yyyy-MM-dd');
       }
     );
-    
+
     // Initialize with zero values for all days
     const initialData = daysInMonth.reduce((acc, dateStr) => {
       const displayDate = new Date(dateStr).toLocaleDateString('pt-BR');
       acc[displayDate] = { income: 0, expenses: 0 };
       return acc;
     }, {} as Record<string, { income: number; expenses: number }>);
-    
+
     // Populate with actual transaction data
     transactions.forEach(transaction => {
       const date = new Date(transaction.date);
       const displayDate = date.toLocaleDateString('pt-BR');
-      
+
       if (!initialData[displayDate]) {
         initialData[displayDate] = { income: 0, expenses: 0 };
       }
-      
+
       if (transaction.amount > 0) {
         initialData[displayDate].income += transaction.amount;
       } else {
@@ -248,9 +251,9 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
     return data.sort((a, b) => {
       const [aDay, aMonth, aYear] = a.date.split('/').map(Number);
       const [bDay, bMonth, bYear] = b.date.split('/').map(Number);
-      
-      return new Date(aYear, aMonth - 1, aDay).getTime() - 
-             new Date(bYear, bMonth - 1, bDay).getTime();
+
+      return new Date(aYear, aMonth - 1, aDay).getTime() -
+        new Date(bYear, bMonth - 1, bDay).getTime();
     });
   }, [transactions, currentDate]);
 
@@ -273,7 +276,7 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
         .from('transactions')
         .update({ is_paid: !currentStatus })
         .eq('id', id);
-        
+
       if (error) throw error;
       toast.success("Status de pagamento atualizado");
       fetchTransactions();
@@ -297,7 +300,7 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
     const monthKey = format(currentDate, 'yyyy-MM');
     const storageKey = `recurring-check-${monthKey}`;
     const lastCheck = localStorage.getItem(storageKey);
-    
+
     if (lastCheck) {
       console.log(`✅ Transações recorrentes já verificadas para ${monthKey}`);
       return;
@@ -337,23 +340,23 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
       // Check if we already have transactions for this month
       const currentMonth = currentDate.getMonth();
       const currentYear = currentDate.getFullYear();
-      
+
       // Fetch all transactions for the current month to check for duplicates
       const startDate = new Date(currentYear, currentMonth, 1);
       const endDate = new Date(currentYear, currentMonth + 1, 0);
-      
+
       const { data: existingMonthTransactions, error: monthError } = await supabase
         .from("transactions")
         .select("description, received_from, category, payment_type, date, amount")
         .eq("user_id", user.id)
         .gte("date", startDate.toISOString())
         .lte("date", endDate.toISOString());
-        
+
       if (monthError) throw monthError;
-      
+
       // Create a set of transaction keys that already exist in this month
       const existingKeys = new Set();
-      
+
       existingMonthTransactions?.forEach(transaction => {
         const key = `${transaction.date}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
         existingKeys.add(key);
@@ -365,12 +368,12 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
       const shouldCreateThisMonth = (transaction: any, originalDate: Date): boolean => {
         const recurrenceType = transaction.recurrence_type || 'monthly';
         const monthsDiff = (currentYear - originalDate.getFullYear()) * 12 + (currentMonth - originalDate.getMonth());
-        
+
         // Only create for current month or future months (monthsDiff >= 0)
         if (monthsDiff < 0) {
           return false;
         }
-        
+
         switch (recurrenceType) {
           case 'monthly':
             return monthsDiff >= 0; // Create every month from original date forward
@@ -392,24 +395,24 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
 
         // Get original transaction date
         const originalDate = new Date(transaction.date);
-        
+
         // Check if this transaction should be created based on recurrence type
         if (!shouldCreateThisMonth(transaction, originalDate)) return false;
 
         // Create a new date for this month with the recurring day
         const newDate = new Date(currentYear, currentMonth, transaction.recurring_day);
-        
+
         // Ensure date is valid (handle edge cases like Feb 30)
         if (newDate.getMonth() !== currentMonth) {
           newDate.setDate(0); // Last day of previous month
         }
-        
+
         // Format date to ISO for key creation
         const newDateStr = newDate.toISOString().split('T')[0];
-        
+
         // Create a unique identifier for this transaction
         const key = `${newDateStr}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
-        
+
         // Only create if this transaction doesn't already exist in the current month
         return !existingKeys.has(key);
       });
@@ -425,12 +428,12 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
       const newTransactions = transactionsToCreate.map(transaction => {
         // Create date for the recurring day in current month
         const newDate = new Date(currentYear, currentMonth, transaction.recurring_day);
-        
+
         // Ensure date is valid (handle edge cases like Feb 30)
         if (newDate.getMonth() !== currentMonth) {
           newDate.setDate(0); // Last day of previous month
         }
-        
+
         return {
           date: newDate.toISOString().split('T')[0],
           description: transaction.description,
@@ -452,7 +455,7 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
           .insert(newTransactions);
 
         if (insertError) throw insertError;
-        
+
         console.log(`Created ${newTransactions.length} recurring transactions for ${formatMonth(currentDate)}`);
         // Refresh transactions after adding recurring ones
         fetchTransactions();
@@ -479,9 +482,9 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
     setLoading(true);
     // Clear existing transactions before fetching new ones
     setTransactions([]);
-    
+
     fetchTransactions();
-    
+
     // Only run recurring transaction creation for single month views
     if (currentDate && !dateRange) {
       createRecurringTransactions();
@@ -494,7 +497,7 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
     loading,
     selectedFilter,
     setSelectedFilter,
-    searchQuery, 
+    searchQuery,
     setSearchQuery,
     summaries,
     chartData,
