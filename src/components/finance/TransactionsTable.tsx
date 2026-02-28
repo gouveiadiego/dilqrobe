@@ -1,11 +1,11 @@
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2, ArrowLeftRight } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -67,6 +67,8 @@ export const TransactionsTable = ({
     }
   };
 
+  const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+
   return (
     <>
       <Table>
@@ -94,7 +96,7 @@ export const TransactionsTable = ({
               </TableCell>
               <TableCell>
                 <div className="flex flex-col gap-1">
-                  <TextEllipsis 
+                  <TextEllipsis
                     text={transaction.description}
                     maxLength={40}
                     className="block max-w-[200px]"
@@ -115,7 +117,7 @@ export const TransactionsTable = ({
                 </div>
               </TableCell>
               <TableCell>
-                <TextEllipsis 
+                <TextEllipsis
                   text={transaction.received_from || ""}
                   maxLength={30}
                   className="block max-w-[150px]"
@@ -129,23 +131,22 @@ export const TransactionsTable = ({
               </TableCell>
               <TableCell>{getPaymentTypeLabel(transaction.payment_type)}</TableCell>
               <TableCell>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   onClick={() => onToggleStatus(transaction.id, transaction.is_paid)}
-                  className={`px-2 py-1 rounded-full text-xs ${
-                    transaction.is_paid 
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                  className={`px-2 py-1 rounded-full text-xs ${transaction.is_paid
+                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
                       : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                  }`}
+                    }`}
                 >
                   {transaction.is_paid ? 'Pago' : 'Pendente'}
                 </Button>
               </TableCell>
-               <TableCell>
+              <TableCell>
                 <div className="flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={(e) => {
                       e.stopPropagation();
                       console.log('Edit clicked for transaction:', transaction);
@@ -156,9 +157,9 @@ export const TransactionsTable = ({
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={(e) => {
                       e.stopPropagation();
                       confirmDelete(transaction);
@@ -180,6 +181,17 @@ export const TransactionsTable = ({
             </TableRow>
           )}
         </TableBody>
+        <TableFooter>
+          <TableRow className="bg-slate-100/50 hover:bg-slate-100/50">
+            <TableCell colSpan={4} className="text-right font-bold text-slate-700 text-sm md:text-base">
+              Total no período selecionado:
+            </TableCell>
+            <TableCell className={`font-bold text-sm md:text-base ${totalAmount > 0 ? 'text-emerald-600' : totalAmount < 0 ? 'text-rose-600' : 'text-slate-600'}`}>
+              {formatCurrency(totalAmount)}
+            </TableCell>
+            <TableCell colSpan={3}></TableCell>
+          </TableRow>
+        </TableFooter>
       </Table>
 
       <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
@@ -209,14 +221,14 @@ export const TransactionsTable = ({
           </AlertDialogHeader>
           <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
             <AlertDialogCancel className="sm:mt-0">Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => handleDeleteRecurring(false)} 
+            <AlertDialogAction
+              onClick={() => handleDeleteRecurring(false)}
               className="bg-amber-600 hover:bg-amber-700"
             >
               Apenas esta ocorrência
             </AlertDialogAction>
-            <AlertDialogAction 
-              onClick={() => handleDeleteRecurring(true)} 
+            <AlertDialogAction
+              onClick={() => handleDeleteRecurring(true)}
               className="bg-red-600 hover:bg-red-700"
             >
               Todas as ocorrências
