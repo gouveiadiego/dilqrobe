@@ -300,8 +300,6 @@ const Index = () => {
         return <ServicesTab />;
       case 'projects':
         return <WrittenProjectsTab />;
-      case 'ai-assistant':
-        return <AIAssistantTab />;
       default:
         return null;
     }
