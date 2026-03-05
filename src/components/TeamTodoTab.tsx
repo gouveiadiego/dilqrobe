@@ -1,14 +1,15 @@
 import { useState, useMemo } from "react";
-import { format, addDays, subDays, parseISO } from "date-fns";
+import { format, addDays, subDays, parseISO, subDays as sub } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useTeamTasks, TeamMember } from "@/hooks/useTeamTasks";
+import { useTeamTasks, useTeamHistory, TeamMember } from "@/hooks/useTeamTasks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
     ChevronLeft, ChevronRight, Plus, Trash2, UserPlus,
     CheckCircle2, Circle, Users, CalendarDays, CheckCheck,
-    ArrowDownToLine, Trophy, Star, Zap,
+    ArrowDownToLine, Trophy, Star, Zap, History, ClipboardList,
+    Search, ChevronDown, ChevronUp,
 } from "lucide-react";
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -26,11 +27,13 @@ const MEMBER_COLORS = [
 ];
 
 type Priority = 'high' | 'medium' | 'low';
+type ViewMode = 'daily' | 'history';
+type HistoryRange = '7' | '30' | '90';
 
-const PRIORITY_CONFIG: Record<Priority, { label: string; dot: string; pulse: boolean }> = {
-    high: { label: "Alta", dot: "bg-red-500", pulse: true },
-    medium: { label: "Normal", dot: "bg-yellow-400", pulse: false },
-    low: { label: "Baixa", dot: "bg-green-500", pulse: false },
+const PRIORITY_CONFIG: Record<Priority, { label: string; dot: string }> = {
+    high: { label: "Alta", dot: "bg-red-500" },
+    medium: { label: "Normal", dot: "bg-yellow-400" },
+    low: { label: "Baixa", dot: "bg-green-500" },
 };
 
 const MOTIVATIONAL_QUOTES = [
@@ -48,20 +51,16 @@ const MOTIVATIONAL_QUOTES = [
     "Cada check é uma vitória. Celebre! 🎉",
 ];
 
-function getDailyQuote(): string {
-    const dayOfYear = Math.floor(
-        (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000
-    );
-    return MOTIVATIONAL_QUOTES[dayOfYear % MOTIVATIONAL_QUOTES.length];
+function getDailyQuote() {
+    const d = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    return MOTIVATIONAL_QUOTES[d % MOTIVATIONAL_QUOTES.length];
 }
-
-function getGreeting(): string {
-    const hour = new Date().getHours();
-    if (hour < 12) return "☀️ Bom dia, equipe!";
-    if (hour < 18) return "🌤️ Boa tarde, equipe!";
+function getGreeting() {
+    const h = new Date().getHours();
+    if (h < 12) return "☀️ Bom dia, equipe!";
+    if (h < 18) return "🌤️ Boa tarde, equipe!";
     return "🌙 Boa noite, equipe!";
 }
-
 function getInitials(name: string) {
     return name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 }
@@ -74,9 +73,7 @@ function PriorityPicker({ value, onChange }: { value: Priority; onChange: (p: Pr
                 {(Object.keys(PRIORITY_CONFIG) as Priority[]).map(p => (
                     <Tooltip key={p}>
                         <TooltipTrigger asChild>
-                            <button
-                                type="button"
-                                onClick={() => onChange(p)}
+                            <button type="button" onClick={() => onChange(p)}
                                 className={`w-4 h-4 rounded-full transition-all ${PRIORITY_CONFIG[p].dot} ${value === p ? "scale-125 ring-2 ring-offset-1 ring-gray-400 shadow-sm" : "opacity-40 hover:opacity-70"
                                     }`}
                             />
@@ -118,8 +115,7 @@ function MemberCard({
         const trimmed = newTask.trim();
         if (!trimmed) return;
         onAddTask(member.id, trimmed, date, priority);
-        setNewTask("");
-        setPriority("medium");
+        setNewTask(""); setPriority("medium");
     };
 
     const sorted = [...memberTasks].sort((a, b) => {
@@ -131,23 +127,19 @@ function MemberCard({
     });
 
     return (
-        <div className={`rounded-2xl border flex flex-col transition-all duration-500 overflow-hidden relative ${allDone
-                ? 'border-green-300 bg-gradient-to-b from-green-50 to-emerald-50/40 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
+        <div className={`rounded-2xl border flex flex-col transition-all duration-500 overflow-hidden relative ${allDone ? 'border-green-300 bg-gradient-to-b from-green-50 to-emerald-50/40 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
                 : 'border-gray-100 bg-white shadow-sm hover:shadow-md'
             }`}>
-            {/* Top performer ribbon */}
             {isTopPerformer && totalCount > 0 && (
                 <div className="absolute top-0 right-0 bg-gradient-to-l from-yellow-400 to-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg flex items-center gap-1 z-10">
                     <Trophy className="h-3 w-3" /> Destaque
                 </div>
             )}
 
-            {/* Header */}
             <div className="p-4 flex items-center justify-between" style={{ borderLeft: `4px solid ${member.color}` }}>
                 <div className="flex items-center gap-3">
                     <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm transition-all duration-300 ${allDone ? 'scale-110' : ''
-                            }`}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm transition-all duration-300 ${allDone ? 'scale-110' : ''}`}
                         style={{ backgroundColor: member.color }}
                     >
                         {allDone ? <CheckCheck className="h-5 w-5" /> : getInitials(member.name)}
@@ -162,7 +154,6 @@ function MemberCard({
                         </p>
                     </div>
                 </div>
-
                 <TooltipProvider>
                     <div className="flex items-center gap-0.5">
                         <Tooltip>
@@ -193,7 +184,6 @@ function MemberCard({
                 </TooltipProvider>
             </div>
 
-            {/* Progress Bar */}
             <div className="px-4 pb-3">
                 <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] text-gray-400 font-medium">Progresso</span>
@@ -201,28 +191,21 @@ function MemberCard({
                 </div>
                 <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                     <div
-                        className={`h-full rounded-full transition-all duration-700 ease-out ${allDone
-                                ? 'bg-gradient-to-r from-green-400 to-emerald-500'
-                                : 'bg-gradient-to-r from-dilq-accent to-dilq-teal'
-                            }`}
+                        className={`h-full rounded-full transition-all duration-700 ease-out ${allDone ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-dilq-accent to-dilq-teal'}`}
                         style={{ width: `${progress}%` }}
                     />
                 </div>
             </div>
 
-            {/* All done celebration */}
             {allDone && (
                 <div className="mx-4 mb-3 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-center font-semibold text-sm shadow-sm">
                     🎉 Parabéns! Todas as tarefas concluídas!
                 </div>
             )}
 
-            {/* Task List */}
             <div className="flex-1 px-4 pb-2 space-y-0.5 min-h-[80px]">
                 {sorted.length === 0 && (
-                    <p className="text-gray-400 text-sm py-4 text-center italic">
-                        Nenhuma tarefa. Adicione uma abaixo! 👇
-                    </p>
+                    <p className="text-gray-400 text-sm py-4 text-center italic">Nenhuma tarefa. Adicione uma abaixo! 👇</p>
                 )}
                 {sorted.map(task => {
                     const pCfg = PRIORITY_CONFIG[(task.priority as Priority) ?? 'medium'];
@@ -251,7 +234,6 @@ function MemberCard({
                 })}
             </div>
 
-            {/* Add Task Input */}
             <div className="p-3 border-t border-gray-50 bg-gray-50/50">
                 <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs text-gray-400 font-medium">Prioridade:</span>
@@ -265,11 +247,174 @@ function MemberCard({
                         onKeyDown={e => e.key === "Enter" && handleAddTask()}
                         className="h-8 text-sm bg-white border-gray-200 placeholder:text-gray-300 focus-visible:ring-1"
                     />
-                    <Button size="sm" onClick={handleAddTask} className="h-8 px-2 shrink-0 hover:opacity-90 transition-opacity" style={{ backgroundColor: member.color, border: "none" }}>
+                    <Button size="sm" onClick={handleAddTask} className="h-8 px-2 shrink-0 hover:opacity-90" style={{ backgroundColor: member.color, border: "none" }}>
                         <Plus className="h-4 w-4 text-white" />
                     </Button>
                 </div>
             </div>
+        </div>
+    );
+}
+
+// ---------- HISTORY VIEW ----------
+function HistoryView({ members }: { members: TeamMember[] }) {
+    const [range, setRange] = useState<HistoryRange>('7');
+    const [search, setSearch] = useState('');
+    const [openDates, setOpenDates] = useState<Set<string>>(new Set());
+
+    const today = new Date();
+    const dateTo = format(today, 'yyyy-MM-dd');
+    const dateFrom = format(sub(today, parseInt(range)), 'yyyy-MM-dd');
+
+    const { grouped, isLoading, totalCompleted } = useTeamHistory(dateFrom, dateTo, members);
+
+    const filtered = useMemo(() => {
+        if (!search.trim()) return grouped;
+        const q = search.toLowerCase();
+        return grouped
+            .map(entry => ({
+                ...entry,
+                tasks: entry.tasks.filter(t =>
+                    t.title.toLowerCase().includes(q) ||
+                    t.member_name.toLowerCase().includes(q)
+                )
+            }))
+            .filter(entry => entry.tasks.length > 0);
+    }, [grouped, search]);
+
+    const toggleDate = (date: string) => {
+        setOpenDates(prev => {
+            const next = new Set(prev);
+            if (next.has(date)) next.delete(date);
+            else next.add(date);
+            return next;
+        });
+    };
+
+    // Group tasks within a date by member
+    const groupByMember = (tasks: typeof grouped[0]['tasks']) => {
+        const map = new Map<string, { name: string; color: string; tasks: typeof tasks }>();
+        for (const t of tasks) {
+            if (!map.has(t.member_id)) {
+                map.set(t.member_id, { name: t.member_name, color: t.member_color, tasks: [] });
+            }
+            map.get(t.member_id)!.tasks.push(t);
+        }
+        return Array.from(map.values());
+    };
+
+    return (
+        <div className="space-y-5">
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 font-medium">Período:</span>
+                    {(['7', '30', '90'] as HistoryRange[]).map(r => (
+                        <button
+                            key={r}
+                            onClick={() => setRange(r)}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${range === r
+                                    ? 'bg-gradient-to-r from-dilq-accent to-dilq-teal text-white shadow-sm'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                        >
+                            {r === '7' ? '7 dias' : r === '30' ? '30 dias' : '90 dias'}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="relative w-full sm:w-60">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                    <Input
+                        placeholder="Buscar tarefa ou pessoa..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="pl-8 h-8 text-sm bg-white border-gray-200"
+                    />
+                </div>
+            </div>
+
+            {/* Summary badge */}
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <span>
+                    <span className="font-bold text-gray-800">{totalCompleted}</span> tarefas concluídas nos últimos {range} dias
+                    {search && ` • Mostrando resultados para "${search}"`}
+                </span>
+            </div>
+
+            {/* Accordions */}
+            {isLoading ? (
+                <LoadingSpinner text="Carregando histórico..." className="py-12" />
+            ) : filtered.length === 0 ? (
+                <div className="text-center py-16 text-gray-400">
+                    <History className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">Nenhum registro encontrado</p>
+                    <p className="text-sm mt-1">Tente ampliar o período ou limpar a busca</p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {filtered.map(entry => {
+                        const isOpen = openDates.has(entry.date);
+                        const dateObj = parseISO(entry.date + 'T12:00:00');
+                        const isToday = entry.date === format(new Date(), 'yyyy-MM-dd');
+                        const isYesterday = entry.date === format(sub(new Date(), 1), 'yyyy-MM-dd');
+                        const dateLabel = isToday ? 'Hoje' : isYesterday ? 'Ontem'
+                            : format(dateObj, "EEEE, dd 'de' MMMM", { locale: ptBR });
+                        const memberGroups = groupByMember(entry.tasks);
+
+                        return (
+                            <div key={entry.date} className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+                                {/* Date header */}
+                                <button
+                                    onClick={() => toggleDate(entry.date)}
+                                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <CalendarDays className="h-4 w-4 text-dilq-accent shrink-0" />
+                                        <span className="font-semibold text-gray-800 capitalize text-sm">{dateLabel}</span>
+                                        <span className="text-xs text-gray-400 font-mono">
+                                            {format(dateObj, 'dd/MM/yyyy')}
+                                        </span>
+                                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                                            {entry.tasks.length} ✓
+                                        </span>
+                                    </div>
+                                    {isOpen
+                                        ? <ChevronUp className="h-4 w-4 text-gray-400 shrink-0" />
+                                        : <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />}
+                                </button>
+
+                                {/* Expanded content */}
+                                {isOpen && (
+                                    <div className="border-t border-gray-50 divide-y divide-gray-50">
+                                        {memberGroups.map(mg => (
+                                            <div key={mg.name} className="px-4 py-3">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style={{ backgroundColor: mg.color }}>
+                                                        {getInitials(mg.name)}
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-gray-700">{mg.name}</span>
+                                                    <span className="text-xs text-gray-400">{mg.tasks.length} tarefa(s)</span>
+                                                </div>
+                                                <div className="space-y-1 ml-8">
+                                                    {mg.tasks.map(t => (
+                                                        <div key={t.id} className="flex items-center gap-2">
+                                                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                                                            <span className="text-sm text-gray-500 line-through">{t.title}</span>
+                                                            {t.priority === 'high' && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium">Alta</span>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }
@@ -279,13 +424,11 @@ function AddMemberDialog({ onAdd }: { onAdd: (name: string, color: string) => vo
     const [open, setOpen] = useState(false);
     const [name, setName] = useState("");
     const [selectedColor, setSelectedColor] = useState(MEMBER_COLORS[0]);
-
     const handleAdd = () => {
         if (!name.trim()) return;
         onAdd(name.trim(), selectedColor);
         setName(""); setSelectedColor(MEMBER_COLORS[0]); setOpen(false);
     };
-
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -294,24 +437,15 @@ function AddMemberDialog({ onAdd }: { onAdd: (name: string, color: string) => vo
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-sm">
-                <DialogHeader>
-                    <DialogTitle>Nova Pessoa na Equipe</DialogTitle>
-                </DialogHeader>
+                <DialogHeader><DialogTitle>Nova Pessoa na Equipe</DialogTitle></DialogHeader>
                 <div className="space-y-4 py-2">
-                    <Input
-                        placeholder="Nome (ex: Francine)"
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && handleAdd()}
-                        autoFocus
-                    />
+                    <Input placeholder="Nome" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAdd()} autoFocus />
                     <div>
                         <p className="text-xs text-gray-500 mb-2">Cor do avatar</p>
                         <div className="flex gap-2 flex-wrap">
                             {MEMBER_COLORS.map(c => (
                                 <button key={c} onClick={() => setSelectedColor(c)}
-                                    className={`w-7 h-7 rounded-full transition-transform ${selectedColor === c ? "scale-125 ring-2 ring-offset-2 ring-gray-400" : "hover:scale-110"
-                                        }`}
+                                    className={`w-7 h-7 rounded-full transition-transform ${selectedColor === c ? "scale-125 ring-2 ring-offset-2 ring-gray-400" : "hover:scale-110"}`}
                                     style={{ backgroundColor: c }}
                                 />
                             ))}
@@ -338,24 +472,24 @@ function AddMemberDialog({ onAdd }: { onAdd: (name: string, color: string) => vo
 // ---------- MAIN TAB ----------
 export function TeamTodoTab() {
     const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
-    const { members, tasks, isLoading, addMember, deleteMember, addTask, toggleTask, deleteTask, completeAllForMember, carryOverFromYesterday } = useTeamTasks(selectedDate);
+    const [viewMode, setViewMode] = useState<ViewMode>('daily');
+    const {
+        members, tasks, isLoading, addMember, deleteMember,
+        addTask, toggleTask, deleteTask, completeAllForMember, carryOverFromYesterday,
+    } = useTeamTasks(selectedDate);
 
     const displayDate = parseISO(selectedDate + "T12:00:00");
     const isToday = selectedDate === format(new Date(), "yyyy-MM-dd");
-
     const goToPrev = () => setSelectedDate(format(subDays(displayDate, 1), "yyyy-MM-dd"));
     const goToNext = () => setSelectedDate(format(addDays(displayDate, 1), "yyyy-MM-dd"));
     const goToToday = () => setSelectedDate(format(new Date(), "yyyy-MM-dd"));
 
-    // Team stats
     const totalTasks = tasks.length;
     const completedTasks = tasks.filter(t => t.completed).length;
     const teamProgress = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
     const allTeamDone = members.length > 0 && totalTasks > 0 && completedTasks === totalTasks;
 
-    // Top performer = highest completion %
     const topPerformerId = useMemo(() => {
-        if (members.length === 0) return null;
         let best = { id: "", pct: -1 };
         for (const m of members) {
             const mt = tasks.filter(t => t.member_id === m.id);
@@ -383,118 +517,136 @@ export function TeamTodoTab() {
                 </div>
             </div>
 
-            {/* Full team celebration */}
-            {allTeamDone && (
-                <div className="rounded-2xl bg-gradient-to-r from-green-400 to-emerald-500 p-5 text-white text-center shadow-lg animate-fade-in">
-                    <div className="text-4xl mb-2">🏆</div>
-                    <h3 className="text-xl font-extrabold">EQUIPE INCRÍVEL!</h3>
-                    <p className="text-green-100 mt-1 text-sm">Toda a equipe concluiu 100% das tarefas de hoje. Vocês são demais! 🎉</p>
-                </div>
-            )}
+            {/* View mode toggle */}
+            <div className="flex items-center gap-2 bg-gray-100 rounded-xl p-1 w-fit">
+                <button
+                    onClick={() => setViewMode('daily')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'daily' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    <ClipboardList className="h-4 w-4" /> Diário
+                </button>
+                <button
+                    onClick={() => setViewMode('history')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === 'history' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                >
+                    <History className="h-4 w-4" /> Histórico
+                </button>
+            </div>
 
-            {/* Date Nav + Team Progress */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                {/* Date navigator */}
-                <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-100 shadow-sm p-2.5">
-                    <button onClick={goToPrev} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                        <ChevronLeft className="h-4 w-4 text-gray-600" />
-                    </button>
-                    <div className="flex items-center gap-2 min-w-[190px] justify-center">
-                        <CalendarDays className="h-4 w-4 text-dilq-accent shrink-0" />
-                        <span className="font-semibold text-gray-800 capitalize text-sm">
-                            {format(displayDate, "eeee, dd 'de' MMMM", { locale: ptBR })}
-                        </span>
-                    </div>
-                    <button onClick={goToNext} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                        <ChevronRight className="h-4 w-4 text-gray-600" />
-                    </button>
-                    {!isToday && (
-                        <button onClick={goToToday} className="text-xs text-dilq-accent hover:underline font-medium ml-1">
-                            Hoje
-                        </button>
+            {/* ---- DAILY MODE ---- */}
+            {viewMode === 'daily' && (
+                <>
+                    {allTeamDone && (
+                        <div className="rounded-2xl bg-gradient-to-r from-green-400 to-emerald-500 p-5 text-white text-center shadow-lg animate-fade-in">
+                            <div className="text-4xl mb-2">🏆</div>
+                            <h3 className="text-xl font-extrabold">EQUIPE INCRÍVEL!</h3>
+                            <p className="text-green-100 mt-1 text-sm">Toda a equipe concluiu 100% das tarefas de hoje. Vocês são demais! 🎉</p>
+                        </div>
                     )}
-                </div>
 
-                {/* Team Progress */}
-                {members.length > 0 && totalTasks > 0 && (
-                    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex-1 max-w-md">
-                        <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
-                                <Users className="h-3.5 w-3.5" /> Progresso da Equipe
-                            </span>
-                            <span className={`text-xs font-bold ${teamProgress === 100 ? 'text-green-600' : teamProgress >= 60 ? 'text-yellow-600' : 'text-gray-500'}`}>
-                                {teamProgress}% • {completedTasks}/{totalTasks}
-                            </span>
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                        {/* Date Nav */}
+                        <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-100 shadow-sm p-2.5">
+                            <button onClick={goToPrev} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                                <ChevronLeft className="h-4 w-4 text-gray-600" />
+                            </button>
+                            <div className="flex items-center gap-2 min-w-[190px] justify-center">
+                                <CalendarDays className="h-4 w-4 text-dilq-accent shrink-0" />
+                                <span className="font-semibold text-gray-800 capitalize text-sm">
+                                    {format(displayDate, "eeee, dd 'de' MMMM", { locale: ptBR })}
+                                </span>
+                            </div>
+                            <button onClick={goToNext} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                                <ChevronRight className="h-4 w-4 text-gray-600" />
+                            </button>
+                            {!isToday && (
+                                <button onClick={goToToday} className="text-xs text-dilq-accent hover:underline font-medium ml-1">Hoje</button>
+                            )}
                         </div>
-                        <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                                className={`h-full rounded-full transition-all duration-700 ${teamProgress === 100
-                                        ? 'bg-gradient-to-r from-green-400 to-emerald-500'
-                                        : 'bg-gradient-to-r from-dilq-accent to-dilq-teal'
-                                    }`}
-                                style={{ width: `${teamProgress}%` }}
-                            />
-                        </div>
-                        <div className="flex flex-wrap gap-3 mt-2">
-                            {members.map(m => {
-                                const mt = tasks.filter(t => t.member_id === m.id);
-                                const mc = mt.filter(t => t.completed).length;
-                                return (
-                                    <div key={m.id} className="flex items-center gap-1">
-                                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: m.color }} />
-                                        <span className="text-[11px] text-gray-500">{m.name.split(" ")[0]}</span>
-                                        <span className="text-[11px] font-semibold text-gray-700">{mc}/{mt.length}</span>
-                                        {mt.length > 0 && mc === mt.length && <span className="text-[10px]">✅</span>}
-                                    </div>
-                                );
-                            })}
-                        </div>
+
+                        {/* Team Progress */}
+                        {members.length > 0 && totalTasks > 0 && (
+                            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex-1 max-w-md">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+                                        <Users className="h-3.5 w-3.5" /> Progresso da Equipe
+                                    </span>
+                                    <span className={`text-xs font-bold ${teamProgress === 100 ? 'text-green-600' : teamProgress >= 60 ? 'text-yellow-600' : 'text-gray-500'}`}>
+                                        {teamProgress}% • {completedTasks}/{totalTasks}
+                                    </span>
+                                </div>
+                                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-700 ${teamProgress === 100 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-dilq-accent to-dilq-teal'}`}
+                                        style={{ width: `${teamProgress}%` }}
+                                    />
+                                </div>
+                                <div className="flex flex-wrap gap-3 mt-2">
+                                    {members.map(m => {
+                                        const mt = tasks.filter(t => t.member_id === m.id);
+                                        const mc = mt.filter(t => t.completed).length;
+                                        return (
+                                            <div key={m.id} className="flex items-center gap-1">
+                                                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: m.color }} />
+                                                <span className="text-[11px] text-gray-500">{m.name.split(" ")[0]}</span>
+                                                <span className="text-[11px] font-semibold text-gray-700">{mc}/{mt.length}</span>
+                                                {mt.length > 0 && mc === mt.length && <span className="text-[10px]">✅</span>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
 
-            {/* Priority legend */}
-            <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
-                <span className="font-medium text-gray-500">Prioridade:</span>
-                {(Object.keys(PRIORITY_CONFIG) as Priority[]).map(p => (
-                    <span key={p} className="flex items-center gap-1">
-                        <span className={`w-2 h-2 rounded-full ${PRIORITY_CONFIG[p].dot}`} />
-                        {PRIORITY_CONFIG[p].label}
-                        {p === 'high' && <span className="text-red-400">(pulsa ⚡)</span>}
-                    </span>
-                ))}
-            </div>
-
-            {/* Cards */}
-            {isLoading ? (
-                <LoadingSpinner text="Carregando equipe..." className="py-16" />
-            ) : members.length === 0 ? (
-                <div className="text-center py-20 rounded-2xl border border-dashed border-gray-200 bg-gray-50/50">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dilq-accent/20 to-dilq-teal/20 mx-auto flex items-center justify-center mb-4">
-                        <Users className="h-8 w-8 text-dilq-accent" />
+                    {/* Priority legend */}
+                    <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap">
+                        <span className="font-medium text-gray-500">Prioridade:</span>
+                        {(Object.keys(PRIORITY_CONFIG) as Priority[]).map(p => (
+                            <span key={p} className="flex items-center gap-1">
+                                <span className={`w-2 h-2 rounded-full ${PRIORITY_CONFIG[p].dot}`} />
+                                {PRIORITY_CONFIG[p].label}
+                                {p === 'high' && <span className="text-red-400">(pulsa ⚡)</span>}
+                            </span>
+                        ))}
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-1">Equipe vazia</h3>
-                    <p className="text-gray-400 text-sm">Clique em "Adicionar Pessoa" para cadastrar os membros da equipe.</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
-                    {members.map(member => (
-                        <MemberCard
-                            key={member.id}
-                            member={member}
-                            tasks={tasks}
-                            date={selectedDate}
-                            isTopPerformer={topPerformerId === member.id}
-                            onAddTask={(memberId, title, date, prio) => addTask({ member_id: memberId, title, due_date: date, priority: prio })}
-                            onToggleTask={(id, completed) => toggleTask({ id, completed })}
-                            onDeleteTask={deleteTask}
-                            onDeleteMember={deleteMember}
-                            onCompleteAll={completeAllForMember}
-                            onCarryOver={carryOverFromYesterday}
-                        />
-                    ))}
-                </div>
+
+                    {isLoading ? (
+                        <LoadingSpinner text="Carregando equipe..." className="py-16" />
+                    ) : members.length === 0 ? (
+                        <div className="text-center py-20 rounded-2xl border border-dashed border-gray-200 bg-gray-50/50">
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-dilq-accent/20 to-dilq-teal/20 mx-auto flex items-center justify-center mb-4">
+                                <Users className="h-8 w-8 text-dilq-accent" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-700 mb-1">Equipe vazia</h3>
+                            <p className="text-gray-400 text-sm">Clique em "Adicionar Pessoa" para cadastrar os membros.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
+                            {members.map(member => (
+                                <MemberCard
+                                    key={member.id}
+                                    member={member}
+                                    tasks={tasks}
+                                    date={selectedDate}
+                                    isTopPerformer={topPerformerId === member.id}
+                                    onAddTask={(memberId, title, date, prio) => addTask({ member_id: memberId, title, due_date: date, priority: prio })}
+                                    onToggleTask={(id, completed) => toggleTask({ id, completed })}
+                                    onDeleteTask={deleteTask}
+                                    onDeleteMember={deleteMember}
+                                    onCompleteAll={completeAllForMember}
+                                    onCarryOver={carryOverFromYesterday}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </>
             )}
+
+            {/* ---- HISTORY MODE ---- */}
+            {viewMode === 'history' && <HistoryView members={members} />}
         </div>
     );
 }

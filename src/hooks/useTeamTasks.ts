@@ -185,3 +185,52 @@ export const useTeamTasks = (selectedDate: string) => {
         carryOverFromYesterday: carryOverMutation.mutate,
     };
 };
+
+// ---- HISTORY HOOK ----
+export interface HistoryEntry {
+    date: string;
+    tasks: (TeamTask & { member_name: string; member_color: string })[];
+}
+
+export const useTeamHistory = (dateFrom: string, dateTo: string, members: TeamMember[]) => {
+    const { data: historyTasks = [], isLoading } = useQuery({
+        queryKey: ["team-history", dateFrom, dateTo],
+        queryFn: async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return [];
+            const { data, error } = await supabase
+                .from("team_tasks" as any)
+                .select("*")
+                .eq("user_id", user.id)
+                .eq("completed", true)
+                .gte("due_date", dateFrom)
+                .lte("due_date", dateTo)
+                .order("due_date", { ascending: false })
+                .order("created_at", { ascending: true });
+            if (error) { toast.error("Erro ao carregar histórico"); throw error; }
+            return (data as unknown) as TeamTask[];
+        },
+        enabled: !!dateFrom && !!dateTo
+    });
+
+    // Enrich with member info and group by date
+    const grouped: HistoryEntry[] = [];
+    const dateMap = new Map<string, HistoryEntry>();
+
+    for (const task of historyTasks) {
+        const member = members.find(m => m.id === task.member_id);
+        const enriched = {
+            ...task,
+            member_name: member?.name ?? "?",
+            member_color: member?.color ?? "#9b87f5",
+        };
+        if (!dateMap.has(task.due_date)) {
+            const entry: HistoryEntry = { date: task.due_date, tasks: [] };
+            dateMap.set(task.due_date, entry);
+            grouped.push(entry);
+        }
+        dateMap.get(task.due_date)!.tasks.push(enriched);
+    }
+
+    return { grouped, isLoading, totalCompleted: historyTasks.length };
+};
