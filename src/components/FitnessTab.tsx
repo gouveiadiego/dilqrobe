@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, differenceInYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useFitness, FitnessProfile } from "@/hooks/useFitness";
@@ -143,9 +143,11 @@ export function FitnessTab() {
     const { profiles, measurements, bodyMeasurements, isLoading, addProfile, deleteProfile } = useFitness(activeProfileId);
 
     // Auto-select first profile if none selected
-    if (!activeProfileId && profiles.length > 0) {
-        setActiveProfileId(profiles[0].id);
-    }
+    useEffect(() => {
+        if (!activeProfileId && profiles.length > 0) {
+            setActiveProfileId(profiles[0].id);
+        }
+    }, [activeProfileId, profiles]);
 
     const activeProfile = profiles.find(p => p.id === activeProfileId);
     const latestMeas = measurements[0];
