@@ -53,6 +53,71 @@ export type Database = {
         }
         Relationships: []
       }
+      body_measurements: {
+        Row: {
+          abdomen_cm: number | null
+          chest_cm: number | null
+          created_at: string | null
+          hip_cm: number | null
+          id: string
+          left_arm_cm: number | null
+          left_calf_cm: number | null
+          left_thigh_cm: number | null
+          measured_at: string
+          neck_cm: number | null
+          profile_id: string
+          right_arm_cm: number | null
+          right_calf_cm: number | null
+          right_thigh_cm: number | null
+          user_id: string
+          waist_cm: number | null
+        }
+        Insert: {
+          abdomen_cm?: number | null
+          chest_cm?: number | null
+          created_at?: string | null
+          hip_cm?: number | null
+          id?: string
+          left_arm_cm?: number | null
+          left_calf_cm?: number | null
+          left_thigh_cm?: number | null
+          measured_at?: string
+          neck_cm?: number | null
+          profile_id: string
+          right_arm_cm?: number | null
+          right_calf_cm?: number | null
+          right_thigh_cm?: number | null
+          user_id: string
+          waist_cm?: number | null
+        }
+        Update: {
+          abdomen_cm?: number | null
+          chest_cm?: number | null
+          created_at?: string | null
+          hip_cm?: number | null
+          id?: string
+          left_arm_cm?: number | null
+          left_calf_cm?: number | null
+          left_thigh_cm?: number | null
+          measured_at?: string
+          neck_cm?: number | null
+          profile_id?: string
+          right_arm_cm?: number | null
+          right_calf_cm?: number | null
+          right_thigh_cm?: number | null
+          user_id?: string
+          waist_cm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "body_measurements_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "fitness_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budgets: {
         Row: {
           client_address: string | null
@@ -507,6 +572,122 @@ export type Database = {
         }
         Relationships: []
       }
+      fitness_measurements: {
+        Row: {
+          bmi: number | null
+          bmr_kcal: number | null
+          body_fat_pct: number | null
+          bone_mass_kg: number | null
+          created_at: string | null
+          fat_mass_kg: number | null
+          id: string
+          measured_at: string
+          metabolic_age: number | null
+          muscle_mass_kg: number | null
+          notes: string | null
+          profile_id: string
+          protein_pct: number | null
+          skeletal_muscle_pct: number | null
+          user_id: string
+          visceral_fat: number | null
+          water_pct: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          bmi?: number | null
+          bmr_kcal?: number | null
+          body_fat_pct?: number | null
+          bone_mass_kg?: number | null
+          created_at?: string | null
+          fat_mass_kg?: number | null
+          id?: string
+          measured_at?: string
+          metabolic_age?: number | null
+          muscle_mass_kg?: number | null
+          notes?: string | null
+          profile_id: string
+          protein_pct?: number | null
+          skeletal_muscle_pct?: number | null
+          user_id: string
+          visceral_fat?: number | null
+          water_pct?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          bmi?: number | null
+          bmr_kcal?: number | null
+          body_fat_pct?: number | null
+          bone_mass_kg?: number | null
+          created_at?: string | null
+          fat_mass_kg?: number | null
+          id?: string
+          measured_at?: string
+          metabolic_age?: number | null
+          muscle_mass_kg?: number | null
+          notes?: string | null
+          profile_id?: string
+          protein_pct?: number | null
+          skeletal_muscle_pct?: number | null
+          user_id?: string
+          visceral_fat?: number | null
+          water_pct?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fitness_measurements_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "fitness_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fitness_profiles: {
+        Row: {
+          birth_date: string | null
+          color: string | null
+          created_at: string | null
+          gender: string | null
+          goal_body_fat: number | null
+          goal_waist: number | null
+          goal_weight: number | null
+          height_cm: number | null
+          id: string
+          name: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          birth_date?: string | null
+          color?: string | null
+          created_at?: string | null
+          gender?: string | null
+          goal_body_fat?: number | null
+          goal_waist?: number | null
+          goal_weight?: number | null
+          height_cm?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          birth_date?: string | null
+          color?: string | null
+          created_at?: string | null
+          gender?: string | null
+          goal_body_fat?: number | null
+          goal_waist?: number | null
+          goal_weight?: number | null
+          height_cm?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       gym_records: {
         Row: {
           challenge_id: string
@@ -770,6 +951,7 @@ export type Database = {
           is_active: boolean | null
           logo_url: string | null
           name: string
+          project_type: string | null
           updated_at: string | null
           user_id: string
         }
@@ -783,6 +965,7 @@ export type Database = {
           is_active?: boolean | null
           logo_url?: string | null
           name: string
+          project_type?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -796,6 +979,7 @@ export type Database = {
           is_active?: boolean | null
           logo_url?: string | null
           name?: string
+          project_type?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -1346,6 +1530,74 @@ export type Database = {
             columns: ["project_company_id"]
             isOneToOne: false
             referencedRelation: "project_companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      team_tasks: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          due_date: string
+          id: string
+          member_id: string
+          notes: string | null
+          priority: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          member_id: string
+          notes?: string | null
+          priority?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          member_id?: string
+          notes?: string | null
+          priority?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_tasks_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
             referencedColumns: ["id"]
           },
         ]
