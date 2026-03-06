@@ -152,6 +152,15 @@ export const useFitness = (activeProfileId?: string | null) => {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ["fitness-measurements", activeProfileId] })
     });
 
+    const updateMeasurementMutation = useMutation({
+        mutationFn: async ({ id, updates }: { id: string; updates: Partial<FitnessMeasurement> }) => {
+            const { error } = await supabase.from("fitness_measurements" as any).update(updates).eq("id", id);
+            if (error) { toast.error("Erro ao atualizar medição"); throw error; }
+            toast.success("Medição atualizada!");
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["fitness-measurements", activeProfileId] })
+    });
+
     // --- BODY MEASUREMENTS ---
     const { data: bodyMeasurements = [], isLoading: loadingBodyMeasurements } = useQuery({
         queryKey: ["body-measurements", activeProfileId],
@@ -194,6 +203,15 @@ export const useFitness = (activeProfileId?: string | null) => {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ["body-measurements", activeProfileId] })
     });
 
+    const updateBodyMeasurementMutation = useMutation({
+        mutationFn: async ({ id, updates }: { id: string; updates: Partial<BodyMeasurement> }) => {
+            const { error } = await supabase.from("body_measurements" as any).update(updates).eq("id", id);
+            if (error) { toast.error("Erro ao atualizar medidas"); throw error; }
+            toast.success("Medidas atualizadas!");
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["body-measurements", activeProfileId] })
+    });
+
     return {
         profiles,
         measurements,
@@ -203,8 +221,10 @@ export const useFitness = (activeProfileId?: string | null) => {
         deleteProfile: deleteProfileMutation.mutate,
         updateProfile: updateProfileMutation.mutate,
         addMeasurement: addMeasurementMutation.mutate,
+        updateMeasurement: updateMeasurementMutation.mutate,
         deleteMeasurement: deleteMeasurementMutation.mutate,
         addBodyMeasurement: addBodyMeasurementMutation.mutate,
+        updateBodyMeasurement: updateBodyMeasurementMutation.mutate,
         deleteBodyMeasurement: deleteBodyMeasurementMutation.mutate,
     };
 };

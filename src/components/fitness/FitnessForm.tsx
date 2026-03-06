@@ -1,42 +1,87 @@
-import { useState } from "react";
-import { useFitness, FitnessProfile } from "@/hooks/useFitness";
+import { useEffect, useState } from "react";
+import { useFitness, FitnessProfile, FitnessMeasurement, BodyMeasurement } from "@/hooks/useFitness";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Plus, Edit3 } from "lucide-react";
 
-export function FitnessForm({ profile }: { profile: FitnessProfile }) {
+export function FitnessForm({
+    profile,
+    initialBioData,
+    initialBodyData,
+    triggerNode
+}: {
+    profile: FitnessProfile,
+    initialBioData?: FitnessMeasurement,
+    initialBodyData?: BodyMeasurement,
+    triggerNode?: React.ReactNode
+}) {
     const [open, setOpen] = useState(false);
-    const { addMeasurement, addBodyMeasurement } = useFitness(profile.id);
-    const [activeTab, setActiveTab] = useState("bio");
+    const { addMeasurement, addBodyMeasurement, updateMeasurement, updateBodyMeasurement } = useFitness(profile.id);
+    const [activeTab, setActiveTab] = useState(initialBodyData ? "body" : "bio");
 
     // Bio state
-    const [weight, setWeight] = useState("");
-    const [fatPct, setFatPct] = useState("");
-    const [muscle, setMuscle] = useState("");
-    const [water, setWater] = useState("");
-    const [visceral, setVisceral] = useState("");
-    const [bone, setBone] = useState("");
-    const [bmr, setBmr] = useState("");
-    const [protein, setProtein] = useState("");
-    const [metabolicAge, setMetabolicAge] = useState("");
-    const [measDate, setMeasDate] = useState(new Date().toISOString().split('T')[0]);
+    const [weight, setWeight] = useState(initialBioData?.weight_kg?.toString() || "");
+    const [fatPct, setFatPct] = useState(initialBioData?.body_fat_pct?.toString() || "");
+    const [muscle, setMuscle] = useState(initialBioData?.muscle_mass_kg?.toString() || "");
+    const [water, setWater] = useState(initialBioData?.water_pct?.toString() || "");
+    const [visceral, setVisceral] = useState(initialBioData?.visceral_fat?.toString() || "");
+    const [bone, setBone] = useState(initialBioData?.bone_mass_kg?.toString() || "");
+    const [bmr, setBmr] = useState(initialBioData?.bmr_kcal?.toString() || "");
+    const [protein, setProtein] = useState(initialBioData?.protein_pct?.toString() || "");
+    const [metabolicAge, setMetabolicAge] = useState(initialBioData?.metabolic_age?.toString() || "");
+
+    const [measDate, setMeasDate] = useState(() => {
+        if (initialBioData) return initialBioData.measured_at.split('T')[0];
+        if (initialBodyData) return initialBodyData.measured_at.split('T')[0];
+        return new Date().toISOString().split('T')[0];
+    });
 
     // Body state
-    const [chest, setChest] = useState("");
-    const [waist, setWaist] = useState("");
-    const [abdomen, setAbdomen] = useState("");
-    const [hip, setHip] = useState("");
-    const [armL, setArmL] = useState("");
-    const [armR, setArmR] = useState("");
-    const [thighL, setThighL] = useState("");
-    const [thighR, setThighR] = useState("");
-    const [calfL, setCalfL] = useState("");
-    const [calfR, setCalfR] = useState("");
+    const [chest, setChest] = useState(initialBodyData?.chest_cm?.toString() || "");
+    const [waist, setWaist] = useState(initialBodyData?.waist_cm?.toString() || "");
+    const [abdomen, setAbdomen] = useState(initialBodyData?.abdomen_cm?.toString() || "");
+    const [hip, setHip] = useState(initialBodyData?.hip_cm?.toString() || "");
+    const [armL, setArmL] = useState(initialBodyData?.left_arm_cm?.toString() || "");
+    const [armR, setArmR] = useState(initialBodyData?.right_arm_cm?.toString() || "");
+    const [thighL, setThighL] = useState(initialBodyData?.left_thigh_cm?.toString() || "");
+    const [thighR, setThighR] = useState(initialBodyData?.right_thigh_cm?.toString() || "");
+    const [calfL, setCalfL] = useState(initialBodyData?.left_calf_cm?.toString() || "");
+    const [calfR, setCalfR] = useState(initialBodyData?.right_calf_cm?.toString() || "");
+
+    // Reset when open changes if we are editing
+    useEffect(() => {
+        if (open) {
+            setWeight(initialBioData?.weight_kg?.toString() || "");
+            setFatPct(initialBioData?.body_fat_pct?.toString() || "");
+            setMuscle(initialBioData?.muscle_mass_kg?.toString() || "");
+            setWater(initialBioData?.water_pct?.toString() || "");
+            setVisceral(initialBioData?.visceral_fat?.toString() || "");
+            setBone(initialBioData?.bone_mass_kg?.toString() || "");
+            setBmr(initialBioData?.bmr_kcal?.toString() || "");
+            setProtein(initialBioData?.protein_pct?.toString() || "");
+            setMetabolicAge(initialBioData?.metabolic_age?.toString() || "");
+
+            setChest(initialBodyData?.chest_cm?.toString() || "");
+            setWaist(initialBodyData?.waist_cm?.toString() || "");
+            setAbdomen(initialBodyData?.abdomen_cm?.toString() || "");
+            setHip(initialBodyData?.hip_cm?.toString() || "");
+            setArmL(initialBodyData?.left_arm_cm?.toString() || "");
+            setArmR(initialBodyData?.right_arm_cm?.toString() || "");
+            setThighL(initialBodyData?.left_thigh_cm?.toString() || "");
+            setThighR(initialBodyData?.right_thigh_cm?.toString() || "");
+            setCalfL(initialBodyData?.left_calf_cm?.toString() || "");
+            setCalfR(initialBodyData?.right_calf_cm?.toString() || "");
+
+            if (initialBioData) setMeasDate(initialBioData.measured_at.split('T')[0]);
+            else if (initialBodyData) setMeasDate(initialBodyData.measured_at.split('T')[0]);
+            else setMeasDate(new Date().toISOString().split('T')[0]);
+        }
+    }, [open, initialBioData, initialBodyData]);
 
     const handleSaveBio = () => {
-        addMeasurement({
+        const payload = {
             profile_id: profile.id,
             measured_at: measDate,
             weight_kg: weight ? parseFloat(weight) : null,
@@ -50,12 +95,18 @@ export function FitnessForm({ profile }: { profile: FitnessProfile }) {
             metabolic_age: metabolicAge ? parseInt(metabolicAge) : null,
             // Auto-calculate BMI if height exists
             bmi: (weight && profile.height_cm) ? parseFloat((parseFloat(weight) / Math.pow(profile.height_cm / 100, 2)).toFixed(1)) : null,
-        });
+        };
+
+        if (initialBioData?.id) {
+            updateMeasurement({ id: initialBioData.id, updates: payload });
+        } else {
+            addMeasurement(payload);
+        }
         setOpen(false);
     };
 
     const handleSaveBody = () => {
-        addBodyMeasurement({
+        const payload = {
             profile_id: profile.id,
             measured_at: measDate,
             chest_cm: chest ? parseFloat(chest) : null,
@@ -68,19 +119,29 @@ export function FitnessForm({ profile }: { profile: FitnessProfile }) {
             right_thigh_cm: thighR ? parseFloat(thighR) : null,
             left_calf_cm: calfL ? parseFloat(calfL) : null,
             right_calf_cm: calfR ? parseFloat(calfR) : null,
-        });
+        };
+
+        if (initialBodyData?.id) {
+            updateBodyMeasurement({ id: initialBodyData.id, updates: payload });
+        } else {
+            addBodyMeasurement(payload);
+        }
         setOpen(false);
     };
+
+    const isEditing = !!initialBioData || !!initialBodyData;
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="w-full bg-dilq-accent text-white hover:bg-dilq-accent/90 gap-2">
-                    <Plus className="h-4 w-4" /> Registrar Medição
-                </Button>
+                {triggerNode || (
+                    <Button className="w-full bg-dilq-accent text-white hover:bg-dilq-accent/90 gap-2">
+                        <Plus className="h-4 w-4" /> Registrar Medição
+                    </Button>
+                )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Nova Medição - {profile.name}</DialogTitle></DialogHeader>
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto w-[90vw]">
+                <DialogHeader><DialogTitle>{isEditing ? 'Editar Medição' : 'Nova Medição'} - {profile.name}</DialogTitle></DialogHeader>
 
                 <div className="mb-4">
                     <label className="text-sm font-medium mb-1 block">Data da Medição</label>
@@ -107,7 +168,7 @@ export function FitnessForm({ profile }: { profile: FitnessProfile }) {
                         </div>
                         <DialogFooter className="mt-6">
                             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                            <Button onClick={handleSaveBio} disabled={!weight}>Salvar Balança</Button>
+                            <Button onClick={handleSaveBio} disabled={!weight}>{isEditing ? 'Salvar Alterações' : 'Salvar Balança'}</Button>
                         </DialogFooter>
                     </TabsContent>
 
@@ -129,7 +190,7 @@ export function FitnessForm({ profile }: { profile: FitnessProfile }) {
                         </div>
                         <DialogFooter className="mt-6">
                             <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                            <Button onClick={handleSaveBody}>Salvar Medidas</Button>
+                            <Button onClick={handleSaveBody}>{isEditing ? 'Salvar Alterações' : 'Salvar Medidas'}</Button>
                         </DialogFooter>
                     </TabsContent>
                 </Tabs>

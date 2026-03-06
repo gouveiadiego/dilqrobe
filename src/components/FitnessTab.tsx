@@ -19,6 +19,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { FitnessForm } from "./fitness/FitnessForm";
 import { FitnessCharts } from "./fitness/FitnessCharts";
 import { FitnessLeaderboard } from "./fitness/FitnessLeaderboard";
+import { FitnessHistory } from "./fitness/FitnessHistory";
 
 const PROFILE_COLORS = [
     "#9b87f5", "#33C3F0", "#F97316", "#10B981",
@@ -200,10 +201,11 @@ export function FitnessTab() {
 
                     {activeProfile && (
                         <Tabs defaultValue="dashboard" className="w-full">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
-                                <TabsList className="grid w-full grid-cols-3 max-w-md bg-gray-100/80 p-1">
+                            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 w-full">
+                                <TabsList className="grid w-full grid-cols-4 max-w-2xl bg-gray-100/80 p-1">
                                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
                                     <TabsTrigger value="charts">Evolução</TabsTrigger>
+                                    <TabsTrigger value="history">Histórico</TabsTrigger>
                                     <TabsTrigger value="leaderboard">Ranking 🏆</TabsTrigger>
                                 </TabsList>
 
@@ -302,11 +304,24 @@ export function FitnessTab() {
                             </TabsContent>
 
                             <TabsContent value="charts">
-                                <FitnessCharts profileId={activeProfile.id} measurements={measurements} />
+                                <FitnessCharts
+                                    profileId={activeProfile.id}
+                                    measurements={measurements}
+                                    goalWeight={activeProfile.goal_weight}
+                                    goalBodyFat={activeProfile.goal_body_fat}
+                                />
                             </TabsContent>
 
                             <TabsContent value="leaderboard">
                                 <FitnessLeaderboard profiles={profiles} measurements={measurements} />
+                            </TabsContent>
+
+                            <TabsContent value="history">
+                                <FitnessHistory
+                                    profile={activeProfile}
+                                    measurements={measurements}
+                                    bodyMeasurements={bodyMeasurements}
+                                />
                             </TabsContent>
 
                         </Tabs>
