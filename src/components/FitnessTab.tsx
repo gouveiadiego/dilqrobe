@@ -41,7 +41,11 @@ function AddProfileDialog({ onAdd }: { onAdd: (data: Partial<FitnessProfile>) =>
     const [gender, setGender] = useState<'male' | 'female'>('male');
     const [height, setHeight] = useState("");
     const [birthDate, setBirthDate] = useState("");
+    const [goalWeight, setGoalWeight] = useState("");
+    const [goalFat, setGoalFat] = useState("");
     const [selectedColor, setSelectedColor] = useState(PROFILE_COLORS[0]);
+
+    const idealWeight = height ? (22 * Math.pow(parseFloat(height) / 100, 2)).toFixed(1) : null;
 
     const handleAdd = () => {
         if (!name.trim()) return;
@@ -51,9 +55,11 @@ function AddProfileDialog({ onAdd }: { onAdd: (data: Partial<FitnessProfile>) =>
             gender,
             height_cm: height ? parseFloat(height) : null,
             birth_date: birthDate || null,
+            goal_weight: goalWeight ? parseFloat(goalWeight) : null,
+            goal_body_fat: goalFat ? parseFloat(goalFat) : null,
         });
         setOpen(false);
-        setName(""); setHeight(""); setBirthDate("");
+        setName(""); setHeight(""); setBirthDate(""); setGoalWeight(""); setGoalFat("");
     };
 
     return (
@@ -80,6 +86,29 @@ function AddProfileDialog({ onAdd }: { onAdd: (data: Partial<FitnessProfile>) =>
                             <Input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
                         </div>
                     </div>
+
+                    {/* GOALS & IDEAL WEIGHT */}
+                    <div className="border border-gray-100 bg-gray-50/50 p-3 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-gray-700">Metas Físicas</label>
+                            {idealWeight && (
+                                <span className="text-[10px] text-gray-500 font-medium">
+                                    Peso ideal (IMC 22): <button type="button" onClick={() => setGoalWeight(idealWeight)} className="text-dilq-accent hover:underline font-bold transition-all">{idealWeight}kg</button>
+                                </span>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-semibold text-gray-500">Peso Alvo (kg)</label>
+                                <Input type="number" step="0.1" placeholder="Ex: 70" value={goalWeight} onChange={e => setGoalWeight(e.target.value)} className="h-8 text-sm" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-semibold text-gray-500">% Gordura Alvo</label>
+                                <Input type="number" step="0.1" placeholder="Ex: 15" value={goalFat} onChange={e => setGoalFat(e.target.value)} className="h-8 text-sm" />
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="space-y-2">
                         <label className="text-xs font-semibold text-gray-600">Gênero</label>
                         <div className="flex gap-2">
