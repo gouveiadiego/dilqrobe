@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, differenceInYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useFitness, FitnessProfile } from "@/hooks/useFitness";
