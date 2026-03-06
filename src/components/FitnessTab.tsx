@@ -137,10 +137,122 @@ function AddProfileDialog({ onAdd }: { onAdd: (data: Partial<FitnessProfile>) =>
     );
 }
 
+// ---------- EDIT PROFILE DIALOG ----------
+function EditProfileDialog({ profile, onUpdate }: { profile: FitnessProfile, onUpdate: (data: Partial<FitnessProfile>) => void }) {
+    const [open, setOpen] = useState(false);
+    const [name, setName] = useState(profile.name);
+    const [gender, setGender] = useState<'male' | 'female'>(profile.gender);
+    const [height, setHeight] = useState(profile.height_cm?.toString() || "");
+    const [birthDate, setBirthDate] = useState(profile.birth_date || "");
+    const [goalWeight, setGoalWeight] = useState(profile.goal_weight?.toString() || "");
+    const [goalFat, setGoalFat] = useState(profile.goal_body_fat?.toString() || "");
+    const [selectedColor, setSelectedColor] = useState(profile.color);
+
+    useEffect(() => {
+        if (open) {
+            setName(profile.name);
+            setGender(profile.gender);
+            setHeight(profile.height_cm?.toString() || "");
+            setBirthDate(profile.birth_date || "");
+            setGoalWeight(profile.goal_weight?.toString() || "");
+            setGoalFat(profile.goal_body_fat?.toString() || "");
+            setSelectedColor(profile.color);
+        }
+    }, [open, profile]);
+
+    const idealWeight = height ? (22 * Math.pow(parseFloat(height) / 100, 2)).toFixed(1) : null;
+
+    const handleUpdate = () => {
+        if (!name.trim()) return;
+        onUpdate({
+            name: name.trim(),
+            color: selectedColor,
+            gender,
+            height_cm: height ? parseFloat(height) : null,
+            birth_date: birthDate || null,
+            goal_weight: goalWeight ? parseFloat(goalWeight) : null,
+            goal_body_fat: goalFat ? parseFloat(goalFat) : null,
+        });
+        setOpen(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="ghost" className="text-gray-500 hover:text-dilq-accent hover:bg-gray-50">
+                    <Settings2 className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Editar Perfil</span>
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader><DialogTitle>Editar Perfil Fitness</DialogTitle></DialogHeader>
+                <div className="grid gap-4 py-3">
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-gray-600">Nome</label>
+                        <Input placeholder="Ex: Diego" value={name} onChange={e => setName(e.target.value)} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-gray-600">Altura (cm)</label>
+                            <Input type="number" placeholder="Ex: 175" value={height} onChange={e => setHeight(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-gray-600">Nascimento</label>
+                            <Input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
+                        </div>
+                    </div>
+
+                    <div className="border border-gray-100 bg-gray-50/50 p-3 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-gray-700">Metas Físicas</label>
+                            {idealWeight && (
+                                <span className="text-[10px] text-gray-500 font-medium">
+                                    Peso ideal: <button type="button" onClick={() => setGoalWeight(idealWeight)} className="text-dilq-accent hover:underline font-bold transition-all">{idealWeight}kg</button>
+                                </span>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-semibold text-gray-500">Peso Alvo (kg)</label>
+                                <Input type="number" step="0.1" placeholder="Ex: 70" value={goalWeight} onChange={e => setGoalWeight(e.target.value)} className="h-8 text-sm" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] uppercase font-semibold text-gray-500">% Gordura Alvo</label>
+                                <Input type="number" step="0.1" placeholder="Ex: 15" value={goalFat} onChange={e => setGoalFat(e.target.value)} className="h-8 text-sm" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-gray-600">Gênero</label>
+                        <div className="flex gap-2">
+                            <Button type="button" variant={gender === 'male' ? 'default' : 'outline'} onClick={() => setGender('male')} className="w-full">Masculino</Button>
+                            <Button type="button" variant={gender === 'female' ? 'default' : 'outline'} onClick={() => setGender('female')} className="w-full">Feminino</Button>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-gray-600">Cor do Avatar</label>
+                        <div className="flex gap-2 flex-wrap">
+                            {PROFILE_COLORS.map(c => (
+                                <button key={c} type="button" onClick={() => setSelectedColor(c)}
+                                    className={`w-7 h-7 rounded-full transition-transform ${selectedColor === c ? "scale-125 ring-2 ring-offset-2 ring-gray-400" : "hover:scale-110"}`}
+                                    style={{ backgroundColor: c }} />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleUpdate} disabled={!name.trim()}>Salvar Alterações</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 // ---------- MAIN COMPONENT ----------
 export function FitnessTab() {
     const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
-    const { profiles, measurements, bodyMeasurements, isLoading, addProfile, deleteProfile } = useFitness(activeProfileId);
+    const { profiles, measurements, bodyMeasurements, isLoading, addProfile, deleteProfile, updateProfile } = useFitness(activeProfileId);
 
     // Auto-select first profile if none selected
     useEffect(() => {
@@ -211,18 +323,24 @@ export function FitnessTab() {
                                     <TabsTrigger value="leaderboard">Ranking 🏆</TabsTrigger>
                                 </TabsList>
 
-                                <Button
-                                    variant="ghost"
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                    onClick={() => {
-                                        if (window.confirm(`Tem certeza que deseja excluir o perfil de ${activeProfile.name} e todo o seu histórico?\nEsta ação não pode ser desfeita.`)) {
-                                            deleteProfile(activeProfile.id);
-                                            setActiveProfileId(null);
-                                        }
-                                    }}
-                                >
-                                    <Trash2 className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Excluir Perfil</span>
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <EditProfileDialog
+                                        profile={activeProfile}
+                                        onUpdate={(updates) => updateProfile({ id: activeProfile.id, updates })}
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                        onClick={() => {
+                                            if (window.confirm(`Tem certeza que deseja excluir o perfil de ${activeProfile.name} e todo o seu histórico?\nEsta ação não pode ser desfeita.`)) {
+                                                deleteProfile(activeProfile.id);
+                                                setActiveProfileId(null);
+                                            }
+                                        }}
+                                    >
+                                        <Trash2 className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Excluir Perfil</span>
+                                    </Button>
+                                </div>
                             </div>
 
                             <TabsContent value="dashboard" className="mt-6 space-y-6">
