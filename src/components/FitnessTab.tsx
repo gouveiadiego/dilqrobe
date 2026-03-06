@@ -139,7 +139,7 @@ function AddProfileDialog({ onAdd }: { onAdd: (data: Partial<FitnessProfile>) =>
 // ---------- MAIN COMPONENT ----------
 export function FitnessTab() {
     const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
-    const { profiles, measurements, bodyMeasurements, isLoading, addProfile } = useFitness(activeProfileId);
+    const { profiles, measurements, bodyMeasurements, isLoading, addProfile, deleteProfile } = useFitness(activeProfileId);
 
     // Auto-select first profile if none selected
     if (!activeProfileId && profiles.length > 0) {
@@ -200,11 +200,26 @@ export function FitnessTab() {
 
                     {activeProfile && (
                         <Tabs defaultValue="dashboard" className="w-full">
-                            <TabsList className="grid w-full grid-cols-3 max-w-md bg-gray-100/80 p-1">
-                                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                                <TabsTrigger value="charts">Evolução</TabsTrigger>
-                                <TabsTrigger value="leaderboard">Ranking 🏆</TabsTrigger>
-                            </TabsList>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                                <TabsList className="grid w-full grid-cols-3 max-w-md bg-gray-100/80 p-1">
+                                    <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                                    <TabsTrigger value="charts">Evolução</TabsTrigger>
+                                    <TabsTrigger value="leaderboard">Ranking 🏆</TabsTrigger>
+                                </TabsList>
+
+                                <Button
+                                    variant="ghost"
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => {
+                                        if (window.confirm(`Tem certeza que deseja excluir o perfil de ${activeProfile.name} e todo o seu histórico?\nEsta ação não pode ser desfeita.`)) {
+                                            deleteProfile(activeProfile.id);
+                                            setActiveProfileId(null);
+                                        }
+                                    }}
+                                >
+                                    <Trash2 className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Excluir Perfil</span>
+                                </Button>
+                            </div>
 
                             <TabsContent value="dashboard" className="mt-6 space-y-6">
 
