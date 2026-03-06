@@ -9,6 +9,7 @@ import { CategoryManager } from "@/components/CategoryManager";
 import { Task } from "@/types/task";
 import { FinanceTab } from "@/components/FinanceTab";
 import { JournalsTab } from "@/components/JournalsTab";
+import { FitnessTab } from "@/components/FitnessTab";
 import DashboardTab from "@/components/DashboardTab";
 import { ChallengesTab } from "@/components/ChallengesTab";
 import { ProfileTab } from "@/components/ProfileTab";
@@ -32,7 +33,7 @@ import { AIChatWidget } from "@/components/ai-chat/AIChatWidget";
 import { QuickActionsMenu } from "@/components/QuickActionsMenu";
 import { TeamTodoTab } from "@/components/TeamTodoTab";
 
-type TabType = 'dashboard' | 'tasks' | 'team-todo' | 'finance' | 'habits' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
+type TabType = 'dashboard' | 'tasks' | 'team-todo' | 'finance' | 'habits' | 'fitness' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -288,6 +289,8 @@ const Index = () => {
         return <FinanceTab />;
       case 'habits':
         return <HabitsTab />;
+      case 'fitness':
+        return <FitnessTab />;
       case 'journals':
         return <JournalsTab />;
       case 'profile':

@@ -14,10 +14,11 @@ import {
   Briefcase,
   FileText,
   Sparkles,
-  ClipboardList
+  ClipboardList,
+  Dumbbell
 } from "lucide-react";
 
-type TabType = 'dashboard' | 'tasks' | 'team-todo' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
+type TabType = 'dashboard' | 'tasks' | 'team-todo' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant' | 'fitness';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -37,6 +38,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }
     { id: 'finance', label: 'Financeiro', icon: Wallet },
     { id: 'budget', label: 'Orçamento', icon: TrendingUp },
     { id: 'habits', label: 'Hábitos', icon: Target },
+    { id: 'fitness', label: 'Fitness', icon: Dumbbell },
     { id: 'journals', label: 'Diário', icon: BookOpen },
     { id: 'services', label: 'Serviços', icon: Briefcase },
     { id: 'projects', label: 'Projetos', icon: FileText },
