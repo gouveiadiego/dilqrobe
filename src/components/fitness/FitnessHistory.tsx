@@ -38,7 +38,7 @@ export function FitnessHistory({
                                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
                                         <span><strong className="text-gray-800">{m.weight_kg}kg</strong> (Peso)</span>
                                         {m.body_fat_pct && <span><strong className="text-gray-800">{m.body_fat_pct}%</strong> (Gordura)</span>}
-                                        {m.muscle_mass_kg && <span><strong className="text-gray-800">{m.muscle_mass_kg}kg</strong> (Músculo)</span>}
+                                        {m.muscle_mass_kg && <span><strong className="text-gray-800">{m.muscle_mass_kg}%</strong> (Músculo)</span>}
                                     </div>
                                 </div>
 

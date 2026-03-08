@@ -382,7 +382,7 @@ export function FitnessTab() {
                                             <Dumbbell className="h-4 w-4 text-emerald-500" /> Massa Muscular
                                         </div>
                                         <div className="text-3xl font-bold text-gray-900">
-                                            {latestMeas?.muscle_mass_kg ? `${latestMeas.muscle_mass_kg} kg` : '--'}
+                                            {latestMeas?.muscle_mass_kg ? `${latestMeas.muscle_mass_kg}%` : '--'}
                                         </div>
                                         {latestMeas?.skeletal_muscle_pct && (
                                             <p className="text-xs text-gray-500 mt-1">Esquelético: {latestMeas.skeletal_muscle_pct}%</p>

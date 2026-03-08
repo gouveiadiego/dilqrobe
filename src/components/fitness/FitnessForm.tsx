@@ -158,7 +158,7 @@ export function FitnessForm({
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                             <InputField label="Peso (kg)" value={weight} onChange={setWeight} autoFocus />
                             <InputField label="% Gordura" value={fatPct} onChange={setFatPct} />
-                            <InputField label="Massa Muscular (kg)" value={muscle} onChange={setMuscle} />
+                            <InputField label="Massa Muscular (%)" value={muscle} onChange={setMuscle} />
                             <InputField label="% Água" value={water} onChange={setWater} />
                             <InputField label="Gordura Visceral (1-20)" value={visceral} onChange={setVisceral} />
                             <InputField label="Massa Óssea (kg)" value={bone} onChange={setBone} />

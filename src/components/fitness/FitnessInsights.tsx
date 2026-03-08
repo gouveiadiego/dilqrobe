@@ -110,7 +110,7 @@ export function FitnessInsights({ profile, measurements }: { profile: FitnessPro
                     color: "text-emerald-600",
                     bg: "bg-emerald-100",
                     title: "Ganho Muscular 💪",
-                    desc: `Você construiu ${muscleDiff.toFixed(1)}kg de massa muscular magra!`
+                    desc: `Você construiu ${muscleDiff.toFixed(1)}% de massa muscular magra!`
                 });
             }
         }

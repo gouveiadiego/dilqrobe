@@ -67,7 +67,7 @@ export function FitnessCharts({
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Weight Chart */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 h-80">
-                    <h4 className="font-bold text-gray-700 text-sm mb-4">Peso (kg) e Massa Muscular</h4>
+                    <h4 className="font-bold text-gray-700 text-sm mb-4">Peso (kg) e Massa Muscular (%)</h4>
                     <ResponsiveContainer width="100%" height="85%">
                         <LineChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
@@ -82,7 +82,7 @@ export function FitnessCharts({
                                 <ReferenceLine y={goalWeight} label="Meta (kg)" stroke="#f59e0b" strokeDasharray="3 3" />
                             )}
                             <Line type="monotone" name="Peso (kg)" dataKey="weight_kg" stroke="#10b981" strokeWidth={3} activeDot={{ r: 6 }} />
-                            <Line type="monotone" name="Massa Muscular (kg)" dataKey="muscle_mass_kg" stroke="#3b82f6" strokeWidth={3} />
+                            <Line type="monotone" name="Massa Muscular (%)" dataKey="muscle_mass_kg" stroke="#3b82f6" strokeWidth={3} />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
