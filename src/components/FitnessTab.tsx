@@ -23,6 +23,8 @@ import { FitnessHistory } from "./fitness/FitnessHistory";
 import { BodyVisualizer } from "./fitness/BodyVisualizer";
 import { FitnessInsights } from "./fitness/FitnessInsights";
 import { VisceralFatHeatmap } from "./fitness/VisceralFatHeatmap";
+import { BodyRadarChart } from "./fitness/BodyRadarChart";
+import { MetabolicClock } from "./fitness/MetabolicClock";
 
 const PROFILE_COLORS = [
     "#9b87f5", "#33C3F0", "#F97316", "#10B981",
@@ -407,6 +409,12 @@ export function FitnessTab() {
 
                                 {/* Heatmap de Gordura Visceral */}
                                 <VisceralFatHeatmap latestMeas={latestMeas} />
+
+                                {/* Radar and Clock */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <BodyRadarChart latestMeas={latestMeas} />
+                                    <MetabolicClock profile={activeProfile} latestMeas={latestMeas} />
+                                </div>
 
                                 {/* Detailed Bioimpedance Grid */}
                                 {latestMeas ? (
