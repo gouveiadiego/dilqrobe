@@ -25,6 +25,7 @@ import { FitnessInsights } from "./fitness/FitnessInsights";
 import { VisceralFatHeatmap } from "./fitness/VisceralFatHeatmap";
 import { BodyRadarChart } from "./fitness/BodyRadarChart";
 import { MetabolicClock } from "./fitness/MetabolicClock";
+import { AnatomicalHeatmap } from "./fitness/AnatomicalHeatmap";
 
 const PROFILE_COLORS = [
     "#9b87f5", "#33C3F0", "#F97316", "#10B981",
@@ -416,34 +417,43 @@ export function FitnessTab() {
                                     <MetabolicClock profile={activeProfile} latestMeas={latestMeas} />
                                 </div>
 
-                                {/* Detailed Bioimpedance Grid */}
-                                {latestMeas ? (
-                                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                                <Activity className="h-5 w-5 text-dilq-accent" /> Última Bioimpedância
-                                            </h3>
-                                            <span className="text-sm font-medium bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-                                                {format(new Date(latestMeas.measured_at), "dd 'de' MMMM, yyyy", { locale: ptBR })}
-                                            </span>
-                                        </div>
+                                {/* Detailed Bioimpedance Grid and Anatomical Map */}
+                                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                                    <div className="xl:col-span-2">
+                                        {latestMeas ? (
+                                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 h-full">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                                        <Activity className="h-5 w-5 text-dilq-accent" /> Última Bioimpedância
+                                                    </h3>
+                                                    <span className="text-sm font-medium bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                                                        {format(new Date(latestMeas.measured_at), "dd 'de' MMMM, yyyy", { locale: ptBR })}
+                                                    </span>
+                                                </div>
 
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                                            <MetricsCard title="IMC" value={latestMeas.bmi} unit="" icon={<UserPlus className="h-4 w-4 text-gray-400" />} />
-                                            <MetricsCard title="Água Corporal" value={latestMeas.water_pct} unit="%" icon={<Droplets className="h-4 w-4 text-blue-400" />} />
-                                            <MetricsCard title="Gordura Visceral" value={latestMeas.visceral_fat} unit="" icon={<HeartPulse className="h-4 w-4 text-red-500" />} />
-                                            <MetricsCard title="Massa Óssea" value={latestMeas.bone_mass_kg} unit="kg" icon={<Bone className="h-4 w-4 text-gray-500" />} />
-                                            <MetricsCard title="Metabolismo" value={latestMeas.bmr_kcal} unit="kcal" icon={<Flame className="h-4 w-4 text-orange-400" />} />
-                                            <MetricsCard title="Proteína" value={latestMeas.protein_pct} unit="%" icon={<Activity className="h-4 w-4 text-purple-400" />} />
-                                            <MetricsCard title="Massa Gorda" value={latestMeas.fat_mass_kg} unit="kg" icon={<Target className="h-4 w-4 text-orange-500" />} />
-                                            <MetricsCard title="Idade Metabólica" value={latestMeas.metabolic_age} unit="anos" icon={<Settings2 className="h-4 w-4 text-gray-400" />} />
-                                        </div>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
+                                                    <MetricsCard title="IMC" value={latestMeas.bmi} unit="" icon={<UserPlus className="h-4 w-4 text-gray-400" />} />
+                                                    <MetricsCard title="Água Corporal" value={latestMeas.water_pct} unit="%" icon={<Droplets className="h-4 w-4 text-blue-400" />} />
+                                                    <MetricsCard title="Gordura Visceral" value={latestMeas.visceral_fat} unit="" icon={<HeartPulse className="h-4 w-4 text-red-500" />} />
+                                                    <MetricsCard title="Massa Óssea" value={latestMeas.bone_mass_kg} unit="kg" icon={<Bone className="h-4 w-4 text-gray-500" />} />
+                                                    <MetricsCard title="Metabolismo" value={latestMeas.bmr_kcal} unit="kcal" icon={<Flame className="h-4 w-4 text-orange-400" />} />
+                                                    <MetricsCard title="Proteína" value={latestMeas.protein_pct} unit="%" icon={<Activity className="h-4 w-4 text-purple-400" />} />
+                                                    <MetricsCard title="Massa Gorda" value={latestMeas.fat_mass_kg} unit="kg" icon={<Target className="h-4 w-4 text-orange-500" />} />
+                                                    <MetricsCard title="Idade Metabólica" value={latestMeas.metabolic_age} unit="anos" icon={<Settings2 className="h-4 w-4 text-gray-400" />} />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-10 bg-white rounded-2xl border border-dashed border-gray-200 h-full flex items-center justify-center">
+                                                <p className="text-gray-500">Nenhuma bioimpedância registrada ainda.</p>
+                                            </div>
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className="text-center py-10 bg-white rounded-2xl border border-dashed border-gray-200">
-                                        <p className="text-gray-500">Nenhuma bioimpedância registrada ainda.</p>
+
+                                    {/* Mapa Anatômico de Medidas */}
+                                    <div className="xl:col-span-1">
+                                        <AnatomicalHeatmap measurements={bodyMeasurements} />
                                     </div>
-                                )}
+                                </div>
 
                             </TabsContent>
 
