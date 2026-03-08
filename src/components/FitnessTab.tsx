@@ -22,6 +22,7 @@ import { FitnessLeaderboard } from "./fitness/FitnessLeaderboard";
 import { FitnessHistory } from "./fitness/FitnessHistory";
 import { BodyVisualizer } from "./fitness/BodyVisualizer";
 import { FitnessInsights } from "./fitness/FitnessInsights";
+import { VisceralFatHeatmap } from "./fitness/VisceralFatHeatmap";
 
 const PROFILE_COLORS = [
     "#9b87f5", "#33C3F0", "#F97316", "#10B981",
@@ -403,6 +404,9 @@ export function FitnessTab() {
                                         <BodyVisualizer latestMeas={latestMeas} gender={activeProfile.gender} />
                                     </div>
                                 </div>
+
+                                {/* Heatmap de Gordura Visceral */}
+                                <VisceralFatHeatmap latestMeas={latestMeas} />
 
                                 {/* Detailed Bioimpedance Grid */}
                                 {latestMeas ? (
