@@ -104,7 +104,7 @@ export function FitnessCharts({
                                 <ReferenceLine y={goalBodyFat} label="Meta (%)" stroke="#f59e0b" strokeDasharray="3 3" />
                             )}
                             <Line type="monotone" name="% Gordura" dataKey="body_fat_pct" stroke="#ef4444" strokeWidth={3} activeDot={{ r: 6 }} />
-                            <Line type="monotone" name="% Água" dataKey="water_pct" stroke="#0ea5e9" strokeWidth={3} />
+                            <Line type="monotone" name="Massa Gorda (kg)" dataKey="fat_mass_kg" stroke="#0ea5e9" strokeWidth={3} />
                         </LineChart>
                     </ResponsiveContainer>
                 </div>

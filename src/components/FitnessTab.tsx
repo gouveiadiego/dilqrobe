@@ -438,7 +438,7 @@ export function FitnessTab() {
                                                     <MetricsCard title="Massa Óssea" value={latestMeas.bone_mass_kg} unit="kg" icon={<Bone className="h-4 w-4 text-gray-500" />} />
                                                     <MetricsCard title="Metabolismo" value={latestMeas.bmr_kcal} unit="kcal" icon={<Flame className="h-4 w-4 text-orange-400" />} />
                                                     <MetricsCard title="Proteína" value={latestMeas.protein_pct} unit="%" icon={<Activity className="h-4 w-4 text-purple-400" />} />
-                                                    <MetricsCard title="Massa Gorda" value={latestMeas.fat_mass_kg} unit="kg" icon={<Target className="h-4 w-4 text-orange-500" />} />
+                                                    <MetricsCard title="% Gordura" value={latestMeas.body_fat_pct} unit="%" icon={<Target className="h-4 w-4 text-orange-500" />} />
                                                     <MetricsCard title="Idade Metabólica" value={latestMeas.metabolic_age} unit="anos" icon={<Settings2 className="h-4 w-4 text-gray-400" />} />
                                                 </div>
                                             </div>
