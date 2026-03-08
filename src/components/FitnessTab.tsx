@@ -20,6 +20,8 @@ import { FitnessForm } from "./fitness/FitnessForm";
 import { FitnessCharts } from "./fitness/FitnessCharts";
 import { FitnessLeaderboard } from "./fitness/FitnessLeaderboard";
 import { FitnessHistory } from "./fitness/FitnessHistory";
+import { BodyVisualizer } from "./fitness/BodyVisualizer";
+import { FitnessInsights } from "./fitness/FitnessInsights";
 
 const PROFILE_COLORS = [
     "#9b87f5", "#33C3F0", "#F97316", "#10B981",
@@ -390,6 +392,16 @@ export function FitnessTab() {
                                     <Card className="p-4 bg-white shadow-sm border-gray-100 hover:shadow-md transition-shadow flex flex-col justify-center items-center text-center">
                                         <FitnessForm profile={activeProfile} />
                                     </Card>
+                                </div>
+
+                                {/* Motivators & Body Visualizer */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-1">
+                                        <FitnessInsights profile={activeProfile} measurements={measurements} />
+                                    </div>
+                                    <div className="lg:col-span-2">
+                                        <BodyVisualizer latestMeas={latestMeas} gender={activeProfile.gender} />
+                                    </div>
                                 </div>
 
                                 {/* Detailed Bioimpedance Grid */}
