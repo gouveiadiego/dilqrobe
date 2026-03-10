@@ -277,7 +277,7 @@ function MemberCard({
                                     <textarea
                                         value={editNotes}
                                         onChange={e => setEditNotes(e.target.value)}
-                                        placeholder="Ex: Fiz metade hoje..."
+                                        placeholder="Digite observações ou progresso desta tarefa..."
                                         className="w-full bg-white border border-blue-100 rounded p-2 text-xs text-gray-700 min-h-[60px] focus:outline-none focus:ring-1 focus:ring-dilq-accent/30 resize-none"
                                         autoFocus
                                     />
