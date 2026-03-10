@@ -223,15 +223,22 @@ function MemberCard({
                                         ? <CheckCircle2 className="h-5 w-5 text-green-500" />
                                         : <Circle className={`h-5 w-5 ${isHighPriority ? 'text-red-300' : 'text-gray-300'} hover:text-gray-400`} />}
                                 </button>
-                                <div className="flex-1 min-w-0 flex items-start gap-1.5">
-                                    <span className={`mt-[5px] shrink-0 w-2 h-2 rounded-full ${pCfg.dot} ${isHighPriority ? 'animate-pulse' : ''}`} />
-                                    <span className={`text-sm leading-snug transition-all ${task.completed ? "line-through text-gray-400" : isHighPriority ? "text-red-800 font-medium" : "text-gray-700"
-                                        }`}>
-                                        {task.title}
-                                        {isHighPriority && <Zap className="inline h-3 w-3 ml-1 text-red-500" />}
-                                    </span>
+                                <div className="flex-1 min-w-0 flex flex-col">
+                                    <div className="flex items-start gap-1.5">
+                                        <span className={`mt-[5px] shrink-0 w-2 h-2 rounded-full ${pCfg.dot} ${isHighPriority ? 'animate-pulse' : ''}`} />
+                                        <span className={`text-sm leading-snug transition-all ${task.completed ? "line-through text-gray-400" : isHighPriority ? "text-red-800 font-medium" : "text-gray-700"
+                                            }`}>
+                                            {task.title}
+                                            {isHighPriority && <Zap className="inline h-3 w-3 ml-1 text-red-500" />}
+                                        </span>
+                                    </div>
+                                    {task.notes && !isExpanded && (
+                                        <p className="text-[10px] text-gray-400 ml-3.5 mt-0.5 italic line-clamp-1">
+                                            {task.notes}
+                                        </p>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className={`flex items-center gap-1 transition-opacity ${task.notes ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                     <button
                                         onClick={() => {
                                             if (isExpanded) {
