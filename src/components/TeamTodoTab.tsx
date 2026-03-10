@@ -9,7 +9,7 @@ import {
     ChevronLeft, ChevronRight, Plus, Trash2, UserPlus,
     CheckCircle2, Circle, Users, CalendarDays, CheckCheck,
     ArrowDownToLine, Trophy, Star, Zap, History, ClipboardList,
-    Search, ChevronDown, ChevronUp,
+    Search, ChevronDown, ChevronUp, MessageSquare, Save,
 } from "lucide-react";
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -86,13 +86,12 @@ function PriorityPicker({ value, onChange }: { value: Priority; onChange: (p: Pr
     );
 }
 
-// ---------- MEMBER CARD ----------
 function MemberCard({
     member, tasks, date, isTopPerformer,
-    onAddTask, onToggleTask, onDeleteTask, onDeleteMember, onCompleteAll, onCarryOver,
+    onAddTask, onToggleTask, onDeleteTask, onDeleteMember, onCompleteAll, onCarryOver, onUpdateNotes,
 }: {
     member: TeamMember;
-    tasks: { id: string; title: string; completed: boolean; member_id: string; priority?: string }[];
+    tasks: { id: string; title: string; completed: boolean; member_id: string; priority?: string; notes?: string }[];
     date: string;
     isTopPerformer: boolean;
     onAddTask: (memberId: string, title: string, date: string, priority: Priority) => void;
@@ -101,9 +100,12 @@ function MemberCard({
     onDeleteMember: (id: string) => void;
     onCompleteAll: (memberId: string) => void;
     onCarryOver: (memberId: string) => void;
+    onUpdateNotes: (id: string, notes: string) => void;
 }) {
     const [newTask, setNewTask] = useState("");
     const [priority, setPriority] = useState<Priority>("medium");
+    const [expandedTaskNotes, setExpandedTaskNotes] = useState<string | null>(null);
+    const [editNotes, setEditNotes] = useState("");
 
     const memberTasks = tasks.filter(t => t.member_id === member.id);
     const completedCount = memberTasks.filter(t => t.completed).length;
@@ -128,7 +130,7 @@ function MemberCard({
 
     return (
         <div className={`rounded-2xl border flex flex-col transition-all duration-500 overflow-hidden relative ${allDone ? 'border-green-300 bg-gradient-to-b from-green-50 to-emerald-50/40 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
-                : 'border-gray-100 bg-white shadow-sm hover:shadow-md'
+            : 'border-gray-100 bg-white shadow-sm hover:shadow-md'
             }`}>
             {isTopPerformer && totalCount > 0 && (
                 <div className="absolute top-0 right-0 bg-gradient-to-l from-yellow-400 to-amber-400 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg flex items-center gap-1 z-10">
@@ -210,25 +212,70 @@ function MemberCard({
                 {sorted.map(task => {
                     const pCfg = PRIORITY_CONFIG[(task.priority as Priority) ?? 'medium'];
                     const isHighPriority = task.priority === 'high' && !task.completed;
+                    const isExpanded = expandedTaskNotes === task.id;
+
                     return (
-                        <div key={task.id} className={`flex items-start gap-2 group py-1.5 px-2 rounded-lg transition-colors ${isHighPriority ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'
-                            }`}>
-                            <button onClick={() => onToggleTask(task.id, !task.completed)} className="mt-0.5 shrink-0 transition-transform active:scale-90">
-                                {task.completed
-                                    ? <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                    : <Circle className={`h-5 w-5 ${isHighPriority ? 'text-red-300' : 'text-gray-300'} hover:text-gray-400`} />}
-                            </button>
-                            <div className="flex-1 min-w-0 flex items-start gap-1.5">
-                                <span className={`mt-[5px] shrink-0 w-2 h-2 rounded-full ${pCfg.dot} ${isHighPriority ? 'animate-pulse' : ''}`} />
-                                <span className={`text-sm leading-snug transition-all ${task.completed ? "line-through text-gray-400" : isHighPriority ? "text-red-800 font-medium" : "text-gray-700"
-                                    }`}>
-                                    {task.title}
-                                    {isHighPriority && <Zap className="inline h-3 w-3 ml-1 text-red-500" />}
-                                </span>
+                        <div key={task.id} className="flex flex-col">
+                            <div className={`flex items-start gap-2 group py-1.5 px-2 rounded-lg transition-colors ${isHighPriority ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'
+                                } ${isExpanded ? 'bg-blue-50/50' : ''}`}>
+                                <button onClick={() => onToggleTask(task.id, !task.completed)} className="mt-0.5 shrink-0 transition-transform active:scale-90">
+                                    {task.completed
+                                        ? <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                        : <Circle className={`h-5 w-5 ${isHighPriority ? 'text-red-300' : 'text-gray-300'} hover:text-gray-400`} />}
+                                </button>
+                                <div className="flex-1 min-w-0 flex items-start gap-1.5">
+                                    <span className={`mt-[5px] shrink-0 w-2 h-2 rounded-full ${pCfg.dot} ${isHighPriority ? 'animate-pulse' : ''}`} />
+                                    <span className={`text-sm leading-snug transition-all ${task.completed ? "line-through text-gray-400" : isHighPriority ? "text-red-800 font-medium" : "text-gray-700"
+                                        }`}>
+                                        {task.title}
+                                        {isHighPriority && <Zap className="inline h-3 w-3 ml-1 text-red-500" />}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => {
+                                            if (isExpanded) {
+                                                setExpandedTaskNotes(null);
+                                            } else {
+                                                setExpandedTaskNotes(task.id);
+                                                setEditNotes(task.notes || "");
+                                            }
+                                        }}
+                                        className={`p-0.5 mt-0.5 rounded transition-colors ${task.notes ? 'text-dilq-accent' : 'text-gray-300'} hover:text-dilq-accent`}
+                                    >
+                                        <MessageSquare className="h-3.5 w-3.5" />
+                                    </button>
+                                    <button onClick={() => onDeleteTask(task.id)} className="text-gray-300 hover:text-red-400 shrink-0 p-0.5 mt-0.5">
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
                             </div>
-                            <button onClick={() => onDeleteTask(task.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-400 shrink-0 p-0.5 mt-0.5">
-                                <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+
+                            {isExpanded && (
+                                <div className="mx-2 mb-2 p-2 bg-blue-50/50 rounded-lg border border-blue-100 animate-in slide-in-from-top-1 duration-200">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
+                                            <MessageSquare className="h-3 w-3" /> Comentário / Progresso
+                                        </span>
+                                        <button
+                                            onClick={() => {
+                                                onUpdateNotes(task.id, editNotes);
+                                                setExpandedTaskNotes(null);
+                                            }}
+                                            className="text-[10px] bg-dilq-accent text-white px-2 py-0.5 rounded flex items-center gap-1 hover:opacity-90 transition-opacity"
+                                        >
+                                            <Save className="h-2.5 w-2.5" /> Salvar
+                                        </button>
+                                    </div>
+                                    <textarea
+                                        value={editNotes}
+                                        onChange={e => setEditNotes(e.target.value)}
+                                        placeholder="Ex: Fiz metade hoje..."
+                                        className="w-full bg-white border border-blue-100 rounded p-2 text-xs text-gray-700 min-h-[60px] focus:outline-none focus:ring-1 focus:ring-dilq-accent/30 resize-none"
+                                        autoFocus
+                                    />
+                                </div>
+                            )}
                         </div>
                     );
                 })}
@@ -314,8 +361,8 @@ function HistoryView({ members }: { members: TeamMember[] }) {
                             key={r}
                             onClick={() => setRange(r)}
                             className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${range === r
-                                    ? 'bg-gradient-to-r from-dilq-accent to-dilq-teal text-white shadow-sm'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                ? 'bg-gradient-to-r from-dilq-accent to-dilq-teal text-white shadow-sm'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
                             {r === '7' ? '7 dias' : r === '30' ? '30 dias' : '90 dias'}
@@ -475,7 +522,7 @@ export function TeamTodoTab() {
     const [viewMode, setViewMode] = useState<ViewMode>('daily');
     const {
         members, tasks, isLoading, addMember, deleteMember,
-        addTask, toggleTask, deleteTask, completeAllForMember, carryOverFromYesterday,
+        addTask, toggleTask, deleteTask, completeAllForMember, carryOverFromYesterday, updateTaskNotes,
     } = useTeamTasks(selectedDate);
 
     const displayDate = parseISO(selectedDate + "T12:00:00");
@@ -638,6 +685,7 @@ export function TeamTodoTab() {
                                     onDeleteMember={deleteMember}
                                     onCompleteAll={completeAllForMember}
                                     onCarryOver={carryOverFromYesterday}
+                                    onUpdateNotes={(id, notes) => updateTaskNotes({ id, notes })}
                                 />
                             ))}
                         </div>

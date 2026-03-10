@@ -113,6 +113,17 @@ export const useTeamTasks = (selectedDate: string) => {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ["team-tasks", selectedDate] })
     });
 
+    const updateTaskNotesMutation = useMutation({
+        mutationFn: async ({ id, notes }: { id: string; notes: string }) => {
+            const { error } = await supabase
+                .from("team_tasks" as any)
+                .update({ notes })
+                .eq("id", id);
+            if (error) { toast.error("Erro ao atualizar notas da tarefa"); throw error; }
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["team-tasks", selectedDate] })
+    });
+
     const deleteTaskMutation = useMutation({
         mutationFn: async (id: string) => {
             const { error } = await supabase.from("team_tasks" as any).delete().eq("id", id);
@@ -183,6 +194,7 @@ export const useTeamTasks = (selectedDate: string) => {
         deleteTask: deleteTaskMutation.mutate,
         completeAllForMember: completeAllMutation.mutate,
         carryOverFromYesterday: carryOverMutation.mutate,
+        updateTaskNotes: updateTaskNotesMutation.mutate,
     };
 };
 
