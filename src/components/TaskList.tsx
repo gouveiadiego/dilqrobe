@@ -12,6 +12,7 @@ interface TaskListProps {
   onAddSubtask: (taskId: string, title: string) => void;
   onToggleSubtask: (taskId: string, subtaskId: string) => void;
   onUpdateTask: (taskId: string, updates: any) => void;
+  onUpdateNotes: (taskId: string, notes: string) => void;
   categories: { id: string; name: string; }[];
   showThisWeek: boolean;
   setShowThisWeek: (show: boolean) => void;
@@ -28,6 +29,7 @@ export function TaskList({
   onAddSubtask,
   onToggleSubtask,
   onUpdateTask,
+  onUpdateNotes,
   categories,
   showThisWeek,
   setShowThisWeek,
@@ -140,6 +142,7 @@ export function TaskList({
                   onAddSubtask={onAddSubtask}
                   onToggleSubtask={onToggleSubtask}
                   onUpdateTask={onUpdateTask}
+                  onUpdateNotes={onUpdateNotes}
                   categories={categories}
                 />
               ))}
@@ -256,6 +259,7 @@ export function TaskList({
                           onAddSubtask={onAddSubtask}
                           onToggleSubtask={onToggleSubtask}
                           onUpdateTask={onUpdateTask}
+                          onUpdateNotes={onUpdateNotes}
                           categories={categories}
                         />
                       ))}
@@ -293,6 +297,7 @@ export function TaskList({
                           onAddSubtask={onAddSubtask}
                           onToggleSubtask={onToggleSubtask}
                           onUpdateTask={onUpdateTask}
+                          onUpdateNotes={onUpdateNotes}
                           categories={categories}
                         />
                       ))}
@@ -330,6 +335,7 @@ export function TaskList({
                           onAddSubtask={onAddSubtask}
                           onToggleSubtask={onToggleSubtask}
                           onUpdateTask={onUpdateTask}
+                          onUpdateNotes={onUpdateNotes}
                           categories={categories}
                         />
                       ))}

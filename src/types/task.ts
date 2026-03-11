@@ -28,6 +28,7 @@ export interface Task {
   recurrence_type?: "daily" | "weekly" | "biweekly" | "monthly" | null;
   _isRecurringInstance?: boolean;
   project_company_id?: string | null;
+  notes?: string | null;
 }
 
 export type TaskUpdate = Omit<Partial<Task>, 'subtasks'> & {

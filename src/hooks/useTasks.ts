@@ -159,6 +159,7 @@ export const useTasks = () => {
         recurrence_count: task.recurrence_count !== undefined ? task.recurrence_count : null,
         recurrence_completed: task.recurrence_completed || 0,
         project_company_id: task.project_company_id || null,
+        notes: (task as any).notes || null,
         subtasks: Array.isArray(task.subtasks) 
           ? (task.subtasks as any[]).map(st => ({
               id: st.id || crypto.randomUUID(),

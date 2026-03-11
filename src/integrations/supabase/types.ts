@@ -1465,6 +1465,7 @@ export type Database = {
           estimated_time_minutes: number | null
           id: string
           is_recurring: boolean | null
+          notes: string | null
           original_due_date: string | null
           priority: string | null
           project_company_id: string | null
@@ -1488,6 +1489,7 @@ export type Database = {
           estimated_time_minutes?: number | null
           id?: string
           is_recurring?: boolean | null
+          notes?: string | null
           original_due_date?: string | null
           priority?: string | null
           project_company_id?: string | null
@@ -1511,6 +1513,7 @@ export type Database = {
           estimated_time_minutes?: number | null
           id?: string
           is_recurring?: boolean | null
+          notes?: string | null
           original_due_date?: string | null
           priority?: string | null
           project_company_id?: string | null

@@ -261,6 +261,7 @@ const Index = () => {
                     onToggleTask={toggleTask}
                     onDeleteTask={deleteTask}
                     onUpdateTask={handleUpdateTask}
+                    onUpdateNotes={(taskId, notes) => handleUpdateTask(taskId, { notes })}
                     categories={taskCategories}
                     showThisWeek={showThisWeek}
                     setShowThisWeek={setShowThisWeek}

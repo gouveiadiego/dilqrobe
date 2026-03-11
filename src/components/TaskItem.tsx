@@ -2,7 +2,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { SubTask, Task, TaskUpdate } from "@/types/task";
-import { Trash2, Tag, Plus, ChevronDown, ChevronUp, Bell, Pencil, Check, X, Building2 } from "lucide-react";
+import { Trash2, Tag, Plus, ChevronDown, ChevronUp, Bell, Pencil, Check, X, Building2, MessageSquare, Save } from "lucide-react";
 import { useState } from "react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -22,6 +22,7 @@ interface TaskItemProps {
   onAddSubtask?: (taskId: string, subtaskTitle: string) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   onUpdateTask?: (taskId: string, updates: TaskUpdate) => void;
+  onUpdateNotes?: (taskId: string, notes: string) => void;
   categories: { id: string; name: string; }[];
 }
 
@@ -32,6 +33,7 @@ export function TaskItem({
   onAddSubtask,
   onToggleSubtask,
   onUpdateTask,
+  onUpdateNotes,
   categories
 }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -42,6 +44,8 @@ export function TaskItem({
   const [editCategory, setEditCategory] = useState(task.category || "none");
   const [editCompanyId, setEditCompanyId] = useState(task.project_company_id || "none");
   const [openCompanySelect, setOpenCompanySelect] = useState(false);
+  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
+  const [editNotes, setEditNotes] = useState(task.notes || "");
   const { companies } = useProjectCompanies();
 
   const priorityClass = {
@@ -305,6 +309,24 @@ export function TaskItem({
                       )}
                     </Button>
                   )}
+                  <button
+                    onClick={() => {
+                      if (isNotesExpanded) {
+                        setIsNotesExpanded(false);
+                      } else {
+                        setIsNotesExpanded(true);
+                        setEditNotes(task.notes || "");
+                      }
+                    }}
+                    className={`p-1 rounded-full transition-colors flex-shrink-0 ${
+                      task.notes
+                        ? 'text-dilq-accent opacity-100'
+                        : 'text-gray-300 opacity-0 group-hover:opacity-100'
+                    } hover:text-dilq-accent hover:bg-dilq-accent/10`}
+                    title="Comentário / Progresso"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </button>
                   {!isEditing && (
                     <Button
                       variant="ghost"
@@ -352,10 +374,44 @@ export function TaskItem({
                   </span>
                 )}
               </div>
+
+              {task.notes && !isNotesExpanded && (
+                <p className="text-[11px] text-gray-400 mt-1.5 italic line-clamp-1">
+                  {task.notes}
+                </p>
+              )}
             </>
           )}
         </div>
       </div>
+
+      {isNotesExpanded && (
+        <div className="mt-2 mx-1 p-2.5 bg-blue-50/50 rounded-lg border border-blue-100 animate-in slide-in-from-top-1 duration-200">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
+              <MessageSquare className="h-3 w-3" /> Comentário / Progresso
+            </span>
+            <button
+              onClick={() => {
+                if (onUpdateNotes) {
+                  onUpdateNotes(task.id, editNotes);
+                }
+                setIsNotesExpanded(false);
+              }}
+              className="text-[10px] bg-dilq-accent text-white px-2 py-0.5 rounded flex items-center gap-1 hover:opacity-90 transition-opacity"
+            >
+              <Save className="h-2.5 w-2.5" /> Salvar
+            </button>
+          </div>
+          <textarea
+            value={editNotes}
+            onChange={e => setEditNotes(e.target.value)}
+            placeholder="Digite observações ou progresso desta tarefa..."
+            className="w-full bg-white border border-blue-100 rounded p-2 text-xs text-gray-700 min-h-[60px] focus:outline-none focus:ring-1 focus:ring-dilq-accent/30 resize-none"
+            autoFocus
+          />
+        </div>
+      )}
 
       {isExpanded && (
         <div className="mt-4 pl-9 space-y-2 pt-3 border-t border-dashed border-gray-100">
