@@ -85,7 +85,19 @@ export const useTeamTasks = (selectedDate: string) => {
                 .order("created_at", { ascending: true });
             if (error) { toast.error("Erro ao carregar tarefas da equipe"); throw error; }
             
-            return data.map((task: any) => ({
+            // De-duplicate by title: if a task with the same title exists on a newer date, ignore the older one.
+            const uniqueTasks: any[] = [];
+            const titleMap = new Map<string, any>();
+            
+            // Sort to process newer tasks first, or just use a map to keep the best one
+            data.forEach((task: any) => {
+                const key = `${task.member_id}-${task.title}`;
+                if (!titleMap.has(key) || task.due_date >= titleMap.get(key).due_date) {
+                    titleMap.set(key, task);
+                }
+            });
+
+            return Array.from(titleMap.values()).map((task: any) => ({
                 ...task,
                 subtasks: Array.isArray(task.subtasks) ? task.subtasks : []
             })) as TeamTask[];
