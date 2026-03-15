@@ -88,24 +88,38 @@ function PriorityPicker({ value, onChange }: { value: Priority; onChange: (p: Pr
 
 function MemberCard({
     member, tasks, date, isTopPerformer,
-    onAddTask, onToggleTask, onDeleteTask, onDeleteMember, onCompleteAll, onCarryOver, onUpdateNotes,
+    onAddTask, onToggleTask, onDeleteTask, onDeleteMember, onCompleteAll, onUpdateNotes,
+    onAddSubtask, onToggleSubtask, onDeleteSubtask,
 }: {
     member: TeamMember;
-    tasks: { id: string; title: string; completed: boolean; member_id: string; priority?: string; notes?: string }[];
+    tasks: { id: string; title: string; completed: boolean; member_id: string; priority?: string; notes?: string; subtasks: { id: string; title: string; completed: boolean }[] }[];
     date: string;
     isTopPerformer: boolean;
     onAddTask: (memberId: string, title: string, date: string, priority: Priority) => void;
-    onToggleTask: (id: string, completed: boolean) => void;
+    onToggleTask: (id: string, completed: boolean, original_due_date: string) => void;
     onDeleteTask: (id: string) => void;
     onDeleteMember: (id: string) => void;
     onCompleteAll: (memberId: string) => void;
-    onCarryOver: (memberId: string) => void;
     onUpdateNotes: (id: string, notes: string) => void;
+    onAddSubtask: (taskId: string, title: string) => void;
+    onToggleSubtask: (taskId: string, subtaskId: string) => void;
+    onDeleteSubtask: (taskId: string, subtaskId: string) => void;
 }) {
     const [newTask, setNewTask] = useState("");
     const [priority, setPriority] = useState<Priority>("medium");
     const [expandedTaskNotes, setExpandedTaskNotes] = useState<string | null>(null);
     const [editNotes, setEditNotes] = useState("");
+    const [expandedSubtasks, setExpandedSubtasks] = useState<Set<string>>(new Set());
+    const [newSubtaskTitle, setNewSubtaskTitle] = useState<Record<string, string>>({});
+
+    const toggleSubtasks = (taskId: string) => {
+        setExpandedSubtasks(prev => {
+            const next = new Set(prev);
+            if (next.has(taskId)) next.delete(taskId);
+            else next.add(taskId);
+            return next;
+        });
+    };
 
     const memberTasks = tasks.filter(t => t.member_id === member.id);
     const completedCount = memberTasks.filter(t => t.completed).length;
@@ -158,14 +172,7 @@ function MemberCard({
                 </div>
                 <TooltipProvider>
                     <div className="flex items-center gap-0.5">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button onClick={() => onCarryOver(member.id)} className="p-1.5 rounded-lg text-gray-300 hover:text-blue-500 hover:bg-blue-50 transition-colors">
-                                    <ArrowDownToLine className="h-4 w-4" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="left" className="text-xs">Importar do dia anterior</TooltipContent>
-                        </Tooltip>
+
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <button onClick={() => onCompleteAll(member.id)} className="p-1.5 rounded-lg text-gray-300 hover:text-green-500 hover:bg-green-50 transition-colors">
@@ -218,7 +225,7 @@ function MemberCard({
                         <div key={task.id} className="flex flex-col">
                             <div className={`flex items-start gap-2 group py-1.5 px-2 rounded-lg transition-colors ${isHighPriority ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'
                                 } ${isExpanded ? 'bg-blue-50/50' : ''}`}>
-                                <button onClick={() => onToggleTask(task.id, !task.completed)} className="mt-0.5 shrink-0 transition-transform active:scale-90">
+                                <button onClick={() => onToggleTask(task.id, !task.completed, (task as any).due_date)} className="mt-0.5 shrink-0 transition-transform active:scale-90">
                                     {task.completed
                                         ? <CheckCircle2 className="h-5 w-5 text-green-500" />
                                         : <Circle className={`h-5 w-5 ${isHighPriority ? 'text-red-300' : 'text-gray-300'} hover:text-gray-400`} />}
@@ -232,13 +239,31 @@ function MemberCard({
                                             {isHighPriority && <Zap className="inline h-3 w-3 ml-1 text-red-500" />}
                                         </span>
                                     </div>
-                                    {task.notes && !isExpanded && (
-                                        <p className="text-[10px] text-gray-400 ml-3.5 mt-0.5 italic line-clamp-1">
-                                            {task.notes}
-                                        </p>
-                                    )}
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        {task.subtasks?.length > 0 && (
+                                            <button 
+                                                onClick={() => toggleSubtasks(task.id)}
+                                                className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-dilq-accent bg-gray-100/80 px-1.5 py-0.5 rounded transition-colors"
+                                            >
+                                                {expandedSubtasks.has(task.id) ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
+                                                {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+                                            </button>
+                                        )}
+                                        {task.notes && !isExpanded && (
+                                            <p className="text-[10px] text-gray-400 italic line-clamp-1">
+                                                {task.notes}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className={`flex items-center gap-1 transition-opacity ${task.notes ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                <div className={`flex items-center gap-1 transition-opacity ${task.notes || task.subtasks?.length > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                    <button 
+                                        onClick={() => toggleSubtasks(task.id)}
+                                        className="text-gray-300 hover:text-dilq-accent shrink-0 p-0.5 mt-0.5"
+                                        title="Subtarefas"
+                                    >
+                                        <Plus className="h-3.5 w-3.5" />
+                                    </button>
                                     <button
                                         onClick={() => {
                                             if (isExpanded) {
@@ -281,6 +306,57 @@ function MemberCard({
                                         className="w-full bg-white border border-blue-100 rounded p-2 text-xs text-gray-700 min-h-[60px] focus:outline-none focus:ring-1 focus:ring-dilq-accent/30 resize-none"
                                         autoFocus
                                     />
+                                </div>
+                            )}
+
+                            {expandedSubtasks.has(task.id) && (
+                                <div className="mx-2 mb-2 pl-6 pr-2 py-2 bg-gray-50/50 rounded-lg border-l-2 border-l-gray-200">
+                                    <div className="space-y-1.5 min-h-[40px]">
+                                        {task.subtasks?.map(st => (
+                                            <div key={st.id} className="flex items-center justify-between group/st">
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={() => onToggleSubtask(task.id, st.id)} className="shrink-0 transition-transform active:scale-90 opacity-70 hover:opacity-100">
+                                                        {st.completed ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Circle className="h-3.5 w-3.5 text-gray-300" />}
+                                                    </button>
+                                                    <span className={`text-[11px] ${st.completed ? "line-through text-gray-400" : "text-gray-600"}`}>
+                                                        {st.title}
+                                                    </span>
+                                                </div>
+                                                <button onClick={() => onDeleteSubtask(task.id, st.id)} className="text-gray-300 hover:text-red-400 shrink-0 p-0.5 opacity-0 group-hover/st:opacity-100 transition-opacity">
+                                                    <Trash2 className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {(!task.subtasks || task.subtasks.length === 0) && (
+                                            <p className="text-[10px] text-gray-400 italic">Nenhuma subtarefa.</p>
+                                        )}
+                                    </div>
+                                    <div className="mt-2 flex gap-1.5 items-center">
+                                        <Input
+                                            value={newSubtaskTitle[task.id] || ""}
+                                            onChange={e => setNewSubtaskTitle(prev => ({ ...prev, [task.id]: e.target.value }))}
+                                            placeholder="Nova subtarefa..."
+                                            className="h-6 text-[11px] bg-white border-gray-200"
+                                            onKeyDown={e => {
+                                                if (e.key === "Enter" && newSubtaskTitle[task.id]?.trim()) {
+                                                    onAddSubtask(task.id, newSubtaskTitle[task.id].trim());
+                                                    setNewSubtaskTitle(prev => ({ ...prev, [task.id]: "" }));
+                                                }
+                                            }}
+                                        />
+                                        <Button 
+                                            size="sm" 
+                                            className="h-6 px-2 py-0 bg-gray-100 text-gray-600 hover:bg-gray-200 border-none shrink-0"
+                                            onClick={() => {
+                                                if (newSubtaskTitle[task.id]?.trim()) {
+                                                    onAddSubtask(task.id, newSubtaskTitle[task.id].trim());
+                                                    setNewSubtaskTitle(prev => ({ ...prev, [task.id]: "" }));
+                                                }
+                                            }}
+                                        >
+                                            <Plus className="h-3 w-3" />
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -529,7 +605,8 @@ export function TeamTodoTab() {
     const [viewMode, setViewMode] = useState<ViewMode>('daily');
     const {
         members, tasks, isLoading, addMember, deleteMember,
-        addTask, toggleTask, deleteTask, completeAllForMember, carryOverFromYesterday, updateTaskNotes,
+        addTask, toggleTask, deleteTask, completeAllForMember, updateTaskNotes,
+        addSubtask, toggleSubtask, deleteSubtask
     } = useTeamTasks(selectedDate);
 
     const displayDate = parseISO(selectedDate + "T12:00:00");
@@ -687,12 +764,14 @@ export function TeamTodoTab() {
                                     date={selectedDate}
                                     isTopPerformer={topPerformerId === member.id}
                                     onAddTask={(memberId, title, date, prio) => addTask({ member_id: memberId, title, due_date: date, priority: prio })}
-                                    onToggleTask={(id, completed) => toggleTask({ id, completed })}
+                                    onToggleTask={(id, completed, original_due_date) => toggleTask({ id, completed, original_due_date })}
                                     onDeleteTask={deleteTask}
                                     onDeleteMember={deleteMember}
                                     onCompleteAll={completeAllForMember}
-                                    onCarryOver={carryOverFromYesterday}
                                     onUpdateNotes={(id, notes) => updateTaskNotes({ id, notes })}
+                                    onAddSubtask={(taskId, title) => addSubtask({ taskId, title })}
+                                    onToggleSubtask={(taskId, subtaskId) => toggleSubtask({ taskId, subtaskId })}
+                                    onDeleteSubtask={(taskId, subtaskId) => deleteSubtask({ taskId, subtaskId })}
                                 />
                             ))}
                         </div>

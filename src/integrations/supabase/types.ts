@@ -1570,6 +1570,7 @@ export type Database = {
           member_id: string
           notes: string | null
           priority: string | null
+          subtasks: Json | null
           title: string
           user_id: string
         }
@@ -1581,6 +1582,7 @@ export type Database = {
           member_id: string
           notes?: string | null
           priority?: string | null
+          subtasks?: Json | null
           title: string
           user_id: string
         }
@@ -1592,6 +1594,7 @@ export type Database = {
           member_id?: string
           notes?: string | null
           priority?: string | null
+          subtasks?: Json | null
           title?: string
           user_id?: string
         }

@@ -19,6 +19,7 @@ export interface TeamTask {
     due_date: string;
     notes?: string;
     priority?: 'high' | 'medium' | 'low';
+    subtasks: { id: string; title: string; completed: boolean }[];
     created_at: string;
 }
 
@@ -79,10 +80,15 @@ export const useTeamTasks = (selectedDate: string) => {
                 .from("team_tasks" as any)
                 .select("*")
                 .eq("user_id", user.id)
-                .eq("due_date", selectedDate)
+                .or(`due_date.eq.${selectedDate},and(due_date.lt.${selectedDate},completed.eq.false)`)
+                .order("due_date", { ascending: true }) // Order by older date first
                 .order("created_at", { ascending: true });
             if (error) { toast.error("Erro ao carregar tarefas da equipe"); throw error; }
-            return (data as unknown) as TeamTask[];
+            
+            return data.map((task: any) => ({
+                ...task,
+                subtasks: Array.isArray(task.subtasks) ? task.subtasks : []
+            })) as TeamTask[];
         },
         enabled: !!selectedDate
     });
@@ -93,7 +99,7 @@ export const useTeamTasks = (selectedDate: string) => {
             if (!user) throw new Error("Not authenticated");
             const { data, error } = await supabase
                 .from("team_tasks" as any)
-                .insert({ member_id, title, due_date, user_id: user.id, completed: false, priority: priority ?? 'medium' })
+                .insert({ member_id, title, due_date, user_id: user.id, completed: false, priority: priority ?? 'medium', subtasks: [] })
                 .select()
                 .single();
             if (error) { toast.error("Erro ao adicionar tarefa"); throw error; }
@@ -103,10 +109,17 @@ export const useTeamTasks = (selectedDate: string) => {
     });
 
     const toggleTaskMutation = useMutation({
-        mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
+        mutationFn: async ({ id, completed, original_due_date }: { id: string; completed: boolean; original_due_date?: string }) => {
+            const updates: any = { completed };
+            
+            // If we are completing a past overdue task today, log it as completed today.
+            if (completed && original_due_date && original_due_date < selectedDate) {
+                updates.due_date = selectedDate;
+            }
+
             const { error } = await supabase
                 .from("team_tasks" as any)
-                .update({ completed })
+                .update(updates)
                 .eq("id", id);
             if (error) { toast.error("Erro ao atualizar tarefa"); throw error; }
         },
@@ -147,38 +160,61 @@ export const useTeamTasks = (selectedDate: string) => {
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ["team-tasks", selectedDate] })
     });
 
-    // Carry over unfinished tasks from the previous day
-    const carryOverMutation = useMutation({
-        mutationFn: async (member_id: string) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Not authenticated");
+    const addSubtaskMutation = useMutation({
+        mutationFn: async ({ taskId, title }: { taskId: string; title: string }) => {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) throw new Error("Task not found");
 
-            const today = new Date(selectedDate + "T12:00:00");
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            const newSubtask = {
+                id: crypto.randomUUID(),
+                title,
+                completed: false
+            };
 
-            const { data: prevTasks, error } = await supabase
+            const updatedSubtasks = [...(task.subtasks || []), newSubtask];
+
+            const { error } = await supabase
                 .from("team_tasks" as any)
-                .select("*")
-                .eq("user_id", user.id)
-                .eq("member_id", member_id)
-                .eq("due_date", yesterdayStr)
-                .eq("completed", false);
+                .update({ subtasks: updatedSubtasks })
+                .eq("id", taskId);
 
-            if (error) { toast.error("Erro ao buscar tarefas do dia anterior"); throw error; }
-            const prev = (prevTasks as unknown) as TeamTask[];
-            if (!prev || prev.length === 0) { toast.info("Nenhuma tarefa pendente do dia anterior."); return; }
+            if (error) { toast.error("Erro ao adicionar subtarefa"); throw error; }
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["team-tasks", selectedDate] })
+    });
 
-            const todayTitles = tasks.filter(t => t.member_id === member_id).map(t => t.title);
-            const toCarry = prev.filter(t => !todayTitles.includes(t.title));
-            if (toCarry.length === 0) { toast.info("Todas já foram importadas."); return; }
+    const toggleSubtaskMutation = useMutation({
+        mutationFn: async ({ taskId, subtaskId }: { taskId: string; subtaskId: string }) => {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) throw new Error("Task not found");
 
-            const { error: insertErr } = await supabase.from("team_tasks" as any).insert(
-                toCarry.map(t => ({ member_id, title: t.title, due_date: selectedDate, user_id: user.id, completed: false, priority: t.priority ?? 'medium' }))
+            const updatedSubtasks = (task.subtasks || []).map(st => 
+                st.id === subtaskId ? { ...st, completed: !st.completed } : st
             );
-            if (insertErr) { toast.error("Erro ao importar tarefas"); throw insertErr; }
-            toast.success(`${toCarry.length} tarefa(s) importada(s) do dia anterior!`);
+
+            const { error } = await supabase
+                .from("team_tasks" as any)
+                .update({ subtasks: updatedSubtasks })
+                .eq("id", taskId);
+
+            if (error) { toast.error("Erro ao atualizar subtarefa"); throw error; }
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["team-tasks", selectedDate] })
+    });
+
+    const deleteSubtaskMutation = useMutation({
+        mutationFn: async ({ taskId, subtaskId }: { taskId: string; subtaskId: string }) => {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) throw new Error("Task not found");
+
+            const updatedSubtasks = (task.subtasks || []).filter(st => st.id !== subtaskId);
+
+            const { error } = await supabase
+                .from("team_tasks" as any)
+                .update({ subtasks: updatedSubtasks })
+                .eq("id", taskId);
+
+            if (error) { toast.error("Erro ao remover subtarefa"); throw error; }
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ["team-tasks", selectedDate] })
     });
@@ -193,8 +229,10 @@ export const useTeamTasks = (selectedDate: string) => {
         toggleTask: toggleTaskMutation.mutate,
         deleteTask: deleteTaskMutation.mutate,
         completeAllForMember: completeAllMutation.mutate,
-        carryOverFromYesterday: carryOverMutation.mutate,
         updateTaskNotes: updateTaskNotesMutation.mutate,
+        addSubtask: addSubtaskMutation.mutate,
+        toggleSubtask: toggleSubtaskMutation.mutate,
+        deleteSubtask: deleteSubtaskMutation.mutate,
     };
 };
 
