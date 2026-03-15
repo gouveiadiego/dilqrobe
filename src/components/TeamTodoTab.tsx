@@ -147,13 +147,13 @@ function MemberCard({
         if (direction === 'up' && index > 0) {
             const prev = sorted[index - 1];
             const current = sorted[index];
-            onUpdateTask(current.id, { position: prev.position });
-            onUpdateTask(prev.id, { position: current.position });
+            // Para subir, a posição deve ser menor que a do anterior
+            onUpdateTask(current.id, { position: prev.position - 1 });
         } else if (direction === 'down' && index < sorted.length - 1) {
             const next = sorted[index + 1];
             const current = sorted[index];
-            onUpdateTask(current.id, { position: next.position });
-            onUpdateTask(next.id, { position: current.position });
+            // Para descer, a posição deve ser maior que a do próximo
+            onUpdateTask(current.id, { position: next.position + 1 });
         }
     };
 
@@ -248,20 +248,20 @@ function MemberCard({
                             <div className={`flex items-start gap-2 group py-1.5 px-2 rounded-lg transition-colors ${isHighPriority ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'
                                 } ${isExpanded ? 'bg-blue-50/50' : ''}`}>
                                 
-                                <div className="flex flex-col shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex flex-col shrink-0 items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                         onClick={() => handleMove(task.id, 'up')} 
                                         disabled={index === 0}
-                                        className="text-gray-300 hover:text-dilq-accent disabled:opacity-0"
+                                        className="text-gray-400 hover:text-dilq-accent disabled:opacity-0 p-1 -m-1 transition-colors"
                                     >
-                                        <ArrowUp className="h-3 w-3" />
+                                        <ArrowUp className="h-3.5 w-3.5" />
                                     </button>
                                     <button 
                                         onClick={() => handleMove(task.id, 'down')} 
                                         disabled={index === sorted.length - 1}
-                                        className="text-gray-300 hover:text-dilq-accent disabled:opacity-0"
+                                        className="text-gray-400 hover:text-dilq-accent disabled:opacity-0 p-1 -m-1 transition-colors"
                                     >
-                                        <ArrowDown className="h-3 w-3" />
+                                        <ArrowDown className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
 
