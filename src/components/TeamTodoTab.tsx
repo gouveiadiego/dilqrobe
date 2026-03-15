@@ -134,13 +134,14 @@ function MemberCard({
         setNewTask(""); setPriority("medium");
     };
 
-    const sorted = [...memberTasks].sort((a, b) => {
-        const pOrder = { high: 0, medium: 1, low: 2 };
-        const pa = pOrder[(a.priority as Priority) ?? 'medium'];
-        const pb = pOrder[(b.priority as Priority) ?? 'medium'];
-        if (pa !== pb) return pa - pb;
-        return (a.completed ? 1 : 0) - (b.completed ? 1 : 0);
-    });
+    const sorted = memberTasks
+        .filter(t => !t.completed)
+        .sort((a, b) => {
+            const pOrder = { high: 0, medium: 1, low: 2 };
+            const pa = pOrder[(a.priority as Priority) ?? 'medium'];
+            const pb = pOrder[(b.priority as Priority) ?? 'medium'];
+            return pa - pb;
+        });
 
     return (
         <div className={`rounded-2xl border flex flex-col transition-all duration-500 overflow-hidden relative ${allDone ? 'border-green-300 bg-gradient-to-b from-green-50 to-emerald-50/40 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
