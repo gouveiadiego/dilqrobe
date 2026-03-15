@@ -142,18 +142,15 @@ function MemberCard({
         .filter(t => !t.completed)
         .sort((a, b) => (a.position - b.position) || (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
 
-    const handleMove = (taskId: string, direction: 'up' | 'down') => {
+    const handleMove = (e: React.MouseEvent, taskId: string, direction: 'up' | 'down') => {
+        e.stopPropagation();
         const index = sorted.findIndex(t => t.id === taskId);
         if (direction === 'up' && index > 0) {
             const prev = sorted[index - 1];
-            const current = sorted[index];
-            // Para subir, a posição deve ser menor que a do anterior
-            onUpdateTask(current.id, { position: prev.position - 1 });
+            onUpdateTask(taskId, { position: prev.position - 1 });
         } else if (direction === 'down' && index < sorted.length - 1) {
             const next = sorted[index + 1];
-            const current = sorted[index];
-            // Para descer, a posição deve ser maior que a do próximo
-            onUpdateTask(current.id, { position: next.position + 1 });
+            onUpdateTask(taskId, { position: next.position + 1 });
         }
     };
 
@@ -248,20 +245,20 @@ function MemberCard({
                             <div className={`flex items-start gap-2 group py-1.5 px-2 rounded-lg transition-colors ${isHighPriority ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'
                                 } ${isExpanded ? 'bg-blue-50/50' : ''}`}>
                                 
-                                <div className="flex flex-col shrink-0 items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex flex-col shrink-0 items-center opacity-0 group-hover:opacity-100 transition-opacity pr-1 border-r border-gray-100 mr-1">
                                     <button 
-                                        onClick={() => handleMove(task.id, 'up')} 
+                                        onClick={(e) => handleMove(e, task.id, 'up')} 
                                         disabled={index === 0}
-                                        className="text-gray-400 hover:text-dilq-accent disabled:opacity-0 p-1 -m-1 transition-colors"
+                                        className="text-gray-400 hover:text-dilq-accent disabled:opacity-0 p-0.5 transition-colors"
                                     >
-                                        <ArrowUp className="h-3.5 w-3.5" />
+                                        <ArrowUp className="h-3 w-3" />
                                     </button>
                                     <button 
-                                        onClick={() => handleMove(task.id, 'down')} 
+                                        onClick={(e) => handleMove(e, task.id, 'down')} 
                                         disabled={index === sorted.length - 1}
-                                        className="text-gray-400 hover:text-dilq-accent disabled:opacity-0 p-1 -m-1 transition-colors"
+                                        className="text-gray-400 hover:text-dilq-accent disabled:opacity-0 p-0.5 transition-colors"
                                     >
-                                        <ArrowDown className="h-3.5 w-3.5" />
+                                        <ArrowDown className="h-3 w-3" />
                                     </button>
                                 </div>
 
