@@ -10,9 +10,8 @@ import {
     CheckCircle2, Circle, Users, CalendarDays, CheckCheck,
     ArrowDownToLine, Trophy, Star, Zap, History, ClipboardList,
     Search, ChevronDown, ChevronUp, MessageSquare, Save,
-    GripVertical, Edit2, X,
+    Edit2, X, ArrowUp, ArrowDown,
 } from "lucide-react";
-import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
     DialogFooter, DialogTrigger,
@@ -143,6 +142,21 @@ function MemberCard({
         .filter(t => !t.completed)
         .sort((a, b) => (a.position - b.position) || (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
 
+    const handleMove = (taskId: string, direction: 'up' | 'down') => {
+        const index = sorted.findIndex(t => t.id === taskId);
+        if (direction === 'up' && index > 0) {
+            const prev = sorted[index - 1];
+            const current = sorted[index];
+            onUpdateTask(current.id, { position: prev.position });
+            onUpdateTask(prev.id, { position: current.position });
+        } else if (direction === 'down' && index < sorted.length - 1) {
+            const next = sorted[index + 1];
+            const current = sorted[index];
+            onUpdateTask(current.id, { position: next.position });
+            onUpdateTask(next.id, { position: current.position });
+        }
+    };
+
     const handleUpdateTitle = (taskId: string) => {
         if (!editTitle.trim()) return;
         onUpdateTask(taskId, { title: editTitle.trim() });
@@ -219,42 +233,43 @@ function MemberCard({
                 </div>
             )}
 
-            <Droppable droppableId={member.id} type="TASK">
-                {(provided) => (
-                    <div 
-                        {...provided.droppableProps} 
-                        ref={provided.innerRef}
-                        className="flex-1 px-4 pb-2 space-y-0.5 min-h-[80px]"
-                    >
-                        {sorted.length === 0 && (
-                            <p className="text-gray-400 text-sm py-4 text-center italic">Nenhuma tarefa. Adicione uma abaixo! 👇</p>
-                        )}
-                        {sorted.map((task, index) => {
-                            const pCfg = PRIORITY_CONFIG[(task.priority as Priority) ?? 'medium'];
-                            const isHighPriority = task.priority === 'high' && !task.completed;
-                            const isExpanded = expandedTaskNotes === task.id;
-                            const isEditing = editingTaskId === task.id;
+            <div className="flex-1 px-4 pb-2 space-y-0.5 min-h-[80px]">
+                {sorted.length === 0 && (
+                    <p className="text-gray-400 text-sm py-4 text-center italic">Nenhuma tarefa. Adicione uma abaixo! 👇</p>
+                )}
+                {sorted.map((task, index) => {
+                    const pCfg = PRIORITY_CONFIG[(task.priority as Priority) ?? 'medium'];
+                    const isHighPriority = task.priority === 'high' && !task.completed;
+                    const isExpanded = expandedTaskNotes === task.id;
+                    const isEditing = editingTaskId === task.id;
 
-                            return (
-                                <Draggable key={task.id} draggableId={task.id} index={index}>
-                                    {(provided, snapshot) => (
-                                        <div 
-                                            ref={provided.innerRef}
-                                            {...provided.draggableProps}
-                                            className={`flex flex-col ${snapshot.isDragging ? 'opacity-50' : ''}`}
-                                        >
-                                            <div className={`flex items-start gap-2 group py-1.5 px-2 rounded-lg transition-colors ${isHighPriority ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'
-                                                } ${isExpanded ? 'bg-blue-50/50' : ''}`}>
-                                                
-                                                <div {...provided.dragHandleProps} className="mt-1 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <GripVertical className="h-4 w-4" />
-                                                </div>
+                    return (
+                        <div key={task.id} className="flex flex-col">
+                            <div className={`flex items-start gap-2 group py-1.5 px-2 rounded-lg transition-colors ${isHighPriority ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'
+                                } ${isExpanded ? 'bg-blue-50/50' : ''}`}>
+                                
+                                <div className="flex flex-col shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button 
+                                        onClick={() => handleMove(task.id, 'up')} 
+                                        disabled={index === 0}
+                                        className="text-gray-300 hover:text-dilq-accent disabled:opacity-0"
+                                    >
+                                        <ArrowUp className="h-3 w-3" />
+                                    </button>
+                                    <button 
+                                        onClick={() => handleMove(task.id, 'down')} 
+                                        disabled={index === sorted.length - 1}
+                                        className="text-gray-300 hover:text-dilq-accent disabled:opacity-0"
+                                    >
+                                        <ArrowDown className="h-3 w-3" />
+                                    </button>
+                                </div>
 
-                                                <button onClick={() => onToggleTask(task.id, !task.completed, (task as any).due_date)} className="mt-0.5 shrink-0 transition-transform active:scale-90">
-                                                    {task.completed
-                                                        ? <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                                        : <Circle className={`h-5 w-5 ${isHighPriority ? 'text-red-300' : 'text-gray-300'} hover:text-gray-400`} />}
-                                                </button>
+                                <button onClick={() => onToggleTask(task.id, !task.completed, (task as any).due_date)} className="mt-0.5 shrink-0 transition-transform active:scale-90">
+                                    {task.completed
+                                        ? <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                        : <Circle className={`h-5 w-5 ${isHighPriority ? 'text-red-300' : 'text-gray-300'} hover:text-gray-400`} />}
+                                </button>
 
                                                 <div className="flex-1 min-w-0 flex flex-col">
                                                     <div className="flex items-start gap-1.5">
@@ -416,14 +431,9 @@ function MemberCard({
                                                 </div>
                                             )}
                                         </div>
-                                    )}
-                                </Draggable>
-                            );
-                        })}
-                        {provided.placeholder}
-                    </div>
-                )}
-            </Droppable>
+                                    );
+                                })}
+                            </div>
 
             <div className="p-3 border-t border-gray-50 bg-gray-50/50">
                 <div className="flex items-center gap-2 mb-2">
@@ -670,21 +680,6 @@ export function TeamTodoTab() {
         updateTask, addSubtask, toggleSubtask, deleteSubtask
     } = useTeamTasks(selectedDate);
 
-    const onDragEnd = (result: DropResult) => {
-        if (!result.destination) return;
-        const memberId = result.source.droppableId;
-        const memberTasks = tasks.filter(t => t.member_id === memberId && !t.completed);
-        const reordered = Array.from(memberTasks).sort((a, b) => a.position - b.position);
-        const [moved] = reordered.splice(result.source.index, 1);
-        reordered.splice(result.destination.index, 0, moved);
-
-        // Update all affected tasks positions
-        reordered.forEach((task, index) => {
-            if (task.position !== index) {
-                updateTask({ id: task.id, position: index });
-            }
-        });
-    };
 
     const displayDate = parseISO(selectedDate + "T12:00:00");
     const isToday = selectedDate === format(new Date(), "yyyy-MM-dd");
@@ -712,8 +707,7 @@ export function TeamTodoTab() {
     const greeting = getGreeting();
 
     return (
-        <DragDropContext onDragEnd={onDragEnd}>
-            <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 animate-fade-in">
             {/* Motivational Header */}
             <div className="rounded-2xl bg-gradient-to-r from-dilq-accent to-dilq-teal p-5 text-white shadow-md">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -861,6 +855,5 @@ export function TeamTodoTab() {
             {/* ---- HISTORY MODE ---- */}
             {viewMode === 'history' && <HistoryView members={members} />}
         </div>
-        </DragDropContext>
     );
 }
