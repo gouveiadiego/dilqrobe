@@ -10,7 +10,9 @@ import {
     CheckCircle2, Circle, Users, CalendarDays, CheckCheck,
     ArrowDownToLine, Trophy, Star, Zap, History, ClipboardList,
     Search, ChevronDown, ChevronUp, MessageSquare, Save,
+    GripVertical, Edit2, X,
 } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
     DialogFooter, DialogTrigger,
@@ -89,10 +91,10 @@ function PriorityPicker({ value, onChange }: { value: Priority; onChange: (p: Pr
 function MemberCard({
     member, tasks, date, isTopPerformer,
     onAddTask, onToggleTask, onDeleteTask, onDeleteMember, onCompleteAll, onUpdateNotes,
-    onAddSubtask, onToggleSubtask, onDeleteSubtask,
+    onUpdateTask, onAddSubtask, onToggleSubtask, onDeleteSubtask,
 }: {
     member: TeamMember;
-    tasks: { id: string; title: string; completed: boolean; member_id: string; priority?: string; notes?: string; subtasks: { id: string; title: string; completed: boolean }[] }[];
+    tasks: { id: string; title: string; completed: boolean; member_id: string; priority?: string; notes?: string; position: number, created_at: string, subtasks: { id: string; title: string; completed: boolean }[] }[];
     date: string;
     isTopPerformer: boolean;
     onAddTask: (memberId: string, title: string, date: string, priority: Priority) => void;
@@ -101,6 +103,7 @@ function MemberCard({
     onDeleteMember: (id: string) => void;
     onCompleteAll: (memberId: string) => void;
     onUpdateNotes: (id: string, notes: string) => void;
+    onUpdateTask: (id: string, updates: any) => void;
     onAddSubtask: (taskId: string, title: string) => void;
     onToggleSubtask: (taskId: string, subtaskId: string) => void;
     onDeleteSubtask: (taskId: string, subtaskId: string) => void;
@@ -111,6 +114,8 @@ function MemberCard({
     const [editNotes, setEditNotes] = useState("");
     const [expandedSubtasks, setExpandedSubtasks] = useState<Set<string>>(new Set());
     const [newSubtaskTitle, setNewSubtaskTitle] = useState<Record<string, string>>({});
+    const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+    const [editTitle, setEditTitle] = useState("");
 
     const toggleSubtasks = (taskId: string) => {
         setExpandedSubtasks(prev => {
@@ -136,12 +141,13 @@ function MemberCard({
 
     const sorted = memberTasks
         .filter(t => !t.completed)
-        .sort((a, b) => {
-            const pOrder = { high: 0, medium: 1, low: 2 };
-            const pa = pOrder[(a.priority as Priority) ?? 'medium'];
-            const pb = pOrder[(b.priority as Priority) ?? 'medium'];
-            return pa - pb;
-        });
+        .sort((a, b) => (a.position - b.position) || (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+
+    const handleUpdateTitle = (taskId: string) => {
+        if (!editTitle.trim()) return;
+        onUpdateTask(taskId, { title: editTitle.trim() });
+        setEditingTaskId(null);
+    };
 
     return (
         <div className={`rounded-2xl border flex flex-col transition-all duration-500 overflow-hidden relative ${allDone ? 'border-green-300 bg-gradient-to-b from-green-50 to-emerald-50/40 shadow-[0_0_20px_rgba(16,185,129,0.15)]'
@@ -213,157 +219,211 @@ function MemberCard({
                 </div>
             )}
 
-            <div className="flex-1 px-4 pb-2 space-y-0.5 min-h-[80px]">
-                {sorted.length === 0 && (
-                    <p className="text-gray-400 text-sm py-4 text-center italic">Nenhuma tarefa. Adicione uma abaixo! 👇</p>
-                )}
-                {sorted.map(task => {
-                    const pCfg = PRIORITY_CONFIG[(task.priority as Priority) ?? 'medium'];
-                    const isHighPriority = task.priority === 'high' && !task.completed;
-                    const isExpanded = expandedTaskNotes === task.id;
+            <Droppable droppableId={member.id} type="TASK">
+                {(provided) => (
+                    <div 
+                        {...provided.droppableProps} 
+                        ref={provided.innerRef}
+                        className="flex-1 px-4 pb-2 space-y-0.5 min-h-[80px]"
+                    >
+                        {sorted.length === 0 && (
+                            <p className="text-gray-400 text-sm py-4 text-center italic">Nenhuma tarefa. Adicione uma abaixo! 👇</p>
+                        )}
+                        {sorted.map((task, index) => {
+                            const pCfg = PRIORITY_CONFIG[(task.priority as Priority) ?? 'medium'];
+                            const isHighPriority = task.priority === 'high' && !task.completed;
+                            const isExpanded = expandedTaskNotes === task.id;
+                            const isEditing = editingTaskId === task.id;
 
-                    return (
-                        <div key={task.id} className="flex flex-col">
-                            <div className={`flex items-start gap-2 group py-1.5 px-2 rounded-lg transition-colors ${isHighPriority ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'
-                                } ${isExpanded ? 'bg-blue-50/50' : ''}`}>
-                                <button onClick={() => onToggleTask(task.id, !task.completed, (task as any).due_date)} className="mt-0.5 shrink-0 transition-transform active:scale-90">
-                                    {task.completed
-                                        ? <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                        : <Circle className={`h-5 w-5 ${isHighPriority ? 'text-red-300' : 'text-gray-300'} hover:text-gray-400`} />}
-                                </button>
-                                <div className="flex-1 min-w-0 flex flex-col">
-                                    <div className="flex items-start gap-1.5">
-                                        <span className={`mt-[5px] shrink-0 w-2 h-2 rounded-full ${pCfg.dot} ${isHighPriority ? 'animate-pulse' : ''}`} />
-                                        <span className={`text-sm leading-snug transition-all ${task.completed ? "line-through text-gray-400" : isHighPriority ? "text-red-800 font-medium" : "text-gray-700"
-                                            }`}>
-                                            {task.title}
-                                            {isHighPriority && <Zap className="inline h-3 w-3 ml-1 text-red-500" />}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                        {task.subtasks?.length > 0 && (
-                                            <button 
-                                                onClick={() => toggleSubtasks(task.id)}
-                                                className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-dilq-accent bg-gray-100/80 px-1.5 py-0.5 rounded transition-colors"
-                                            >
-                                                {expandedSubtasks.has(task.id) ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
-                                                {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
-                                            </button>
-                                        )}
-                                        {task.notes && !isExpanded && (
-                                            <p className="text-[10px] text-gray-400 italic line-clamp-1">
-                                                {task.notes}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className={`flex items-center gap-1 transition-opacity ${task.notes || task.subtasks?.length > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                    <button 
-                                        onClick={() => toggleSubtasks(task.id)}
-                                        className="text-gray-300 hover:text-dilq-accent shrink-0 p-0.5 mt-0.5"
-                                        title="Subtarefas"
-                                    >
-                                        <Plus className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (isExpanded) {
-                                                setExpandedTaskNotes(null);
-                                            } else {
-                                                setExpandedTaskNotes(task.id);
-                                                setEditNotes(task.notes || "");
-                                            }
-                                        }}
-                                        className={`p-0.5 mt-0.5 rounded transition-colors ${task.notes ? 'text-dilq-accent' : 'text-gray-300'} hover:text-dilq-accent`}
-                                    >
-                                        <MessageSquare className="h-3.5 w-3.5" />
-                                    </button>
-                                    <button onClick={() => onDeleteTask(task.id)} className="text-gray-300 hover:text-red-400 shrink-0 p-0.5 mt-0.5">
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {isExpanded && (
-                                <div className="mx-2 mb-2 p-2 bg-blue-50/50 rounded-lg border border-blue-100 animate-in slide-in-from-top-1 duration-200">
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
-                                            <MessageSquare className="h-3 w-3" /> Comentário / Progresso
-                                        </span>
-                                        <button
-                                            onClick={() => {
-                                                onUpdateNotes(task.id, editNotes);
-                                                setExpandedTaskNotes(null);
-                                            }}
-                                            className="text-[10px] bg-dilq-accent text-white px-2 py-0.5 rounded flex items-center gap-1 hover:opacity-90 transition-opacity"
+                            return (
+                                <Draggable key={task.id} draggableId={task.id} index={index}>
+                                    {(provided, snapshot) => (
+                                        <div 
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            className={`flex flex-col ${snapshot.isDragging ? 'opacity-50' : ''}`}
                                         >
-                                            <Save className="h-2.5 w-2.5" /> Salvar
-                                        </button>
-                                    </div>
-                                    <textarea
-                                        value={editNotes}
-                                        onChange={e => setEditNotes(e.target.value)}
-                                        placeholder="Digite observações ou progresso desta tarefa..."
-                                        className="w-full bg-white border border-blue-100 rounded p-2 text-xs text-gray-700 min-h-[60px] focus:outline-none focus:ring-1 focus:ring-dilq-accent/30 resize-none"
-                                        autoFocus
-                                    />
-                                </div>
-                            )}
-
-                            {expandedSubtasks.has(task.id) && (
-                                <div className="mx-2 mb-2 pl-6 pr-2 py-2 bg-gray-50/50 rounded-lg border-l-2 border-l-gray-200">
-                                    <div className="space-y-1.5 min-h-[40px]">
-                                        {task.subtasks?.map(st => (
-                                            <div key={st.id} className="flex items-center justify-between group/st">
-                                                <div className="flex items-center gap-2">
-                                                    <button onClick={() => onToggleSubtask(task.id, st.id)} className="shrink-0 transition-transform active:scale-90 opacity-70 hover:opacity-100">
-                                                        {st.completed ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Circle className="h-3.5 w-3.5 text-gray-300" />}
-                                                    </button>
-                                                    <span className={`text-[11px] ${st.completed ? "line-through text-gray-400" : "text-gray-600"}`}>
-                                                        {st.title}
-                                                    </span>
+                                            <div className={`flex items-start gap-2 group py-1.5 px-2 rounded-lg transition-colors ${isHighPriority ? 'bg-red-50/60 hover:bg-red-50' : 'hover:bg-gray-50'
+                                                } ${isExpanded ? 'bg-blue-50/50' : ''}`}>
+                                                
+                                                <div {...provided.dragHandleProps} className="mt-1 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <GripVertical className="h-4 w-4" />
                                                 </div>
-                                                <button onClick={() => onDeleteSubtask(task.id, st.id)} className="text-gray-300 hover:text-red-400 shrink-0 p-0.5 opacity-0 group-hover/st:opacity-100 transition-opacity">
-                                                    <Trash2 className="h-3 w-3" />
+
+                                                <button onClick={() => onToggleTask(task.id, !task.completed, (task as any).due_date)} className="mt-0.5 shrink-0 transition-transform active:scale-90">
+                                                    {task.completed
+                                                        ? <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                                        : <Circle className={`h-5 w-5 ${isHighPriority ? 'text-red-300' : 'text-gray-300'} hover:text-gray-400`} />}
                                                 </button>
+
+                                                <div className="flex-1 min-w-0 flex flex-col">
+                                                    <div className="flex items-start gap-1.5">
+                                                        <span className={`mt-[5px] shrink-0 w-2 h-2 rounded-full ${pCfg.dot} ${isHighPriority ? 'animate-pulse' : ''}`} />
+                                                        
+                                                        {isEditing ? (
+                                                            <div className="flex-1 flex gap-1">
+                                                                <Input 
+                                                                    value={editTitle}
+                                                                    onChange={e => setEditTitle(e.target.value)}
+                                                                    className="h-7 text-sm py-0 bg-white"
+                                                                    autoFocus
+                                                                    onKeyDown={e => e.key === 'Enter' && handleUpdateTitle(task.id)}
+                                                                />
+                                                                <button onClick={() => handleUpdateTitle(task.id)} className="text-green-500 hover:text-green-600">
+                                                                    <Save className="h-4 w-4" />
+                                                                </button>
+                                                                <button onClick={() => setEditingTaskId(null)} className="text-gray-400 hover:text-gray-500">
+                                                                    <X className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className={`text-sm leading-snug transition-all ${task.completed ? "line-through text-gray-400" : isHighPriority ? "text-red-800 font-medium" : "text-gray-700"
+                                                                }`}>
+                                                                {task.title}
+                                                                {isHighPriority && <Zap className="inline h-3 w-3 ml-1 text-red-500" />}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        {task.subtasks?.length > 0 && (
+                                                            <button 
+                                                                onClick={() => toggleSubtasks(task.id)}
+                                                                className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-dilq-accent bg-gray-100/80 px-1.5 py-0.5 rounded transition-colors"
+                                                            >
+                                                                {expandedSubtasks.has(task.id) ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
+                                                                {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+                                                            </button>
+                                                        )}
+                                                        {task.notes && !isExpanded && (
+                                                            <p className="text-[10px] text-gray-400 italic line-clamp-1 pl-4">
+                                                                {task.notes}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className={`flex items-center gap-1 transition-opacity ${task.notes || task.subtasks?.length > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                    <button 
+                                                        onClick={() => {
+                                                            setEditingTaskId(task.id);
+                                                            setEditTitle(task.title);
+                                                        }}
+                                                        className="text-gray-300 hover:text-dilq-accent shrink-0 p-0.5 mt-0.5"
+                                                        title="Editar título"
+                                                    >
+                                                        <Edit2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => toggleSubtasks(task.id)}
+                                                        className="text-gray-300 hover:text-dilq-accent shrink-0 p-0.5 mt-0.5"
+                                                        title="Subtarefas"
+                                                    >
+                                                        <Plus className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (isExpanded) {
+                                                                setExpandedTaskNotes(null);
+                                                            } else {
+                                                                setExpandedTaskNotes(task.id);
+                                                                setEditNotes(task.notes || "");
+                                                            }
+                                                        }}
+                                                        className={`p-0.5 mt-0.5 rounded transition-colors ${task.notes ? 'text-dilq-accent' : 'text-gray-300'} hover:text-dilq-accent`}
+                                                    >
+                                                        <MessageSquare className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button onClick={() => onDeleteTask(task.id)} className="text-gray-300 hover:text-red-400 shrink-0 p-0.5 mt-0.5">
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
                                             </div>
-                                        ))}
-                                        {(!task.subtasks || task.subtasks.length === 0) && (
-                                            <p className="text-[10px] text-gray-400 italic">Nenhuma subtarefa.</p>
-                                        )}
-                                    </div>
-                                    <div className="mt-2 flex gap-1.5 items-center">
-                                        <Input
-                                            value={newSubtaskTitle[task.id] || ""}
-                                            onChange={e => setNewSubtaskTitle(prev => ({ ...prev, [task.id]: e.target.value }))}
-                                            placeholder="Nova subtarefa..."
-                                            className="h-6 text-[11px] bg-white border-gray-200"
-                                            onKeyDown={e => {
-                                                if (e.key === "Enter" && newSubtaskTitle[task.id]?.trim()) {
-                                                    onAddSubtask(task.id, newSubtaskTitle[task.id].trim());
-                                                    setNewSubtaskTitle(prev => ({ ...prev, [task.id]: "" }));
-                                                }
-                                            }}
-                                        />
-                                        <Button 
-                                            size="sm" 
-                                            className="h-6 px-2 py-0 bg-gray-100 text-gray-600 hover:bg-gray-200 border-none shrink-0"
-                                            onClick={() => {
-                                                if (newSubtaskTitle[task.id]?.trim()) {
-                                                    onAddSubtask(task.id, newSubtaskTitle[task.id].trim());
-                                                    setNewSubtaskTitle(prev => ({ ...prev, [task.id]: "" }));
-                                                }
-                                            }}
-                                        >
-                                            <Plus className="h-3 w-3" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
+
+                                            {isExpanded && (
+                                                <div className="mx-2 mb-2 p-2 bg-blue-50/50 rounded-lg border border-blue-100 animate-in slide-in-from-top-1 duration-200">
+                                                    <div className="flex items-center justify-between mb-1.5">
+                                                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
+                                                            <MessageSquare className="h-3 w-3" /> Comentário / Progresso
+                                                        </span>
+                                                        <button
+                                                            onClick={() => {
+                                                                onUpdateNotes(task.id, editNotes);
+                                                                setExpandedTaskNotes(null);
+                                                            }}
+                                                            className="text-[10px] bg-dilq-accent text-white px-2 py-0.5 rounded flex items-center gap-1 hover:opacity-90 transition-opacity"
+                                                        >
+                                                            <Save className="h-2.5 w-2.5" /> Salvar
+                                                        </button>
+                                                    </div>
+                                                    <textarea
+                                                        value={editNotes}
+                                                        onChange={e => setEditNotes(e.target.value)}
+                                                        placeholder="Digite observações ou progresso desta tarefa..."
+                                                        className="w-full bg-white border border-blue-100 rounded p-2 text-xs text-gray-700 min-h-[60px] focus:outline-none focus:ring-1 focus:ring-dilq-accent/30 resize-none"
+                                                        autoFocus
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {expandedSubtasks.has(task.id) && (
+                                                <div className="mx-2 mb-2 pl-6 pr-2 py-2 bg-gray-50/50 rounded-lg border-l-2 border-l-gray-200">
+                                                    <div className="space-y-1.5 min-h-[40px]">
+                                                        {task.subtasks?.map(st => (
+                                                            <div key={st.id} className="flex items-center justify-between group/st">
+                                                                <div className="flex items-center gap-2">
+                                                                    <button onClick={() => onToggleSubtask(task.id, st.id)} className="shrink-0 transition-transform active:scale-90 opacity-70 hover:opacity-100">
+                                                                        {st.completed ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Circle className="h-3.5 w-3.5 text-gray-300" />}
+                                                                    </button>
+                                                                    <span className={`text-[11px] ${st.completed ? "line-through text-gray-400" : "text-gray-600"}`}>
+                                                                        {st.title}
+                                                                    </span>
+                                                                </div>
+                                                                <button onClick={() => onDeleteSubtask(task.id, st.id)} className="text-gray-300 hover:text-red-400 shrink-0 p-0.5 opacity-0 group-hover/st:opacity-100 transition-opacity">
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                        {(!task.subtasks || task.subtasks.length === 0) && (
+                                                            <p className="text-[10px] text-gray-400 italic">Nenhuma subtarefa.</p>
+                                                        )}
+                                                    </div>
+                                                    <div className="mt-2 flex gap-1.5 items-center">
+                                                        <Input
+                                                            value={newSubtaskTitle[task.id] || ""}
+                                                            onChange={e => setNewSubtaskTitle(prev => ({ ...prev, [task.id]: e.target.value }))}
+                                                            placeholder="Nova subtarefa..."
+                                                            className="h-6 text-[11px] bg-white border-gray-200"
+                                                            onKeyDown={e => {
+                                                                if (e.key === "Enter" && newSubtaskTitle[task.id]?.trim()) {
+                                                                    onAddSubtask(task.id, newSubtaskTitle[task.id].trim());
+                                                                    setNewSubtaskTitle(prev => ({ ...prev, [task.id]: "" }));
+                                                                }
+                                                            }}
+                                                        />
+                                                        <Button 
+                                                            size="sm" 
+                                                            className="h-6 px-2 py-0 bg-gray-100 text-gray-600 hover:bg-gray-200 border-none shrink-0"
+                                                            onClick={() => {
+                                                                if (newSubtaskTitle[task.id]?.trim()) {
+                                                                    onAddSubtask(task.id, newSubtaskTitle[task.id].trim());
+                                                                    setNewSubtaskTitle(prev => ({ ...prev, [task.id]: "" }));
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Plus className="h-3 w-3" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </Draggable>
+                            );
+                        })}
+                        {provided.placeholder}
+                    </div>
+                )}
+            </Droppable>
 
             <div className="p-3 border-t border-gray-50 bg-gray-50/50">
                 <div className="flex items-center gap-2 mb-2">
@@ -607,8 +667,24 @@ export function TeamTodoTab() {
     const {
         members, tasks, isLoading, addMember, deleteMember,
         addTask, toggleTask, deleteTask, completeAllForMember, updateTaskNotes,
-        addSubtask, toggleSubtask, deleteSubtask
+        updateTask, addSubtask, toggleSubtask, deleteSubtask
     } = useTeamTasks(selectedDate);
+
+    const onDragEnd = (result: DropResult) => {
+        if (!result.destination) return;
+        const memberId = result.source.droppableId;
+        const memberTasks = tasks.filter(t => t.member_id === memberId && !t.completed);
+        const reordered = Array.from(memberTasks).sort((a, b) => a.position - b.position);
+        const [moved] = reordered.splice(result.source.index, 1);
+        reordered.splice(result.destination.index, 0, moved);
+
+        // Update all affected tasks positions
+        reordered.forEach((task, index) => {
+            if (task.position !== index) {
+                updateTask({ id: task.id, position: index });
+            }
+        });
+    };
 
     const displayDate = parseISO(selectedDate + "T12:00:00");
     const isToday = selectedDate === format(new Date(), "yyyy-MM-dd");
@@ -636,7 +712,8 @@ export function TeamTodoTab() {
     const greeting = getGreeting();
 
     return (
-        <div className="space-y-6 animate-fade-in">
+        <DragDropContext onDragEnd={onDragEnd}>
+            <div className="space-y-6 animate-fade-in">
             {/* Motivational Header */}
             <div className="rounded-2xl bg-gradient-to-r from-dilq-accent to-dilq-teal p-5 text-white shadow-md">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -770,6 +847,7 @@ export function TeamTodoTab() {
                                     onDeleteMember={deleteMember}
                                     onCompleteAll={completeAllForMember}
                                     onUpdateNotes={(id, notes) => updateTaskNotes({ id, notes })}
+                                    onUpdateTask={(id, updates) => updateTask({ id, ...updates })}
                                     onAddSubtask={(taskId, title) => addSubtask({ taskId, title })}
                                     onToggleSubtask={(taskId, subtaskId) => toggleSubtask({ taskId, subtaskId })}
                                     onDeleteSubtask={(taskId, subtaskId) => deleteSubtask({ taskId, subtaskId })}
@@ -783,5 +861,6 @@ export function TeamTodoTab() {
             {/* ---- HISTORY MODE ---- */}
             {viewMode === 'history' && <HistoryView members={members} />}
         </div>
+        </DragDropContext>
     );
 }

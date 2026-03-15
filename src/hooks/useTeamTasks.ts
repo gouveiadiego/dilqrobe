@@ -20,6 +20,7 @@ export interface TeamTask {
     notes?: string;
     priority?: 'high' | 'medium' | 'low';
     subtasks: { id: string; title: string; completed: boolean }[];
+    position: number;
     created_at: string;
 }
 
@@ -81,7 +82,7 @@ export const useTeamTasks = (selectedDate: string) => {
                 .select("*")
                 .eq("user_id", user.id)
                 .or(`due_date.eq.${selectedDate},and(due_date.lt.${selectedDate},completed.eq.false)`)
-                .order("due_date", { ascending: true }) // Order by older date first
+                .order("position", { ascending: true })
                 .order("created_at", { ascending: true });
             if (error) { toast.error("Erro ao carregar tarefas da equipe"); throw error; }
             
@@ -109,9 +110,10 @@ export const useTeamTasks = (selectedDate: string) => {
         mutationFn: async ({ member_id, title, due_date, priority }: { member_id: string; title: string; due_date: string; priority?: string }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Not authenticated");
+            const maxPos = tasks.length > 0 ? Math.max(...tasks.map(t => t.position || 0)) : -1;
             const { data, error } = await supabase
                 .from("team_tasks" as any)
-                .insert({ member_id, title, due_date, user_id: user.id, completed: false, priority: priority ?? 'medium', subtasks: [] })
+                .insert({ member_id, title, due_date, user_id: user.id, completed: false, priority: priority ?? 'medium', subtasks: [], position: maxPos + 1 })
                 .select()
                 .single();
             if (error) { toast.error("Erro ao adicionar tarefa"); throw error; }
@@ -134,6 +136,17 @@ export const useTeamTasks = (selectedDate: string) => {
                 .update(updates)
                 .eq("id", id);
             if (error) { toast.error("Erro ao atualizar tarefa"); throw error; }
+        },
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["team-tasks", selectedDate] })
+    });
+
+    const updateTaskMutation = useMutation({
+        mutationFn: async ({ id, ...updates }: { id: string } & Partial<TeamTask>) => {
+            const { error } = await supabase
+                .from("team_tasks" as any)
+                .update(updates)
+                .eq("id", id);
+            if (error) { throw error; }
         },
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ["team-tasks", selectedDate] })
     });
@@ -242,6 +255,7 @@ export const useTeamTasks = (selectedDate: string) => {
         deleteTask: deleteTaskMutation.mutate,
         completeAllForMember: completeAllMutation.mutate,
         updateTaskNotes: updateTaskNotesMutation.mutate,
+        updateTask: updateTaskMutation.mutate,
         addSubtask: addSubtaskMutation.mutate,
         toggleSubtask: toggleSubtaskMutation.mutate,
         deleteSubtask: deleteSubtaskMutation.mutate,
