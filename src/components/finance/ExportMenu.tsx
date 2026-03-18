@@ -13,15 +13,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FileDown, ChevronDown, Calendar, FileText, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { exportFinancePDF, exportMonthPDF } from "@/utils/financeExport";
+import { exportFinancePDF } from "@/utils/financeExport";
 import { handleSuccess, handleApiError } from "@/utils/errorHandler";
+import { supabase } from "@/integrations/supabase/client";
 import type { Transaction } from "@/hooks/useTransactions";
 import type { DateRange } from "./PeriodFilter";
 
 interface ExportMenuProps {
-  allTransactions: Transaction[];   // full list for the date range (unfiltered)
+  allTransactions: Transaction[];   // full list for the current date range (unfiltered)
   currentDateRange: DateRange;
   appliedFilter?: string;
   searchQuery?: string;
@@ -33,11 +34,39 @@ interface ExportMenuProps {
   };
 }
 
-export const ExportMenu = ({ allTransactions, currentDateRange, summaries, appliedFilter, searchQuery }: ExportMenuProps) => {
+// Fetch all transactions for a given date range from Supabase
+async function fetchTransactionsForRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado");
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("id,date,description,received_from,category,amount,payment_type,is_paid,recurring,recurring_day,recurrence_type,bank_account_id")
+    .eq("user_id", user.id)
+    .gte("date", format(startDate, "yyyy-MM-dd"))
+    .lte("date", format(endDate, "yyyy-MM-dd"))
+    .order("date", { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as Transaction[];
+}
+
+function buildSummaries(txns: Transaction[]) {
+  const income   = txns.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const expenses = txns.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  return {
+    income,
+    expenses,
+    balance: income - expenses,
+    pending: txns.filter(t => !t.is_paid).reduce((s, t) => s + Math.abs(t.amount), 0),
+  };
+}
+
+export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingMonth, setLoadingMonth] = useState(false);
 
-  // Year/month selectors for the "by month" option
   const currentYear = new Date().getFullYear();
   const yearOptions = useMemo(() =>
     Array.from({ length: 6 }, (_, i) => currentYear - i),
@@ -54,28 +83,20 @@ export const ExportMenu = ({ allTransactions, currentDateRange, summaries, appli
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
-  // Recompute summaries from ALL transactions (ignores active UI filters)
-  const fullSummaries = useMemo(() => {
-    const income   = allTransactions.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-    const expenses = allTransactions.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-    return {
-      income,
-      expenses,
-      balance: income - expenses,
-      pending: allTransactions.filter(t => !t.is_paid).reduce((s, t) => s + Math.abs(t.amount), 0),
-    };
-  }, [allTransactions]);
+  // Summaries for current period (from already-loaded transactions)
+  const fullSummaries = useMemo(() => buildSummaries(allTransactions), [allTransactions]);
 
+  // ── Export current period (data already in memory) ──────────────────────────
   const handleExportCurrentPeriod = async () => {
     setLoading(true);
     try {
       exportFinancePDF({
-        transactions: allTransactions, // ALL, not just filtered
+        transactions: allTransactions,
         periodLabel: currentDateRange.label,
         startDate: currentDateRange.startDate,
         endDate: currentDateRange.endDate,
-        appliedFilter: 'all',
-        searchQuery: '',
+        appliedFilter: "all",
+        searchQuery: "",
         summaries: fullSummaries,
       });
       handleSuccess("PDF exportado com sucesso!");
@@ -87,16 +108,33 @@ export const ExportMenu = ({ allTransactions, currentDateRange, summaries, appli
     }
   };
 
+  // ── Export specific month — fetches fresh from Supabase ─────────────────────
   const handleExportByMonth = async () => {
-    setLoading(true);
+    setLoadingMonth(true);
     try {
-      exportMonthPDF(allTransactions, selectedYear, selectedMonth, 'all', '');
+      const startDate = startOfMonth(new Date(selectedYear, selectedMonth, 1));
+      const endDate   = endOfMonth(startDate);
+      const periodLabel = format(startDate, "MMMM 'de' yyyy", { locale: ptBR });
+
+      const txns = await fetchTransactionsForRange(startDate, endDate);
+      const sums = buildSummaries(txns);
+
+      exportFinancePDF({
+        transactions: txns,
+        periodLabel,
+        startDate,
+        endDate,
+        appliedFilter: "all",
+        searchQuery: "",
+        summaries: sums,
+      });
+
       handleSuccess("PDF exportado com sucesso!");
       setIsOpen(false);
     } catch (err) {
-      handleApiError(err, "Erro ao gerar PDF");
+      handleApiError(err, "Erro ao gerar PDF do mês");
     } finally {
-      setLoading(false);
+      setLoadingMonth(false);
     }
   };
 
@@ -107,9 +145,9 @@ export const ExportMenu = ({ allTransactions, currentDateRange, summaries, appli
           variant="outline"
           size="sm"
           className="flex items-center gap-1.5 border-dilq-purple/30 text-dilq-purple hover:bg-dilq-purple/10 hover:border-dilq-purple"
-          disabled={loading}
+          disabled={loading || loadingMonth}
         >
-          {loading ? (
+          {(loading || loadingMonth) ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <FileDown className="h-4 w-4" />
@@ -147,7 +185,7 @@ export const ExportMenu = ({ allTransactions, currentDateRange, summaries, appli
               size="sm"
               className="w-full bg-dilq-purple hover:bg-dilq-purple/90 text-white mt-1"
               onClick={handleExportCurrentPeriod}
-              disabled={loading || allTransactions.length === 0}
+              disabled={loading || loadingMonth || allTransactions.length === 0}
             >
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
               Exportar este período
@@ -161,7 +199,7 @@ export const ExportMenu = ({ allTransactions, currentDateRange, summaries, appli
             <div className="flex-1 h-px bg-gray-100" />
           </div>
 
-          {/* Option 2: Specific Month */}
+          {/* Option 2: Specific Month – fetches fresh from DB */}
           <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 space-y-3">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-dilq-purple" />
@@ -207,9 +245,9 @@ export const ExportMenu = ({ allTransactions, currentDateRange, summaries, appli
               variant="outline"
               className="w-full border-dilq-purple/40 text-dilq-purple hover:bg-dilq-purple/10"
               onClick={handleExportByMonth}
-              disabled={loading}
+              disabled={loading || loadingMonth}
             >
-              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
+              {loadingMonth ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
               Exportar{" "}
               <span className="capitalize ml-1">
                 {format(new Date(selectedYear, selectedMonth, 1), "MMM/yyyy", {
