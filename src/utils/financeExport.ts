@@ -136,8 +136,8 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   // ── SUMMARY CARDS ───────────────────────────────────────────────────────────
   const cards = [
     { label: "RECEITAS",   val: summaries.income,   sign: "+", bgC: C.greenLight, txtC: C.green,   borderC: C.green },
-    { label: "DESPESAS",   val: summaries.expenses, sign: "−", bgC: C.redLight,   txtC: C.red,     borderC: C.red },
-    { label: "SALDO",      val: summaries.balance,  sign: summaries.balance >= 0 ? "+" : "−", bgC: summaries.balance >= 0 ? C.greenLight : C.redLight, txtC: summaries.balance >= 0 ? C.green : C.red, borderC: summaries.balance >= 0 ? C.green : C.red },
+    { label: "DESPESAS",   val: summaries.expenses, sign: "-", bgC: C.redLight,   txtC: C.red,     borderC: C.red },
+    { label: "SALDO",      val: summaries.balance,  sign: summaries.balance >= 0 ? "+" : "-", bgC: summaries.balance >= 0 ? C.greenLight : C.redLight, txtC: summaries.balance >= 0 ? C.green : C.red, borderC: summaries.balance >= 0 ? C.green : C.red },
     { label: "PENDENTES",  val: summaries.pending,  sign: "",  bgC: C.amberLight, txtC: C.amber,   borderC: C.amber },
   ];
 
@@ -255,7 +255,7 @@ export const exportFinancePDF = (opts: ExportOptions) => {
     const dateStr = format(new Date(t.date + "T12:00:00"), "dd/MM/yy");
     const catLabel = categoryLabel[t.category] ?? t.category;
     const payLabel = paymentBadge(t.payment_type);
-    const valTxt = `${isIncome ? "+" : "−"}${fmt(t.amount)}`;
+    const valTxt = `${isIncome ? "+" : "-"}${fmt(t.amount)}`;
     const statusTxt = isPaid ? "Pago" : "Pendente";
 
     doc.setFont("helvetica", "normal");
@@ -313,20 +313,39 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   });
 
   // ── TOTALS ROW ───────────────────────────────────────────────────────────────
-  y += 2;
+  // Make sure there is room; add page if needed
+  if (y + 14 > PH - 12) {
+    doc.addPage();
+    drawPageHeader(doc, PW, PH, ML, CW, capitalPeriod, dateRange, genStr);
+    y = 20;
+  }
+
+  y += 3;
   doc.setFillColor(...C.purpleLight);
-  doc.roundedRect(tableLeft, y, CW, 9, 2, 2, "F");
+  doc.roundedRect(tableLeft, y, CW, 10, 2, 2, "F");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
+
+  // Label (left)
   doc.setTextColor(...C.purple);
-  doc.text("Totais do período", tableLeft + 3, y + 6);
-  doc.setTextColor(...C.green);
-  doc.text(`Receitas: +${fmt(summaries.income)}`, tableLeft + 55, y + 6);
+  doc.text("Totais do periodo:", tableLeft + 3, y + 7);
+
+  // Three right-aligned blocks from the right edge
+  const rxBase = MR - 3;
+
+  // Saldo (rightmost, ~52mm wide)
+  const balSign = summaries.balance >= 0 ? "+" : "-";
+  if (summaries.balance >= 0) { doc.setTextColor(...C.green); } else { doc.setTextColor(...C.red); }
+  doc.text(`Saldo: ${balSign}${fmt(summaries.balance)}`, rxBase, y + 7, { align: "right" });
+
+  // Despesas (52mm to the left of saldo)
   doc.setTextColor(...C.red);
-  doc.text(`Despesas: −${fmt(summaries.expenses)}`, tableLeft + 95, y + 6);
-  const balColor: [number,number,number] = summaries.balance >= 0 ? C.green : C.red;
-  doc.setTextColor(...balColor);
-  doc.text(`Saldo: ${summaries.balance >= 0 ? "+" : "−"}${fmt(summaries.balance)}`, tableLeft + 140, y + 6);
+  doc.text(`Despesas: -${fmt(summaries.expenses)}`, rxBase - 54, y + 7, { align: "right" });
+
+  // Receitas (52mm further left)
+  doc.setTextColor(...C.green);
+  doc.text(`Receitas: +${fmt(summaries.income)}`, rxBase - 108, y + 7, { align: "right" });
+
 
   // ── FOOTER (all pages) ───────────────────────────────────────────────────────
   const pageCount = (doc.internal as any).getNumberOfPages();

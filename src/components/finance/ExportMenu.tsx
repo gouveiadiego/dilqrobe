@@ -21,7 +21,7 @@ import type { Transaction } from "@/hooks/useTransactions";
 import type { DateRange } from "./PeriodFilter";
 
 interface ExportMenuProps {
-  transactions: Transaction[];
+  allTransactions: Transaction[];   // full list for the date range (unfiltered)
   currentDateRange: DateRange;
   appliedFilter?: string;
   searchQuery?: string;
@@ -33,7 +33,7 @@ interface ExportMenuProps {
   };
 }
 
-export const ExportMenu = ({ transactions, currentDateRange, summaries, appliedFilter, searchQuery }: ExportMenuProps) => {
+export const ExportMenu = ({ allTransactions, currentDateRange, summaries, appliedFilter, searchQuery }: ExportMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -54,18 +54,29 @@ export const ExportMenu = ({ transactions, currentDateRange, summaries, appliedF
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
+  // Recompute summaries from ALL transactions (ignores active UI filters)
+  const fullSummaries = useMemo(() => {
+    const income   = allTransactions.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+    const expenses = allTransactions.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+    return {
+      income,
+      expenses,
+      balance: income - expenses,
+      pending: allTransactions.filter(t => !t.is_paid).reduce((s, t) => s + Math.abs(t.amount), 0),
+    };
+  }, [allTransactions]);
+
   const handleExportCurrentPeriod = async () => {
     setLoading(true);
     try {
-      // Recalculate summaries for export (use the passed summaries)
       exportFinancePDF({
-        transactions,
+        transactions: allTransactions, // ALL, not just filtered
         periodLabel: currentDateRange.label,
         startDate: currentDateRange.startDate,
         endDate: currentDateRange.endDate,
-        appliedFilter,
-        searchQuery,
-        summaries,
+        appliedFilter: 'all',
+        searchQuery: '',
+        summaries: fullSummaries,
       });
       handleSuccess("PDF exportado com sucesso!");
       setIsOpen(false);
@@ -79,8 +90,7 @@ export const ExportMenu = ({ transactions, currentDateRange, summaries, appliedF
   const handleExportByMonth = async () => {
     setLoading(true);
     try {
-      // We'll pass all transactions; the utility filters by the selected month
-      exportMonthPDF(transactions, selectedYear, selectedMonth, appliedFilter, searchQuery);
+      exportMonthPDF(allTransactions, selectedYear, selectedMonth, 'all', '');
       handleSuccess("PDF exportado com sucesso!");
       setIsOpen(false);
     } catch (err) {
@@ -137,7 +147,7 @@ export const ExportMenu = ({ transactions, currentDateRange, summaries, appliedF
               size="sm"
               className="w-full bg-dilq-purple hover:bg-dilq-purple/90 text-white mt-1"
               onClick={handleExportCurrentPeriod}
-              disabled={loading || transactions.length === 0}
+              disabled={loading || allTransactions.length === 0}
             >
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
               Exportar este período

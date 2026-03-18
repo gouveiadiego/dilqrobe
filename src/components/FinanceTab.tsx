@@ -63,6 +63,7 @@ export const FinanceTab = () => {
   const [showTransferDialog, setShowTransferDialog] = useState(false);
 
   const {
+    transactions,
     filteredTransactions,
     loading,
     selectedFilter,
@@ -237,7 +238,7 @@ export const FinanceTab = () => {
 
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <ExportMenu
-              transactions={filteredTransactions}
+              allTransactions={transactions}
               currentDateRange={dateRange}
               appliedFilter={selectedFilter}
               searchQuery={searchQuery}
