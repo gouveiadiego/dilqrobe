@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import {
   Search,
   Plus,
-  Download,
   LayoutDashboard,
   List,
   CalendarDays,
@@ -40,6 +39,7 @@ import { AccountSummaryCards } from "./finance/AccountSummaryCards";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { TransferDialog } from "./finance/TransferDialog";
 import { PeriodFilter, DateRange } from "./finance/PeriodFilter";
+import { ExportMenu } from "./finance/ExportMenu";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -167,37 +167,7 @@ export const FinanceTab = () => {
     }
   };
 
-  const handleExportData = () => {
-    try {
-      const headers = ['Data', 'Descrição', 'Recebido de/Pago para', 'Valor', 'Tipo de Pagamento', 'Status'];
-      const csvContent = [
-        headers.join(','),
-        ...filteredTransactions.map(t => [
-          new Date(t.date).toLocaleDateString('pt-BR'),
-          `"${t.description.replace(/"/g, '""')}"`,
-          `"${t.received_from.replace(/"/g, '""')}"`,
-          t.amount,
-          t.payment_type,
-          t.is_paid ? 'Pago' : 'Pendente'
-        ].join(','))
-      ].join('\n');
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-
-      link.setAttribute('href', url);
-      link.setAttribute('download', `transacoes-${dateRange.label.toLowerCase().replace(/\s+/g, '-')}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      handleSuccess("Dados exportados com sucesso");
-    } catch (error) {
-      console.error('Error exporting data:', error);
-      handleApiError(error, "Erro ao exportar dados");
-    }
-  };
 
   if (loading) {
     return <LoadingSpinner size="lg" text="Carregando transações..." className="h-64" />;
@@ -266,25 +236,13 @@ export const FinanceTab = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex md:hidden order-2 sm:order-1"
-              onClick={handleExportData}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden md:flex order-2 sm:order-1"
-              onClick={handleExportData}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
+            <ExportMenu
+              transactions={filteredTransactions}
+              currentDateRange={dateRange}
+              appliedFilter={selectedFilter}
+              searchQuery={searchQuery}
+              summaries={summaries}
+            />
 
             <Button
               variant="outline"
