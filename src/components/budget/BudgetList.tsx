@@ -16,6 +16,7 @@ interface BudgetListProps {
   budgets: Budget[];
   isLoading: boolean;
   onView: (budget: Budget) => void;
+  onEdit: (budget: Budget) => void;
   onDuplicate: (budget: Budget) => void;
   onDelete: (budget: Budget) => void;
   onDownloadPDF: (budget: Budget) => void;
@@ -25,6 +26,7 @@ export function BudgetList({
   budgets,
   isLoading,
   onView,
+  onEdit,
   onDuplicate,
   onDelete,
   onDownloadPDF
@@ -97,6 +99,7 @@ export function BudgetList({
               key={budget.id}
               budget={budget}
               onView={onView}
+              onEdit={onEdit}
               onDuplicate={onDuplicate}
               onDelete={onDelete}
               onDownloadPDF={onDownloadPDF}

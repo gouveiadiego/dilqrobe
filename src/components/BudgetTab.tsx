@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PlusCircle, FileText, Copy, Trash2 } from "lucide-react";
+import { PlusCircle, FileText, Copy, Trash2, Pencil } from "lucide-react";
 import { useBudgets } from "@/hooks/useBudgets";
 import { BudgetStats } from "./budget/BudgetStats";
 import { BudgetForm } from "./budget/BudgetForm";
@@ -18,11 +18,13 @@ export function BudgetTab() {
     isLoading, 
     stats, 
     createBudget, 
+    updateBudget,
     deleteBudget, 
     duplicateBudget 
   } = useBudgets();
 
   const [showForm, setShowForm] = useState(false);
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [previewBudget, setPreviewBudget] = useState<Budget | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -31,10 +33,27 @@ export function BudgetTab() {
   const [budgetToDuplicate, setBudgetToDuplicate] = useState<Budget | null>(null);
 
   const handleSubmit = async (data: Omit<NewBudget, 'user_id'>) => {
-    const result = await createBudget(data);
+    let result;
+    if (editingBudget) {
+      result = await updateBudget(editingBudget.id, data);
+    } else {
+      result = await createBudget(data);
+    }
+    
     if (result) {
       setShowForm(false);
+      setEditingBudget(null);
     }
+  };
+
+  const handleEditClick = (budget: Budget) => {
+    setEditingBudget(budget);
+    setShowForm(true);
+  };
+
+  const handleCancelClick = () => {
+    setShowForm(false);
+    setEditingBudget(null);
   };
 
   const handleView = (budget: Budget) => {
@@ -100,12 +119,18 @@ export function BudgetTab() {
       {showForm ? (
         <div className="bg-card border rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <PlusCircle className="h-5 w-5 text-primary" />
-            Criar Novo Orçamento
+            {editingBudget ? (
+              <Pencil className="h-5 w-5 text-primary" />
+            ) : (
+              <PlusCircle className="h-5 w-5 text-primary" />
+            )}
+            {editingBudget ? "Editar Orçamento" : "Criar Novo Orçamento"}
           </h2>
           <BudgetForm
             onSubmit={handleSubmit}
-            onCancel={() => setShowForm(false)}
+            onCancel={handleCancelClick}
+            initialData={editingBudget || undefined}
+            isEditing={!!editingBudget}
           />
         </div>
       ) : (
@@ -118,6 +143,7 @@ export function BudgetTab() {
             budgets={budgets}
             isLoading={isLoading}
             onView={handleView}
+            onEdit={handleEditClick}
             onDuplicate={handleDuplicateClick}
             onDelete={handleDeleteClick}
             onDownloadPDF={generateBudgetPDF}

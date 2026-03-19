@@ -13,7 +13,8 @@ import {
   Calendar,
   User,
   FileText,
-  Clock
+  Clock,
+  Pencil
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,6 +28,7 @@ import { Budget } from "./types";
 interface BudgetCardProps {
   budget: Budget;
   onView: (budget: Budget) => void;
+  onEdit: (budget: Budget) => void;
   onDuplicate: (budget: Budget) => void;
   onDelete: (budget: Budget) => void;
   onDownloadPDF: (budget: Budget) => void;
@@ -35,6 +37,7 @@ interface BudgetCardProps {
 export function BudgetCard({ 
   budget, 
   onView, 
+  onEdit,
   onDuplicate, 
   onDelete, 
   onDownloadPDF 
@@ -127,6 +130,10 @@ export function BudgetCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEdit(budget)}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Editar
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onDuplicate(budget)}>
                     <Copy className="h-4 w-4 mr-2" />
                     Duplicar
