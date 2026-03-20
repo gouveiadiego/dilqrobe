@@ -137,7 +137,10 @@ export const useTeamTasks = (selectedDate: string) => {
                 .eq("id", id);
             if (error) { toast.error("Erro ao atualizar tarefa"); throw error; }
         },
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["team-tasks", selectedDate] })
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["team-tasks", selectedDate] });
+            queryClient.invalidateQueries({ queryKey: ["team-history"] });
+        }
     });
 
     const updateTaskMutation = useMutation({

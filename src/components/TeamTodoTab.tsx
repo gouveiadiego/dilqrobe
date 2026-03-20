@@ -610,9 +610,11 @@ function HistoryView({
                                                             title="Clique para reverter para tarefa pendente"
                                                         >
                                                             <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0 group-hover/ht:text-dilq-accent transition-colors" />
-                                                            <span className="text-sm text-gray-500 line-through group-hover/ht:no-underline group-hover/ht:text-gray-700 transition-all">{t.title}</span>
+                                                            <span className="text-sm text-gray-500 line-through transition-all">{t.title}</span>
                                                             {t.priority === 'high' && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium">Alta</span>}
-                                                            <span className="opacity-0 group-hover/ht:opacity-100 text-[10px] text-dilq-accent font-medium ml-auto">Reverter</span>
+                                                            <span className="text-[10px] text-dilq-accent font-bold ml-auto bg-dilq-accent/10 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                                                <ArrowDownToLine className="h-2.5 w-2.5" /> Reativar
+                                                            </span>
                                                         </button>
                                                     ))}
                                                 </div>
