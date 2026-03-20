@@ -21,12 +21,16 @@ const BankAccountForm = ({ account, onSubmit, onClose }: BankAccountFormProps) =
     bank_name: account?.bank_name || "",
     account_type: account?.account_type || "corrente" as const,
     account_number: account?.account_number || "",
-    initial_balance: account?.initial_balance || 0,
+    initial_balance: account?.initial_balance?.toString() || "0",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+    const parsedBalance = parseFloat(formData.initial_balance as string);
+    await onSubmit({
+      ...formData,
+      initial_balance: isNaN(parsedBalance) ? 0 : parsedBalance
+    });
     onClose();
   };
 
@@ -79,7 +83,7 @@ const BankAccountForm = ({ account, onSubmit, onClose }: BankAccountFormProps) =
           type="number"
           step="0.01"
           value={formData.initial_balance}
-          onChange={(e) => setFormData(prev => ({ ...prev, initial_balance: parseFloat(e.target.value) || 0 }))}
+          onChange={(e) => setFormData(prev => ({ ...prev, initial_balance: e.target.value }))}
           placeholder="0,00"
           required
         />
