@@ -26,7 +26,9 @@ const BankAccountForm = ({ account, onSubmit, onClose }: BankAccountFormProps) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsedBalance = parseFloat(formData.initial_balance as string);
+    // Normalizar a string substituindo vírgula por ponto para o parseFloat
+    const normalizedBalance = formData.initial_balance.toString().replace(',', '.');
+    const parsedBalance = parseFloat(normalizedBalance);
     await onSubmit({
       ...formData,
       initial_balance: isNaN(parsedBalance) ? 0 : parsedBalance
@@ -80,10 +82,22 @@ const BankAccountForm = ({ account, onSubmit, onClose }: BankAccountFormProps) =
         </Label>
         <Input
           id="initial_balance"
-          type="number"
-          step="0.01"
+          type="text"
+          inputMode="decimal"
           value={formData.initial_balance}
-          onChange={(e) => setFormData(prev => ({ ...prev, initial_balance: e.target.value }))}
+          onChange={(e) => {
+            // Permitir apenas números, ponto, vírgula e sinal de negativo no início
+            let val = e.target.value.replace(/[^0-9.,-]/g, '');
+            // O sinal de menos só pode ficar no início
+            if (val.indexOf('-') > 0) {
+              val = val.replace(/-/g, '');
+            }
+            // Apenas uma vírgula ou ponto
+            const commaCount = (val.match(/[,.]/g) || []).length;
+            if (commaCount > 1) return;
+            
+            setFormData(prev => ({ ...prev, initial_balance: val }));
+          }}
           placeholder="0,00"
           required
         />
