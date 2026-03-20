@@ -455,7 +455,13 @@ function MemberCard({
 }
 
 // ---------- HISTORY VIEW ----------
-function HistoryView({ members }: { members: TeamMember[] }) {
+function HistoryView({ 
+    members, 
+    onToggleTask 
+}: { 
+    members: TeamMember[], 
+    onToggleTask: (id: string, completed: boolean, original_due_date: string) => void 
+}) {
     const [range, setRange] = useState<HistoryRange>('7');
     const [search, setSearch] = useState('');
     const [openDates, setOpenDates] = useState<Set<string>>(new Set());
@@ -597,11 +603,17 @@ function HistoryView({ members }: { members: TeamMember[] }) {
                                                 </div>
                                                 <div className="space-y-1 ml-8">
                                                     {mg.tasks.map(t => (
-                                                        <div key={t.id} className="flex items-center gap-2">
-                                                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                                                            <span className="text-sm text-gray-500 line-through">{t.title}</span>
+                                                        <button 
+                                                            key={t.id} 
+                                                            onClick={() => onToggleTask(t.id, false, t.due_date)}
+                                                            className="flex items-center gap-2 group/ht hover:bg-gray-50 px-2 py-0.5 rounded-md transition-colors w-full text-left"
+                                                            title="Clique para reverter para tarefa pendente"
+                                                        >
+                                                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0 group-hover/ht:text-dilq-accent transition-colors" />
+                                                            <span className="text-sm text-gray-500 line-through group-hover/ht:no-underline group-hover/ht:text-gray-700 transition-all">{t.title}</span>
                                                             {t.priority === 'high' && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-medium">Alta</span>}
-                                                        </div>
+                                                            <span className="opacity-0 group-hover/ht:opacity-100 text-[10px] text-dilq-accent font-medium ml-auto">Reverter</span>
+                                                        </button>
                                                     ))}
                                                 </div>
                                             </div>
@@ -850,7 +862,12 @@ export function TeamTodoTab() {
             )}
 
             {/* ---- HISTORY MODE ---- */}
-            {viewMode === 'history' && <HistoryView members={members} />}
+            {viewMode === 'history' && (
+                <HistoryView 
+                    members={members} 
+                    onToggleTask={(id, completed, original_due_date) => toggleTask({ id, completed, original_due_date })} 
+                />
+            )}
         </div>
     );
 }
