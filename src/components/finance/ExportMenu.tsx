@@ -15,7 +15,7 @@ import {
 import { FileDown, ChevronDown, Calendar, FileText, Loader2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { exportFinancePDF } from "@/utils/financeExport";
+import { exportFinancePDF, fetchImageAsBase64 } from "@/utils/financeExport";
 import { handleSuccess, handleApiError } from "@/utils/errorHandler";
 import { supabase } from "@/integrations/supabase/client";
 import type { Transaction } from "@/hooks/useTransactions";
@@ -90,6 +90,18 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
   const handleExportCurrentPeriod = async () => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_name, company_logo")
+        .eq("id", user?.id)
+        .maybeSingle();
+
+      let logoBase64 = null;
+      if (profile?.company_logo) {
+        logoBase64 = await fetchImageAsBase64(profile.company_logo);
+      }
+
       exportFinancePDF({
         transactions: allTransactions,
         periodLabel: currentDateRange.label,
@@ -98,6 +110,8 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
         appliedFilter: "all",
         searchQuery: "",
         summaries: fullSummaries,
+        companyName: profile?.company_name,
+        companyLogoBase64: logoBase64,
       });
       handleSuccess("PDF exportado com sucesso!");
       setIsOpen(false);
@@ -119,6 +133,18 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
       const txns = await fetchTransactionsForRange(startDate, endDate);
       const sums = buildSummaries(txns);
 
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_name, company_logo")
+        .eq("id", user?.id)
+        .maybeSingle();
+
+      let logoBase64 = null;
+      if (profile?.company_logo) {
+        logoBase64 = await fetchImageAsBase64(profile.company_logo);
+      }
+
       exportFinancePDF({
         transactions: txns,
         periodLabel,
@@ -127,6 +153,8 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
         appliedFilter: "all",
         searchQuery: "",
         summaries: sums,
+        companyName: profile?.company_name,
+        companyLogoBase64: logoBase64,
       });
 
       handleSuccess("PDF exportado com sucesso!");

@@ -26,6 +26,23 @@ export interface ExportOptions {
     balance: number;
     pending: number;
   };
+  companyName?: string | null;
+  companyLogoBase64?: string | null;
+}
+
+export async function fetchImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.error("Failed to load image as base64:", e);
+    return null;
+  }
 }
 
 // ─── Colors ────────────────────────────────────────────────────────────────────
@@ -93,15 +110,25 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   doc.rect(0, 0, 4, 44, "F");
 
   // Logo / brand
+  let titleX = ML + 4;
+  if (opts.companyLogoBase64) {
+    try {
+      doc.addImage(opts.companyLogoBase64, "PNG", ML + 4, 10, 16, 16);
+      titleX += 20;
+    } catch (e) {
+      console.warn("Failed to add image to PDF", e);
+    }
+  }
+
   doc.setTextColor(...C.white);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.text("DILQ ORBE", ML + 4, 16);
+  doc.text(opts.companyName || "DILQ ORBE", titleX, 19);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(220, 210, 255);
-  doc.text("Gestão Financeira · Relatório Executivo", ML + 4, 24);
+  doc.text("Gestão Financeira · Relatório Executivo", titleX, 26);
 
   // Period on right
   const capitalPeriod = periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1);

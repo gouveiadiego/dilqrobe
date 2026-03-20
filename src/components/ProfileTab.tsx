@@ -27,6 +27,7 @@ interface Profile {
   about: string | null;
   avatar_url: string | null;
   company_logo: string | null;
+  company_name: string | null;
 }
 
 export function ProfileTab() {
@@ -36,6 +37,7 @@ export function ProfileTab() {
   const [about, setAbout] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function ProfileTab() {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, full_name, about, avatar_url, company_logo')
+        .select('username, full_name, about, avatar_url, company_logo, company_name')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -71,6 +73,7 @@ export function ProfileTab() {
         setAbout(data.about || '');
         setAvatarUrl(data.avatar_url);
         setCompanyLogo(data.company_logo);
+        setCompanyName(data.company_name || '');
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -95,7 +98,8 @@ export function ProfileTab() {
         full_name: fullName,
         about,
         avatar_url: avatarUrl,
-        company_logo: companyLogo
+        company_logo: companyLogo,
+        company_name: companyName
       };
 
       console.log('Updating profile with:', updates);
@@ -323,6 +327,22 @@ export function ProfileTab() {
                       disabled={loading}
                       className="border-gray-200 focus:border-dilq-accent focus:ring-dilq-accent/30 transition-all duration-300"
                       placeholder="Seu nome completo"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="companyName" className="text-sm font-medium flex items-center gap-2 text-dilq-blue">
+                      <Building className="h-4 w-4" />
+                      Nome da empresa
+                    </label>
+                    <Input
+                      id="companyName"
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      disabled={loading}
+                      className="border-gray-200 focus:border-dilq-accent focus:ring-dilq-accent/30 transition-all duration-300"
+                      placeholder="Nome da sua empresa"
                     />
                   </div>
                 </div>
