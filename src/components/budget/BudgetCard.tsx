@@ -134,6 +134,7 @@ export function BudgetCard({
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => onDuplicate(budget)}>
                     <Copy className="h-4 w-4 mr-2" />
                     Duplicar
