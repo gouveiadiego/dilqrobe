@@ -18,6 +18,7 @@ import { ptBR } from "date-fns/locale";
 import { exportFinancePDF, fetchImageAsBase64 } from "@/utils/financeExport";
 import { handleSuccess, handleApiError } from "@/utils/errorHandler";
 import { supabase } from "@/integrations/supabase/client";
+import { useBankAccounts } from "@/hooks/useBankAccounts";
 import type { Transaction } from "@/hooks/useTransactions";
 import type { DateRange } from "./PeriodFilter";
 
@@ -66,6 +67,8 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingMonth, setLoadingMonth] = useState(false);
+  const { getTotalBalance } = useBankAccounts();
+  const totalBalance = getTotalBalance();
 
   const currentYear = new Date().getFullYear();
   const yearOptions = useMemo(() =>
@@ -112,6 +115,7 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
         summaries: fullSummaries,
         companyName: profile?.company_name,
         companyLogoBase64: logoBase64,
+        totalBalance: totalBalance,
       });
       handleSuccess("PDF exportado com sucesso!");
       setIsOpen(false);
@@ -155,6 +159,7 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
         summaries: sums,
         companyName: profile?.company_name,
         companyLogoBase64: logoBase64,
+        totalBalance: totalBalance,
       });
 
       handleSuccess("PDF exportado com sucesso!");

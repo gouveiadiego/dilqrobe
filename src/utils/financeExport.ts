@@ -28,6 +28,7 @@ export interface ExportOptions {
   };
   companyName?: string | null;
   companyLogoBase64?: string | null;
+  totalBalance?: number;
 }
 
 export async function fetchImageAsBase64(url: string): Promise<string | null> {
@@ -164,12 +165,13 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   const cards = [
     { label: "RECEITAS",   val: summaries.income,   sign: "+", bgC: C.greenLight, txtC: C.green,   borderC: C.green },
     { label: "DESPESAS",   val: summaries.expenses, sign: "-", bgC: C.redLight,   txtC: C.red,     borderC: C.red },
-    { label: "SALDO",      val: summaries.balance,  sign: summaries.balance >= 0 ? "+" : "-", bgC: summaries.balance >= 0 ? C.greenLight : C.redLight, txtC: summaries.balance >= 0 ? C.green : C.red, borderC: summaries.balance >= 0 ? C.green : C.red },
+    { label: "BALANÇO MENSAL", val: summaries.balance,  sign: summaries.balance >= 0 ? "+" : "-", bgC: summaries.balance >= 0 ? C.greenLight : C.redLight, txtC: summaries.balance >= 0 ? C.green : C.red, borderC: summaries.balance >= 0 ? C.green : C.red },
+    { label: "SALDO EM CONTA", val: opts.totalBalance ?? 0, sign: (opts.totalBalance ?? 0) >= 0 ? "" : "-", bgC: (opts.totalBalance ?? 0) >= 0 ? C.purpleLight : C.redLight, txtC: (opts.totalBalance ?? 0) >= 0 ? C.purple : C.red, borderC: (opts.totalBalance ?? 0) >= 0 ? C.purple : C.red },
     { label: "PENDENTES",  val: summaries.pending,  sign: "",  bgC: C.amberLight, txtC: C.amber,   borderC: C.amber },
   ];
 
-  const cGap = 4;
-  const cW = (CW - cGap * 3) / 4;
+  const cGap = 3;
+  const cW = (CW - cGap * 4) / 5;
   const cH = 22;
 
   cards.forEach((card, i) => {
@@ -360,10 +362,10 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   // Three right-aligned blocks from the right edge
   const rxBase = MR - 3;
 
-  // Saldo (rightmost, ~52mm wide)
+  // Saldo (rightmost)
   const balSign = summaries.balance >= 0 ? "+" : "-";
   if (summaries.balance >= 0) { doc.setTextColor(...C.green); } else { doc.setTextColor(...C.red); }
-  doc.text(`Saldo: ${balSign}${fmt(summaries.balance)}`, rxBase, y + 7, { align: "right" });
+  doc.text(`Balanço: ${balSign}${fmt(summaries.balance)}`, rxBase, y + 7, { align: "right" });
 
   // Despesas (52mm to the left of saldo)
   doc.setTextColor(...C.red);
