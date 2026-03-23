@@ -60,12 +60,12 @@ export function ProfileTab() {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, full_name, about, avatar_url, company_logo, company_name, company_cnpj, company_address')
+        .select('*')
         .eq('id', session.user.id)
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('Error fetching profile from Supabase:', error);
         throw error;
       }
 
