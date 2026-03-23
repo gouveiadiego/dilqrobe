@@ -128,20 +128,28 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   // Company Name with dynamic font size to prevent overlap
   let nameFontSize = 22;
   doc.setFontSize(nameFontSize);
-  const maxNameWidth = MR - titleX - 10;
+  
+  // Set a much safer width limit (leaving 75mm for period and margins on right)
+  const maxNameWidth = PW - titleX - 75;
   const nameWidth = doc.getTextWidth(opts.companyName || "DILQ ORBE");
   
+  // Scale down even more if it's too wide
   if (nameWidth > maxNameWidth) {
-    nameFontSize = Math.max(12, Math.floor(22 * (maxNameWidth / nameWidth)));
+    nameFontSize = Math.max(10, Math.floor(22 * (maxNameWidth / nameWidth)));
     doc.setFontSize(nameFontSize);
   }
   
-  doc.text(opts.companyName || "DILQ ORBE", titleX, 18);
+  // If still very long, split into multiple lines and shift next items
+  const splitTitle = doc.splitTextToSize(opts.companyName || "DILQ ORBE", maxNameWidth);
+  doc.text(splitTitle, titleX, 18);
+  
+  const titleLinesCount = Array.isArray(splitTitle) ? splitTitle.length : 1;
+  const titleBottomY = 18 + (titleLinesCount - 1) * (nameFontSize / 2.8); // Adjust based on lines
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(220, 210, 255);
-  let headerY = 25;
+  let headerY = Math.max(25, titleBottomY + 6);
   doc.text("Gestão Financeira · Relatório Executivo", titleX, headerY);
 
   if (opts.companyCnpj || opts.companyAddress) {
