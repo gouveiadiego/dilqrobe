@@ -118,9 +118,9 @@ export function ProfileTab() {
 
       if (error) throw error;
       toast.success('Perfil atualizado com sucesso');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
-      toast.error('Erro ao atualizar perfil');
+      toast.error(error.message || 'Erro ao atualizar perfil');
     } finally {
       setLoading(false);
     }
