@@ -125,7 +125,17 @@ export const exportFinancePDF = (opts: ExportOptions) => {
 
   doc.setTextColor(...C.white);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
+  // Company Name with dynamic font size to prevent overlap
+  let nameFontSize = 22;
+  doc.setFontSize(nameFontSize);
+  const maxNameWidth = MR - titleX - 10;
+  const nameWidth = doc.getTextWidth(opts.companyName || "DILQ ORBE");
+  
+  if (nameWidth > maxNameWidth) {
+    nameFontSize = Math.max(12, Math.floor(22 * (maxNameWidth / nameWidth)));
+    doc.setFontSize(nameFontSize);
+  }
+  
   doc.text(opts.companyName || "DILQ ORBE", titleX, 18);
 
   doc.setFont("helvetica", "normal");

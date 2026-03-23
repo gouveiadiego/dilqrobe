@@ -426,6 +426,9 @@ export function ProfileTab() {
                       Logo da empresa
                     </Button>
                   </div>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center italic">
+                    Tamanho ideal: 400x400px (quadrado)
+                  </p>
                 </div>
 
                 <div className="flex flex-col space-y-4 flex-1">
