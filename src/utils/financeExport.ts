@@ -29,6 +29,8 @@ export interface ExportOptions {
   companyName?: string | null;
   companyLogoBase64?: string | null;
   totalBalance?: number;
+  companyCnpj?: string;
+  companyAddress?: string;
 }
 
 export async function fetchImageAsBase64(url: string): Promise<string | null> {
@@ -124,12 +126,25 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   doc.setTextColor(...C.white);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.text(opts.companyName || "DILQ ORBE", titleX, 19);
+  doc.text(opts.companyName || "DILQ ORBE", titleX, 18);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(220, 210, 255);
-  doc.text("Gestão Financeira · Relatório Executivo", titleX, 26);
+  let headerY = 25;
+  doc.text("Gestão Financeira · Relatório Executivo", titleX, headerY);
+
+  if (opts.companyCnpj || opts.companyAddress) {
+    doc.setFontSize(7);
+    headerY += 5;
+    const details = [
+      opts.companyCnpj ? `CNPJ: ${opts.companyCnpj}` : null,
+      opts.companyAddress ? `Endereço: ${opts.companyAddress}` : null,
+    ]
+      .filter(Boolean)
+      .join("  •  ");
+    doc.text(details, titleX, headerY);
+  }
 
   // Period on right
   const capitalPeriod = periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1);

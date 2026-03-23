@@ -1,0 +1,2 @@
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS company_cnpj TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS company_address TEXT;

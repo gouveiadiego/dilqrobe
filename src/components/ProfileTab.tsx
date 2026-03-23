@@ -28,6 +28,8 @@ interface Profile {
   avatar_url: string | null;
   company_logo: string | null;
   company_name: string | null;
+  company_cnpj: string | null;
+  company_address: string | null;
 }
 
 export function ProfileTab() {
@@ -38,6 +40,8 @@ export function ProfileTab() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState("");
+  const [companyCnpj, setCompanyCnpj] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,7 +60,7 @@ export function ProfileTab() {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('username, full_name, about, avatar_url, company_logo, company_name')
+        .select('username, full_name, about, avatar_url, company_logo, company_name, company_cnpj, company_address')
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -74,6 +78,8 @@ export function ProfileTab() {
         setAvatarUrl(data.avatar_url);
         setCompanyLogo(data.company_logo);
         setCompanyName(data.company_name || '');
+        setCompanyCnpj(data.company_cnpj || '');
+        setCompanyAddress(data.company_address || '');
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -99,7 +105,9 @@ export function ProfileTab() {
         about,
         avatar_url: avatarUrl,
         company_logo: companyLogo,
-        company_name: companyName
+        company_name: companyName,
+        company_cnpj: companyCnpj,
+        company_address: companyAddress
       };
 
       console.log('Updating profile with:', updates);
@@ -344,6 +352,40 @@ export function ProfileTab() {
                       className="border-gray-200 focus:border-dilq-accent focus:ring-dilq-accent/30 transition-all duration-300"
                       placeholder="Nome da sua empresa"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="companyCnpj" className="text-sm font-medium flex items-center gap-2 text-dilq-blue">
+                        <FileText className="h-4 w-4" />
+                        CNPJ
+                      </label>
+                      <Input
+                        id="companyCnpj"
+                        type="text"
+                        value={companyCnpj}
+                        onChange={(e) => setCompanyCnpj(e.target.value)}
+                        disabled={loading}
+                        className="border-gray-200 focus:border-dilq-accent focus:ring-dilq-accent/30 transition-all duration-300"
+                        placeholder="00.000.000/0000-00"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="companyAddress" className="text-sm font-medium flex items-center gap-2 text-dilq-blue">
+                        <Briefcase className="h-4 w-4" />
+                        Endereço
+                      </label>
+                      <Input
+                        id="companyAddress"
+                        type="text"
+                        value={companyAddress}
+                        onChange={(e) => setCompanyAddress(e.target.value)}
+                        disabled={loading}
+                        className="border-gray-200 focus:border-dilq-accent focus:ring-dilq-accent/30 transition-all duration-300"
+                        placeholder="Rua, Número, Bairro, Cidade - UF"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

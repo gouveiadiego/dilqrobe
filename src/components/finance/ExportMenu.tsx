@@ -96,7 +96,7 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
       const { data: { user } } = await supabase.auth.getUser();
       const { data: profile } = await supabase
         .from("profiles")
-        .select("company_name, company_logo")
+        .select("company_name, company_logo, company_cnpj, company_address")
         .eq("id", user?.id)
         .maybeSingle();
 
@@ -116,6 +116,8 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
         companyName: profile?.company_name,
         companyLogoBase64: logoBase64,
         totalBalance: totalBalance,
+        companyCnpj: profile?.company_cnpj,
+        companyAddress: profile?.company_address,
       });
       handleSuccess("PDF exportado com sucesso!");
       setIsOpen(false);
@@ -140,7 +142,7 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
       const { data: { user } } = await supabase.auth.getUser();
       const { data: profile } = await supabase
         .from("profiles")
-        .select("company_name, company_logo")
+        .select("company_name, company_logo, company_cnpj, company_address")
         .eq("id", user?.id)
         .maybeSingle();
 
@@ -160,6 +162,8 @@ export const ExportMenu = ({ allTransactions, currentDateRange }: ExportMenuProp
         companyName: profile?.company_name,
         companyLogoBase64: logoBase64,
         totalBalance: totalBalance,
+        companyCnpj: profile?.company_cnpj,
+        companyAddress: profile?.company_address,
       });
 
       handleSuccess("PDF exportado com sucesso!");

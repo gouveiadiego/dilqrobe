@@ -867,7 +867,10 @@ export type Database = {
         Row: {
           about: string | null
           avatar_url: string | null
+          company_address: string | null
+          company_cnpj: string | null
           company_logo: string | null
+          company_name: string | null
           cpf: string | null
           created_at: string | null
           full_name: string | null
@@ -878,7 +881,10 @@ export type Database = {
         Insert: {
           about?: string | null
           avatar_url?: string | null
+          company_address?: string | null
+          company_cnpj?: string | null
           company_logo?: string | null
+          company_name?: string | null
           cpf?: string | null
           created_at?: string | null
           full_name?: string | null
@@ -889,7 +895,10 @@ export type Database = {
         Update: {
           about?: string | null
           avatar_url?: string | null
+          company_address?: string | null
+          company_cnpj?: string | null
           company_logo?: string | null
+          company_name?: string | null
           cpf?: string | null
           created_at?: string | null
           full_name?: string | null
