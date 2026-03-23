@@ -100,14 +100,14 @@ export function ProfileTab() {
 
       const updates = {
         id: session.user.id,
-        username,
-        full_name: fullName,
-        about,
+        username: username || null,
+        full_name: fullName || null,
+        about: about || null,
         avatar_url: avatarUrl,
         company_logo: companyLogo,
-        company_name: companyName,
-        company_cnpj: companyCnpj,
-        company_address: companyAddress
+        company_name: companyName || null,
+        company_cnpj: companyCnpj || null,
+        company_address: companyAddress || null
       };
 
       console.log('Updating profile with:', updates);
