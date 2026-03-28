@@ -100,14 +100,14 @@ export function ProfileTab() {
 
       const updates = {
         id: session.user.id,
-        username,
-        full_name: fullName,
-        about,
+        username: username || null,
+        full_name: fullName || null,
+        about: about || null,
         avatar_url: avatarUrl,
         company_logo: companyLogo,
-        company_name: companyName,
-        company_cnpj: companyCnpj,
-        company_address: companyAddress
+        company_name: companyName || null,
+        company_cnpj: companyCnpj || null,
+        company_address: companyAddress || null
       };
 
       console.log('Updating profile with:', updates);
@@ -426,6 +426,9 @@ export function ProfileTab() {
                       Logo da empresa
                     </Button>
                   </div>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center italic">
+                    Tamanho ideal: 400x400px (quadrado)
+                  </p>
                 </div>
 
                 <div className="flex flex-col space-y-4 flex-1">

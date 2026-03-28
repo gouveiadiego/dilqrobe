@@ -50,22 +50,29 @@ export async function fetchImageAsBase64(url: string): Promise<string | null> {
 
 // ─── Colors ────────────────────────────────────────────────────────────────────
 const C = {
-  purple:      [79,  48, 191] as [number, number, number],   // #4F30BF
-  purpleDark:  [55,  30, 155] as [number, number, number],   // #371E9B
-  purpleLight: [237, 233, 254] as [number, number, number],  // #EDE9FE
-  accent:      [139, 92,  246] as [number, number, number],  // #8B5CF6
-  green:       [22,  163, 74]  as [number, number, number],
-  greenLight:  [220, 252, 231] as [number, number, number],
-  red:         [220, 38,  38]  as [number, number, number],
-  redLight:    [254, 226, 226] as [number, number, number],
-  amber:       [217, 119, 6]   as [number, number, number],
-  amberLight:  [254, 243, 199] as [number, number, number],
-  gray900:     [17,  24,  39]  as [number, number, number],
-  gray700:     [55,  65,  81]  as [number, number, number],
-  gray500:     [107, 114, 128] as [number, number, number],
-  gray200:     [229, 231, 235] as [number, number, number],
-  gray50:      [249, 250, 251] as [number, number, number],
-  white:       [255, 255, 255] as [number, number, number],
+  primary: [15, 23, 42] as [number, number, number],   // Slate 900 (Deep Navy)
+  secondary: [51, 65, 85] as [number, number, number], // Slate 700
+  accent: [79, 70, 229] as [number, number, number],   // Indigo 600
+  muted: [148, 163, 184] as [number, number, number],  // Slate 400
+  
+  income: [5, 150, 105] as [number, number, number],   // Emerald 600
+  incomeBg: [240, 253, 244] as [number, number, number], // Emerald 50
+  
+  expense: [225, 29, 72] as [number, number, number],  // Rose 600
+  expenseBg: [255, 241, 242] as [number, number, number], // Rose 50
+  
+  balance: [37, 99, 235] as [number, number, number],  // Blue 600
+  balanceBg: [241, 245, 249] as [number, number, number], // Slate 50 for neutral balance
+  
+  total: [67, 56, 202] as [number, number, number],    // Indigo 700
+  totalBg: [238, 242, 255] as [number, number, number], // Indigo 50
+  
+  pending: [217, 119, 6] as [number, number, number],  // Amber 600
+  pendingBg: [255, 251, 235] as [number, number, number], // Amber 50
+  
+  white: [255, 255, 255] as [number, number, number],
+  border: [226, 232, 240] as [number, number, number], // Slate 200
+  bg: [248, 250, 252] as [number, number, number],    // Slate 50
 };
 
 const fmt = (v: number) =>
@@ -105,12 +112,12 @@ export const exportFinancePDF = (opts: ExportOptions) => {
 
   // ── HEADER GRADIENT BLOCK ───────────────────────────────────────────────────
   // Main bar
-  doc.setFillColor(...C.purple);
+  doc.setFillColor(...C.primary);
   doc.rect(0, 0, PW, 44, "F");
-
-  // Accent stripe
+  
+  // Subtle top highlight
   doc.setFillColor(...C.accent);
-  doc.rect(0, 0, 4, 44, "F");
+  doc.rect(0, 0, PW, 0.5, "F");
 
   // Logo / brand
   let titleX = ML + 4;
@@ -125,13 +132,31 @@ export const exportFinancePDF = (opts: ExportOptions) => {
 
   doc.setTextColor(...C.white);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text(opts.companyName || "DILQ ORBE", titleX, 18);
+  // Company Name with dynamic font size to prevent overlap
+  let nameFontSize = 22;
+  doc.setFontSize(nameFontSize);
+  
+  // Set a much safer width limit (leaving 75mm for period and margins on right)
+  const maxNameWidth = PW - titleX - 75;
+  const nameWidth = doc.getTextWidth(opts.companyName || "DILQ ORBE");
+  
+  // Scale down even more if it's too wide
+  if (nameWidth > maxNameWidth) {
+    nameFontSize = Math.max(10, Math.floor(22 * (maxNameWidth / nameWidth)));
+    doc.setFontSize(nameFontSize);
+  }
+  
+  // If still very long, split into multiple lines and shift next items
+  const splitTitle = doc.splitTextToSize(opts.companyName || "DILQ ORBE", maxNameWidth);
+  doc.text(splitTitle, titleX, 18);
+  
+  const titleLinesCount = Array.isArray(splitTitle) ? splitTitle.length : 1;
+  const titleBottomY = 18 + (titleLinesCount - 1) * (nameFontSize / 2.8); // Adjust based on lines
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.setTextColor(220, 210, 255);
-  let headerY = 25;
+  doc.setTextColor(200, 210, 230); // Very light slate/blue
+  let headerY = Math.max(25, titleBottomY + 6);
   doc.text("Gestão Financeira · Relatório Executivo", titleX, headerY);
 
   if (opts.companyCnpj || opts.companyAddress) {
@@ -155,7 +180,7 @@ export const exportFinancePDF = (opts: ExportOptions) => {
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.setTextColor(220, 210, 255);
+  doc.setTextColor(200, 210, 230);
   const dateRange = `${format(startDate, "dd/MM/yyyy")} — ${format(endDate, "dd/MM/yyyy")}`;
   doc.text(dateRange, MR, 24, { align: "right" });
 
@@ -167,9 +192,12 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   y = 52;
 
   // ── FILTER INFO BAR ─────────────────────────────────────────────────────────
-  doc.setFillColor(...C.purpleLight);
+  doc.setFillColor(...C.bg);
   doc.roundedRect(ML, y - 4, CW, 10, 2, 2, "F");
-  doc.setTextColor(...C.purple);
+  doc.setDrawColor(...C.border);
+  doc.roundedRect(ML, y - 4, CW, 10, 2, 2, "D");
+  
+  doc.setTextColor(...C.secondary);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   const filterInfo = `Filtro aplicado: ${filterLabel(appliedFilter)}${searchQuery ? `  |  Busca: "${searchQuery}"` : ""}  |  Total: ${transactions.length} transações`;
@@ -178,11 +206,11 @@ export const exportFinancePDF = (opts: ExportOptions) => {
 
   // ── SUMMARY CARDS ───────────────────────────────────────────────────────────
   const cards = [
-    { label: "RECEITAS",   val: summaries.income,   sign: "+", bgC: C.greenLight, txtC: C.green,   borderC: C.green },
-    { label: "DESPESAS",   val: summaries.expenses, sign: "-", bgC: C.redLight,   txtC: C.red,     borderC: C.red },
-    { label: "BALANÇO MENSAL", val: summaries.balance,  sign: summaries.balance >= 0 ? "+" : "-", bgC: summaries.balance >= 0 ? C.greenLight : C.redLight, txtC: summaries.balance >= 0 ? C.green : C.red, borderC: summaries.balance >= 0 ? C.green : C.red },
-    { label: "SALDO EM CONTA", val: opts.totalBalance ?? 0, sign: (opts.totalBalance ?? 0) >= 0 ? "" : "-", bgC: (opts.totalBalance ?? 0) >= 0 ? C.purpleLight : C.redLight, txtC: (opts.totalBalance ?? 0) >= 0 ? C.purple : C.red, borderC: (opts.totalBalance ?? 0) >= 0 ? C.purple : C.red },
-    { label: "PENDENTES",  val: summaries.pending,  sign: "",  bgC: C.amberLight, txtC: C.amber,   borderC: C.amber },
+    { label: "RECEITAS",   val: summaries.income,   sign: "+", accentC: C.income,   bgC: C.white, txtC: C.income },
+    { label: "DESPESAS",   val: summaries.expenses, sign: "-", accentC: C.expense,  bgC: C.white, txtC: C.expense },
+    { label: "BALANÇO MENSAL", val: summaries.balance,  sign: summaries.balance >= 0 ? "+" : "-", accentC: summaries.balance >= 0 ? C.income : C.expense, bgC: C.white, txtC: summaries.balance >= 0 ? C.income : C.expense },
+    { label: "SALDO EM CONTA", val: opts.totalBalance ?? 0, sign: (opts.totalBalance ?? 0) >= 0 ? "" : "-", accentC: (opts.totalBalance ?? 0) >= 0 ? C.total : C.expense, bgC: C.white, txtC: (opts.totalBalance ?? 0) >= 0 ? C.total : C.expense },
+    { label: "PENDENTES",  val: summaries.pending,  sign: "",  accentC: C.pending,  bgC: C.white, txtC: C.pending },
   ];
 
   const cGap = 3;
@@ -192,40 +220,46 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   cards.forEach((card, i) => {
     const cx = ML + i * (cW + cGap);
 
+    // Card shadow/border
+    doc.setDrawColor(...C.border);
+    doc.setLineWidth(0.1);
+    doc.roundedRect(cx, y, cW, cH, 1.5, 1.5, "D");
+    
     // Card bg
     doc.setFillColor(...card.bgC);
-    doc.roundedRect(cx, y, cW, cH, 2, 2, "F");
+    doc.roundedRect(cx, y, cW, cH, 1.5, 1.5, "F");
 
     // Top border accent
-    doc.setFillColor(...card.borderC);
-    doc.roundedRect(cx, y, cW, 2.5, 1, 1, "F");
+    doc.setFillColor(...card.accentC);
+    doc.rect(cx, y, cW, 1.5, "F");
 
     // Label
-    doc.setTextColor(...card.txtC);
+    doc.setTextColor(...C.secondary);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.5);
+    doc.setFontSize(6);
     doc.text(card.label, cx + cW / 2, y + 8, { align: "center" });
 
     // Value
+    doc.setTextColor(...card.txtC);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     const valTxt = `${card.sign}${fmt(card.val)}`;
-    doc.text(valTxt, cx + cW / 2, y + 17, { align: "center", maxWidth: cW - 4 });
+    doc.text(valTxt, cx + cW / 2, y + 16, { align: "center", maxWidth: cW - 4 });
   });
 
   y += cH + 12;
 
   // ── SECTION DIVIDER ─────────────────────────────────────────────────────────
-  doc.setTextColor(...C.gray900);
+  doc.setTextColor(...C.primary);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.text("Transações do Período", ML, y);
 
-  doc.setDrawColor(...C.purple);
+  doc.setDrawColor(...C.accent);
   doc.setLineWidth(0.6);
   doc.line(ML, y + 2, ML + 52, y + 2);
   doc.setLineWidth(0.2);
-  doc.setDrawColor(...C.gray200);
+  doc.setDrawColor(...C.border);
   doc.line(ML + 54, y + 2, MR, y + 2);
 
   y += 8;
@@ -240,7 +274,7 @@ export const exportFinancePDF = (opts: ExportOptions) => {
 
   // ─ Header row ─
   let cx = tableLeft;
-  doc.setFillColor(...C.purpleDark);
+  doc.setFillColor(...C.primary);
   doc.roundedRect(tableLeft, y, CW, headerH, 2, 2, "F");
 
   doc.setTextColor(...C.white);
@@ -282,14 +316,14 @@ export const exportFinancePDF = (opts: ExportOptions) => {
 
     // Alternating row background
     if (rowIdx % 2 === 0) {
-      doc.setFillColor(...C.gray50);
+      doc.setFillColor(...C.bg);
     } else {
       doc.setFillColor(...C.white);
     }
     doc.rect(tableLeft, y, CW, rowH, "F");
 
     // Bottom divider
-    doc.setDrawColor(...C.gray200);
+    doc.setDrawColor(...C.border);
     doc.setLineWidth(0.15);
     doc.line(tableLeft, y + rowH, tableLeft + CW, y + rowH);
 
@@ -307,25 +341,25 @@ export const exportFinancePDF = (opts: ExportOptions) => {
     let cx3 = tableLeft;
 
     // Date
-    doc.setTextColor(...C.gray700);
+    doc.setTextColor(...C.secondary);
     doc.text(dateStr, cx3 + 3, y + 4.8);
     cx3 += colWidths[0];
 
     // Description + sub (received_from)
-    doc.setTextColor(...C.gray900);
+    doc.setTextColor(...C.primary);
     doc.setFont("helvetica", "bold");
     const descTrunc = t.description.length > 32 ? t.description.slice(0, 31) + "…" : t.description;
     doc.text(descTrunc, cx3 + 3, y + 3.5);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.2);
-    doc.setTextColor(...C.gray500);
+    doc.setTextColor(...C.muted);
     const fromTrunc = t.received_from.length > 38 ? t.received_from.slice(0, 37) + "…" : t.received_from;
     doc.text(fromTrunc, cx3 + 3, y + 6.3);
     cx3 += colWidths[1];
 
     // Category badge
     doc.setFontSize(6.5);
-    doc.setTextColor(...C.gray700);
+    doc.setTextColor(...C.secondary);
     doc.text(catLabel, cx3 + 3, y + 4.8);
     cx3 += colWidths[2];
 
@@ -335,11 +369,11 @@ export const exportFinancePDF = (opts: ExportOptions) => {
 
     // Status
     if (isPaid) {
-      doc.setFillColor(...C.greenLight);
-      doc.setTextColor(...C.green);
+      doc.setFillColor(...C.incomeBg);
+      doc.setTextColor(...C.income);
     } else {
-      doc.setFillColor(...C.amberLight);
-      doc.setTextColor(...C.amber);
+      doc.setFillColor(...C.pendingBg);
+      doc.setTextColor(...C.pending);
     }
     doc.roundedRect(cx3 + 1, y + 1.5, colWidths[4] - 2, 4, 1, 1, "F");
     doc.setFont("helvetica", "bold");
@@ -350,7 +384,7 @@ export const exportFinancePDF = (opts: ExportOptions) => {
     // Amount
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
-    if (isIncome) { doc.setTextColor(...C.green); } else { doc.setTextColor(...C.red); }
+    if (isIncome) { doc.setTextColor(...C.income); } else { doc.setTextColor(...C.expense); }
     doc.text(valTxt, cx3 + colWidths[5] - 3, y + 4.8, { align: "right" });
 
     y += rowH;
@@ -365,13 +399,17 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   }
 
   y += 3;
-  doc.setFillColor(...C.purpleLight);
+  doc.setFillColor(...C.totalBg);
   doc.roundedRect(tableLeft, y, CW, 10, 2, 2, "F");
+  doc.setDrawColor(...C.total);
+  doc.setLineWidth(0.1);
+  doc.roundedRect(tableLeft, y, CW, 10, 2, 2, "D");
+  
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
 
   // Label (left)
-  doc.setTextColor(...C.purple);
+  doc.setTextColor(...C.total);
   doc.text("Totais do periodo:", tableLeft + 3, y + 7);
 
   // Three right-aligned blocks from the right edge
@@ -379,15 +417,15 @@ export const exportFinancePDF = (opts: ExportOptions) => {
 
   // Saldo (rightmost)
   const balSign = summaries.balance >= 0 ? "+" : "-";
-  if (summaries.balance >= 0) { doc.setTextColor(...C.green); } else { doc.setTextColor(...C.red); }
+  if (summaries.balance >= 0) { doc.setTextColor(...C.income); } else { doc.setTextColor(...C.expense); }
   doc.text(`Balanço: ${balSign}${fmt(summaries.balance)}`, rxBase, y + 7, { align: "right" });
 
   // Despesas (52mm to the left of saldo)
-  doc.setTextColor(...C.red);
+  doc.setTextColor(...C.expense);
   doc.text(`Despesas: -${fmt(summaries.expenses)}`, rxBase - 54, y + 7, { align: "right" });
 
   // Receitas (52mm further left)
-  doc.setTextColor(...C.green);
+  doc.setTextColor(...C.income);
   doc.text(`Receitas: +${fmt(summaries.income)}`, rxBase - 108, y + 7, { align: "right" });
 
 
@@ -396,10 +434,10 @@ export const exportFinancePDF = (opts: ExportOptions) => {
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p);
     const fy = PH - 9;
-    doc.setFillColor(...C.purple);
+    doc.setFillColor(...C.primary);
     doc.rect(0, fy, PW, 9, "F");
     doc.setFillColor(...C.accent);
-    doc.rect(0, fy, 4, 9, "F");
+    doc.rect(0, fy, PW, 0.4, "F");
     doc.setTextColor(...C.white);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.5);
@@ -420,17 +458,19 @@ function drawPageHeader(
   period: string, dateRange: string, _genStr: string
 ) {
   const MR = ML + CW;
-  doc.setFillColor(79, 48, 191);
+  doc.setFillColor(...C.primary);
   doc.rect(0, 0, PW, 14, "F");
-  doc.setFillColor(139, 92, 246);
-  doc.rect(0, 0, 4, 14, "F");
+  
+  doc.setFillColor(...C.accent);
+  doc.rect(0, 0, PW, 0.4, "F");
+  
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.text("DILQ ORBE · Relatório Financeiro (cont.)", ML + 4, 9);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
-  doc.setTextColor(220, 210, 255);
+  doc.setTextColor(200, 210, 230);
   doc.text(`${period}  ·  ${dateRange}`, MR, 9, { align: "right" });
 }
 
