@@ -15,10 +15,11 @@ import {
   FileText,
   Sparkles,
   ClipboardList,
-  Dumbbell
+  Dumbbell,
+  ShoppingBag
 } from "lucide-react";
 
-type TabType = 'dashboard' | 'tasks' | 'team-todo' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant' | 'fitness';
+type TabType = 'dashboard' | 'tasks' | 'team-todo' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant' | 'fitness' | 'ecommerce';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -36,7 +37,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }
     { id: 'team-todo', label: 'To-Do Equipe', icon: ClipboardList },
     { id: 'meetings', label: 'Reuniões', icon: Calendar },
     { id: 'finance', label: 'Financeiro', icon: Wallet },
-    { id: 'budget', label: 'Orçamento', icon: TrendingUp },
+    { id: 'ecommerce', label: 'Ecommerce', icon: ShoppingBag },
     { id: 'habits', label: 'Hábitos', icon: Target },
     { id: 'fitness', label: 'Fitness', icon: Dumbbell },
     { id: 'journals', label: 'Diário', icon: BookOpen },

@@ -187,6 +187,33 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          id: string;
+          name: string;
+          sku: string | null;
+          price: number;
+          stock_quantity: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          name: string;
+          sku?: string | null;
+          price: number;
+          stock_quantity?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          sku?: string | null;
+          price?: number;
+          stock_quantity?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      },
       categories: {
         Row: {
           created_at: string | null

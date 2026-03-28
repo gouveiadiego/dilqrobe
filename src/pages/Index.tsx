@@ -32,8 +32,9 @@ import { AIAssistantTab } from "@/components/ai-chat/AIAssistantTab";
 import { AIChatWidget } from "@/components/ai-chat/AIChatWidget";
 import { QuickActionsMenu } from "@/components/QuickActionsMenu";
 import { TeamTodoTab } from "@/components/TeamTodoTab";
+import { EcommerceTab } from "@/components/EcommerceTab";
 
-type TabType = 'dashboard' | 'tasks' | 'team-todo' | 'finance' | 'habits' | 'fitness' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant';
+type TabType = 'dashboard' | 'tasks' | 'team-todo' | 'finance' | 'habits' | 'fitness' | 'journals' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant' | 'ecommerce';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -300,6 +301,8 @@ const Index = () => {
         return <SettingsTab />;
       case 'budget':
         return <BudgetTab />;
+      case 'ecommerce':
+        return <EcommerceTab />;
       case 'services':
         return <ServicesTab />;
       case 'projects':
