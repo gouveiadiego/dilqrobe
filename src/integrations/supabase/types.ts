@@ -187,33 +187,6 @@ export type Database = {
         }
         Relationships: []
       }
-      products: {
-        Row: {
-          id: string;
-          name: string;
-          sku: string | null;
-          price: number;
-          stock_quantity: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          name: string;
-          sku?: string | null;
-          price: number;
-          stock_quantity?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          name?: string;
-          sku?: string | null;
-          price?: number;
-          stock_quantity?: number;
-          updated_at?: string;
-        };
-        Relationships: [];
-      },
       categories: {
         Row: {
           created_at: string | null
@@ -887,6 +860,36 @@ export type Database = {
           status?: string
           stripe_payment_id?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          price: number
+          sku: string | null
+          stock_quantity: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          price: number
+          sku?: string | null
+          stock_quantity?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          price?: number
+          sku?: string | null
+          stock_quantity?: number
+          updated_at?: string | null
         }
         Relationships: []
       }
