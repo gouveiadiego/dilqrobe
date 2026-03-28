@@ -16,10 +16,9 @@ import {
   Sparkles,
   ClipboardList,
   Dumbbell,
-  ShoppingBag
 } from "lucide-react";
 
-type TabType = 'dashboard' | 'tasks' | 'team-todo' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant' | 'fitness' | 'ecommerce';
+type TabType = 'dashboard' | 'tasks' | 'team-todo' | 'finance' | 'habits' | 'journals' | 'challenges' | 'profile' | 'settings' | 'budget' | 'services' | 'projects' | 'meetings' | 'ai-assistant' | 'fitness';
 
 interface SidebarProps {
   activeTab: TabType;
