@@ -19,7 +19,8 @@ import ClientPortal from "./pages/ClientPortal";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
-  const [session, setSession] = useState<Session | null>(null);
+  const queryClient = useQueryClient();
+
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
