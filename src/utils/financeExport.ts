@@ -300,7 +300,7 @@ export const exportFinancePDF = (opts: ExportOptions) => {
 
       // Repeat column headers on new page
       let cx2 = tableLeft;
-      doc.setFillColor(...C.purpleDark);
+      doc.setFillColor(...C.accent);
       doc.roundedRect(tableLeft, y, CW, headerH, 1, 1, "F");
       doc.setTextColor(...C.white);
       doc.setFont("helvetica", "bold");

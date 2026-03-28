@@ -300,8 +300,6 @@ const Index = () => {
         return <SettingsTab />;
       case 'budget':
         return <BudgetTab />;
-      case 'ecommerce':
-        return <EcommerceTab />;
       case 'services':
         return <ServicesTab />;
       case 'projects':
