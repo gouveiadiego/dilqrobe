@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -18,25 +19,28 @@ import ClientPortal from "./pages/ClientPortal";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
-  const [session, setSession] = useState<Session | null>(null);
+  const queryClient = useQueryClient();
+
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    supabase.auth.getSession().then(() => {
       setIsLoading(false);
     });
 
-    // Listen for auth changes
+    // Listen for auth changes and clear cache on user switch
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        queryClient.clear();
+      }
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [queryClient]);
 
   if (isLoading) {
     return <div>Loading...</div>;
