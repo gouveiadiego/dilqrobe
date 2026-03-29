@@ -40,6 +40,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }
     { id: 'habits', label: 'Hábitos', icon: Target },
     { id: 'fitness', label: 'Fitness', icon: Dumbbell },
     { id: 'journals', label: 'Diário', icon: BookOpen },
+    { id: 'ecommerce', label: 'Ecommerce', icon: ShoppingBag },
     { id: 'services', label: 'Serviços', icon: Briefcase },
     { id: 'projects', label: 'Projetos', icon: FileText },
     { id: 'profile', label: 'Perfil', icon: User },
