@@ -305,6 +305,8 @@ const Index = () => {
         return <ServicesTab />;
       case 'projects':
         return <WrittenProjectsTab />;
+      case 'ecommerce':
+        return <EcommerceTab />;
       default:
         return null;
     }
