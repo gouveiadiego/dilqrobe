@@ -35,6 +35,32 @@ export function InventoryManager({ products, suppliers, loading, onAdd, onUpdate
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
   const [searchFilter, setSearchFilter] = useState("");
+  const [importing, setImporting] = useState(false);
+
+  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const parsed = parseCartPandaCSV(text);
+      if (parsed.length === 0) {
+        toast.error("Nenhum produto encontrado no CSV.");
+        return;
+      }
+      let count = 0;
+      for (const p of parsed) {
+        await onAdd(p);
+        count++;
+      }
+      toast.success(`${count} produtos importados com sucesso!`);
+    } catch (err) {
+      toast.error("Erro ao importar CSV.");
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
 
   const handleSubmit = () => {
     if (!form.code.trim() || !form.name.trim()) return;
