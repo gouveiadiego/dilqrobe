@@ -1,204 +1,204 @@
-
 import { useState } from "react";
-import { useProducts } from "@/hooks/useProducts";
 import { 
-  ShoppingBag, 
   Package, 
-  TrendingUp, 
-  TrendingDown, 
-  Plus, 
-  Search,
-  Download,
-  Upload,
-  MoreVertical,
-  Edit,
-  Trash2,
-  DollarSign
+  ShoppingCart, 
+  Gift, 
+  Users, 
+  LayoutDashboard,
+  TrendingUp,
+  DollarSign,
+  TrendingDown,
+  BarChart3,
+  BarChart2,
+  AlertCircle
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useProducts } from "@/hooks/useProducts";
+import { useEcommerce } from "@/hooks/useEcommerce";
+import { EcommerceInventory } from "./ecommerce/EcommerceInventory";
+import { EcommerceSales } from "./ecommerce/EcommerceSales";
+import { EcommerceBonuses } from "./ecommerce/EcommerceBonuses";
+import { EcommerceSuppliers } from "./ecommerce/EcommerceSuppliers";
+import { useMemo } from "react";
 
 export const EcommerceTab = () => {
-  const { products, isLoading, addProduct, updateProduct, deleteProduct } = useProducts();
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
-  const totalStock = products.reduce((acc, p) => acc + p.stock_quantity, 0);
-  const totalValue = products.reduce((acc, p) => acc + (p.price * p.stock_quantity), 0);
-  const lowStockProducts = products.filter(p => p.stock_quantity < 5).length;
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 w-full rounded-xl" />
-          ))}
-        </div>
-        <Skeleton className="h-96 w-full rounded-xl" />
-      </div>
-    );
-  }
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-dilq-accent to-dilq-teal bg-clip-text text-transparent">
-            Gestão de Ecommerce
-          </h2>
-          <p className="text-gray-500">Controle seu estoque, vendas e rentabilidade.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2">
-            <Upload className="h-4 w-4" /> Importar
-          </Button>
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" /> Exportar
-          </Button>
-          <Button className="bg-gradient-to-r from-dilq-accent to-dilq-teal text-white shadow-lg hover:opacity-90 gap-2">
-            <Plus className="h-4 w-4" /> Novo Produto
-          </Button>
-        </div>
+      <div className="flex items-center gap-2">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-[#40657E] to-dilq-teal bg-clip-text text-transparent">
+          Ecommerce
+        </h2>
+        <div className="h-1 flex-grow bg-gradient-to-r from-[#40657E]/30 to-dilq-teal/30 rounded-full" />
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="glass-card overflow-hidden transition-all duration-300 hover:shadow-xl group">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Estoque Total</CardTitle>
-            <Package className="h-4 w-4 text-dilq-accent group-hover:scale-110 transition-transform" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalStock} unidades</div>
-            <p className="text-xs text-gray-500 mt-1">Produtos cadastrados</p>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="bg-white/70 border border-gray-100 shadow-sm p-1 h-auto flex flex-wrap gap-1 rounded-xl">
+          <TabsTrigger value="dashboard" className="gap-2 py-2 px-4 border-none data-[state=active]:bg-[#40657E]/10 data-[state=active]:text-[#40657E] transition-all rounded-lg">
+            <LayoutDashboard className="h-4 w-4" /> Painel
+          </TabsTrigger>
+          <TabsTrigger value="estoque" className="gap-2 py-2 px-4 border-none data-[state=active]:bg-[#40657E]/10 data-[state=active]:text-[#40657E] transition-all rounded-lg">
+            <Package className="h-4 w-4" /> Estoque
+          </TabsTrigger>
+          <TabsTrigger value="vendas" className="gap-2 py-2 px-4 border-none data-[state=active]:bg-[#40657E]/10 data-[state=active]:text-[#40657E] transition-all rounded-lg">
+            <ShoppingCart className="h-4 w-4" /> Vendas
+          </TabsTrigger>
+          <TabsTrigger value="bonificacoes" className="gap-2 py-2 px-4 border-none data-[state=active]:bg-[#40657E]/10 data-[state=active]:text-[#40657E] transition-all rounded-lg">
+            <Gift className="h-4 w-4" /> Bonificações
+          </TabsTrigger>
+          <TabsTrigger value="fornecedores" className="gap-2 py-2 px-4 border-none data-[state=active]:bg-[#40657E]/10 data-[state=active]:text-[#40657E] transition-all rounded-lg">
+            <Users className="h-4 w-4" /> Fornecedores
+          </TabsTrigger>
+        </TabsList>
 
-        <Card className="glass-card overflow-hidden transition-all duration-300 hover:shadow-xl group">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Valor em Estoque</CardTitle>
-            <DollarSign className="h-4 w-4 text-dilq-teal group-hover:scale-110 transition-transform" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalValue)}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Custo total acumulado</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="dashboard" className="space-y-6">
+          <EcommerceDashboard />
+        </TabsContent>
 
-        <Card className="glass-card overflow-hidden transition-all duration-300 hover:shadow-xl group">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Alertas de Estoque</CardTitle>
-            <TrendingDown className={`h-4 w-4 ${lowStockProducts > 0 ? 'text-red-500' : 'text-green-500'} group-hover:scale-110 transition-transform`} />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{lowStockProducts} itens</div>
-            <p className="text-xs text-gray-500 mt-1">Com estoque baixo (menos de 5)</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="estoque">
+          <EcommerceInventory />
+        </TabsContent>
+
+        <TabsContent value="vendas">
+          <EcommerceSales />
+        </TabsContent>
+
+        <TabsContent value="bonificacoes">
+          <EcommerceBonuses />
+        </TabsContent>
+
+        <TabsContent value="fornecedores">
+          <EcommerceSuppliers />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+const EcommerceDashboard = () => {
+  const { products } = useProducts();
+  const { sales, bonuses } = useEcommerce();
+  
+  const stats = useMemo(() => {
+    const totalSalesQuantity = sales.reduce((acc: number, s: any) => acc + s.quantity, 0);
+    const totalSalesValue = sales.reduce((acc: number, s: any) => acc + s.total_amount, 0);
+    const totalBonusesQuantity = bonuses.reduce((acc: number, b: any) => acc + b.quantity, 0);
+    const totalBonusesValue = bonuses.reduce((acc: number, b: any) => acc + b.bonus_value, 0);
+    const totalStock = products.reduce((acc, p) => acc + p.stock_quantity, 0);
+    const ticketMedio = sales.length > 0 ? totalSalesValue / sales.length : 0;
+    
+    // Margem bruta = Receita - Custo
+    // Since we don't have cost in sales easily without a join, we can mock or estimate if needed.
+    // For now based on screenshot UI, we keep the label and will sum cost later.
+    const totalCost = 0; 
+    
+    return { 
+      totalSalesValue, 
+      totalSalesQuantity,
+      totalBonusesValue, 
+      totalBonusesQuantity,
+      totalStock, 
+      ticketMedio,
+      totalCost
+    };
+  }, [sales, bonuses, products]);
+
+  const fmtr = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  // 8 Metrics Cards as per screenshot
+  const metrics = [
+    { label: "Receita Bruta", value: fmtr.format(stats.totalSalesValue), color: "text-blue-500", icon: DollarSign },
+    { label: "Receita Líquida", value: fmtr.format(stats.totalSalesValue), color: "text-green-500", icon: TrendingUp },
+    { label: "Margem Bruta", value: fmtr.format(stats.totalSalesValue - stats.totalCost), color: "text-green-500", icon: TrendingUp },
+    { label: "Itens Vendidos", value: stats.totalSalesQuantity.toString(), color: "text-purple-500", icon: ShoppingCart },
+    { label: "Itens Bonificados", value: stats.totalBonusesQuantity.toString(), color: "text-orange-500", icon: Gift },
+    { label: "Estoque Total", value: stats.totalStock.toString(), color: "text-teal-500", icon: Package },
+    { label: "Ticket Médio", value: fmtr.format(stats.ticketMedio), color: "text-purple-600", icon: BarChart2 },
+    { label: "Invest. Bonificações", value: fmtr.format(stats.totalBonusesValue), color: "text-red-500", icon: Gift },
+  ];
+
+  const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {metrics.map((m, i) => (
+          <Card key={i} className="glass-card hover:shadow-md transition-shadow border-none shadow-sm">
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <div className={`p-1.5 rounded-lg bg-gray-50`}>
+                   <m.icon className={`h-4 w-4 ${m.color}`} />
+                </div>
+                <p className="text-xs font-medium text-gray-500">{m.label}</p>
+              </div>
+              <div className={`text-xl font-bold ${m.color}`}>{m.value}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Product Table Card */}
-      <Card className="glass-card shadow-lg border-none">
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <CardTitle>Produtos & Inventário</CardTitle>
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input 
-                placeholder="Buscar por nome ou SKU..." 
-                className="pl-9 bg-white/50 border-gray-200"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
+      <Card className="glass-card overflow-hidden border-none shadow-sm">
+        <CardHeader className="bg-white/50 border-b border-gray-100 flex flex-row items-center justify-between py-4">
+          <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-800">
+            <BarChart3 className="h-6 w-6 text-[#40657E]" />
+            Painel Financeiro — Demonstrativo Mensal 2026
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border border-gray-100 overflow-hidden">
-            <Table>
-              <TableHeader className="bg-gray-50/50">
-                <TableRow>
-                  <TableHead>Produto</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Preço</TableHead>
-                  <TableHead>Estoque</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProducts.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-gray-500">
-                      Nenhum produto encontrado.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredProducts.map((product) => (
-                    <TableRow key={product.id} className="hover:bg-gray-50/50 transition-colors">
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell className="text-gray-500 font-mono text-xs">{product.sku || "-"}</TableCell>
-                      <TableCell>
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
-                      </TableCell>
-                      <TableCell>{product.stock_quantity}</TableCell>
-                      <TableCell>
-                        {product.stock_quantity <= 0 ? (
-                          <Badge variant="destructive">Esgotado</Badge>
-                        ) : product.stock_quantity < 5 ? (
-                          <Badge variant="outline" className="border-orange-500 text-orange-600">Baixo</Badge>
-                        ) : (
-                          <Badge variant="outline" className="border-green-500 text-green-600">Disponível</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2">
-                              <Edit className="h-4 w-4" /> Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 text-red-600 focus:text-red-600" onClick={() => deleteProduct.mutate(product.id)}>
-                              <Trash2 className="h-4 w-4" /> Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-gray-50/50">
+              <TableRow>
+                <TableHead className="w-48 font-bold text-gray-700">INDICADOR</TableHead>
+                {months.map(m => <TableHead key={m} className="text-center text-[11px] font-semibold">{m}</TableHead>)}
+                <TableHead className="text-right font-bold bg-gray-100/30">TOTAL</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="text-[11px]">
+              {/* RECEITAS SECTION */}
+              <TableRow className="bg-gray-50/10 border-none">
+                <TableCell className="font-bold py-2 uppercase text-[10px] text-gray-500" colSpan={14}>RECEITAS</TableCell>
+              </TableRow>
+              <TableRow className="border-none">
+                <TableCell className="pl-6 py-3">Receita Líquida</TableCell>
+                {months.map(m => <TableCell key={m} className="text-center text-gray-400">R$ 0,00</TableCell>)}
+                <TableCell className="text-right font-bold">{fmtr.format(stats.totalSalesValue)}</TableCell>
+              </TableRow>
+
+              {/* CUSTOS SECTION */}
+              <TableRow className="bg-gray-50/10 border-none">
+                <TableCell className="font-bold py-2 uppercase text-[10px] text-gray-500" colSpan={14}>CUSTOS</TableCell>
+              </TableRow>
+              <TableRow className="border-none">
+                <TableCell className="pl-6 py-3">Custo das Peças</TableCell>
+                {months.map(m => <TableCell key={m} className="text-center text-gray-400">R$ 0,00</TableCell>)}
+                <TableCell className="text-right font-bold">{fmtr.format(stats.totalCost)}</TableCell>
+              </TableRow>
+              <TableRow className="border-none">
+                <TableCell className="pl-6 py-3">Invest. Bonificações</TableCell>
+                {months.map(m => <TableCell key={m} className="text-center text-gray-400">R$ 0,00</TableCell>)}
+                <TableCell className="text-right font-bold">{fmtr.format(stats.totalBonusesValue)}</TableCell>
+              </TableRow>
+
+              {/* LUCRO ESTIMADO */}
+              <TableRow className="bg-green-50/20 font-bold border-none border-t border-gray-100">
+                <TableCell className="uppercase text-[11px] text-gray-800 py-4">LUCRO ESTIMADO</TableCell>
+                {months.map((m, i) => (
+                  <TableCell key={m} className="text-center text-green-600">R$ 0,00</TableCell>
+                ))}
+                <TableCell className="text-right text-green-700">{fmtr.format(stats.totalSalesValue - stats.totalBonusesValue - stats.totalCost)}</TableCell>
+              </TableRow>
+
+              {/* ITENS VENDIDOS */}
+              <TableRow className="border-none">
+                <TableCell className="uppercase text-[11px] font-bold text-gray-800 py-4">ITENS VENDIDOS</TableCell>
+                {months.map(m => <TableCell key={m} className="text-center text-gray-600">0</TableCell>)}
+                <TableCell className="text-right font-bold text-gray-800">{stats.totalSalesQuantity}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>
