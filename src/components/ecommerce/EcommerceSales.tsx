@@ -5,13 +5,8 @@ import { ProductSearchSelector } from "./ProductSearchSelector";
 import { 
   ShoppingCart, 
   Plus, 
-  Search, 
-  MoreVertical, 
   Edit, 
   Trash2,
-  Calendar,
-  User as UserIcon,
-  DollarSign,
   Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -44,26 +39,24 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+
+const defaultForm = () => ({
+  product_id: "",
+  date: format(new Date(), "yyyy-MM-dd"),
+  client_name: "",
+  payment_method: "",
+  quantity: 1,
+  discount_pct: 0,
+  total_amount: 0,
+});
 
 export const EcommerceSales = () => {
   const { products } = useProducts();
-  const { sales, loadingSales: isLoading, addSale } = useEcommerce();
-  const [searchTerm, setSearchTerm] = useState("");
+  const { sales, loadingSales: isLoading, addSale, updateSale, deleteSale } = useEcommerce();
   const [isOpen, setIsOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState(defaultForm());
 
-  // Form state
-  const [formData, setFormData] = useState({
-    product_id: "",
-    date: format(new Date(), "yyyy-MM-dd"),
-    client_name: "",
-    payment_method: "",
-    quantity: 1,
-    discount_pct: 0,
-    total_amount: 0
-  });
-
-  // Reactive calculation of total_amount
   useEffect(() => {
     const product = products.find(p => p.id === formData.product_id);
     if (product) {
@@ -75,6 +68,26 @@ export const EcommerceSales = () => {
     }
   }, [formData.product_id, formData.quantity, formData.discount_pct, products]);
 
+  const openEdit = (s: any) => {
+    setEditingId(s.id);
+    setFormData({
+      product_id: s.product_id || "",
+      date: s.date || format(new Date(), "yyyy-MM-dd"),
+      client_name: s.client_name || "",
+      payment_method: s.payment_method || "",
+      quantity: s.quantity || 1,
+      discount_pct: s.discount_pct || 0,
+      total_amount: s.total_amount || 0,
+    });
+    setIsOpen(true);
+  };
+
+  const openNew = () => {
+    setEditingId(null);
+    setFormData(defaultForm());
+    setIsOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.product_id || !formData.client_name) {
@@ -83,42 +96,49 @@ export const EcommerceSales = () => {
     }
 
     try {
-      await addSale.mutateAsync(formData as any);
+      if (editingId) {
+        await updateSale.mutateAsync({ id: editingId, ...formData } as any);
+      } else {
+        await addSale.mutateAsync(formData as any);
+      }
       setIsOpen(false);
-      setFormData({
-        product_id: "",
-        date: format(new Date(), "yyyy-MM-dd"),
-        client_name: "",
-        payment_method: "",
-        quantity: 1,
-        discount_pct: 0,
-        total_amount: 0
-      });
+      setEditingId(null);
+      setFormData(defaultForm());
     } catch (error: any) {
-       console.error(error);
-       const detailedError = error?.message || error?.details || "Erro desconhecido";
-       toast.error(`Erro ao registrar venda: ${detailedError}`);
+      console.error(error);
+      toast.error(`Erro ao ${editingId ? "atualizar" : "registrar"} venda: ${error?.message || "Erro desconhecido"}`);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta venda?")) return;
+    try {
+      await deleteSale.mutateAsync(id);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao excluir venda.");
     }
   };
 
   const fmtr = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+  const isPending = addSale.isPending || updateSale.isPending;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h3 className="text-2xl font-bold text-gray-800">Registro de Vendas</h3>
-          <p className="text-gray-500">Acompanhe as vendas da sua loja fitness.</p>
+          <h3 className="text-2xl font-bold text-foreground">Registro de Vendas</h3>
+          <p className="text-muted-foreground">Acompanhe as vendas da sua loja fitness.</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(o) => { setIsOpen(o); if (!o) setEditingId(null); }}>
           <DialogTrigger asChild>
-            <Button className="bg-[#40657E] hover:bg-[#324f63] text-white shadow-lg gap-2">
+            <Button onClick={openNew} className="gap-2">
               <Plus className="h-4 w-4" /> Nova Venda
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-xl">
             <DialogHeader>
-              <DialogTitle>Nova Venda</DialogTitle>
+              <DialogTitle>{editingId ? "Editar Venda" : "Nova Venda"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 py-4">
               <div className="space-y-2">
@@ -132,32 +152,20 @@ export const EcommerceSales = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Data</Label>
-                  <Input 
-                    id="date" 
-                    type="date" 
-                    value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  />
+                  <Label>Data</Label>
+                  <Input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="client">Cliente</Label>
-                  <Input 
-                    id="client" 
-                    placeholder="Nome do cliente" 
-                    value={formData.client_name}
-                    onChange={(e) => setFormData({...formData, client_name: e.target.value})}
-                  />
+                  <Label>Cliente</Label>
+                  <Input placeholder="Nome do cliente" value={formData.client_name} onChange={(e) => setFormData({...formData, client_name: e.target.value})} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Forma de Pagamento</Label>
-                  <Select onValueChange={(val) => setFormData({...formData, payment_method: val})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
+                  <Select value={formData.payment_method} onValueChange={(val) => setFormData({...formData, payment_method: val})}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Cartão">Cartão</SelectItem>
                       <SelectItem value="Pix">Pix</SelectItem>
@@ -167,42 +175,28 @@ export const EcommerceSales = () => {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="qty">Quantidade</Label>
-                  <Input 
-                    id="qty" 
-                    type="number" 
-                    value={formData.quantity}
-                    onChange={(e) => setFormData(p => ({ ...p, quantity: parseInt(e.target.value) || 0 }))}
-                  />
+                  <Label>Quantidade</Label>
+                  <Input type="number" value={formData.quantity} onChange={(e) => setFormData(p => ({ ...p, quantity: parseInt(e.target.value) || 0 }))} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="discount">Desconto (%)</Label>
-                  <Input 
-                    id="discount" 
-                    type="number" 
-                    value={formData.discount_pct}
-                    onChange={(e) => setFormData({...formData, discount_pct: parseFloat(e.target.value)})}
-                  />
+                  <Label>Desconto (%)</Label>
+                  <Input type="number" value={formData.discount_pct} onChange={(e) => setFormData({...formData, discount_pct: parseFloat(e.target.value)})} />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[#40657E] font-bold">Total Venda</Label>
-                  <div className="text-xl font-bold p-2 bg-gray-50 rounded-md border text-[#40657E]">
+                  <Label className="font-bold text-primary">Total Venda</Label>
+                  <div className="text-xl font-bold p-2 bg-muted rounded-md border text-primary">
                     {fmtr.format(formData.total_amount)}
                   </div>
                 </div>
               </div>
 
               <DialogFooter>
-                <Button 
-                  type="submit" 
-                  className="w-full bg-[#40657E] hover:bg-[#324f63] gap-2"
-                  disabled={addSale.isPending}
-                >
-                  {addSale.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Registrar Venda
+                <Button type="submit" className="w-full gap-2" disabled={isPending}>
+                  {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {editingId ? "Salvar Alterações" : "Registrar Venda"}
                 </Button>
               </DialogFooter>
             </form>
@@ -210,10 +204,10 @@ export const EcommerceSales = () => {
         </Dialog>
       </div>
 
-      <Card className="glass-card shadow-lg border-none overflow-hidden rounded-xl">
+      <Card className="shadow-sm border overflow-hidden rounded-xl">
         <CardContent className="p-0">
           <Table>
-            <TableHeader className="bg-gray-50/50">
+            <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Produto</TableHead>
@@ -221,20 +215,21 @@ export const EcommerceSales = () => {
                 <TableHead>Pagamento</TableHead>
                 <TableHead className="text-center">Qtd</TableHead>
                 <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-center w-24">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">Carregando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8">Carregando...</TableCell></TableRow>
               ) : sales.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-500">Nenhuma venda registrada.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma venda registrada.</TableCell></TableRow>
               ) : (
                 sales.map((s: any) => (
-                  <TableRow key={s.id} className="hover:bg-gray-50/50 transition-colors">
-                    <TableCell className="text-xs text-gray-500">{format(new Date(s.date), "dd/MM/yyyy")}</TableCell>
+                  <TableRow key={s.id} className="hover:bg-muted/30 transition-colors">
+                    <TableCell className="text-xs text-muted-foreground">{format(new Date(s.date), "dd/MM/yyyy")}</TableCell>
                     <TableCell>
                       <div className="font-semibold">{s.products?.name}</div>
-                      <div className="text-[10px] text-gray-400">
+                      <div className="text-[10px] text-muted-foreground">
                         {s.products?.size || "-"} / {s.products?.color || "-"} • SKU: {s.products?.sku}
                       </div>
                     </TableCell>
@@ -243,8 +238,18 @@ export const EcommerceSales = () => {
                       <Badge variant="outline" className="text-[10px] font-normal">{s.payment_method}</Badge>
                     </TableCell>
                     <TableCell className="text-center font-medium">{s.quantity}</TableCell>
-                    <TableCell className="text-right font-bold text-[#40657E]">
+                    <TableCell className="text-right font-bold text-primary">
                       {fmtr.format(s.total_amount)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(s)}>
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDelete(s.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

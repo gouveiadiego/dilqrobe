@@ -93,6 +93,32 @@ export const useEcommerce = () => {
     },
   });
 
+  const updateSale = useMutation({
+    mutationFn: async ({ id, ...updates }: any) => {
+      const { error } = await supabase
+        .from("ecommerce_sales")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ecommerce_sales"] });
+      toast.success("Venda atualizada!");
+    },
+  });
+
+  const deleteSale = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("ecommerce_sales").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ecommerce_sales"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Venda excluída!");
+    },
+  });
+
   // Bonuses
   const { data: bonuses = [], isLoading: loadingBonuses } = useQuery({
     queryKey: ["ecommerce_bonuses"],
@@ -146,6 +172,32 @@ export const useEcommerce = () => {
     },
   });
 
+  const updateBonus = useMutation({
+    mutationFn: async ({ id, ...updates }: any) => {
+      const { error } = await supabase
+        .from("ecommerce_bonuses")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ecommerce_bonuses"] });
+      toast.success("Bonificação atualizada!");
+    },
+  });
+
+  const deleteBonus = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("ecommerce_bonuses").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ecommerce_bonuses"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Bonificação excluída!");
+    },
+  });
+
   const deleteSupplier = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("ecommerce_suppliers").delete().eq("id", id);
@@ -165,8 +217,12 @@ export const useEcommerce = () => {
     sales,
     loadingSales,
     addSale,
+    updateSale,
+    deleteSale,
     bonuses,
     loadingBonuses,
     addBonus,
+    updateBonus,
+    deleteBonus,
   };
 };
