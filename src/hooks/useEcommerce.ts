@@ -172,6 +172,32 @@ export const useEcommerce = () => {
     },
   });
 
+  const updateBonus = useMutation({
+    mutationFn: async ({ id, ...updates }: any) => {
+      const { error } = await supabase
+        .from("ecommerce_bonuses")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ecommerce_bonuses"] });
+      toast.success("Bonificação atualizada!");
+    },
+  });
+
+  const deleteBonus = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("ecommerce_bonuses").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ecommerce_bonuses"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Bonificação excluída!");
+    },
+  });
+
   const deleteSupplier = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("ecommerce_suppliers").delete().eq("id", id);
