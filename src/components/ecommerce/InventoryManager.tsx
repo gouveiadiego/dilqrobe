@@ -7,9 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Edit, Package, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Edit, Package, AlertTriangle, Upload } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
+import { parseCartPandaCSV } from "@/utils/csvImportUtils";
+import { toast } from "sonner";
 
 interface Props {
   products: any[];
@@ -33,6 +35,32 @@ export function InventoryManager({ products, suppliers, loading, onAdd, onUpdate
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
   const [searchFilter, setSearchFilter] = useState("");
+  const [importing, setImporting] = useState(false);
+
+  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const parsed = parseCartPandaCSV(text);
+      if (parsed.length === 0) {
+        toast.error("Nenhum produto encontrado no CSV.");
+        return;
+      }
+      let count = 0;
+      for (const p of parsed) {
+        await onAdd(p);
+        count++;
+      }
+      toast.success(`${count} produtos importados com sucesso!`);
+    } catch (err) {
+      toast.error("Erro ao importar CSV.");
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
 
   const handleSubmit = () => {
     if (!form.code.trim() || !form.name.trim()) return;
@@ -87,8 +115,14 @@ export function InventoryManager({ products, suppliers, loading, onAdd, onUpdate
           <Package className="h-5 w-5 text-primary" />
           Gestão de Estoque
         </CardTitle>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
           <Input placeholder="Buscar produto..." value={searchFilter} onChange={e => setSearchFilter(e.target.value)} className="w-48" />
+          <label htmlFor="csv-import">
+            <Button size="sm" variant="outline" asChild disabled={importing}>
+              <span><Upload className="h-4 w-4 mr-1" /> {importing ? "Importando..." : "Importar CSV"}</span>
+            </Button>
+          </label>
+          <input id="csv-import" type="file" accept=".csv" className="hidden" onChange={handleCSVImport} />
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
             <DialogTrigger asChild>
               <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Novo</Button>

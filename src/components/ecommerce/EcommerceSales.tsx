@@ -48,7 +48,7 @@ import { ptBR } from "date-fns/locale";
 
 export const EcommerceSales = () => {
   const { products } = useProducts();
-  const { sales, isLoading, addSale } = useEcommerce();
+  const { sales, loadingSales: isLoading, addSale } = useEcommerce();
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
