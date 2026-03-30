@@ -187,36 +187,6 @@ export type Database = {
         }
         Relationships: []
       }
-      products: {
-        Row: {
-          id: string;
-          name: string;
-          sku: string | null;
-          price: number;
-          cost_price: number;
-          stock_quantity: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          name: string;
-          sku?: string | null;
-          price: number;
-          cost_price?: number;
-          stock_quantity?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          name?: string;
-          sku?: string | null;
-          price?: number;
-          cost_price?: number;
-          stock_quantity?: number;
-          updated_at?: string;
-        };
-        Relationships: [];
-      },
       categories: {
         Row: {
           created_at: string | null
@@ -566,6 +536,299 @@ export type Database = {
         }
         Relationships: []
       }
+      ecommerce_bonifications: {
+        Row: {
+          bonification_date: string
+          campaign_reason: string | null
+          client_name: string | null
+          contact_handle: string | null
+          created_at: string
+          gift_value: number | null
+          id: string
+          notes: string | null
+          product_id: string | null
+          quantity: number | null
+          sales_generated: number | null
+          unit_cost: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bonification_date?: string
+          campaign_reason?: string | null
+          client_name?: string | null
+          contact_handle?: string | null
+          created_at?: string
+          gift_value?: number | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          sales_generated?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bonification_date?: string
+          campaign_reason?: string | null
+          client_name?: string | null
+          contact_handle?: string | null
+          created_at?: string
+          gift_value?: number | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          sales_generated?: number | null
+          unit_cost?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecommerce_bonifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "ecommerce_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ecommerce_bonuses: {
+        Row: {
+          bonus_value: number | null
+          created_at: string | null
+          date: string | null
+          generated_sales: number | null
+          id: string
+          influencer_handle: string | null
+          influencer_name: string | null
+          product_id: string | null
+          quantity: number
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bonus_value?: number | null
+          created_at?: string | null
+          date?: string | null
+          generated_sales?: number | null
+          id?: string
+          influencer_handle?: string | null
+          influencer_name?: string | null
+          product_id?: string | null
+          quantity?: number
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bonus_value?: number | null
+          created_at?: string | null
+          date?: string | null
+          generated_sales?: number | null
+          id?: string
+          influencer_handle?: string | null
+          influencer_name?: string | null
+          product_id?: string | null
+          quantity?: number
+          reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecommerce_bonuses_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ecommerce_products: {
+        Row: {
+          category: string | null
+          code: string
+          color: string | null
+          cost_price: number | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          qty_gifted: number | null
+          qty_in: number | null
+          qty_sold: number | null
+          sale_price: number | null
+          size: string | null
+          supplier_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          color?: string | null
+          cost_price?: number | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          qty_gifted?: number | null
+          qty_in?: number | null
+          qty_sold?: number | null
+          sale_price?: number | null
+          size?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          color?: string | null
+          cost_price?: number | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          qty_gifted?: number | null
+          qty_in?: number | null
+          qty_sold?: number | null
+          sale_price?: number | null
+          size?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecommerce_products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ecommerce_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ecommerce_sales: {
+        Row: {
+          client_name: string | null
+          created_at: string
+          date: string | null
+          discount_amount: number | null
+          discount_pct: number | null
+          discount_percent: number | null
+          id: string
+          notes: string | null
+          payment_method: string | null
+          product_id: string | null
+          quantity: number | null
+          sale_date: string
+          total_amount: number
+          unit_cost: number | null
+          unit_price: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_name?: string | null
+          created_at?: string
+          date?: string | null
+          discount_amount?: number | null
+          discount_pct?: number | null
+          discount_percent?: number | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          sale_date?: string
+          total_amount?: number
+          unit_cost?: number | null
+          unit_price?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_name?: string | null
+          created_at?: string
+          date?: string | null
+          discount_amount?: number | null
+          discount_pct?: number | null
+          discount_percent?: number | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          sale_date?: string
+          total_amount?: number
+          unit_cost?: number | null
+          unit_price?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecommerce_sales_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ecommerce_suppliers: {
+        Row: {
+          contact_person: string | null
+          created_at: string
+          delivery_time: string | null
+          discount_percent: number | null
+          email: string | null
+          id: string
+          instagram: string | null
+          name: string
+          notes: string | null
+          payment_method: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          contact_person?: string | null
+          created_at?: string
+          delivery_time?: string | null
+          discount_percent?: number | null
+          email?: string | null
+          id?: string
+          instagram?: string | null
+          name: string
+          notes?: string | null
+          payment_method?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          contact_person?: string | null
+          created_at?: string
+          delivery_time?: string | null
+          discount_percent?: number | null
+          email?: string | null
+          id?: string
+          instagram?: string | null
+          name?: string
+          notes?: string | null
+          payment_method?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       editorial_calendar_posts: {
         Row: {
           company_id: string
@@ -892,6 +1155,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      products: {
+        Row: {
+          category: string | null
+          color: string | null
+          cost_price: number | null
+          created_at: string | null
+          id: string
+          name: string
+          price: number
+          size: string | null
+          sku: string | null
+          stock_quantity: number
+          supplier_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          color?: string | null
+          cost_price?: number | null
+          created_at?: string | null
+          id?: string
+          name: string
+          price: number
+          size?: string | null
+          sku?: string | null
+          stock_quantity?: number
+          supplier_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          color?: string | null
+          cost_price?: number | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          price?: number
+          size?: string | null
+          sku?: string | null
+          stock_quantity?: number
+          supplier_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ecommerce_suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
