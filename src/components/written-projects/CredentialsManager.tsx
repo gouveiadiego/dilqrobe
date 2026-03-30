@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,7 @@ type Credential = {
 
 export function CredentialsManager() {
   const queryClient = useQueryClient();
+  const [userId, setUserId] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
@@ -68,12 +69,28 @@ export function CredentialsManager() {
   });
   const [editingCredential, setEditingCredential] = useState<Credential | null>(null);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const { data: companies = [], isLoading: isLoadingCompanies } = useQuery({
-    queryKey: ['project-companies'],
+    queryKey: ['project-companies', userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('project_companies')
         .select('*')
+        .eq('user_id', userId)
         .order('name');
       
       if (error) throw error;

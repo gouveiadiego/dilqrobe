@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,19 +19,30 @@ export interface ProjectCompany {
 }
 
 export const useProjectCompanies = () => {
-  const { data: companies = [], isLoading } = useQuery({
-    queryKey: ['project-companies'],
-    queryFn: async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        console.log('⚠️ No session found, returning empty array');
-        return [];
-      }
+  const [userId, setUserId] = useState<string | null>(null);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const { data: companies = [], isLoading } = useQuery({
+    queryKey: ['project-companies', userId],
+    enabled: !!userId,
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('project_companies')
         .select('*')
-        .eq('user_id', sessionData.session.user.id)
+        .eq('user_id', userId)
         .order('name');
 
       if (error) {
@@ -38,7 +50,6 @@ export const useProjectCompanies = () => {
         return [];
       }
 
-      console.log('✅ Project companies loaded for user:', sessionData.session.user.email, '- Count:', data?.length);
       return data as ProjectCompany[];
     }
   });

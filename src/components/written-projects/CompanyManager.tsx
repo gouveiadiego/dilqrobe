@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -32,6 +32,7 @@ interface Company {
 export function CompanyManager() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [userId, setUserId] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -55,13 +56,29 @@ export function CompanyManager() {
   });
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserId(user?.id ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   // Fetch companies
   const { data: companies = [], isLoading } = useQuery({
-    queryKey: ['project-companies'],
+    queryKey: ['project-companies', userId],
+    enabled: !!userId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('project_companies')
         .select('*')
+        .eq('user_id', userId)
         .order('name', { ascending: true });
 
       if (error) {
