@@ -217,8 +217,12 @@ export const useEcommerce = () => {
     sales,
     loadingSales,
     addSale,
+    updateSale,
+    deleteSale,
     bonuses,
     loadingBonuses,
     addBonus,
+    updateBonus,
+    deleteBonus,
   };
 };
