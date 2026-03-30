@@ -7,9 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Edit, Package, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, Edit, Package, AlertTriangle, Upload } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
+import { parseCartPandaCSV } from "@/utils/csvImportUtils";
+import { toast } from "sonner";
 
 interface Props {
   products: any[];
