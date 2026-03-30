@@ -115,8 +115,14 @@ export function InventoryManager({ products, suppliers, loading, onAdd, onUpdate
           <Package className="h-5 w-5 text-primary" />
           Gestão de Estoque
         </CardTitle>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
           <Input placeholder="Buscar produto..." value={searchFilter} onChange={e => setSearchFilter(e.target.value)} className="w-48" />
+          <label htmlFor="csv-import">
+            <Button size="sm" variant="outline" asChild disabled={importing}>
+              <span><Upload className="h-4 w-4 mr-1" /> {importing ? "Importando..." : "Importar CSV"}</span>
+            </Button>
+          </label>
+          <input id="csv-import" type="file" accept=".csv" className="hidden" onChange={handleCSVImport} />
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setForm(emptyForm); } }}>
             <DialogTrigger asChild>
               <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Novo</Button>

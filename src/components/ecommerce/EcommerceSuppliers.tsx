@@ -34,7 +34,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export const EcommerceSuppliers = () => {
-  const { suppliers, isLoading, addSupplier, deleteSupplier } = useEcommerce();
+  const { suppliers, loadingSuppliers: isLoading, addSupplier, deleteSupplier } = useEcommerce();
   const [isOpen, setIsOpen] = useState(false);
 
   // Form state

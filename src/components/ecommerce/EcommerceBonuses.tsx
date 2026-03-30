@@ -46,7 +46,7 @@ import { format } from "date-fns";
 
 export const EcommerceBonuses = () => {
   const { products } = useProducts();
-  const { bonuses, isLoading, addBonus } = useEcommerce();
+  const { bonuses, loadingBonuses: isLoading, addBonus } = useEcommerce();
   const [isOpen, setIsOpen] = useState(false);
 
   // Form state
