@@ -636,7 +636,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
                     required={!formData.is_infinite}
                   />
                 </div>
-              )
+              )}
             </div>
           </div>
         )}
