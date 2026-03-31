@@ -504,6 +504,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               <SelectItem value="credit">Cartão de Crédito</SelectItem>
               <SelectItem value="debit">Cartão de Débito</SelectItem>
               <SelectItem value="cash">Dinheiro</SelectItem>
+              <SelectItem value="boleto">Boleto</SelectItem>
               <SelectItem value="transfer">Transferência</SelectItem>
             </SelectContent>
           </Select>
