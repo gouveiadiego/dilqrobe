@@ -18,10 +18,11 @@ export interface Transaction {
   recurring_day?: number;
   installments_total?: number;
   installment_number?: number;
-  recurrence_type?: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
+  recurrence_type?: string;
   bank_account_id?: string;
   series_id?: string;
   user_id?: string;
+  custom_interval_days?: number;
 }
 
 export interface DateRangeFilter {
