@@ -572,7 +572,9 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="recurring_day">Dia do mês (vencimento)</Label>
+                <Label htmlFor="recurring_day">
+                  {['weekly', 'biweekly', 'custom'].includes(formData.recurrence_type) ? 'Dia inicial' : 'Dia do mês (vencimento)'}
+                </Label>
                 <Input
                   id="recurring_day"
                   type="number"
@@ -587,7 +589,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
                 <Label htmlFor="recurrence_type">Tipo de Repetição</Label>
                 <Select
                   value={formData.recurrence_type}
-                  onValueChange={(value: 'monthly' | 'quarterly' | 'semiannual' | 'annual') => 
+                  onValueChange={(value: string) => 
                     setFormData(prev => ({ ...prev, recurrence_type: value }))
                   }
                 >
@@ -595,13 +597,32 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
                     <SelectValue placeholder="Selecione o período" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="weekly">Semanal (a cada 7 dias)</SelectItem>
+                    <SelectItem value="biweekly">Quinzenal (a cada 15 dias)</SelectItem>
                     <SelectItem value="monthly">Mensal</SelectItem>
+                    <SelectItem value="bimonthly">Bimestral (a cada 2 meses)</SelectItem>
                     <SelectItem value="quarterly">Trimestral (a cada 3 meses)</SelectItem>
                     <SelectItem value="semiannual">Semestral (a cada 6 meses)</SelectItem>
                     <SelectItem value="annual">Anual (a cada 12 meses)</SelectItem>
+                    <SelectItem value="custom">Personalizado...</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {formData.recurrence_type === 'custom' && (
+                <div className="space-y-2">
+                  <Label htmlFor="custom_interval_days">Intervalo em dias</Label>
+                  <Input
+                    id="custom_interval_days"
+                    type="number"
+                    min="1"
+                    max="365"
+                    placeholder="Ex: 10, 45, 90..."
+                    value={formData.custom_interval_days}
+                    onChange={(e) => setFormData(prev => ({ ...prev, custom_interval_days: e.target.value }))}
+                    required
+                  />
+                </div>
+              )}
               {!formData.is_infinite && (
                 <div className="space-y-2">
                   <Label htmlFor="installments">Número de parcelas</Label>
@@ -615,6 +636,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
                     required={!formData.is_infinite}
                   />
                 </div>
+              )}
               )}
             </div>
           </div>
