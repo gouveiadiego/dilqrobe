@@ -384,20 +384,24 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
         const recurrenceType = transaction.recurrence_type || 'monthly';
         const monthsDiff = (currentYear - originalDate.getFullYear()) * 12 + (currentMonth - originalDate.getMonth());
 
-        // Only create for current month or future months (monthsDiff >= 0)
-        if (monthsDiff < 0) {
-          return false;
-        }
+        if (monthsDiff < 0) return false;
 
         switch (recurrenceType) {
+          case 'weekly':
+          case 'biweekly':
+          case 'custom':
+            // Day-based recurrences always potentially have entries each month
+            return true;
           case 'monthly':
-            return monthsDiff >= 0; // Create every month from original date forward
+            return monthsDiff >= 0;
+          case 'bimonthly':
+            return monthsDiff >= 0 && monthsDiff % 2 === 0;
           case 'quarterly':
-            return monthsDiff >= 0 && monthsDiff % 3 === 0; // Create every 3 months
+            return monthsDiff >= 0 && monthsDiff % 3 === 0;
           case 'semiannual':
-            return monthsDiff >= 0 && monthsDiff % 6 === 0; // Create every 6 months
+            return monthsDiff >= 0 && monthsDiff % 6 === 0;
           case 'annual':
-            return monthsDiff >= 0 && monthsDiff % 12 === 0; // Create every 12 months
+            return monthsDiff >= 0 && monthsDiff % 12 === 0;
           default:
             return monthsDiff >= 0;
         }
