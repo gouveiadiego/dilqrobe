@@ -25,7 +25,8 @@ interface Transaction {
   installments_total?: number;
   bank_account_id?: string;
   series_id?: string;
-  recurrence_type?: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
+  recurrence_type?: string;
+  custom_interval_days?: number;
 }
 
 interface NewTransactionFormProps {
@@ -93,7 +94,8 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     installments: '12',
     is_infinite: false,
     bank_account_id: '',
-    recurrence_type: 'monthly' as 'monthly' | 'quarterly' | 'semiannual' | 'annual',
+    recurrence_type: 'monthly' as string,
+    custom_interval_days: '',
   });
 
   useEffect(() => {
@@ -126,6 +128,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         is_infinite: editingTransaction.recurring || false,
         bank_account_id: editingTransaction?.bank_account_id || '',
         recurrence_type: editingTransaction.recurrence_type || 'monthly',
+        custom_interval_days: editingTransaction.custom_interval_days?.toString() || '',
       });
     } else {
       setFormData(prev => ({
@@ -174,6 +177,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         recurring: formData.recurring && formData.is_infinite,
         recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
         recurrence_type: formData.recurring ? formData.recurrence_type : null,
+        custom_interval_days: formData.recurrence_type === 'custom' && formData.custom_interval_days ? Number(formData.custom_interval_days) : null,
         bank_account_id: formData.bank_account_id || null,
         series_id,
         user_id: user.id
@@ -259,13 +263,22 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           // Criar transações para os próximos períodos
           // A primeira transação já foi criada acima, então criamos installmentsCount - 1 adicionais
           for (let i = 1; i < installmentsCount; i++) {
-            // Criar uma nova data baseada na data original
             const nextDate = new Date(baseDate);
+            const customDays = Number(formData.custom_interval_days) || 0;
             
             // Adicionar períodos de acordo com o tipo de recorrência
             switch (recurrenceType) {
+              case 'weekly':
+                nextDate.setDate(baseDate.getDate() + (i * 7));
+                break;
+              case 'biweekly':
+                nextDate.setDate(baseDate.getDate() + (i * 15));
+                break;
               case 'monthly':
                 nextDate.setMonth(baseDate.getMonth() + i);
+                break;
+              case 'bimonthly':
+                nextDate.setMonth(baseDate.getMonth() + (i * 2));
                 break;
               case 'quarterly':
                 nextDate.setMonth(baseDate.getMonth() + (i * 3));
@@ -276,20 +289,20 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               case 'annual':
                 nextDate.setFullYear(baseDate.getFullYear() + i);
                 break;
+              case 'custom':
+                nextDate.setDate(baseDate.getDate() + (i * customDays));
+                break;
             }
             
-            // Ajustar para o dia específico da recorrência
-            const targetDay = Number(formData.recurring_day);
-            nextDate.setDate(targetDay);
-            
-            // Se o dia não existe no mês (ex: 31 de fevereiro)
-            // O JavaScript automaticamente ajusta para o próximo mês
-            // Vamos forçar para o último dia do mês correto
-            if (nextDate.getDate() !== targetDay) {
-              nextDate.setDate(0); // Volta para o último dia do mês anterior
+            // Para recorrências baseadas em meses, ajustar o dia
+            if (!['weekly', 'biweekly', 'custom'].includes(recurrenceType)) {
+              const targetDay = Number(formData.recurring_day);
+              nextDate.setDate(targetDay);
+              if (nextDate.getDate() !== targetDay) {
+                nextDate.setDate(0);
+              }
             }
             
-            // Garantir que mantemos noon
             nextDate.setHours(12, 0, 0, 0);
             const isoDateStr = nextDate.toISOString();
             console.log(`📅 Criando parcela ${i + 1}/${installmentsCount} para ${isoDateStr} (tipo: ${recurrenceType})`);
@@ -298,7 +311,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               ...transactionData,
               date: isoDateStr,
               is_paid: false,
-              recurring: false, // Parcelas fixas não são marcadas como recorrentes
+              recurring: false,
               installments_total: installmentsCount,
               installment_number: i + 1,
             });
@@ -346,6 +359,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         is_infinite: false,
         bank_account_id: '',
         recurrence_type: 'monthly',
+        custom_interval_days: '',
       });
 
       onTransactionCreated();
@@ -420,6 +434,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         is_infinite: false,
         bank_account_id: '',
         recurrence_type: 'monthly',
+        custom_interval_days: '',
       });
       
       onTransactionCreated();
@@ -435,6 +450,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
       case "credit": return "Cartão de Crédito";
       case "debit": return "Cartão de Débito";
       case "cash": return "Dinheiro";
+      case "boleto": return "Boleto";
       case "transfer": return "Transferência";
       default: return paymentType;
     }
@@ -504,6 +520,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               <SelectItem value="credit">Cartão de Crédito</SelectItem>
               <SelectItem value="debit">Cartão de Débito</SelectItem>
               <SelectItem value="cash">Dinheiro</SelectItem>
+              <SelectItem value="boleto">Boleto</SelectItem>
               <SelectItem value="transfer">Transferência</SelectItem>
             </SelectContent>
           </Select>
@@ -555,7 +572,9 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="recurring_day">Dia do mês (vencimento)</Label>
+                <Label htmlFor="recurring_day">
+                  {['weekly', 'biweekly', 'custom'].includes(formData.recurrence_type) ? 'Dia inicial' : 'Dia do mês (vencimento)'}
+                </Label>
                 <Input
                   id="recurring_day"
                   type="number"
@@ -570,7 +589,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
                 <Label htmlFor="recurrence_type">Tipo de Repetição</Label>
                 <Select
                   value={formData.recurrence_type}
-                  onValueChange={(value: 'monthly' | 'quarterly' | 'semiannual' | 'annual') => 
+                  onValueChange={(value: string) => 
                     setFormData(prev => ({ ...prev, recurrence_type: value }))
                   }
                 >
@@ -578,13 +597,32 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
                     <SelectValue placeholder="Selecione o período" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="weekly">Semanal (a cada 7 dias)</SelectItem>
+                    <SelectItem value="biweekly">Quinzenal (a cada 15 dias)</SelectItem>
                     <SelectItem value="monthly">Mensal</SelectItem>
+                    <SelectItem value="bimonthly">Bimestral (a cada 2 meses)</SelectItem>
                     <SelectItem value="quarterly">Trimestral (a cada 3 meses)</SelectItem>
                     <SelectItem value="semiannual">Semestral (a cada 6 meses)</SelectItem>
                     <SelectItem value="annual">Anual (a cada 12 meses)</SelectItem>
+                    <SelectItem value="custom">Personalizado...</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {formData.recurrence_type === 'custom' && (
+                <div className="space-y-2">
+                  <Label htmlFor="custom_interval_days">Intervalo em dias</Label>
+                  <Input
+                    id="custom_interval_days"
+                    type="number"
+                    min="1"
+                    max="365"
+                    placeholder="Ex: 10, 45, 90..."
+                    value={formData.custom_interval_days}
+                    onChange={(e) => setFormData(prev => ({ ...prev, custom_interval_days: e.target.value }))}
+                    required
+                  />
+                </div>
+              )}
               {!formData.is_infinite && (
                 <div className="space-y-2">
                   <Label htmlFor="installments">Número de parcelas</Label>
