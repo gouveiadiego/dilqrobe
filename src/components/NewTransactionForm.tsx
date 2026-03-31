@@ -263,13 +263,22 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           // Criar transações para os próximos períodos
           // A primeira transação já foi criada acima, então criamos installmentsCount - 1 adicionais
           for (let i = 1; i < installmentsCount; i++) {
-            // Criar uma nova data baseada na data original
             const nextDate = new Date(baseDate);
+            const customDays = Number(formData.custom_interval_days) || 0;
             
             // Adicionar períodos de acordo com o tipo de recorrência
             switch (recurrenceType) {
+              case 'weekly':
+                nextDate.setDate(baseDate.getDate() + (i * 7));
+                break;
+              case 'biweekly':
+                nextDate.setDate(baseDate.getDate() + (i * 15));
+                break;
               case 'monthly':
                 nextDate.setMonth(baseDate.getMonth() + i);
+                break;
+              case 'bimonthly':
+                nextDate.setMonth(baseDate.getMonth() + (i * 2));
                 break;
               case 'quarterly':
                 nextDate.setMonth(baseDate.getMonth() + (i * 3));
@@ -280,20 +289,20 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               case 'annual':
                 nextDate.setFullYear(baseDate.getFullYear() + i);
                 break;
+              case 'custom':
+                nextDate.setDate(baseDate.getDate() + (i * customDays));
+                break;
             }
             
-            // Ajustar para o dia específico da recorrência
-            const targetDay = Number(formData.recurring_day);
-            nextDate.setDate(targetDay);
-            
-            // Se o dia não existe no mês (ex: 31 de fevereiro)
-            // O JavaScript automaticamente ajusta para o próximo mês
-            // Vamos forçar para o último dia do mês correto
-            if (nextDate.getDate() !== targetDay) {
-              nextDate.setDate(0); // Volta para o último dia do mês anterior
+            // Para recorrências baseadas em meses, ajustar o dia
+            if (!['weekly', 'biweekly', 'custom'].includes(recurrenceType)) {
+              const targetDay = Number(formData.recurring_day);
+              nextDate.setDate(targetDay);
+              if (nextDate.getDate() !== targetDay) {
+                nextDate.setDate(0);
+              }
             }
             
-            // Garantir que mantemos noon
             nextDate.setHours(12, 0, 0, 0);
             const isoDateStr = nextDate.toISOString();
             console.log(`📅 Criando parcela ${i + 1}/${installmentsCount} para ${isoDateStr} (tipo: ${recurrenceType})`);
@@ -302,7 +311,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               ...transactionData,
               date: isoDateStr,
               is_paid: false,
-              recurring: false, // Parcelas fixas não são marcadas como recorrentes
+              recurring: false,
               installments_total: installmentsCount,
               installment_number: i + 1,
             });
