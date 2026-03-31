@@ -435,6 +435,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
       case "credit": return "Cartão de Crédito";
       case "debit": return "Cartão de Débito";
       case "cash": return "Dinheiro";
+      case "boleto": return "Boleto";
       case "transfer": return "Transferência";
       default: return paymentType;
     }
