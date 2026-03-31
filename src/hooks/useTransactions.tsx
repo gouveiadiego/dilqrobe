@@ -105,7 +105,8 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
           recurrence_type,
           bank_account_id,
           series_id,
-          user_id
+          user_id,
+          custom_interval_days
         `)
         .eq("user_id", user.id)
         .gte("date", startDate)
