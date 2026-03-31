@@ -1975,6 +1975,7 @@ export type Database = {
           bank_account_id: string | null
           category: string
           created_at: string | null
+          custom_interval_days: number | null
           date: string
           description: string
           id: string
@@ -1998,6 +1999,7 @@ export type Database = {
           bank_account_id?: string | null
           category: string
           created_at?: string | null
+          custom_interval_days?: number | null
           date: string
           description: string
           id?: string
@@ -2021,6 +2023,7 @@ export type Database = {
           bank_account_id?: string | null
           category?: string
           created_at?: string | null
+          custom_interval_days?: number | null
           date?: string
           description?: string
           id?: string

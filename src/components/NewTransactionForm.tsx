@@ -94,7 +94,8 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     installments: '12',
     is_infinite: false,
     bank_account_id: '',
-    recurrence_type: 'monthly' as 'monthly' | 'quarterly' | 'semiannual' | 'annual',
+    recurrence_type: 'monthly' as string,
+    custom_interval_days: '',
   });
 
   useEffect(() => {
