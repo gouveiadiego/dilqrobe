@@ -461,10 +461,11 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
           amount: transaction.amount,
           category: transaction.category,
           payment_type: transaction.payment_type,
-          is_paid: false, // Always set to false (pending) for new months
+          is_paid: false,
           recurring: true,
           recurring_day: transaction.recurring_day,
           recurrence_type: transaction.recurrence_type || 'monthly',
+          custom_interval_days: transaction.custom_interval_days || null,
           bank_account_id: transaction.bank_account_id || null,
           series_id: transaction.series_id || null,
           user_id: user.id
