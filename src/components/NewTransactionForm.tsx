@@ -349,6 +349,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         is_infinite: false,
         bank_account_id: '',
         recurrence_type: 'monthly',
+        custom_interval_days: '',
       });
 
       onTransactionCreated();
