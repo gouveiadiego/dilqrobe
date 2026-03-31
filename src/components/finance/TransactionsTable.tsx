@@ -1,6 +1,7 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2, ArrowLeftRight } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
@@ -45,6 +46,10 @@ export const TransactionsTable = ({
   const [seriesDialogOpen, setSeriesDialogOpen] = useState(false);
   const [seriesTransaction, setSeriesTransaction] = useState<Transaction | null>(null);
 
+  const [dateFilter, setDateFilter] = useState('');
+  const [descFilter, setDescFilter] = useState('');
+  const [receiverFilter, setReceiverFilter] = useState('');
+
   const handleDelete = () => {
     if (selectedTransactionId) {
       onDelete(selectedTransactionId);
@@ -71,97 +76,149 @@ export const TransactionsTable = ({
     }
   };
 
-  const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+  const localFilteredTransactions = transactions.filter(t => {
+    let match = true;
+    if (dateFilter) {
+      const [year, month, day] = t.date.split('-').map(Number);
+      const formattedDate = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+      if (!formattedDate.includes(dateFilter)) match = false;
+    }
+    if (descFilter && !t.description.toLowerCase().includes(descFilter.toLowerCase())) {
+      match = false;
+    }
+    if (receiverFilter && (!t.received_from || !t.received_from.toLowerCase().includes(receiverFilter.toLowerCase()))) {
+      match = false;
+    }
+    return match;
+  });
+
+  const totalAmount = localFilteredTransactions.reduce((sum, t) => sum + t.amount, 0);
 
   return (
     <>
-      <Table>
+      <Table wrapperClassName="max-h-[500px] md:max-h-[600px] border border-slate-200 rounded-md">
         <TableHeader>
-          <TableRow className="bg-slate-50">
-            <TableHead>Data</TableHead>
-            <TableHead>Descrição</TableHead>
-            <TableHead>Recebido de/Pago para</TableHead>
-            <TableHead>Categoria</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Forma de Pagamento</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Ações</TableHead>
+          <TableRow className="bg-slate-50 w-full align-top border-b-0">
+            <TableHead className="sticky top-0 left-0 z-30 bg-slate-100 border-r border-b border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-[110px] py-3">
+              <div className="flex flex-col gap-2">
+                <span>Data</span>
+                <Input 
+                  placeholder="Ex: 10/04" 
+                  value={dateFilter}
+                  onChange={e => setDateFilter(e.target.value)}
+                  className="h-7 w-full text-xs font-normal"
+                />
+              </div>
+            </TableHead>
+            <TableHead className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 min-w-[280px] py-3">
+              <div className="flex flex-col gap-2">
+                <span>Descrição e Contato</span>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Filtrar desc..." 
+                    value={descFilter}
+                    onChange={e => setDescFilter(e.target.value)}
+                    className="h-7 w-full text-xs font-normal"
+                  />
+                  <Input 
+                    placeholder="Filtrar contato..." 
+                    value={receiverFilter}
+                    onChange={e => setReceiverFilter(e.target.value)}
+                    className="h-7 w-full text-xs font-normal"
+                  />
+                </div>
+              </div>
+            </TableHead>
+            <TableHead className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 py-3 w-[150px] font-semibold">
+              <div className="flex flex-col gap-2 h-full justify-start">
+                <span className="pt-1">Categoria</span>
+              </div>
+            </TableHead>
+            <TableHead className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 py-3 w-[160px] font-semibold">
+              <div className="flex flex-col gap-2 h-full justify-start">
+                <span className="pt-1">Valor & Status</span>
+              </div>
+            </TableHead>
+            <TableHead className="sticky top-0 right-0 z-30 bg-slate-100 border-l border-b border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-center w-[110px] py-3 font-semibold">
+              <div className="flex justify-center items-start h-full pt-1">
+                <span>Ações</span>
+              </div>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map(transaction => (
-            <TableRow key={transaction.id} className="hover:bg-slate-50/50">
-              <TableCell>
-                {(() => {
-                  // Parse the date as local date (YYYY-MM-DD format)
-                  const [year, month, day] = transaction.date.split('-').map(Number);
-                  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
-                })()}
+          {localFilteredTransactions.map(transaction => (
+            <TableRow key={transaction.id} className="group bg-white hover:bg-slate-50 transition-colors">
+              <TableCell className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors whitespace-nowrap align-top">
+                <div className="pt-1 text-slate-700 font-medium">
+                  {(() => {
+                    const [year, month, day] = transaction.date.split('-').map(Number);
+                    return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+                  })()}
+                </div>
               </TableCell>
-              <TableCell>
-                <div className="flex flex-col gap-1">
-                  <TextEllipsis
-                    text={transaction.description}
-                    maxLength={40}
-                    className="block max-w-[200px]"
-                  />
-                  <div className="flex items-center gap-1">
+              <TableCell className="align-top py-3">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-slate-800">
+                      {transaction.description}
+                    </span>
                     {transaction.recurring && (
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                      <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-[10px] rounded-sm uppercase font-semibold">
                         Recorrente
                       </span>
                     )}
                     {(transaction as any).is_transfer && (
-                      <Badge variant="outline" className="text-xs bg-gradient-to-r from-dilq-purple/10 to-dilq-accent/10 text-dilq-purple border-dilq-purple/30">
-                        <ArrowLeftRight className="h-3 w-3 mr-1" />
-                        Transferência
+                      <Badge variant="outline" className="text-[10px] bg-gradient-to-r from-dilq-purple/10 to-dilq-accent/10 py-0 h-4 border-dilq-purple/20">
+                        <ArrowLeftRight className="h-2.5 w-2.5 mr-1" /> Transf.
                       </Badge>
                     )}
                   </div>
+                  {transaction.received_from && (
+                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+                      {transaction.received_from}
+                    </span>
+                  )}
                 </div>
               </TableCell>
-              <TableCell>
-                <TextEllipsis
-                  text={transaction.received_from || ""}
-                  maxLength={30}
-                  className="block max-w-[150px]"
-                />
-              </TableCell>
-              <TableCell>
+              <TableCell className="align-top py-3">
                 <CategoryBadge category={transaction.category} />
               </TableCell>
-              <TableCell className={transaction.amount > 0 ? 'text-emerald-600 font-medium' : 'text-rose-600 font-medium'}>
-                {formatCurrency(transaction.amount)}
+              <TableCell className="align-top py-3">
+                <div className="flex flex-col gap-1.5 items-start">
+                  <span className={transaction.amount > 0 ? 'text-emerald-600 font-bold text-[15px]' : 'text-rose-600 font-bold text-[15px]'}>
+                    {formatCurrency(transaction.amount)}
+                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Badge variant="outline" className="text-[10px] py-0 h-[18px] text-slate-500 uppercase bg-slate-50">
+                      {getPaymentTypeLabel(transaction.payment_type)}
+                    </Badge>
+                    <Badge 
+                      variant="outline" 
+                      className={`text-[10px] py-0 h-[18px] cursor-pointer hover:opacity-80 transition-opacity ${transaction.is_paid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}
+                      onClick={() => onToggleStatus(transaction.id, transaction.is_paid)}
+                    >
+                      {transaction.is_paid ? 'Pago' : 'Pendente'}
+                    </Badge>
+                  </div>
+                </div>
               </TableCell>
-              <TableCell>{getPaymentTypeLabel(transaction.payment_type)}</TableCell>
-              <TableCell>
-                <Button
-                  variant="ghost"
-                  onClick={() => onToggleStatus(transaction.id, transaction.is_paid)}
-                  className={`px-2 py-1 rounded-full text-xs ${transaction.is_paid
-                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                    }`}
-                >
-                  {transaction.is_paid ? 'Pago' : 'Pendente'}
-                </Button>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
+              <TableCell className="sticky right-0 z-10 bg-white group-hover:bg-slate-50 border-l border-slate-100 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors align-top py-3">
+                <div className="flex items-center justify-center gap-1">
                   {(transaction.series_id || transaction.installments_total || transaction.recurring) ? (
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="ghost"
+                      size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSeriesTransaction(transaction);
                         setSeriesDialogOpen(true);
                       }}
-                      className="h-8 px-2 text-xs font-medium text-[#40657E] border-[#40657E]/30 hover:bg-[#40657E]/10 flex items-center shadow-sm"
-                      title="Ver todas as parcelas"
+                      className="h-8 w-8 text-[#40657E] hover:bg-[#40657E]/10"
+                      title="Ver série"
                     >
-                      <Layers className="h-3 w-3 mr-1" />
-                      Série
+                      <Layers className="h-4 w-4" />
                     </Button>
                   ) : null}
                   <Button
@@ -169,11 +226,10 @@ export const TransactionsTable = ({
                     size="icon"
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Edit clicked for transaction:', transaction);
                       onEdit(transaction);
                     }}
                     className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                    title="Editar transação"
+                    title="Editar"
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -185,7 +241,7 @@ export const TransactionsTable = ({
                       confirmDelete(transaction);
                     }}
                     className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                    title="Excluir transação"
+                    title="Excluir"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -193,23 +249,24 @@ export const TransactionsTable = ({
               </TableCell>
             </TableRow>
           ))}
-          {transactions.length === 0 && !loading && (
+          {localFilteredTransactions.length === 0 && !loading && (
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-gray-400 py-8">
-                Nenhuma transação encontrada
+              <TableCell colSpan={5} className="text-center text-slate-500 py-12">
+                Nenhuma transação encontrada com os filtros atuais.
               </TableCell>
             </TableRow>
           )}
         </TableBody>
-        <TableFooter>
-          <TableRow className="bg-slate-100/50 hover:bg-slate-100/50">
-            <TableCell colSpan={4} className="text-right font-bold text-slate-700 text-sm md:text-base">
-              Total no período selecionado:
+        <TableFooter className="sticky bottom-0 z-20 shadow-[0_-2px_5px_rgba(0,0,0,0.05)]">
+          <TableRow className="bg-slate-100 hover:bg-slate-100">
+            <TableCell className="sticky left-0 z-30 bg-slate-100 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"></TableCell>
+            <TableCell colSpan={2} className="text-right font-bold text-slate-700 text-sm md:text-base border-t border-slate-200 py-4">
+              Total no período:
             </TableCell>
-            <TableCell className={`font-bold text-sm md:text-base ${totalAmount > 0 ? 'text-emerald-600' : totalAmount < 0 ? 'text-rose-600' : 'text-slate-600'}`}>
+            <TableCell className={`font-bold text-sm md:text-base border-t border-slate-200 whitespace-nowrap py-4 ${totalAmount > 0 ? 'text-emerald-600' : totalAmount < 0 ? 'text-rose-600' : 'text-slate-600'}`}>
               {formatCurrency(totalAmount)}
             </TableCell>
-            <TableCell colSpan={3}></TableCell>
+            <TableCell className="sticky right-0 z-30 bg-slate-100 border-l border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] border-t"></TableCell>
           </TableRow>
         </TableFooter>
       </Table>

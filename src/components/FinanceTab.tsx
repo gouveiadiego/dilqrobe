@@ -335,7 +335,7 @@ export const FinanceTab = () => {
         )}
 
         {(viewMode === "list" || viewMode === "dashboard") && (
-          <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm overflow-x-auto">
+          <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm overflow-hidden">
             {filteredTransactions.length === 0 ? (
               <EmptyState
                 title="Nenhuma transação encontrada"
