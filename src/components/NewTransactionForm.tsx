@@ -128,6 +128,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         is_infinite: editingTransaction.recurring || false,
         bank_account_id: editingTransaction?.bank_account_id || '',
         recurrence_type: editingTransaction.recurrence_type || 'monthly',
+        custom_interval_days: editingTransaction.custom_interval_days?.toString() || '',
       });
     } else {
       setFormData(prev => ({
