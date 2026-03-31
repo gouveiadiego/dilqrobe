@@ -177,6 +177,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         recurring: formData.recurring && formData.is_infinite,
         recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
         recurrence_type: formData.recurring ? formData.recurrence_type : null,
+        custom_interval_days: formData.recurrence_type === 'custom' && formData.custom_interval_days ? Number(formData.custom_interval_days) : null,
         bank_account_id: formData.bank_account_id || null,
         series_id,
         user_id: user.id
