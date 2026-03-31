@@ -25,7 +25,8 @@ interface Transaction {
   installments_total?: number;
   bank_account_id?: string;
   series_id?: string;
-  recurrence_type?: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
+  recurrence_type?: string;
+  custom_interval_days?: number;
 }
 
 interface NewTransactionFormProps {
