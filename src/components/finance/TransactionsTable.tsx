@@ -18,6 +18,8 @@ import {
 import { useState } from "react";
 import { Transaction } from "@/hooks/useTransactions";
 import { TextEllipsis } from "../ui/text-ellipsis";
+import { SeriesDialog } from "./SeriesDialog";
+import { Layers } from "lucide-react";
 
 interface TransactionsTableProps {
   transactions: Transaction[];
@@ -40,6 +42,8 @@ export const TransactionsTable = ({
   const [openRecurringDialog, setOpenRecurringDialog] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [selectedRecurringTransaction, setSelectedRecurringTransaction] = useState<Transaction | null>(null);
+  const [seriesDialogOpen, setSeriesDialogOpen] = useState(false);
+  const [seriesTransaction, setSeriesTransaction] = useState<Transaction | null>(null);
 
   const handleDelete = () => {
     if (selectedTransactionId) {
@@ -144,6 +148,22 @@ export const TransactionsTable = ({
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
+                  {(transaction.series_id || transaction.installments_total || transaction.recurring) ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSeriesTransaction(transaction);
+                        setSeriesDialogOpen(true);
+                      }}
+                      className="h-8 px-2 text-xs font-medium text-[#40657E] border-[#40657E]/30 hover:bg-[#40657E]/10 flex items-center shadow-sm"
+                      title="Ver todas as parcelas"
+                    >
+                      <Layers className="h-3 w-3 mr-1" />
+                      Série
+                    </Button>
+                  ) : null}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -236,6 +256,13 @@ export const TransactionsTable = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SeriesDialog
+        transaction={seriesTransaction}
+        open={seriesDialogOpen}
+        onOpenChange={setSeriesDialogOpen}
+        onEdit={onEdit}
+      />
     </>
   );
 };

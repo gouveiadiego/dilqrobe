@@ -22,8 +22,9 @@ interface Transaction {
   is_paid: boolean;
   recurring?: boolean;
   recurring_day?: number;
-  installments?: number;
+  installments_total?: number;
   bank_account_id?: string;
+  series_id?: string;
   recurrence_type?: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
 }
 
@@ -56,6 +57,9 @@ const getTransactionDefaults = (selectedFilter: string) => {
 export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editingTransaction, onBankAccountUpdate }: NewTransactionFormProps) => {
   const { categories, addCategory } = useCategories();
   
+  const [showEditPrompt, setShowEditPrompt] = useState(false);
+  const [pendingTransactionData, setPendingTransactionData] = useState<any>(null);
+  
   useEffect(() => {
     console.log("NewTransactionForm - Available categories:", categories);
   }, [categories]);
@@ -69,6 +73,13 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     return `${year}-${month}-${day}`;
   };
 
+  // Helper function to safely parse YYYY-MM-DD into a localized Noon date 
+  // ensuring we stay on the same day globally when converted to ISO
+  const getSafeNoonDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.substring(0, 10).split('-').map(Number);
+    return new Date(year, month - 1, day, 12, 0, 0);
+  };
+
   const [formData, setFormData] = useState({
     date: getLocalDateString(),
     description: '',
@@ -80,23 +91,39 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
     recurring: false,
     recurring_day: '',
     installments: '12',
+    is_infinite: false,
     bank_account_id: '',
     recurrence_type: 'monthly' as 'monthly' | 'quarterly' | 'semiannual' | 'annual',
   });
 
   useEffect(() => {
     if (editingTransaction) {
+      // safely extract YYYY-MM-DD for the date input
+      let prefilledDate = getLocalDateString();
+      if (editingTransaction.date) {
+        if (editingTransaction.date.includes('T')) {
+          const tDate = new Date(editingTransaction.date);
+          if (!Number.isNaN(tDate.getTime())) {
+            // Reconstruct local date format
+            prefilledDate = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}-${String(tDate.getDate()).padStart(2, '0')}`;
+          }
+        } else {
+          prefilledDate = editingTransaction.date.substring(0, 10);
+        }
+      }
+
       setFormData({
-        date: editingTransaction.date,
+        date: prefilledDate,
         description: editingTransaction.description,
         received_from: editingTransaction.received_from,
         amount: Math.abs(editingTransaction.amount).toString(),
         payment_type: editingTransaction.payment_type,
         category: editingTransaction.category,
         is_paid: editingTransaction.is_paid,
-        recurring: false,
-        recurring_day: '',
-        installments: '12',
+        recurring: editingTransaction.recurring || false,
+        recurring_day: editingTransaction.recurring_day?.toString() || '',
+        installments: editingTransaction.installments_total?.toString() || '12',
+        is_infinite: editingTransaction.recurring || false,
         bank_account_id: editingTransaction?.bank_account_id || '',
         recurrence_type: editingTransaction.recurrence_type || 'monthly',
       });
@@ -129,33 +156,42 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         ? Math.abs(Number(formData.amount))
         : -Math.abs(Number(formData.amount));
 
+      const safeNoonDate = getSafeNoonDate(formData.date);
+
+      let series_id = editingTransaction ? (editingTransaction.series_id || undefined) : undefined;
+      if (!editingTransaction && formData.recurring) {
+        series_id = crypto.randomUUID();
+      }
+
       const transactionData = {
-        date: formData.date,
+        date: safeNoonDate.toISOString(),
         description: formData.description,
         received_from: formData.received_from,
         amount,
         category: formData.category,
         payment_type: formData.payment_type,
         is_paid: formData.is_paid,
-        recurring: formData.recurring,
+        recurring: formData.recurring && formData.is_infinite,
         recurring_day: formData.recurring ? Number(formData.recurring_day) : null,
         recurrence_type: formData.recurring ? formData.recurrence_type : null,
         bank_account_id: formData.bank_account_id || null,
+        series_id,
         user_id: user.id
       };
 
       if (editingTransaction) {
-        const { error } = await supabase
-          .from("transactions")
-          .update(transactionData)
-          .eq('id', editingTransaction.id);
+        // Se a transação faz parte de uma série, perguntamos ao usuário se deseja afetar as futuras
+        if (editingTransaction.series_id || editingTransaction.installments_total || editingTransaction.recurring) {
+          setPendingTransactionData(transactionData);
+          setShowEditPrompt(true);
+          return;
+        }
 
-        if (error) throw error;
-        toast.success("Transação atualizada com sucesso.");
+        // Se for transação avulsa, executa update direto
+        await executeUpdate('single', transactionData);
       } else {
-        const transactionDate = new Date(formData.date);
-        const startOfDay = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate());
-        const endOfDay = new Date(transactionDate.getFullYear(), transactionDate.getMonth(), transactionDate.getDate(), 23, 59, 59);
+        const startOfDay = new Date(safeNoonDate.getFullYear(), safeNoonDate.getMonth(), safeNoonDate.getDate(), 0, 0, 0);
+        const endOfDay = new Date(safeNoonDate.getFullYear(), safeNoonDate.getMonth(), safeNoonDate.getDate(), 23, 59, 59);
         
         const { data: existingTransactions, error: checkError } = await supabase
           .from("transactions")
@@ -170,10 +206,14 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         if (checkError) throw checkError;
         
         const amountToCheck = amount;
-        const exactMatch = existingTransactions?.some(t => 
-          Math.abs(t.amount - amountToCheck) < 0.01 && 
-          t.date.substring(0, 10) === formData.date
-        );
+        const exactMatch = existingTransactions?.some(t => {
+          if (Math.abs(t.amount - amountToCheck) >= 0.01) return false;
+          // Compare localized string
+          const tDate = new Date(t.date);
+          if (Number.isNaN(tDate.getTime())) return false;
+          const tLocalDateStr = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}-${String(tDate.getDate()).padStart(2, '0')}`;
+          return tLocalDateStr === formData.date;
+        });
         
         if (existingTransactions && existingTransactions.length > 0 && exactMatch) {
           toast.warning("Uma transação idêntica já existe nesta data.");
@@ -188,11 +228,11 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
 
         if (error) throw error;
 
-          // Se for recorrente, criar transações para os próximos meses
-        if (formData.recurring && formData.installments) {
+        // Se for recorrente, criar transações para os próximos meses
+        if (formData.recurring && !formData.is_infinite && formData.installments) {
           const installmentsCount = Number(formData.installments);
           const recurringTransactions = [];
-          const baseDate = new Date(formData.date);
+          const baseDate = new Date(safeNoonDate.getTime());
           const recurrenceType = formData.recurrence_type || 'monthly';
           
           console.log('🔄 Criando transações recorrentes:', {
@@ -249,12 +289,14 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               nextDate.setDate(0); // Volta para o último dia do mês anterior
             }
             
-            const dateStr = nextDate.toISOString().split('T')[0];
-            console.log(`📅 Criando parcela ${i + 1}/${installmentsCount} para ${dateStr} (tipo: ${recurrenceType})`);
+            // Garantir que mantemos noon
+            nextDate.setHours(12, 0, 0, 0);
+            const isoDateStr = nextDate.toISOString();
+            console.log(`📅 Criando parcela ${i + 1}/${installmentsCount} para ${isoDateStr} (tipo: ${recurrenceType})`);
             
             recurringTransactions.push({
               ...transactionData,
-              date: dateStr,
+              date: isoDateStr,
               is_paid: false,
               recurring: false, // Parcelas fixas não são marcadas como recorrentes
               installments_total: installmentsCount,
@@ -301,6 +343,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         recurring: false,
         recurring_day: '',
         installments: '12',
+        is_infinite: false,
         bank_account_id: '',
         recurrence_type: 'monthly',
       });
@@ -312,6 +355,77 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         ? "Não foi possível atualizar a transação."
         : "Não foi possível criar a transação."
       );
+    }
+  };
+
+  const executeUpdate = async (mode: 'single' | 'future', dataToSave: any) => {
+    try {
+      if (mode === 'single') {
+        const { error } = await supabase
+          .from("transactions")
+          .update(dataToSave)
+          .eq('id', editingTransaction!.id);
+        if (error) throw error;
+        toast.success("Transação atualizada com sucesso.");
+      } else if (mode === 'future') {
+        // Primeiro, garantir atualizar a parcela atual completamente (incluindo data)
+        const { error: currentError } = await supabase
+          .from("transactions")
+          .update(dataToSave)
+          .eq('id', editingTransaction!.id);
+        if (currentError) throw currentError;
+
+        // Segundo, atualizar as futuras com os campos compartilhados
+        let query = supabase
+          .from("transactions")
+          .update({
+            amount: dataToSave.amount,
+            description: dataToSave.description,
+            received_from: dataToSave.received_from,
+            category: dataToSave.category,
+            payment_type: dataToSave.payment_type,
+            bank_account_id: dataToSave.bank_account_id
+          })
+          .gt('date', editingTransaction!.date);
+        
+        // Agrupar por series_id OU descrição e config de repetição (compatibilidade com as velhas)
+        if (editingTransaction!.series_id) {
+          query = query.eq('series_id', editingTransaction!.series_id);
+        } else {
+          query = query.eq('description', editingTransaction!.description);
+          if (editingTransaction!.recurring) query = query.eq('recurring', true);
+          if (editingTransaction!.installments_total) query = query.eq('installments_total', editingTransaction!.installments_total);
+        }
+
+        const { error: futureError } = await query;
+        if (futureError) throw futureError;
+        
+        toast.success("Esta e as futuras transações foram atualizadas!");
+      }
+
+      setShowEditPrompt(false);
+      setPendingTransactionData(null);
+      
+      setFormData({
+        date: getLocalDateString(),
+        description: '',
+        received_from: '',
+        amount: '',
+        payment_type: '',
+        category: getTransactionDefaults(selectedFilter).category,
+        is_paid: false,
+        recurring: false,
+        recurring_day: '',
+        installments: '12',
+        is_infinite: false,
+        bank_account_id: '',
+        recurrence_type: 'monthly',
+      });
+      
+      onTransactionCreated();
+    } catch (error) {
+      console.error("Erro no executeUpdate:", error);
+      toast.error("Erro ao aplicar atualizações em lote.");
     }
   };
 
@@ -425,51 +539,68 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
         </div>
 
         {formData.recurring && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="recurring_day">Dia do mês para recorrência</Label>
-              <Input
-                id="recurring_day"
-                type="number"
-                min="1"
-                max="31"
-                value={formData.recurring_day}
-                onChange={(e) => setFormData(prev => ({ ...prev, recurring_day: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="recurrence_type">Tipo de Recorrência</Label>
-              <Select
-                value={formData.recurrence_type}
-                onValueChange={(value: 'monthly' | 'quarterly' | 'semiannual' | 'annual') => 
-                  setFormData(prev => ({ ...prev, recurrence_type: value }))
+          <div className="col-span-full space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-100 dark:bg-gray-800/50 dark:border-gray-700">
+            <div className="flex items-center space-x-2 pb-2">
+              <Checkbox
+                id="is_infinite"
+                checked={formData.is_infinite}
+                onCheckedChange={(checked) => 
+                  setFormData(prev => ({ ...prev, is_infinite: checked as boolean }))
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo de recorrência" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Mensal</SelectItem>
-                  <SelectItem value="quarterly">Trimestral (a cada 3 meses)</SelectItem>
-                  <SelectItem value="semiannual">Semestral (a cada 6 meses)</SelectItem>
-                  <SelectItem value="annual">Anual (a cada 12 meses)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="installments">Número de repetições</Label>
-              <Input
-                id="installments"
-                type="number"
-                min="2"
-                max="60"
-                value={formData.installments}
-                onChange={(e) => setFormData(prev => ({ ...prev, installments: e.target.value }))}
-                required
               />
+              <Label htmlFor="is_infinite" className="font-semibold text-gray-700 dark:text-gray-300">
+                Repetição Contínua (Infinito / Assinatura)
+              </Label>
             </div>
-          </>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="recurring_day">Dia do mês (vencimento)</Label>
+                <Input
+                  id="recurring_day"
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={formData.recurring_day}
+                  onChange={(e) => setFormData(prev => ({ ...prev, recurring_day: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="recurrence_type">Tipo de Repetição</Label>
+                <Select
+                  value={formData.recurrence_type}
+                  onValueChange={(value: 'monthly' | 'quarterly' | 'semiannual' | 'annual') => 
+                    setFormData(prev => ({ ...prev, recurrence_type: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Mensal</SelectItem>
+                    <SelectItem value="quarterly">Trimestral (a cada 3 meses)</SelectItem>
+                    <SelectItem value="semiannual">Semestral (a cada 6 meses)</SelectItem>
+                    <SelectItem value="annual">Anual (a cada 12 meses)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {!formData.is_infinite && (
+                <div className="space-y-2">
+                  <Label htmlFor="installments">Número de parcelas</Label>
+                  <Input
+                    id="installments"
+                    type="number"
+                    min="2"
+                    max="60"
+                    value={formData.installments}
+                    onChange={(e) => setFormData(prev => ({ ...prev, installments: e.target.value }))}
+                    required={!formData.is_infinite}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
@@ -478,6 +609,29 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           {editingTransaction ? "Atualizar" : "Salvar"}
         </Button>
       </div>
+
+      {/* Interceptador de Lote */}
+      {showEditPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-sm w-full space-y-4 shadow-xl border border-gray-100 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Atualizar Série</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Esta transação faz parte de uma repetição. Deseja aplicar as alterações nos valores/títulos a todas as futuras cobranças também?
+            </p>
+            <div className="flex flex-col gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => executeUpdate('single', pendingTransactionData)}>
+                Apenas Esta Parcela
+              </Button>
+              <Button type="button" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => executeUpdate('future', pendingTransactionData)}>
+                Esta e as Futuras Parcelas
+              </Button>
+              <Button type="button" variant="ghost" className="text-gray-500" onClick={() => setShowEditPrompt(false)}>
+                Cancelar Edição
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 };

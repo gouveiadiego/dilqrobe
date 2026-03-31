@@ -1987,6 +1987,7 @@ export type Database = {
           recurrence_type: string | null
           recurring: boolean | null
           recurring_day: number | null
+          series_id: string | null
           transfer_destination_account_id: string | null
           transfer_id: string | null
           updated_at: string | null
@@ -2009,6 +2010,7 @@ export type Database = {
           recurrence_type?: string | null
           recurring?: boolean | null
           recurring_day?: number | null
+          series_id?: string | null
           transfer_destination_account_id?: string | null
           transfer_id?: string | null
           updated_at?: string | null
@@ -2031,6 +2033,7 @@ export type Database = {
           recurrence_type?: string | null
           recurring?: boolean | null
           recurring_day?: number | null
+          series_id?: string | null
           transfer_destination_account_id?: string | null
           transfer_id?: string | null
           updated_at?: string | null

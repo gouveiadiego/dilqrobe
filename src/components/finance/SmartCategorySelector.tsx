@@ -33,25 +33,34 @@ export const SmartCategorySelector = ({
 
   // Detectar automaticamente o tipo baseado no filtro selecionado
   useEffect(() => {
-    if (selectedFilter === "recebimentos") {
-      setCurrentTab("income");
-      if (!value || !categories.find(c => c.name === value && c.type === "income")) {
-        const incomeCategory = categories.find(c => c.type === "income") || 
-                              categories.find(c => c.name === "income");
-        if (incomeCategory) {
-          onChange(incomeCategory.name);
+    if (!value) {
+      // Se está vazio, inicializa com o primeiro válido do tipo da tab atual
+      if (selectedFilter === "recebimentos") {
+        setCurrentTab("income");
+        if (categories.length > 0) {
+          const incomeCategory = categories.find(c => c.type === "income") || categories.find(c => c.name === "income");
+          if (incomeCategory) onChange(incomeCategory.name);
+        }
+      } else {
+        setCurrentTab("expense");
+        if (categories.length > 0) {
+          const expenseCategory = categories.find(c => c.type === "expense" || c.name === "fixed");
+          if (expenseCategory) onChange(expenseCategory.name);
         }
       }
     } else {
-      setCurrentTab("expense");
-      if (!value || !categories.find(c => c.name === value && c.type !== "income")) {
-        const expenseCategory = categories.find(c => c.type === "expense" || c.name === "fixed");
-        if (expenseCategory) {
-          onChange(expenseCategory.name);
+      // Se já tem um valor (provavelmente veio da edição de uma transação existente),
+      // devemos ajustar a TAB certa visualmente, mas NUNCA sobrescrever o valor
+      if (categories.length > 0) {
+        const catObj = categories.find(c => c.name === value);
+        if (catObj?.type === "income" || catObj?.name === "income" || value === "income") {
+          setCurrentTab("income");
+        } else {
+          setCurrentTab("expense");
         }
       }
     }
-  }, [selectedFilter, categories]);
+  }, [selectedFilter, categories?.length]);
 
   // Separar categorias por tipo
   const incomeCategories = categories.filter(c => 
@@ -132,6 +141,15 @@ export const SmartCategorySelector = ({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
+                  {/* Se a categoria atual não está na lista oficial (órfã), injetamos ela aqui só pra não bugar o seletor */}
+                  {value && !incomeCategories.find(c => c.name === value) && currentTab === "income" && (
+                    <SelectItem value={value}>
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4 text-emerald-600" />
+                        {value} (Antiga)
+                      </div>
+                    </SelectItem>
+                  )}
                   {incomeCategories.map((category) => (
                     <SelectItem key={category.id} value={category.name}>
                       <div className="flex items-center gap-2">
@@ -204,6 +222,15 @@ export const SmartCategorySelector = ({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
+                  {/* Categoria Órfã / Legado para despesas */}
+                  {value && !expenseCategories.find(c => c.name === value) && currentTab === "expense" && (
+                     <SelectItem value={value}>
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-rose-600" />
+                        {getCategoryLabel(value)} (Herdado)
+                      </div>
+                    </SelectItem>
+                  )}
                   {expenseCategories.map((category) => (
                     <SelectItem key={category.id} value={category.name}>
                       <div className="flex items-center gap-2">

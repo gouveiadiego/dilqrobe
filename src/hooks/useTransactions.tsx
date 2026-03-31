@@ -16,8 +16,12 @@ export interface Transaction {
   is_paid: boolean;
   recurring?: boolean;
   recurring_day?: number;
+  installments_total?: number;
+  installment_number?: number;
   recurrence_type?: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
   bank_account_id?: string;
+  series_id?: string;
+  user_id?: string;
 }
 
 export interface DateRangeFilter {
@@ -95,8 +99,12 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
           is_paid,
           recurring,
           recurring_day,
+          installments_total,
+          installment_number,
           recurrence_type,
-          bank_account_id
+          bank_account_id,
+          series_id,
+          user_id
         `)
         .eq("user_id", user.id)
         .gte("date", startDate)
@@ -358,7 +366,13 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
       const existingKeys = new Set();
 
       existingMonthTransactions?.forEach(transaction => {
-        const key = `${transaction.date}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
+        // Normalize DB date safely
+        const tDate = new Date(transaction.date);
+        const dateStr = !Number.isNaN(tDate.getTime()) 
+          ? `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}-${String(tDate.getDate()).padStart(2, '0')}`
+          : transaction.date.substring(0, 10);
+          
+        const key = `${dateStr}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
         existingKeys.add(key);
       });
 
@@ -400,15 +414,15 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
         if (!shouldCreateThisMonth(transaction, originalDate)) return false;
 
         // Create a new date for this month with the recurring day
-        const newDate = new Date(currentYear, currentMonth, transaction.recurring_day);
+        const newDate = new Date(currentYear, currentMonth, transaction.recurring_day, 12, 0, 0);
 
         // Ensure date is valid (handle edge cases like Feb 30)
         if (newDate.getMonth() !== currentMonth) {
           newDate.setDate(0); // Last day of previous month
         }
 
-        // Format date to ISO for key creation
-        const newDateStr = newDate.toISOString().split('T')[0];
+        // Format local date manually for reliable key checking
+        const newDateStr = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`;
 
         // Create a unique identifier for this transaction
         const key = `${newDateStr}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
@@ -426,8 +440,8 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
 
       // Create the recurring transactions for this month
       const newTransactions = transactionsToCreate.map(transaction => {
-        // Create date for the recurring day in current month
-        const newDate = new Date(currentYear, currentMonth, transaction.recurring_day);
+        // Create date for the recurring day in current month at noon to avoid timezone shift
+        const newDate = new Date(currentYear, currentMonth, transaction.recurring_day, 12, 0, 0);
 
         // Ensure date is valid (handle edge cases like Feb 30)
         if (newDate.getMonth() !== currentMonth) {
@@ -435,7 +449,7 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
         }
 
         return {
-          date: newDate.toISOString().split('T')[0],
+          date: newDate.toISOString(),
           description: transaction.description,
           received_from: transaction.received_from,
           amount: transaction.amount,
@@ -445,6 +459,8 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
           recurring: true,
           recurring_day: transaction.recurring_day,
           recurrence_type: transaction.recurrence_type || 'monthly',
+          bank_account_id: transaction.bank_account_id || null,
+          series_id: transaction.series_id || null,
           user_id: user.id
         };
       });
