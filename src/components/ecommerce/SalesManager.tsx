@@ -18,7 +18,7 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-const paymentMethods = ["Pix", "Cartão Crédito", "Cartão Débito", "Dinheiro", "Boleto", "Transferência"];
+const paymentMethods = ["Pix", "Cartão Crédito", "Cartão Débito", "Dinheiro", "Boleto", "Cheque", "Transferência"];
 
 export function SalesManager({ sales, products, loading, onAdd, onDelete }: Props) {
   const [open, setOpen] = useState(false);
