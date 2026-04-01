@@ -98,7 +98,9 @@ export const removeDuplicateTransactions = async () => {
     const duplicates = [];
     
     for (const transaction of allTransactions) {
-      const signature = `${transaction.date}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
+      const installmentPart = transaction.installment_number ? `|inst${transaction.installment_number}` : '';
+      const seriesPart = transaction.series_id ? `|${transaction.series_id}` : '';
+      const signature = `${transaction.date}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}${installmentPart}${seriesPart}`;
       
       if (seen.has(signature)) {
         duplicates.push(transaction.id);
