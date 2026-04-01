@@ -451,6 +451,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
       case "debit": return "Cartão de Débito";
       case "cash": return "Dinheiro";
       case "boleto": return "Boleto";
+      case "cheque": return "Cheque";
       case "transfer": return "Transferência";
       default: return paymentType;
     }
@@ -521,6 +522,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
               <SelectItem value="debit">Cartão de Débito</SelectItem>
               <SelectItem value="cash">Dinheiro</SelectItem>
               <SelectItem value="boleto">Boleto</SelectItem>
+              <SelectItem value="cheque">Cheque</SelectItem>
               <SelectItem value="transfer">Transferência</SelectItem>
             </SelectContent>
           </Select>

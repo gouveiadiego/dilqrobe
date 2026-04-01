@@ -331,6 +331,7 @@ const getPaymentTypeLabel = (paymentType: string): string => {
     case "debit": return "Cartão de Débito";
     case "cash": return "Dinheiro";
     case "boleto": return "Boleto";
+    case "cheque": return "Cheque";
     case "transfer": return "Transferência";
     default: return paymentType;
   }
