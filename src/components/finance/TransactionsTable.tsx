@@ -183,7 +183,7 @@ export const TransactionsTable = ({
                 </div>
               </TableCell>
               <TableCell className="align-top py-3">
-                <CategoryBadge category={transaction.category} />
+                <CategoryBadge category={transaction.category} amount={transaction.amount} />
               </TableCell>
               <TableCell className="align-top py-3">
                 <div className="flex flex-col gap-1.5 items-start">
@@ -337,7 +337,7 @@ const getPaymentTypeLabel = (paymentType: string): string => {
   }
 };
 
-const CategoryBadge = ({ category }: { category: string }) => {
+const CategoryBadge = ({ category, amount }: { category: string; amount?: number }) => {
   const colors: Record<string, { bg: string, text: string, icon: string }> = {
     'fixed': { bg: 'bg-blue-100', text: 'text-blue-800', icon: '💳' },
     'variable': { bg: 'bg-purple-100', text: 'text-purple-800', icon: '🔄' },
@@ -347,7 +347,10 @@ const CategoryBadge = ({ category }: { category: string }) => {
     'income': { bg: 'bg-emerald-100', text: 'text-emerald-800', icon: '💰' },
   };
 
-  const style = colors[category] || { bg: 'bg-gray-100', text: 'text-gray-800', icon: '📂' };
+  const incomeDefault = { bg: 'bg-emerald-100', text: 'text-emerald-800', icon: '💰' };
+  const expenseDefault = { bg: 'bg-gray-100', text: 'text-gray-800', icon: '📂' };
+
+  const style = colors[category] || (amount && amount > 0 ? incomeDefault : expenseDefault);
 
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs ${style.bg} ${style.text}`}>
