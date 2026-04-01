@@ -191,8 +191,118 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           return;
         }
 
-        // Se for transação avulsa, executa update direto
-        await executeUpdate('single', transactionData);
+        // Verificar se o usuário está adicionando recorrência a uma transação avulsa
+        const isAddingInstallments = formData.recurring && !formData.is_infinite && formData.installments && !editingTransaction.installments_total && !editingTransaction.recurring;
+        const isAddingInfiniteRecurrence = formData.recurring && formData.is_infinite && !editingTransaction.recurring;
+
+        if (isAddingInstallments) {
+          // Gerar series_id para agrupar
+          const newSeriesId = crypto.randomUUID();
+          const installmentsCount = Number(formData.installments);
+          const recurrenceType = formData.recurrence_type || 'monthly';
+
+          // Atualizar a transação existente com dados de parcela
+          const { error: updateError } = await supabase
+            .from("transactions")
+            .update({
+              ...transactionData,
+              series_id: newSeriesId,
+              installments_total: installmentsCount,
+              installment_number: 1,
+              recurring: false,
+            })
+            .eq('id', editingTransaction.id);
+
+          if (updateError) throw updateError;
+
+          // Criar as parcelas futuras
+          const baseDate = getSafeNoonDate(formData.date);
+          const recurringTransactions = [];
+
+          for (let i = 1; i < installmentsCount; i++) {
+            const nextDate = new Date(baseDate.getTime());
+            const customDays = Number(formData.custom_interval_days) || 0;
+
+            switch (recurrenceType) {
+              case 'weekly':
+                nextDate.setDate(baseDate.getDate() + (i * 7));
+                break;
+              case 'biweekly':
+                nextDate.setDate(baseDate.getDate() + (i * 15));
+                break;
+              case 'monthly':
+                nextDate.setMonth(baseDate.getMonth() + i);
+                break;
+              case 'bimonthly':
+                nextDate.setMonth(baseDate.getMonth() + (i * 2));
+                break;
+              case 'quarterly':
+                nextDate.setMonth(baseDate.getMonth() + (i * 3));
+                break;
+              case 'semiannual':
+                nextDate.setMonth(baseDate.getMonth() + (i * 6));
+                break;
+              case 'annual':
+                nextDate.setFullYear(baseDate.getFullYear() + i);
+                break;
+              case 'custom':
+                nextDate.setDate(baseDate.getDate() + (i * customDays));
+                break;
+            }
+
+            if (!['weekly', 'biweekly', 'custom'].includes(recurrenceType)) {
+              const targetDay = Number(formData.recurring_day);
+              nextDate.setDate(targetDay);
+              if (nextDate.getDate() !== targetDay) {
+                nextDate.setDate(0);
+              }
+            }
+
+            nextDate.setHours(12, 0, 0, 0);
+
+            recurringTransactions.push({
+              ...transactionData,
+              date: nextDate.toISOString(),
+              is_paid: false,
+              recurring: false,
+              installments_total: installmentsCount,
+              installment_number: i + 1,
+              series_id: newSeriesId,
+            });
+          }
+
+          if (recurringTransactions.length > 0) {
+            const { error: insertError } = await supabase
+              .from("transactions")
+              .insert(recurringTransactions);
+
+            if (insertError) {
+              console.error("❌ Erro ao criar parcelas:", insertError);
+              toast.error("Transação atualizada, mas houve erro ao criar as parcelas");
+            } else {
+              console.log(`✅ ${recurringTransactions.length + 1} parcelas criadas!`);
+              toast.success(`Transação atualizada com ${installmentsCount} parcelas!`);
+            }
+          }
+        } else if (isAddingInfiniteRecurrence) {
+          // Adicionar recorrência infinita a transação avulsa
+          const newSeriesId = crypto.randomUUID();
+          const { error } = await supabase
+            .from("transactions")
+            .update({
+              ...transactionData,
+              series_id: newSeriesId,
+              recurring: true,
+              recurring_day: Number(formData.recurring_day),
+              recurrence_type: formData.recurrence_type,
+            })
+            .eq('id', editingTransaction.id);
+          if (error) throw error;
+          toast.success("Transação atualizada como recorrente!");
+        } else {
+          // Se for transação avulsa sem mudança de recorrência, executa update direto
+          await executeUpdate('single', transactionData);
+        }
       } else {
         const startOfDay = new Date(safeNoonDate.getFullYear(), safeNoonDate.getMonth(), safeNoonDate.getDate(), 0, 0, 0);
         const endOfDay = new Date(safeNoonDate.getFullYear(), safeNoonDate.getMonth(), safeNoonDate.getDate(), 23, 59, 59);
