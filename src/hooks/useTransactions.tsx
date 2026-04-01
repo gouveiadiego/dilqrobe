@@ -135,7 +135,9 @@ export const useTransactions = ({ currentDate, dateRange }: UseTransactionsProps
     const seen = new Map();
     return transactions.filter(transaction => {
       // Create a unique key for each transaction
-      const key = `${transaction.date}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}`;
+      const installmentPart = transaction.installment_number ? `|inst${transaction.installment_number}` : '';
+      const seriesPart = transaction.series_id ? `|${transaction.series_id}` : '';
+      const key = `${transaction.date}|${transaction.description}|${transaction.received_from}|${transaction.payment_type}|${transaction.amount}${installmentPart}${seriesPart}`;
 
       // If we've seen this key before, filter it out
       if (seen.has(key)) {
