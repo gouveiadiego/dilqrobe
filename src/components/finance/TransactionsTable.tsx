@@ -183,7 +183,7 @@ export const TransactionsTable = ({
                 </div>
               </TableCell>
               <TableCell className="align-top py-3">
-                <CategoryBadge category={transaction.category} />
+                <CategoryBadge category={transaction.category} amount={transaction.amount} />
               </TableCell>
               <TableCell className="align-top py-3">
                 <div className="flex flex-col gap-1.5 items-start">
