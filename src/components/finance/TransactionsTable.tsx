@@ -161,7 +161,7 @@ export const TransactionsTable = ({
         <TableBody>
           {localFilteredTransactions.map(transaction => (
             <TableRow key={transaction.id} className={`group transition-colors ${transaction.is_paid ? '!bg-emerald-50/70 hover:!bg-emerald-100/70' : 'bg-white hover:bg-amber-50/40'}`}>
-              <TableCell className={`sticky left-0 z-10 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors whitespace-nowrap align-top ${transaction.is_paid ? 'bg-emerald-50/60 group-hover:bg-emerald-100/60' : 'bg-white group-hover:bg-amber-50/40'}`}>
+              <TableCell className={`sticky left-0 z-10 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors whitespace-nowrap align-top ${transaction.is_paid ? '!bg-emerald-50/70 group-hover:!bg-emerald-100/70' : '!bg-white group-hover:!bg-amber-50/40'}`}>
                 <div className="pt-1 text-slate-700 font-medium">
                   {(() => {
                     const [year, month, day] = transaction.date.split('-').map(Number);
@@ -216,7 +216,7 @@ export const TransactionsTable = ({
                   </div>
                 </div>
               </TableCell>
-              <TableCell className={`sticky right-0 z-10 border-l border-slate-100 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors align-top py-3 ${transaction.is_paid ? 'bg-emerald-50/60 group-hover:bg-emerald-100/60' : 'bg-white group-hover:bg-amber-50/40'}`}>
+              <TableCell className={`sticky right-0 z-10 border-l border-slate-100 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors align-top py-3 ${transaction.is_paid ? '!bg-emerald-50/70 group-hover:!bg-emerald-100/70' : '!bg-white group-hover:!bg-amber-50/40'}`}>
                 <div className="flex items-center justify-center gap-1">
                   {(transaction.series_id || transaction.installments_total || transaction.recurring) ? (
                     <Button
