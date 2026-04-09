@@ -49,6 +49,7 @@ export const TransactionsTable = ({
   const [dateFilter, setDateFilter] = useState('');
   const [descFilter, setDescFilter] = useState('');
   const [receiverFilter, setReceiverFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
 
   const handleDelete = () => {
     if (selectedTransactionId) {
@@ -89,6 +90,8 @@ export const TransactionsTable = ({
     if (receiverFilter && (!t.received_from || !t.received_from.toLowerCase().includes(receiverFilter.toLowerCase()))) {
       match = false;
     }
+    if (statusFilter === 'paid' && !t.is_paid) match = false;
+    if (statusFilter === 'pending' && t.is_paid) match = false;
     return match;
   });
 
@@ -137,6 +140,15 @@ export const TransactionsTable = ({
             <TableHead className="sticky top-0 z-20 bg-slate-100 border-b border-slate-200 py-3 w-[160px] font-semibold">
               <div className="flex flex-col gap-2 h-full justify-start">
                 <span className="pt-1">Valor & Status</span>
+                <select
+                  value={statusFilter}
+                  onChange={e => setStatusFilter(e.target.value as 'all' | 'paid' | 'pending')}
+                  className="h-7 w-full text-xs font-normal rounded-md border border-slate-200 bg-white px-2"
+                >
+                  <option value="all">Todos</option>
+                  <option value="paid">✅ Pagos</option>
+                  <option value="pending">⏳ Pendentes</option>
+                </select>
               </div>
             </TableHead>
             <TableHead className="sticky top-0 right-0 z-30 bg-slate-100 border-l border-b border-slate-200 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-center w-[110px] py-3 font-semibold">
@@ -148,8 +160,8 @@ export const TransactionsTable = ({
         </TableHeader>
         <TableBody>
           {localFilteredTransactions.map(transaction => (
-            <TableRow key={transaction.id} className="group bg-white hover:bg-slate-50 transition-colors">
-              <TableCell className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors whitespace-nowrap align-top">
+            <TableRow key={transaction.id} className={`group transition-colors ${transaction.is_paid ? 'bg-emerald-50/60 hover:bg-emerald-100/60' : 'bg-white hover:bg-amber-50/40'}`}>
+              <TableCell className={`sticky left-0 z-10 border-r border-slate-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors whitespace-nowrap align-top ${transaction.is_paid ? 'bg-emerald-50/60 group-hover:bg-emerald-100/60' : 'bg-white group-hover:bg-amber-50/40'}`}>
                 <div className="pt-1 text-slate-700 font-medium">
                   {(() => {
                     const [year, month, day] = transaction.date.split('-').map(Number);
@@ -204,7 +216,7 @@ export const TransactionsTable = ({
                   </div>
                 </div>
               </TableCell>
-              <TableCell className="sticky right-0 z-10 bg-white group-hover:bg-slate-50 border-l border-slate-100 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors align-top py-3">
+              <TableCell className={`sticky right-0 z-10 border-l border-slate-100 shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.05)] transition-colors align-top py-3 ${transaction.is_paid ? 'bg-emerald-50/60 group-hover:bg-emerald-100/60' : 'bg-white group-hover:bg-amber-50/40'}`}>
                 <div className="flex items-center justify-center gap-1">
                   {(transaction.series_id || transaction.installments_total || transaction.recurring) ? (
                     <Button
