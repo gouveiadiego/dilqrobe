@@ -79,7 +79,7 @@ export const TransactionCalendarView = ({
                (isToday(transactionDate) || 
                 (isBefore(today, transactionDate) && isBefore(transactionDate, nextWeek)));
       })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime());
   };
 
   const getOverdueTransactions = () => {
@@ -92,7 +92,7 @@ export const TransactionCalendarView = ({
         
         return !transaction.is_paid && isBefore(transactionDate, today);
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
   };
 
   const getDayContent = (date: Date) => {
