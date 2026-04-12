@@ -48,7 +48,7 @@ export const TransactionCalendarView = ({
     
     return transactions.filter(transaction => {
       // Ensure transaction.date is properly parsed to a Date object
-      const transactionDate = new Date(transaction.date);
+      const transactionDate = parseLocalDate(transaction.date);
       if (!isValid(transactionDate)) {
         console.warn("Invalid transaction date:", transaction.date);
         return false;
@@ -72,7 +72,7 @@ export const TransactionCalendarView = ({
     
     return transactions
       .filter(transaction => {
-        const transactionDate = new Date(transaction.date);
+        const transactionDate = parseLocalDate(transaction.date);
         if (!isValid(transactionDate)) return false;
         
         return !transaction.is_paid && 
@@ -87,7 +87,7 @@ export const TransactionCalendarView = ({
     
     return transactions
       .filter(transaction => {
-        const transactionDate = new Date(transaction.date);
+        const transactionDate = parseLocalDate(transaction.date);
         if (!isValid(transactionDate)) return false;
         
         return !transaction.is_paid && isBefore(transactionDate, today);
@@ -240,7 +240,7 @@ export const TransactionCalendarView = ({
                         {transaction.description}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Vence em: {format(new Date(transaction.date), 'dd/MM/yyyy')}
+                        Vence em: {format(parseLocalDate(transaction.date), 'dd/MM/yyyy')}
                       </p>
                       <p className="text-xs text-gray-500 truncate mt-0.5">
                         {transaction.received_from}
@@ -287,7 +287,7 @@ export const TransactionCalendarView = ({
                         {transaction.description}
                       </p>
                       <p className="text-xs text-rose-600 mt-0.5 font-medium">
-                        Venceu em: {format(new Date(transaction.date), 'dd/MM/yyyy')}
+                        Venceu em: {format(parseLocalDate(transaction.date), 'dd/MM/yyyy')}
                       </p>
                       <p className="text-xs text-gray-500 truncate mt-0.5">
                         {transaction.received_from}
