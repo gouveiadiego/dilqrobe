@@ -15,6 +15,12 @@ import { formatCurrency } from "@/lib/utils";
 import { AlertCircle, AlertTriangle } from "lucide-react";
 import { Transaction } from "@/hooks/useTransactions";
 
+// Parse "YYYY-MM-DD" as local date (avoids timezone shift)
+const parseLocalDate = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 interface TransactionCalendarViewProps {
   transactions: Transaction[];
   onDateSelect: (date: Date) => void;
@@ -42,7 +48,7 @@ export const TransactionCalendarView = ({
     
     return transactions.filter(transaction => {
       // Ensure transaction.date is properly parsed to a Date object
-      const transactionDate = new Date(transaction.date);
+      const transactionDate = parseLocalDate(transaction.date);
       if (!isValid(transactionDate)) {
         console.warn("Invalid transaction date:", transaction.date);
         return false;
@@ -66,14 +72,14 @@ export const TransactionCalendarView = ({
     
     return transactions
       .filter(transaction => {
-        const transactionDate = new Date(transaction.date);
+        const transactionDate = parseLocalDate(transaction.date);
         if (!isValid(transactionDate)) return false;
         
         return !transaction.is_paid && 
                (isToday(transactionDate) || 
                 (isBefore(today, transactionDate) && isBefore(transactionDate, nextWeek)));
       })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime());
   };
 
   const getOverdueTransactions = () => {
@@ -81,12 +87,12 @@ export const TransactionCalendarView = ({
     
     return transactions
       .filter(transaction => {
-        const transactionDate = new Date(transaction.date);
+        const transactionDate = parseLocalDate(transaction.date);
         if (!isValid(transactionDate)) return false;
         
         return !transaction.is_paid && isBefore(transactionDate, today);
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .sort((a, b) => parseLocalDate(b.date).getTime() - parseLocalDate(a.date).getTime());
   };
 
   const getDayContent = (date: Date) => {
@@ -234,7 +240,7 @@ export const TransactionCalendarView = ({
                         {transaction.description}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Vence em: {format(new Date(transaction.date), 'dd/MM/yyyy')}
+                        Vence em: {format(parseLocalDate(transaction.date), 'dd/MM/yyyy')}
                       </p>
                       <p className="text-xs text-gray-500 truncate mt-0.5">
                         {transaction.received_from}
@@ -281,7 +287,7 @@ export const TransactionCalendarView = ({
                         {transaction.description}
                       </p>
                       <p className="text-xs text-rose-600 mt-0.5 font-medium">
-                        Venceu em: {format(new Date(transaction.date), 'dd/MM/yyyy')}
+                        Venceu em: {format(parseLocalDate(transaction.date), 'dd/MM/yyyy')}
                       </p>
                       <p className="text-xs text-gray-500 truncate mt-0.5">
                         {transaction.received_from}
