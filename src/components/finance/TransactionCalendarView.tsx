@@ -15,6 +15,12 @@ import { formatCurrency } from "@/lib/utils";
 import { AlertCircle, AlertTriangle } from "lucide-react";
 import { Transaction } from "@/hooks/useTransactions";
 
+// Parse "YYYY-MM-DD" as local date (avoids timezone shift)
+const parseLocalDate = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 interface TransactionCalendarViewProps {
   transactions: Transaction[];
   onDateSelect: (date: Date) => void;
