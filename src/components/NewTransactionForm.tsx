@@ -103,15 +103,8 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
       // safely extract YYYY-MM-DD for the date input
       let prefilledDate = getLocalDateString();
       if (editingTransaction.date) {
-        if (editingTransaction.date.includes('T')) {
-          const tDate = new Date(editingTransaction.date);
-          if (!Number.isNaN(tDate.getTime())) {
-            // Reconstruct local date format
-            prefilledDate = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}-${String(tDate.getDate()).padStart(2, '0')}`;
-          }
-        } else {
-          prefilledDate = editingTransaction.date.substring(0, 10);
-        }
+        // Obter exatamente YYYY-MM-DD da string armazenada, preservando a data como renderizada na tabela
+        prefilledDate = editingTransaction.date.substring(0, 10);
       }
 
       setFormData({
@@ -522,13 +515,19 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           const newDateStr = dataToSave.date.substring(0, 10);
           const dateChanged = oldDateStr !== newDateStr;
 
-          const oldDate = new Date(editingTransaction!.date);
-          const newDate = new Date(dataToSave.date);
+          const [oldY, oldM, oldD] = oldDateStr.split('-').map(Number);
+          const oldDate = new Date(oldY, oldM - 1, oldD, 12, 0, 0);
+          
+          const [newY, newM, newD] = newDateStr.split('-').map(Number);
+          const newDate = new Date(newY, newM - 1, newD, 12, 0, 0);
+          const targetDay = newD;
+
           const recType = editingTransaction!.recurrence_type || 'monthly';
           const isDaysBased = ['weekly', 'biweekly', 'custom'].includes(recType);
 
           const updates = futureTransactions.map(t => {
-            const newTDate = new Date(t.date);
+            const [tY, tM, tD] = t.date.substring(0, 10).split('-').map(Number);
+            const newTDate = new Date(tY, tM - 1, tD, 12, 0, 0);
 
             if (dateChanged) {
               if (isDaysBased) {
@@ -536,8 +535,7 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
                 const diffDays = Math.round((newDate.getTime() - oldDate.getTime()) / msPerDay);
                 newTDate.setDate(newTDate.getDate() + diffDays);
               } else {
-                const monthDiff = (newDate.getFullYear() - oldDate.getFullYear()) * 12 + (newDate.getMonth() - oldDate.getMonth());
-                const targetDay = newDate.getDate();
+                const monthDiff = (newY - oldY) * 12 + (newM - oldM);
                 const currentMonth = newTDate.getMonth();
                 
                 newTDate.setDate(1);
