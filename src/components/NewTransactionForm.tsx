@@ -499,30 +499,75 @@ export const NewTransactionForm = ({ selectedFilter, onTransactionCreated, editi
           .eq('id', editingTransaction!.id);
         if (currentError) throw currentError;
 
-        // Segundo, atualizar as futuras com os campos compartilhados
-        let query = supabase
+        // Buscar transações futuras para poder recalcular a data caso tenha sido alterada
+        let fetchQuery = supabase
           .from("transactions")
-          .update({
-            amount: dataToSave.amount,
-            description: dataToSave.description,
-            received_from: dataToSave.received_from,
-            category: dataToSave.category,
-            payment_type: dataToSave.payment_type,
-            bank_account_id: dataToSave.bank_account_id
-          })
+          .select("*")
           .gt('date', editingTransaction!.date);
         
         // Agrupar por series_id OU descrição e config de repetição (compatibilidade com as velhas)
         if (editingTransaction!.series_id) {
-          query = query.eq('series_id', editingTransaction!.series_id);
+          fetchQuery = fetchQuery.eq('series_id', editingTransaction!.series_id);
         } else {
-          query = query.eq('description', editingTransaction!.description);
-          if (editingTransaction!.recurring) query = query.eq('recurring', true);
-          if (editingTransaction!.installments_total) query = query.eq('installments_total', editingTransaction!.installments_total);
+          fetchQuery = fetchQuery.eq('description', editingTransaction!.description);
+          if (editingTransaction!.recurring) fetchQuery = fetchQuery.eq('recurring', true);
+          if (editingTransaction!.installments_total) fetchQuery = fetchQuery.eq('installments_total', editingTransaction!.installments_total);
         }
 
-        const { error: futureError } = await query;
-        if (futureError) throw futureError;
+        const { data: futureTransactions, error: fetchError } = await fetchQuery;
+        if (fetchError) throw fetchError;
+        
+        if (futureTransactions && futureTransactions.length > 0) {
+          const oldDateStr = editingTransaction!.date.substring(0, 10);
+          const newDateStr = dataToSave.date.substring(0, 10);
+          const dateChanged = oldDateStr !== newDateStr;
+
+          const oldDate = new Date(editingTransaction!.date);
+          const newDate = new Date(dataToSave.date);
+          const recType = editingTransaction!.recurrence_type || 'monthly';
+          const isDaysBased = ['weekly', 'biweekly', 'custom'].includes(recType);
+
+          const updates = futureTransactions.map(t => {
+            const newTDate = new Date(t.date);
+
+            if (dateChanged) {
+              if (isDaysBased) {
+                const msPerDay = 24 * 60 * 60 * 1000;
+                const diffDays = Math.round((newDate.getTime() - oldDate.getTime()) / msPerDay);
+                newTDate.setDate(newTDate.getDate() + diffDays);
+              } else {
+                const monthDiff = (newDate.getFullYear() - oldDate.getFullYear()) * 12 + (newDate.getMonth() - oldDate.getMonth());
+                const targetDay = newDate.getDate();
+                const currentMonth = newTDate.getMonth();
+                
+                newTDate.setDate(1);
+                newTDate.setMonth(currentMonth + monthDiff);
+                newTDate.setDate(targetDay);
+                
+                if (newTDate.getDate() !== targetDay) {
+                  newTDate.setDate(0); 
+                }
+              }
+            }
+
+            return {
+              ...t,
+              amount: dataToSave.amount,
+              description: dataToSave.description,
+              received_from: dataToSave.received_from,
+              category: dataToSave.category,
+              payment_type: dataToSave.payment_type,
+              bank_account_id: dataToSave.bank_account_id,
+              date: newTDate.toISOString()
+            };
+          });
+
+          const { error: upsertError } = await supabase
+            .from("transactions")
+            .upsert(updates);
+            
+          if (upsertError) throw upsertError;
+        }
         
         toast.success("Esta e as futuras transações foram atualizadas!");
       }
