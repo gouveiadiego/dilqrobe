@@ -37,6 +37,7 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout, isOpen, setIsOpen }
     { id: 'team-todo', label: 'To-Do Equipe', icon: ClipboardList },
     { id: 'meetings', label: 'Reuniões', icon: Calendar },
     { id: 'finance', label: 'Financeiro', icon: Wallet },
+    { id: 'budget', label: 'Orçamentos', icon: TrendingUp },
     { id: 'habits', label: 'Hábitos', icon: Target },
     { id: 'fitness', label: 'Fitness', icon: Dumbbell },
     { id: 'journals', label: 'Diário', icon: BookOpen },
