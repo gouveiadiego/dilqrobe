@@ -310,6 +310,7 @@ export function TaskItem({
                     </Button>
                   )}
                   <button
+                    type="button"
                     onClick={() => {
                       if (isNotesExpanded) {
                         setIsNotesExpanded(false);
@@ -392,6 +393,7 @@ export function TaskItem({
               <MessageSquare className="h-3 w-3" /> Comentário / Progresso
             </span>
             <button
+              type="button"
               onClick={() => {
                 if (onUpdateNotes) {
                   onUpdateNotes(task.id, editNotes);

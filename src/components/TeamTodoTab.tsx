@@ -247,6 +247,7 @@ function MemberCard({
                                 
                                 <div className="flex flex-col shrink-0 items-center opacity-0 group-hover:opacity-100 transition-opacity pr-1 border-r border-gray-100 mr-1">
                                     <button 
+                                        type="button"
                                         onClick={(e) => handleMove(e, task.id, 'up')} 
                                         disabled={index === 0}
                                         className="text-gray-400 hover:text-dilq-accent disabled:opacity-0 p-0.5 transition-colors"
@@ -254,6 +255,7 @@ function MemberCard({
                                         <ArrowUp className="h-3 w-3" />
                                     </button>
                                     <button 
+                                        type="button"
                                         onClick={(e) => handleMove(e, task.id, 'down')} 
                                         disabled={index === sorted.length - 1}
                                         className="text-gray-400 hover:text-dilq-accent disabled:opacity-0 p-0.5 transition-colors"
@@ -262,7 +264,7 @@ function MemberCard({
                                     </button>
                                 </div>
 
-                                <button onClick={() => onToggleTask(task.id, !task.completed, (task as any).due_date)} className="mt-0.5 shrink-0 transition-transform active:scale-90">
+                                <button type="button" onClick={() => onToggleTask(task.id, !task.completed, (task as any).due_date)} className="mt-0.5 shrink-0 transition-transform active:scale-90">
                                     {task.completed
                                         ? <CheckCircle2 className="h-5 w-5 text-green-500" />
                                         : <Circle className={`h-5 w-5 ${isHighPriority ? 'text-red-300' : 'text-gray-300'} hover:text-gray-400`} />}
@@ -281,10 +283,10 @@ function MemberCard({
                                                                     autoFocus
                                                                     onKeyDown={e => e.key === 'Enter' && handleUpdateTitle(task.id)}
                                                                 />
-                                                                <button onClick={() => handleUpdateTitle(task.id)} className="text-green-500 hover:text-green-600">
+                                                                <button type="button" onClick={() => handleUpdateTitle(task.id)} className="text-green-500 hover:text-green-600">
                                                                     <Save className="h-4 w-4" />
                                                                 </button>
-                                                                <button onClick={() => setEditingTaskId(null)} className="text-gray-400 hover:text-gray-500">
+                                                                <button type="button" onClick={() => setEditingTaskId(null)} className="text-gray-400 hover:text-gray-500">
                                                                     <X className="h-4 w-4" />
                                                                 </button>
                                                             </div>
@@ -299,6 +301,7 @@ function MemberCard({
                                                     <div className="flex items-center gap-2 mt-0.5">
                                                         {task.subtasks?.length > 0 && (
                                                             <button 
+                                                                type="button"
                                                                 onClick={() => toggleSubtasks(task.id)}
                                                                 className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-dilq-accent bg-gray-100/80 px-1.5 py-0.5 rounded transition-colors"
                                                             >
@@ -316,6 +319,7 @@ function MemberCard({
 
                                                 <div className={`flex items-center gap-1 transition-opacity ${task.notes || task.subtasks?.length > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                                     <button 
+                                                        type="button"
                                                         onClick={() => {
                                                             setEditingTaskId(task.id);
                                                             setEditTitle(task.title);
@@ -326,6 +330,7 @@ function MemberCard({
                                                         <Edit2 className="h-3.5 w-3.5" />
                                                     </button>
                                                     <button 
+                                                        type="button"
                                                         onClick={() => toggleSubtasks(task.id)}
                                                         className="text-gray-300 hover:text-dilq-accent shrink-0 p-0.5 mt-0.5"
                                                         title="Subtarefas"
@@ -333,6 +338,7 @@ function MemberCard({
                                                         <Plus className="h-3.5 w-3.5" />
                                                     </button>
                                                     <button
+                                                        type="button"
                                                         onClick={() => {
                                                             if (isExpanded) {
                                                                 setExpandedTaskNotes(null);
@@ -345,7 +351,7 @@ function MemberCard({
                                                     >
                                                         <MessageSquare className="h-3.5 w-3.5" />
                                                     </button>
-                                                    <button onClick={() => onDeleteTask(task.id)} className="text-gray-300 hover:text-red-400 shrink-0 p-0.5 mt-0.5">
+                                                    <button type="button" onClick={() => onDeleteTask(task.id)} className="text-gray-300 hover:text-red-400 shrink-0 p-0.5 mt-0.5">
                                                         <Trash2 className="h-3.5 w-3.5" />
                                                     </button>
                                                 </div>
@@ -383,14 +389,14 @@ function MemberCard({
                                                         {task.subtasks?.map(st => (
                                                             <div key={st.id} className="flex items-center justify-between group/st">
                                                                 <div className="flex items-center gap-2">
-                                                                    <button onClick={() => onToggleSubtask(task.id, st.id)} className="shrink-0 transition-transform active:scale-90 opacity-70 hover:opacity-100">
+                                                                    <button type="button" onClick={() => onToggleSubtask(task.id, st.id)} className="shrink-0 transition-transform active:scale-90 opacity-70 hover:opacity-100">
                                                                         {st.completed ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Circle className="h-3.5 w-3.5 text-gray-300" />}
                                                                     </button>
                                                                     <span className={`text-[11px] ${st.completed ? "line-through text-gray-400" : "text-gray-600"}`}>
                                                                         {st.title}
                                                                     </span>
                                                                 </div>
-                                                                <button onClick={() => onDeleteSubtask(task.id, st.id)} className="text-gray-300 hover:text-red-400 shrink-0 p-0.5 opacity-0 group-hover/st:opacity-100 transition-opacity">
+                                                                <button type="button" onClick={() => onDeleteSubtask(task.id, st.id)} className="text-gray-300 hover:text-red-400 shrink-0 p-0.5 opacity-0 group-hover/st:opacity-100 transition-opacity">
                                                                     <Trash2 className="h-3 w-3" />
                                                                 </button>
                                                             </div>
@@ -445,7 +451,7 @@ function MemberCard({
                         onKeyDown={e => e.key === "Enter" && handleAddTask()}
                         className="h-8 text-sm bg-white border-gray-200 placeholder:text-gray-300 focus-visible:ring-1"
                     />
-                    <Button size="sm" onClick={handleAddTask} className="h-8 px-2 shrink-0 hover:opacity-90" style={{ backgroundColor: member.color, border: "none" }}>
+                    <Button type="button" size="sm" onClick={handleAddTask} className="h-8 px-2 shrink-0 hover:opacity-90" style={{ backgroundColor: member.color, border: "none" }}>
                         <Plus className="h-4 w-4 text-white" />
                     </Button>
                 </div>
@@ -605,6 +611,7 @@ function HistoryView({
                                                     {mg.tasks.map(t => (
                                                         <button 
                                                             key={t.id} 
+                                                            type="button"
                                                             onClick={() => onToggleTask(t.id, false, t.due_date)}
                                                             className="flex items-center gap-2 group/ht hover:bg-gray-50 px-2 py-0.5 rounded-md transition-colors w-full text-left"
                                                             title="Clique para reverter para tarefa pendente"
