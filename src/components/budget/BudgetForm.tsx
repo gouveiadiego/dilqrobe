@@ -5,9 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, User, FileText, Settings, Save, X } from "lucide-react";
+import { Building2, User, FileText, Settings, Save, X, Package, Wrench, Check } from "lucide-react";
 import { BudgetItemsForm } from "./BudgetItemsForm";
-import { BudgetItem, NewBudget, EMPTY_BUDGET } from "./types";
+import { ServiceItemsForm } from "./ServiceItemsForm";
+import { BudgetItem, BudgetType, NewBudget, EMPTY_BUDGET } from "./types";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface BudgetFormProps {
   initialData?: Omit<NewBudget, 'user_id'>;
@@ -31,8 +34,25 @@ export function BudgetForm({ initialData, onSubmit, onCancel, isEditing = false 
   };
 
   const handleItemsChange = (items: BudgetItem[]) => {
-    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+    const totalAmount = items.reduce((sum, item) => {
+      if (formData.budget_type === 'services') {
+        return sum + (item.has_value ? Number(item.total || 0) : 0);
+      }
+      return sum + Number(item.total || 0);
+    }, 0);
     setFormData({ ...formData, items, total_amount: totalAmount });
+  };
+
+  const changeBudgetType = (type: BudgetType) => {
+    if (type === formData.budget_type) return;
+    if (formData.items.length > 0) {
+      const ok = window.confirm('Trocar o tipo de orçamento removerá os itens já adicionados. Deseja continuar?');
+      if (!ok) return;
+      setFormData({ ...formData, budget_type: type, items: [], total_amount: 0 });
+      toast.info('Itens removidos ao trocar o tipo de orçamento');
+      return;
+    }
+    setFormData({ ...formData, budget_type: type });
   };
 
   const updateField = (field: keyof Omit<NewBudget, 'user_id'>, value: any) => {
