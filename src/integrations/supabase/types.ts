@@ -120,6 +120,10 @@ export type Database = {
       }
       budgets: {
         Row: {
+          approved_at: string | null
+          approved_ip: string | null
+          approved_name: string | null
+          approved_user_agent: string | null
           budget_type: string
           client_address: string | null
           client_document: string | null
@@ -137,12 +141,20 @@ export type Database = {
           items: Json
           notes: string | null
           payment_terms: string | null
+          public_token: string
+          rejected_at: string | null
+          rejection_reason: string | null
+          status: string
           total_amount: number
           updated_at: string | null
           user_id: string
           valid_until: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_ip?: string | null
+          approved_name?: string | null
+          approved_user_agent?: string | null
           budget_type?: string
           client_address?: string | null
           client_document?: string | null
@@ -160,12 +172,20 @@ export type Database = {
           items?: Json
           notes?: string | null
           payment_terms?: string | null
+          public_token?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
           total_amount?: number
           updated_at?: string | null
           user_id: string
           valid_until?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_ip?: string | null
+          approved_name?: string | null
+          approved_user_agent?: string | null
           budget_type?: string
           client_address?: string | null
           client_document?: string | null
@@ -183,6 +203,10 @@ export type Database = {
           items?: Json
           notes?: string | null
           payment_terms?: string | null
+          public_token?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          status?: string
           total_amount?: number
           updated_at?: string | null
           user_id?: string
