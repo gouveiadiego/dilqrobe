@@ -108,9 +108,13 @@ export function BudgetCard({
           {/* Right side - Value and actions */}
           <div className="flex flex-col items-end gap-3">
             <div className="text-right">
-              <p className="text-2xl font-bold text-primary">
-                {formatCurrency(budget.total_amount)}
-              </p>
+              {budget.total_amount > 0 ? (
+                <p className="text-2xl font-bold text-primary">
+                  {formatCurrency(budget.total_amount)}
+                </p>
+              ) : (
+                <p className="text-sm font-medium text-muted-foreground italic">A combinar</p>
+              )}
             </div>
 
             <div className="flex items-center gap-1">
