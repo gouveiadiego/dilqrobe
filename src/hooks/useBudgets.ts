@@ -147,6 +147,7 @@ export function useBudgets() {
       }));
 
       const duplicatedBudget: NewBudget = {
+        budget_type: budget.budget_type || 'products',
         client_name: budget.client_name,
         client_email: budget.client_email,
         client_phone: budget.client_phone,
