@@ -32,6 +32,13 @@ export interface Budget {
   valid_until: string;
   created_at: string;
   user_id: string;
+  public_token?: string;
+  status?: string;
+  approved_at?: string | null;
+  approved_ip?: string | null;
+  approved_name?: string | null;
+  rejected_at?: string | null;
+  rejection_reason?: string | null;
 }
 
 export interface NewBudget {

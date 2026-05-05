@@ -16,6 +16,7 @@ import Subscription from "./pages/Subscription";
 import CompanyDetails from "./pages/CompanyDetails";
 import SharedCompany from "./pages/SharedCompany";
 import ClientPortal from "./pages/ClientPortal";
+import PublicBudget from "./pages/PublicBudget";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
@@ -55,6 +56,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/shared-company/:token" element={<SharedCompany />} />
         <Route path="/client-portal/:token" element={<ClientPortal />} />
+        <Route path="/orcamento/:token" element={<PublicBudget />} />
         <Route 
           path="/dashboard" 
           element={

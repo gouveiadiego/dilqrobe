@@ -16,8 +16,14 @@ import {
   Clock,
   Pencil,
   Package,
-  Wrench
+  Wrench,
+  MessageCircle,
+  Link as LinkIcon,
+  CheckCircle2,
+  XCircle
 } from "lucide-react";
+import { toast } from "sonner";
+import { openWhatsApp, copyPublicLink } from "@/lib/budgetSharing";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,20 +51,31 @@ export function BudgetCard({
   onDownloadPDF 
 }: BudgetCardProps) {
   const getStatus = () => {
-    if (!budget.valid_until) return { label: 'Ativo', variant: 'default' as const };
+    if (budget.status === 'approved') return { label: 'Aprovado', variant: 'default' as const, className: 'bg-green-600 hover:bg-green-600' };
+    if (budget.status === 'rejected') return { label: 'Rejeitado', variant: 'destructive' as const, className: '' };
+    if (!budget.valid_until) return { label: 'Ativo', variant: 'default' as const, className: '' };
     
     const validDate = new Date(budget.valid_until);
     const now = new Date();
     
     if (isPast(validDate)) {
-      return { label: 'Expirado', variant: 'destructive' as const };
+      return { label: 'Expirado', variant: 'destructive' as const, className: '' };
     }
     
     if (isAfter(addDays(now, 7), validDate)) {
-      return { label: 'Expira em breve', variant: 'secondary' as const };
+      return { label: 'Expira em breve', variant: 'secondary' as const, className: '' };
     }
     
-    return { label: 'Válido', variant: 'default' as const };
+    return { label: 'Válido', variant: 'default' as const, className: '' };
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await copyPublicLink(budget);
+      toast.success("Link público copiado!");
+    } catch {
+      toast.error("Não foi possível copiar o link");
+    }
   };
 
   const status = getStatus();
@@ -71,7 +88,7 @@ export function BudgetCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <h3 className="font-semibold text-lg truncate">{budget.client_name}</h3>
-              <Badge variant={status.variant}>{status.label}</Badge>
+              <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
               <Badge variant="outline" className="gap-1">
                 {budget.budget_type === 'services' ? (
                   <><Wrench className="h-3 w-3" /> Serviços</>
@@ -117,7 +134,7 @@ export function BudgetCard({
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap justify-end">
               <Button
                 variant="outline"
                 size="sm"
@@ -126,6 +143,14 @@ export function BudgetCard({
               >
                 <Eye className="h-4 w-4" />
                 Ver
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => openWhatsApp(budget)}
+                className="gap-1.5 bg-green-600 hover:bg-green-700"
+              >
+                <MessageCircle className="h-4 w-4" />
+                WhatsApp
               </Button>
               <Button
                 variant="default"
@@ -143,11 +168,15 @@ export function BudgetCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleCopyLink}>
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                    Copiar link público
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => onEdit(budget)}>
                     <Pencil className="h-4 w-4 mr-2" />
                     Editar
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => onDuplicate(budget)}>
                     <Copy className="h-4 w-4 mr-2" />
                     Duplicar
