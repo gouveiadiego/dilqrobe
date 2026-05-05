@@ -33,7 +33,7 @@ export interface Budget {
   created_at: string;
   user_id: string;
   public_token?: string;
-  status?: 'pending' | 'approved' | 'rejected';
+  status?: string;
   approved_at?: string | null;
   approved_ip?: string | null;
   approved_name?: string | null;
