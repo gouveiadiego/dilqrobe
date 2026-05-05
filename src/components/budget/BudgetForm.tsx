@@ -25,6 +25,39 @@ export function BudgetForm({ initialData, onSubmit, onCancel, isEditing = false 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const errors: { tab: string; message: string }[] = [];
+
+    if (!formData.client_name.trim()) {
+      errors.push({ tab: 'Cliente', message: 'Informe o nome do cliente' });
+    }
+    if (formData.items.length === 0) {
+      errors.push({ tab: 'Itens', message: 'Adicione pelo menos um item ao orçamento' });
+    } else {
+      if (formData.budget_type === 'products') {
+        const invalid = formData.items.some(
+          (i) => !i.description?.trim() || !i.quantity || i.quantity <= 0 || i.unit_price === undefined || i.unit_price < 0
+        );
+        if (invalid) errors.push({ tab: 'Itens', message: 'Preencha descrição, quantidade e valor unitário de todos os itens' });
+      } else {
+        const invalid = formData.items.some((i) => !i.description?.trim());
+        if (invalid) errors.push({ tab: 'Itens', message: 'Preencha a descrição de todos os serviços' });
+      }
+    }
+    if (!formData.valid_until) {
+      errors.push({ tab: 'Condições', message: 'Informe a data de validade do orçamento' });
+    }
+
+    if (errors.length > 0) {
+      const first = errors[0];
+      toast.error(first.message, {
+        description: errors.length > 1
+          ? `${errors.length - 1} outro(s) campo(s) pendente(s). Verifique a aba "${first.tab}".`
+          : `Verifique a aba "${first.tab}".`,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onSubmit(formData);
@@ -296,7 +329,7 @@ export function BudgetForm({ initialData, onSubmit, onCancel, isEditing = false 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="valid_until">Válido Até</Label>
+                  <Label htmlFor="valid_until">Válido Até *</Label>
                   <Input
                     id="valid_until"
                     type="date"
