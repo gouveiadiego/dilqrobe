@@ -63,10 +63,20 @@ export async function generateBudgetPDF(budget: Budget) {
     let y = margin + 4;
 
     // ===== HEADER =====
-    // Logo (left)
+    // Logo (left) — preserve aspect ratio
     if (logoData) {
       try {
-        doc.addImage(logoData.dataUrl, logoData.format, margin, y, 28, 22, undefined, 'FAST');
+        const props = (doc as any).getImageProperties(logoData.dataUrl);
+        const maxW = 32;
+        const maxH = 22;
+        const ratio = props.width / props.height;
+        let w = maxW;
+        let h = maxW / ratio;
+        if (h > maxH) {
+          h = maxH;
+          w = maxH * ratio;
+        }
+        doc.addImage(logoData.dataUrl, logoData.format, margin, y, w, h, undefined, 'FAST');
       } catch (e) {
         console.warn('Falha ao inserir logo:', e);
       }
