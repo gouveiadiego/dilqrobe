@@ -24,8 +24,9 @@ export function useBudgets() {
         throw error;
       }
 
-      const formattedBudgets = data?.map(budget => ({
+      const formattedBudgets: Budget[] = data?.map(budget => ({
         ...budget,
+        budget_type: ((budget as any).budget_type === 'services' ? 'services' : 'products'),
         items: Array.isArray(budget.items) ? budget.items as unknown as BudgetItem[] : []
       })) || [];
 
