@@ -16,8 +16,14 @@ import {
   Clock,
   Pencil,
   Package,
-  Wrench
+  Wrench,
+  MessageCircle,
+  Link as LinkIcon,
+  CheckCircle2,
+  XCircle
 } from "lucide-react";
+import { toast } from "sonner";
+import { openWhatsApp, copyPublicLink } from "@/lib/budgetSharing";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,20 +51,31 @@ export function BudgetCard({
   onDownloadPDF 
 }: BudgetCardProps) {
   const getStatus = () => {
-    if (!budget.valid_until) return { label: 'Ativo', variant: 'default' as const };
+    if (budget.status === 'approved') return { label: 'Aprovado', variant: 'default' as const, className: 'bg-green-600 hover:bg-green-600' };
+    if (budget.status === 'rejected') return { label: 'Rejeitado', variant: 'destructive' as const, className: '' };
+    if (!budget.valid_until) return { label: 'Ativo', variant: 'default' as const, className: '' };
     
     const validDate = new Date(budget.valid_until);
     const now = new Date();
     
     if (isPast(validDate)) {
-      return { label: 'Expirado', variant: 'destructive' as const };
+      return { label: 'Expirado', variant: 'destructive' as const, className: '' };
     }
     
     if (isAfter(addDays(now, 7), validDate)) {
-      return { label: 'Expira em breve', variant: 'secondary' as const };
+      return { label: 'Expira em breve', variant: 'secondary' as const, className: '' };
     }
     
-    return { label: 'Válido', variant: 'default' as const };
+    return { label: 'Válido', variant: 'default' as const, className: '' };
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await copyPublicLink(budget);
+      toast.success("Link público copiado!");
+    } catch {
+      toast.error("Não foi possível copiar o link");
+    }
   };
 
   const status = getStatus();
