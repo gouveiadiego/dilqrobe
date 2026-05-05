@@ -1,0 +1,1 @@
+ALTER TABLE public.budgets ADD COLUMN IF NOT EXISTS budget_type text NOT NULL DEFAULT 'products';
