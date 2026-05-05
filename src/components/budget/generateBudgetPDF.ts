@@ -5,231 +5,291 @@ import { ptBR } from "date-fns/locale";
 import { formatCurrency } from "@/lib/utils";
 import { Budget } from "./types";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
-export function generateBudgetPDF(budget: Budget) {
+// Helper: load image URL into a base64 data URL for jsPDF
+async function loadImageAsDataURL(url: string): Promise<{ dataUrl: string; format: string } | null> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    let fmt = 'PNG';
+    if (blob.type.includes('jpeg') || blob.type.includes('jpg')) fmt = 'JPEG';
+    else if (blob.type.includes('webp')) fmt = 'WEBP';
+    return { dataUrl, format: fmt };
+  } catch (e) {
+    console.error('Erro ao carregar logo:', e);
+    return null;
+  }
+}
+
+export async function generateBudgetPDF(budget: Budget) {
   try {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
-    const margin = 15;
-    
-    // Elegant color palette
-    const primaryColor: [number, number, number] = [79, 70, 229];
-    const secondaryColor: [number, number, number] = [71, 85, 105];
-    const lightGray: [number, number, number] = [248, 250, 252];
-    
-    // Header
-    doc.setFillColor(...primaryColor);
-    doc.rect(0, 0, pageWidth, 30, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('ORÇAMENTO', pageWidth / 2, 20, { align: 'center' });
-    
-    let yPosition = 40;
-    
-    // Budget info
-    doc.setTextColor(...secondaryColor);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    const budgetNumber = `Nº ${budget.id.substring(0, 8).toUpperCase()}`;
-    const createdDate = format(new Date(budget.created_at), "dd/MM/yyyy", { locale: ptBR });
-    doc.text(budgetNumber, margin, yPosition);
-    doc.text(`Data: ${createdDate}`, pageWidth - margin, yPosition, { align: 'right' });
-    
-    yPosition += 10;
-    
-    // Company Information (compact)
-    if (budget.company_name) {
-      doc.setFillColor(...lightGray);
-      doc.rect(margin, yPosition - 3, pageWidth - margin * 2, 22, 'F');
-      
-      doc.setTextColor(...primaryColor);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.text('EMPRESA', margin + 3, yPosition + 4);
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      
-      let companyInfo = budget.company_name;
-      if (budget.company_document) companyInfo += ` | CNPJ: ${budget.company_document}`;
-      doc.text(companyInfo, margin + 3, yPosition + 12);
-      
-      if (budget.company_phone || budget.company_address) {
-        let contactInfo = '';
-        if (budget.company_phone) contactInfo += budget.company_phone;
-        if (budget.company_address) contactInfo += (contactInfo ? ' | ' : '') + budget.company_address;
-        doc.text(contactInfo.substring(0, 100), margin + 3, yPosition + 18);
+    const margin = 18;
+
+    // Minimalist premium palette
+    const gold: [number, number, number] = [180, 142, 73];        // discreet gold
+    const goldLight: [number, number, number] = [212, 184, 124];
+    const dark: [number, number, number] = [28, 28, 30];
+    const muted: [number, number, number] = [110, 110, 115];
+    const softLine: [number, number, number] = [225, 220, 210];
+
+    // Try to get company logo from profile
+    let logoData: { dataUrl: string; format: string } | null = null;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_logo')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (profile?.company_logo) {
+          logoData = await loadImageAsDataURL(profile.company_logo);
+        }
       }
-      
-      yPosition += 28;
+    } catch (e) {
+      console.warn('Não foi possível carregar a logo do perfil:', e);
     }
-    
-    // Client Information (compact)
-    doc.setFillColor(...lightGray);
-    doc.rect(margin, yPosition - 3, pageWidth - margin * 2, 22, 'F');
-    
-    doc.setTextColor(...primaryColor);
-    doc.setFontSize(10);
+
+    let y = margin + 4;
+
+    // ===== HEADER =====
+    // Logo (left)
+    if (logoData) {
+      try {
+        doc.addImage(logoData.dataUrl, logoData.format, margin, y, 28, 22, undefined, 'FAST');
+      } catch (e) {
+        console.warn('Falha ao inserir logo:', e);
+      }
+    }
+
+    // Title (right)
+    doc.setTextColor(...dark);
     doc.setFont('helvetica', 'bold');
-    doc.text('CLIENTE', margin + 3, yPosition + 4);
-    
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(9);
+    doc.setFontSize(22);
+    doc.text('ORÇAMENTO', pageWidth - margin, y + 8, { align: 'right' });
+
     doc.setFont('helvetica', 'normal');
-    
-    let clientInfo = budget.client_name;
-    if (budget.client_document) clientInfo += ` | Doc: ${budget.client_document}`;
-    doc.text(clientInfo, margin + 3, yPosition + 12);
-    
-    let clientContact = '';
-    if (budget.client_email) clientContact += budget.client_email;
-    if (budget.client_phone) clientContact += (clientContact ? ' | ' : '') + budget.client_phone;
-    if (clientContact) doc.text(clientContact.substring(0, 100), margin + 3, yPosition + 18);
-    
-    yPosition += 30;
-    
-    // Items section
-    doc.setTextColor(...primaryColor);
-    doc.setFontSize(11);
+    doc.setFontSize(8.5);
+    doc.setTextColor(...muted);
+    const budgetNumber = `Nº ${budget.id.substring(0, 8).toUpperCase()}`;
+    const createdDate = format(new Date(budget.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    doc.text(budgetNumber, pageWidth - margin, y + 14, { align: 'right' });
+    doc.text(createdDate, pageWidth - margin, y + 19, { align: 'right' });
+
+    y += 28;
+
+    // Gold divider line
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.6);
+    doc.line(margin, y, pageWidth - margin, y);
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(...goldLight);
+    doc.line(margin, y + 1.2, pageWidth - margin, y + 1.2);
+
+    y += 10;
+
+    // ===== TWO-COLUMN INFO: EMPRESA / CLIENTE =====
+    const colWidth = (pageWidth - margin * 2 - 8) / 2;
+
+    const drawSection = (title: string, lines: string[], x: number, startY: number) => {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...gold);
+      doc.text(title, x, startY);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...dark);
+      let ly = startY + 5;
+      lines.filter(Boolean).forEach((line) => {
+        const wrapped = doc.splitTextToSize(line, colWidth);
+        wrapped.forEach((w: string) => {
+          doc.text(w, x, ly);
+          ly += 4.5;
+        });
+      });
+      return ly;
+    };
+
+    const empresaLines = [
+      budget.company_name || '—',
+      budget.company_document ? `CNPJ: ${budget.company_document}` : '',
+      budget.company_phone || '',
+      budget.company_address || '',
+    ];
+
+    const clienteLines = [
+      budget.client_name || '—',
+      budget.client_document ? `Doc: ${budget.client_document}` : '',
+      budget.client_email || '',
+      budget.client_phone || '',
+      budget.client_address || '',
+    ];
+
+    const yLeft = drawSection('EMPRESA', empresaLines, margin, y);
+    const yRight = drawSection('CLIENTE', clienteLines, margin + colWidth + 8, y);
+    y = Math.max(yLeft, yRight) + 6;
+
+    // Subtle separator
+    doc.setDrawColor(...softLine);
+    doc.setLineWidth(0.2);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
+
+    // ===== ITEMS =====
     doc.setFont('helvetica', 'bold');
-    doc.text('ITENS DO ORÇAMENTO', margin, yPosition);
-    yPosition += 5;
-    
-    // Table with items
+    doc.setFontSize(9);
+    doc.setTextColor(...gold);
+    doc.text('ITENS DO ORÇAMENTO', margin, y);
+    y += 3;
+
     const tableData = budget.items.map(item => [
-      item.description.substring(0, 50) + (item.description.length > 50 ? '...' : ''),
+      item.description,
       item.quantity.toString(),
       formatCurrency(item.unit_price),
       formatCurrency(item.total)
     ]);
-    
+
     (doc as any).autoTable({
-      startY: yPosition,
+      startY: y + 2,
       head: [['Descrição', 'Qtd', 'Valor Unit.', 'Total']],
       body: tableData,
-      theme: 'striped',
+      theme: 'plain',
       headStyles: {
-        fillColor: primaryColor,
-        textColor: 255,
+        textColor: dark,
         fontStyle: 'bold',
-        fontSize: 9,
-        halign: 'center',
-        cellPadding: 2
+        fontSize: 8.5,
+        halign: 'left',
+        cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
+        lineColor: gold,
+        lineWidth: { bottom: 0.5 },
       },
       bodyStyles: {
-        fontSize: 8,
-        textColor: [51, 51, 51],
-        cellPadding: 2
-      },
-      alternateRowStyles: {
-        fillColor: [249, 250, 251]
+        fontSize: 9,
+        textColor: dark,
+        cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
+        lineColor: softLine,
+        lineWidth: { bottom: 0.1 },
       },
       columnStyles: {
-        0: { cellWidth: 85, halign: 'left' },
-        1: { cellWidth: 20, halign: 'center' },
-        2: { cellWidth: 35, halign: 'right' },
-        3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
+        0: { cellWidth: 95, halign: 'left' },
+        1: { cellWidth: 18, halign: 'center' },
+        2: { cellWidth: 30, halign: 'right' },
+        3: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
       },
       margin: { left: margin, right: margin },
       styles: {
-        cellPadding: 2,
-        lineColor: [200, 200, 200],
-        lineWidth: 0.1,
-        overflow: 'linebreak'
+        overflow: 'linebreak',
+        font: 'helvetica',
       },
-      didDrawPage: function(data: any) {
-        // Footer on each page
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(`Página ${doc.getNumberOfPages()}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      didDrawPage: () => {
+        // Footer
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...muted);
+        doc.text(
+          `${budget.company_name || ''}`.trim(),
+          margin,
+          pageHeight - 10
+        );
+        doc.text(
+          `Página ${doc.getNumberOfPages()}`,
+          pageWidth - margin,
+          pageHeight - 10,
+          { align: 'right' }
+        );
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.3);
+        doc.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
       }
     });
-    
-    let finalY = (doc as any).lastAutoTable.finalY || yPosition + 50;
-    
-    // Check if we need a new page for totals and conditions
-    const remainingSpace = pageHeight - finalY;
-    const neededSpace = 80; // Space needed for total + conditions
-    
-    if (remainingSpace < neededSpace) {
+
+    let finalY = (doc as any).lastAutoTable.finalY || y + 50;
+
+    if (pageHeight - finalY < 70) {
       doc.addPage();
-      finalY = 20;
+      finalY = margin;
     }
-    
-    // Total box
-    finalY += 8;
-    doc.setFillColor(...primaryColor);
-    doc.roundedRect(pageWidth - margin - 70, finalY, 70, 20, 2, 2, 'F');
-    
-    doc.setTextColor(255, 255, 255);
+
+    finalY += 10;
+
+    // ===== TOTAL (minimalist with gold accent) =====
+    const totalBoxW = 80;
+    const totalBoxX = pageWidth - margin - totalBoxW;
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.5);
+    doc.line(totalBoxX, finalY, totalBoxX + totalBoxW, finalY);
+
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
+    doc.setTextColor(...muted);
+    doc.text('VALOR TOTAL', totalBoxX, finalY + 6);
+
     doc.setFont('helvetica', 'bold');
-    doc.text('VALOR TOTAL', pageWidth - margin - 35, finalY + 8, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text(formatCurrency(budget.total_amount), pageWidth - margin - 35, finalY + 16, { align: 'center' });
-    
-    finalY += 28;
-    
-    // Commercial conditions (compact)
+    doc.setFontSize(18);
+    doc.setTextColor(...dark);
+    doc.text(formatCurrency(budget.total_amount), totalBoxX + totalBoxW, finalY + 13, { align: 'right' });
+
+    doc.setDrawColor(...goldLight);
+    doc.setLineWidth(0.2);
+    doc.line(totalBoxX, finalY + 17, totalBoxX + totalBoxW, finalY + 17);
+
+    finalY += 26;
+
+    // ===== CONDITIONS =====
     if (budget.delivery_time || budget.payment_terms || budget.valid_until) {
-      doc.setFillColor(...lightGray);
-      doc.rect(margin, finalY, pageWidth - margin * 2, 25, 'F');
-      
-      doc.setTextColor(...primaryColor);
-      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('CONDIÇÕES', margin + 3, finalY + 6);
-      
-      doc.setTextColor(0, 0, 0);
       doc.setFontSize(8);
+      doc.setTextColor(...gold);
+      doc.text('CONDIÇÕES', margin, finalY);
+      finalY += 5;
+
       doc.setFont('helvetica', 'normal');
-      
-      let condY = finalY + 13;
-      const conditions: string[] = [];
-      
-      if (budget.delivery_time) conditions.push(`Prazo: ${budget.delivery_time}`);
-      if (budget.payment_terms) conditions.push(`Pagamento: ${budget.payment_terms}`);
+      doc.setFontSize(9);
+      doc.setTextColor(...dark);
+
+      const cond: string[] = [];
+      if (budget.delivery_time) cond.push(`Prazo de entrega:  ${budget.delivery_time}`);
+      if (budget.payment_terms) cond.push(`Pagamento:  ${budget.payment_terms}`);
       if (budget.valid_until) {
-        const validDate = format(new Date(budget.valid_until), "dd/MM/yyyy", { locale: ptBR });
-        conditions.push(`Válido até: ${validDate}`);
+        cond.push(`Válido até:  ${format(new Date(budget.valid_until), "dd/MM/yyyy", { locale: ptBR })}`);
       }
-      
-      doc.text(conditions.join('  |  '), margin + 3, condY);
-      
-      finalY += 30;
+      cond.forEach((c) => {
+        doc.text(c, margin, finalY);
+        finalY += 5;
+      });
+      finalY += 4;
     }
-    
-    // Notes (compact)
+
+    // ===== NOTES =====
     if (budget.notes) {
-      doc.setTextColor(...primaryColor);
-      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('OBSERVAÇÕES', margin, finalY);
-      
-      doc.setTextColor(0, 0, 0);
       doc.setFontSize(8);
+      doc.setTextColor(...gold);
+      doc.text('OBSERVAÇÕES', margin, finalY);
+      finalY += 5;
+
       doc.setFont('helvetica', 'normal');
-      
+      doc.setFontSize(9);
+      doc.setTextColor(...dark);
       const noteLines = doc.splitTextToSize(budget.notes, pageWidth - margin * 2);
-      doc.text(noteLines.slice(0, 3), margin, finalY + 7);
+      doc.text(noteLines, margin, finalY);
     }
-    
-    // Footer
-    doc.setFillColor(...primaryColor);
-    doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
-    doc.text(`Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
-    
+
     // Save
-    const fileName = `orcamento-${budget.client_name.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'ddMMyyyy')}.pdf`;
+    const fileName = `orcamento-${(budget.client_name || 'cliente').replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'ddMMyyyy')}.pdf`;
     doc.save(fileName);
-    
+
     toast.success('PDF gerado com sucesso!');
   } catch (error) {
     console.error('Erro ao gerar PDF:', error);
