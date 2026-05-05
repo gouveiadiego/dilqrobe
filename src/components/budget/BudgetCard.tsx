@@ -69,9 +69,16 @@ export function BudgetCard({
         <div className="flex justify-between items-start gap-4">
           {/* Left side - Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <h3 className="font-semibold text-lg truncate">{budget.client_name}</h3>
               <Badge variant={status.variant}>{status.label}</Badge>
+              <Badge variant="outline" className="gap-1">
+                {budget.budget_type === 'services' ? (
+                  <><Wrench className="h-3 w-3" /> Serviços</>
+                ) : (
+                  <><Package className="h-3 w-3" /> Produtos</>
+                )}
+              </Badge>
             </div>
             
             <div className="space-y-1 text-sm text-muted-foreground">
