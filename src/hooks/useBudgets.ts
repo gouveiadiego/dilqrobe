@@ -71,8 +71,9 @@ export function useBudgets() {
         throw error;
       }
 
-      const createdBudget = {
+      const createdBudget: Budget = {
         ...data,
+        budget_type: ((data as any).budget_type === 'services' ? 'services' : 'products'),
         items: Array.isArray(data.items) ? data.items as unknown as BudgetItem[] : []
       };
 
