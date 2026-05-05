@@ -251,10 +251,17 @@ export function BudgetForm({ initialData, onSubmit, onCancel, isEditing = false 
         <TabsContent value="items" className="mt-6">
           <Card>
             <CardContent className="pt-6">
-              <BudgetItemsForm
-                items={formData.items}
-                onItemsChange={handleItemsChange}
-              />
+              {formData.budget_type === 'services' ? (
+                <ServiceItemsForm
+                  items={formData.items}
+                  onItemsChange={handleItemsChange}
+                />
+              ) : (
+                <BudgetItemsForm
+                  items={formData.items}
+                  onItemsChange={handleItemsChange}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
