@@ -1,13 +1,19 @@
+export type BudgetType = 'products' | 'services';
+
 export interface BudgetItem {
   id: string;
   description: string;
-  quantity: number;
-  unit_price: number;
+  quantity?: number;
+  unit_price?: number;
   total: number;
+  // Service-only fields
+  title?: string;
+  has_value?: boolean;
 }
 
 export interface Budget {
   id: string;
+  budget_type: BudgetType;
   client_name: string;
   client_email: string;
   client_phone: string;
@@ -29,6 +35,7 @@ export interface Budget {
 }
 
 export interface NewBudget {
+  budget_type: BudgetType;
   client_name: string;
   client_email: string;
   client_phone: string;
@@ -51,6 +58,7 @@ export interface NewBudget {
 export type BudgetStatus = 'all' | 'pending' | 'approved' | 'rejected' | 'expired';
 
 export const EMPTY_BUDGET: Omit<NewBudget, 'user_id'> = {
+  budget_type: 'products',
   client_name: "",
   client_email: "",
   client_phone: "",

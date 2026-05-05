@@ -156,73 +156,105 @@ export async function generateBudgetPDF(budget: Budget) {
     doc.line(margin, y, pageWidth - margin, y);
     y += 8;
 
+    const isServices = budget.budget_type === 'services';
+
     // ===== ITEMS =====
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(...gold);
-    doc.text('ITENS DO ORÇAMENTO', margin, y);
+    doc.text(isServices ? 'SERVIÇOS' : 'ITENS DO ORÇAMENTO', margin, y);
     y += 3;
 
-    const tableData = budget.items.map(item => [
-      item.description,
-      item.quantity.toString(),
-      formatCurrency(item.unit_price),
-      formatCurrency(item.total)
-    ]);
+    const drawFooter = () => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...muted);
+      doc.text(`${budget.company_name || ''}`.trim(), margin, pageHeight - 10);
+      doc.text(`Página ${doc.getNumberOfPages()}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+      doc.setDrawColor(...gold);
+      doc.setLineWidth(0.3);
+      doc.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
+    };
 
-    (doc as any).autoTable({
-      startY: y + 2,
-      head: [['Descrição', 'Qtd', 'Valor Unit.', 'Total']],
-      body: tableData,
-      theme: 'plain',
-      headStyles: {
-        textColor: dark,
-        fontStyle: 'bold',
-        fontSize: 8.5,
-        halign: 'left',
-        cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
-        lineColor: gold,
-        lineWidth: { bottom: 0.5 },
-      },
-      bodyStyles: {
-        fontSize: 9,
-        textColor: dark,
-        cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
-        lineColor: softLine,
-        lineWidth: { bottom: 0.1 },
-      },
-      columnStyles: {
-        0: { cellWidth: 95, halign: 'left' },
-        1: { cellWidth: 18, halign: 'center' },
-        2: { cellWidth: 30, halign: 'right' },
-        3: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
-      },
-      margin: { left: margin, right: margin },
-      styles: {
-        overflow: 'linebreak',
-        font: 'helvetica',
-      },
-      didDrawPage: () => {
-        // Footer
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(...muted);
-        doc.text(
-          `${budget.company_name || ''}`.trim(),
-          margin,
-          pageHeight - 10
-        );
-        doc.text(
-          `Página ${doc.getNumberOfPages()}`,
-          pageWidth - margin,
-          pageHeight - 10,
-          { align: 'right' }
-        );
-        doc.setDrawColor(...gold);
-        doc.setLineWidth(0.3);
-        doc.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
-      }
-    });
+    if (isServices) {
+      // Services: render each item as a block (title + description + optional value)
+      let cy = y + 4;
+      budget.items.forEach((item, idx) => {
+        // Estimate block height
+        const descLines = item.description ? doc.splitTextToSize(item.description, pageWidth - margin * 2 - 4) : [];
+        const blockH = 8 + (item.title ? 6 : 0) + descLines.length * 4.5 + 6;
+
+        if (cy + blockH > pageHeight - 20) {
+          drawFooter();
+          doc.addPage();
+          cy = margin;
+        }
+
+        // Index + title row
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...gold);
+        const indexLabel = `${String(idx + 1).padStart(2, '0')}.`;
+        doc.text(indexLabel, margin, cy);
+
+        if (item.title) {
+          doc.setTextColor(...dark);
+          doc.text(item.title, margin + 8, cy);
+        }
+
+        // Value (right aligned)
+        if (item.has_value) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(...dark);
+          doc.text(formatCurrency(item.total || 0), pageWidth - margin, cy, { align: 'right' });
+        }
+        cy += 6;
+
+        // Description
+        if (descLines.length) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(...dark);
+          doc.text(descLines, margin + 8, cy);
+          cy += descLines.length * 4.5;
+        }
+
+        cy += 2;
+        doc.setDrawColor(...softLine);
+        doc.setLineWidth(0.15);
+        doc.line(margin, cy, pageWidth - margin, cy);
+        cy += 5;
+      });
+
+      drawFooter();
+      (doc as any).lastAutoTable = { finalY: cy };
+    } else {
+      const tableData = budget.items.map(item => [
+        item.description,
+        (item.quantity ?? 1).toString(),
+        formatCurrency(item.unit_price ?? 0),
+        formatCurrency(item.total)
+      ]);
+
+      (doc as any).autoTable({
+        startY: y + 2,
+        head: [['Descrição', 'Qtd', 'Valor Unit.', 'Total']],
+        body: tableData,
+        theme: 'plain',
+        headStyles: { textColor: dark, fontStyle: 'bold', fontSize: 8.5, halign: 'left', cellPadding: { top: 3, bottom: 3, left: 2, right: 2 }, lineColor: gold, lineWidth: { bottom: 0.5 } },
+        bodyStyles: { fontSize: 9, textColor: dark, cellPadding: { top: 3, bottom: 3, left: 2, right: 2 }, lineColor: softLine, lineWidth: { bottom: 0.1 } },
+        columnStyles: {
+          0: { cellWidth: 95, halign: 'left' },
+          1: { cellWidth: 18, halign: 'center' },
+          2: { cellWidth: 30, halign: 'right' },
+          3: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
+        },
+        margin: { left: margin, right: margin },
+        styles: { overflow: 'linebreak', font: 'helvetica' },
+        didDrawPage: drawFooter,
+      });
+    }
 
     let finalY = (doc as any).lastAutoTable.finalY || y + 50;
 
@@ -233,28 +265,30 @@ export async function generateBudgetPDF(budget: Budget) {
 
     finalY += 10;
 
-    // ===== TOTAL (minimalist with gold accent) =====
-    const totalBoxW = 80;
-    const totalBoxX = pageWidth - margin - totalBoxW;
-    doc.setDrawColor(...gold);
-    doc.setLineWidth(0.5);
-    doc.line(totalBoxX, finalY, totalBoxX + totalBoxW, finalY);
+    // ===== TOTAL (only if > 0) =====
+    if (budget.total_amount > 0) {
+      const totalBoxW = 80;
+      const totalBoxX = pageWidth - margin - totalBoxW;
+      doc.setDrawColor(...gold);
+      doc.setLineWidth(0.5);
+      doc.line(totalBoxX, finalY, totalBoxX + totalBoxW, finalY);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(...muted);
-    doc.text('VALOR TOTAL', totalBoxX, finalY + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...muted);
+      doc.text('VALOR TOTAL', totalBoxX, finalY + 6);
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.setTextColor(...dark);
-    doc.text(formatCurrency(budget.total_amount), totalBoxX + totalBoxW, finalY + 13, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(...dark);
+      doc.text(formatCurrency(budget.total_amount), totalBoxX + totalBoxW, finalY + 13, { align: 'right' });
 
-    doc.setDrawColor(...goldLight);
-    doc.setLineWidth(0.2);
-    doc.line(totalBoxX, finalY + 17, totalBoxX + totalBoxW, finalY + 17);
+      doc.setDrawColor(...goldLight);
+      doc.setLineWidth(0.2);
+      doc.line(totalBoxX, finalY + 17, totalBoxX + totalBoxW, finalY + 17);
 
-    finalY += 26;
+      finalY += 26;
+    }
 
     // ===== CONDITIONS =====
     if (budget.delivery_time || budget.payment_terms || budget.valid_until) {

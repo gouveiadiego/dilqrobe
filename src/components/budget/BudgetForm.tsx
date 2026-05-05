@@ -5,9 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, User, FileText, Settings, Save, X } from "lucide-react";
+import { Building2, User, FileText, Settings, Save, X, Package, Wrench, Check } from "lucide-react";
 import { BudgetItemsForm } from "./BudgetItemsForm";
-import { BudgetItem, NewBudget, EMPTY_BUDGET } from "./types";
+import { ServiceItemsForm } from "./ServiceItemsForm";
+import { BudgetItem, BudgetType, NewBudget, EMPTY_BUDGET } from "./types";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface BudgetFormProps {
   initialData?: Omit<NewBudget, 'user_id'>;
@@ -31,8 +34,25 @@ export function BudgetForm({ initialData, onSubmit, onCancel, isEditing = false 
   };
 
   const handleItemsChange = (items: BudgetItem[]) => {
-    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
+    const totalAmount = items.reduce((sum, item) => {
+      if (formData.budget_type === 'services') {
+        return sum + (item.has_value ? Number(item.total || 0) : 0);
+      }
+      return sum + Number(item.total || 0);
+    }, 0);
     setFormData({ ...formData, items, total_amount: totalAmount });
+  };
+
+  const changeBudgetType = (type: BudgetType) => {
+    if (type === formData.budget_type) return;
+    if (formData.items.length > 0) {
+      const ok = window.confirm('Trocar o tipo de orçamento removerá os itens já adicionados. Deseja continuar?');
+      if (!ok) return;
+      setFormData({ ...formData, budget_type: type, items: [], total_amount: 0 });
+      toast.info('Itens removidos ao trocar o tipo de orçamento');
+      return;
+    }
+    setFormData({ ...formData, budget_type: type });
   };
 
   const updateField = (field: keyof Omit<NewBudget, 'user_id'>, value: any) => {
@@ -41,6 +61,55 @@ export function BudgetForm({ initialData, onSubmit, onCancel, isEditing = false 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Budget type selector */}
+      <div className="space-y-3">
+        <Label className="text-base font-semibold">Tipo de orçamento</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => changeBudgetType('products')}
+            className={cn(
+              "relative text-left border rounded-lg p-4 transition-all hover:shadow-md",
+              formData.budget_type === 'products'
+                ? "border-primary bg-primary/5 ring-2 ring-primary/30"
+                : "border-border bg-card"
+            )}
+          >
+            {formData.budget_type === 'products' && (
+              <Check className="absolute top-3 right-3 h-4 w-4 text-primary" />
+            )}
+            <div className="flex items-center gap-2 mb-1">
+              <Package className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Produtos / Itens</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Lista com Quantidade × Valor Unitário e total automático.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => changeBudgetType('services')}
+            className={cn(
+              "relative text-left border rounded-lg p-4 transition-all hover:shadow-md",
+              formData.budget_type === 'services'
+                ? "border-primary bg-primary/5 ring-2 ring-primary/30"
+                : "border-border bg-card"
+            )}
+          >
+            {formData.budget_type === 'services' && (
+              <Check className="absolute top-3 right-3 h-4 w-4 text-primary" />
+            )}
+            <div className="flex items-center gap-2 mb-1">
+              <Wrench className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Serviços</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Descrição livre de cada serviço, com valor opcional por item.
+            </p>
+          </button>
+        </div>
+      </div>
+
       <Tabs defaultValue="company" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="company" className="gap-2">
@@ -182,10 +251,17 @@ export function BudgetForm({ initialData, onSubmit, onCancel, isEditing = false 
         <TabsContent value="items" className="mt-6">
           <Card>
             <CardContent className="pt-6">
-              <BudgetItemsForm
-                items={formData.items}
-                onItemsChange={handleItemsChange}
-              />
+              {formData.budget_type === 'services' ? (
+                <ServiceItemsForm
+                  items={formData.items}
+                  onItemsChange={handleItemsChange}
+                />
+              ) : (
+                <BudgetItemsForm
+                  items={formData.items}
+                  onItemsChange={handleItemsChange}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

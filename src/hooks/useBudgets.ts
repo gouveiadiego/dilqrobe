@@ -24,8 +24,9 @@ export function useBudgets() {
         throw error;
       }
 
-      const formattedBudgets = data?.map(budget => ({
+      const formattedBudgets: Budget[] = data?.map(budget => ({
         ...budget,
+        budget_type: ((budget as any).budget_type === 'services' ? 'services' : 'products'),
         items: Array.isArray(budget.items) ? budget.items as unknown as BudgetItem[] : []
       })) || [];
 
@@ -70,8 +71,9 @@ export function useBudgets() {
         throw error;
       }
 
-      const createdBudget = {
+      const createdBudget: Budget = {
         ...data,
+        budget_type: ((data as any).budget_type === 'services' ? 'services' : 'products'),
         items: Array.isArray(data.items) ? data.items as unknown as BudgetItem[] : []
       };
 
@@ -145,6 +147,7 @@ export function useBudgets() {
       }));
 
       const duplicatedBudget: NewBudget = {
+        budget_type: budget.budget_type || 'products',
         client_name: budget.client_name,
         client_email: budget.client_email,
         client_phone: budget.client_phone,
@@ -178,8 +181,9 @@ export function useBudgets() {
         throw error;
       }
 
-      const result = {
+      const result: Budget = {
         ...data,
+        budget_type: ((data as any).budget_type === 'services' ? 'services' : 'products'),
         items: Array.isArray(data.items) ? data.items as unknown as BudgetItem[] : []
       };
 

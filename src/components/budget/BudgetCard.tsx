@@ -14,7 +14,9 @@ import {
   User,
   FileText,
   Clock,
-  Pencil
+  Pencil,
+  Package,
+  Wrench
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -67,9 +69,16 @@ export function BudgetCard({
         <div className="flex justify-between items-start gap-4">
           {/* Left side - Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <h3 className="font-semibold text-lg truncate">{budget.client_name}</h3>
               <Badge variant={status.variant}>{status.label}</Badge>
+              <Badge variant="outline" className="gap-1">
+                {budget.budget_type === 'services' ? (
+                  <><Wrench className="h-3 w-3" /> Serviços</>
+                ) : (
+                  <><Package className="h-3 w-3" /> Produtos</>
+                )}
+              </Badge>
             </div>
             
             <div className="space-y-1 text-sm text-muted-foreground">
@@ -99,9 +108,13 @@ export function BudgetCard({
           {/* Right side - Value and actions */}
           <div className="flex flex-col items-end gap-3">
             <div className="text-right">
-              <p className="text-2xl font-bold text-primary">
-                {formatCurrency(budget.total_amount)}
-              </p>
+              {budget.total_amount > 0 ? (
+                <p className="text-2xl font-bold text-primary">
+                  {formatCurrency(budget.total_amount)}
+                </p>
+              ) : (
+                <p className="text-sm font-medium text-muted-foreground italic">A combinar</p>
+              )}
             </div>
 
             <div className="flex items-center gap-1">
