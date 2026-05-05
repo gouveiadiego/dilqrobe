@@ -1,87 +1,65 @@
+## Objetivo
 
-# Plano: Corrigir Saldo Financeiro na Aba Financeiro
+Suportar dois tipos de orçamento:
 
-## Problema Identificado
+1. **Produtos/Itens** (atual) — Descrição, Quantidade, Valor Unitário, Total automático.
+2. **Serviços** (novo) — Descrição livre/longa, valor opcional por item, mistura permitida. Total geral soma apenas os itens com valor.
 
-O sistema atual tem dois conceitos de saldo que estão causando confusão:
+## Decisões confirmadas
 
-1. **Saldo do Período** (o que está sendo mostrado atualmente): Calcula apenas `receitas - despesas` do mês selecionado. Por isso, ao navegar para janeiro/2026, o saldo aparece zerado porque não há transações nesse mês.
+- Item de Serviço sem valor: **omitir** (não mostrar nada na coluna/linha de valor).
+- Pode **misturar** itens com e sem valor no mesmo orçamento.
+- Total geral aparece somando apenas os itens preenchidos (mesmo que parcial).
 
-2. **Saldo Total das Contas Bancárias** (o que o usuário espera ver): O valor acumulado real das contas bancárias, que soma todas as transações pagas de todos os meses.
+## Fluxo do usuário
 
-O componente `AccountSummaryCards` já existe e mostra corretamente o saldo total das contas bancárias, mas **não está sendo renderizado** na `FinanceTab`.
+Ao criar/editar um orçamento, no topo do formulário:
 
-## Solução
-
-Adicionar o `AccountSummaryCards` no topo da aba Financeiro para mostrar o saldo total acumulado das contas bancárias, independentemente do mês selecionado. Além disso, deixar claro que o "Saldo" mostrado no `FinancialSummaryView` é o saldo apenas do mês/período selecionado.
-
----
-
-## Arquivos a Modificar
-
-### 1. `src/components/FinanceTab.tsx`
-
-**Alterações:**
-- Renderizar o componente `AccountSummaryCards` no topo do dashboard (antes do `FinancialSummaryView`)
-- O `AccountSummaryCards` já está importado mas não está sendo usado
-
-```typescript
-// Dentro do return, antes da div do FinancialSummaryView:
-{viewMode === "dashboard" && (
-  <>
-    {/* Cards de resumo das contas bancárias - Saldo Total Acumulado */}
-    <AccountSummaryCards />
-    
-    <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 shadow-sm">
-      <FinancialSummaryView 
-        income={summaries.income}
-        expenses={summaries.expenses}
-        balance={summaries.balance}
-        pending={summaries.pending}
-        chartData={chartData}
-      />
-    </div>
-  </>
-)}
+```text
+┌─────────────────────────┐   ┌─────────────────────────┐
+│  Produtos / Itens       │   │  Serviços               │
+│  Qtd × Valor Unitário   │   │  Descrição livre        │
+│  Total automático       │   │  Valor opcional         │
+└─────────────────────────┘   └─────────────────────────┘
 ```
 
-### 2. `src/components/finance/FinancialSummaryView.tsx`
+- **Produtos**: tabela atual.
+- **Serviços**: lista de blocos, cada bloco com:
+  - Título do serviço (curto)
+  - Descrição detalhada (textarea multilinha)
+  - Toggle "Incluir valor" → quando ativo, mostra campo de Valor.
 
-**Alterações:**
-- Renomear o card "Saldo" para "Saldo do Mês" ou "Balanço Mensal" para deixar claro que é apenas do período
-- Atualizar a descrição de "Saldo do período" para "Receitas - Despesas do mês"
+Listagem: badge "Produtos" / "Serviços" em cada card.
 
-```typescript
-// Alterar de:
-<CardTitle className="text-sm font-medium">Saldo</CardTitle>
-// Para:
-<CardTitle className="text-sm font-medium">Balanço Mensal</CardTitle>
+## Mudanças técnicas
 
-// E alterar de:
-<p className="text-xs text-muted-foreground">Saldo do período</p>
-// Para:
-<p className="text-xs text-muted-foreground">Receitas - Despesas do mês</p>
-```
+**Banco (migration)**:
+- Adicionar coluna `budget_type text not null default 'products'` em `budgets` (mantém compatibilidade — orçamentos antigos viram "products").
 
----
+**Tipos** (`src/components/budget/types.ts`):
+- `Budget` e `NewBudget`: adicionar `budget_type: 'products' | 'services'`.
+- `BudgetItem`: tornar `quantity` e `unit_price` opcionais; adicionar `title?: string` e `has_value?: boolean`.
 
-## Resultado Esperado
+**Hook** (`useBudgets.ts`):
+- Persistir e ler `budget_type`. Default `'products'` quando ausente.
+- Cálculo de `total_amount` em Serviços: somar apenas itens com `has_value === true`.
 
-Após as alterações:
-- O usuário verá o **Saldo Total das Contas** no topo do dashboard (valor acumulado real)
-- O **Balanço Mensal** mostrará a diferença entre receitas e despesas do mês selecionado
-- Ao navegar para diferentes meses, o **Saldo Total** permanece o mesmo (é cumulativo)
-- O **Balanço Mensal** muda de acordo com o mês selecionado
+**Formulário** (`BudgetForm.tsx`):
+- Seletor de tipo no topo (2 cards). Bloqueia troca após adicionar itens, ou pede confirmação.
+- Renderização condicional do form de itens:
+  - `BudgetItemsForm` atual → renomeado/refatorado para `ProductItemsForm`.
+  - Novo `ServiceItemsForm` com blocos: título + textarea + toggle de valor.
 
----
+**Listagem** (`BudgetCard` / `BudgetList`):
+- Badge do tipo.
+- Para Serviços, exibir total normalmente (já calculado).
 
-## Detalhes Técnicos
+**PDF** (`generateBudgetPDF.ts`):
+- Se `budget_type === 'services'`:
+  - Sem colunas Qtd/V.Unit. Cada item vira bloco: título em destaque (dourado), descrição justificada, valor à direita só se `has_value`.
+  - Total geral só aparece se algum item tem valor.
+- Se `'products'`: layout atual (já refeito premium).
 
-O `AccountSummaryCards` já usa o hook `useBankAccounts` que busca o `current_balance` de cada conta. Esse saldo é calculado pelo banco de dados através do trigger `update_bank_account_balance`, que soma todas as transações pagas (`is_paid = true`) de todos os tempos, independentemente da data.
+## Compatibilidade
 
-Fluxo do saldo:
-```
-initial_balance + SUM(todas transações pagas da conta) = current_balance
-```
-
-Isso significa que o `current_balance` já é cumulativo e correto. O problema era apenas de exibição - o componente que mostra esse valor simplesmente não estava sendo renderizado.
+Orçamentos existentes assumem `budget_type = 'products'` automaticamente via default da migration. Nada quebra.
