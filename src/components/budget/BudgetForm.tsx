@@ -329,7 +329,7 @@ export function BudgetForm({ initialData, onSubmit, onCancel, isEditing = false 
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="valid_until">Válido Até</Label>
+                  <Label htmlFor="valid_until">Válido Até *</Label>
                   <Input
                     id="valid_until"
                     type="date"
