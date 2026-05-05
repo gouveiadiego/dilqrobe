@@ -61,6 +61,55 @@ export function BudgetForm({ initialData, onSubmit, onCancel, isEditing = false 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Budget type selector */}
+      <div className="space-y-3">
+        <Label className="text-base font-semibold">Tipo de orçamento</Label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => changeBudgetType('products')}
+            className={cn(
+              "relative text-left border rounded-lg p-4 transition-all hover:shadow-md",
+              formData.budget_type === 'products'
+                ? "border-primary bg-primary/5 ring-2 ring-primary/30"
+                : "border-border bg-card"
+            )}
+          >
+            {formData.budget_type === 'products' && (
+              <Check className="absolute top-3 right-3 h-4 w-4 text-primary" />
+            )}
+            <div className="flex items-center gap-2 mb-1">
+              <Package className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Produtos / Itens</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Lista com Quantidade × Valor Unitário e total automático.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => changeBudgetType('services')}
+            className={cn(
+              "relative text-left border rounded-lg p-4 transition-all hover:shadow-md",
+              formData.budget_type === 'services'
+                ? "border-primary bg-primary/5 ring-2 ring-primary/30"
+                : "border-border bg-card"
+            )}
+          >
+            {formData.budget_type === 'services' && (
+              <Check className="absolute top-3 right-3 h-4 w-4 text-primary" />
+            )}
+            <div className="flex items-center gap-2 mb-1">
+              <Wrench className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Serviços</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Descrição livre de cada serviço, com valor opcional por item.
+            </p>
+          </button>
+        </div>
+      </div>
+
       <Tabs defaultValue="company" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="company" className="gap-2">
