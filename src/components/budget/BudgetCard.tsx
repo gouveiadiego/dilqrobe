@@ -14,7 +14,9 @@ import {
   User,
   FileText,
   Clock,
-  Pencil
+  Pencil,
+  Package,
+  Wrench
 } from "lucide-react";
 import {
   DropdownMenu,
