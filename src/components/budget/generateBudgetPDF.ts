@@ -265,28 +265,30 @@ export async function generateBudgetPDF(budget: Budget) {
 
     finalY += 10;
 
-    // ===== TOTAL (minimalist with gold accent) =====
-    const totalBoxW = 80;
-    const totalBoxX = pageWidth - margin - totalBoxW;
-    doc.setDrawColor(...gold);
-    doc.setLineWidth(0.5);
-    doc.line(totalBoxX, finalY, totalBoxX + totalBoxW, finalY);
+    // ===== TOTAL (only if > 0) =====
+    if (budget.total_amount > 0) {
+      const totalBoxW = 80;
+      const totalBoxX = pageWidth - margin - totalBoxW;
+      doc.setDrawColor(...gold);
+      doc.setLineWidth(0.5);
+      doc.line(totalBoxX, finalY, totalBoxX + totalBoxW, finalY);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(...muted);
-    doc.text('VALOR TOTAL', totalBoxX, finalY + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...muted);
+      doc.text('VALOR TOTAL', totalBoxX, finalY + 6);
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.setTextColor(...dark);
-    doc.text(formatCurrency(budget.total_amount), totalBoxX + totalBoxW, finalY + 13, { align: 'right' });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(...dark);
+      doc.text(formatCurrency(budget.total_amount), totalBoxX + totalBoxW, finalY + 13, { align: 'right' });
 
-    doc.setDrawColor(...goldLight);
-    doc.setLineWidth(0.2);
-    doc.line(totalBoxX, finalY + 17, totalBoxX + totalBoxW, finalY + 17);
+      doc.setDrawColor(...goldLight);
+      doc.setLineWidth(0.2);
+      doc.line(totalBoxX, finalY + 17, totalBoxX + totalBoxW, finalY + 17);
 
-    finalY += 26;
+      finalY += 26;
+    }
 
     // ===== CONDITIONS =====
     if (budget.delivery_time || budget.payment_terms || budget.valid_until) {
