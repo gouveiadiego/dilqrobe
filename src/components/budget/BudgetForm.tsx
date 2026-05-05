@@ -24,6 +24,31 @@ export function BudgetForm({ initialData, onSubmit, onCancel, isEditing = false 
   const [formData, setFormData] = useState<Omit<NewBudget, 'user_id'>>(initialData || EMPTY_BUDGET);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (isEditing) return;
+    const hasCompanyData = !!(formData.company_name || formData.company_document || formData.company_address || formData.company_phone);
+    if (hasCompanyData) return;
+
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_name, company_cnpj, company_address, company_logo')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!profile) return;
+      setFormData((prev) => ({
+        ...prev,
+        company_name: prev.company_name || profile.company_name || "",
+        company_document: prev.company_document || profile.company_cnpj || "",
+        company_address: prev.company_address || profile.company_address || "",
+        company_logo: prev.company_logo || profile.company_logo || "",
+      }));
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
