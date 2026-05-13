@@ -26,6 +26,7 @@ import { VisceralFatHeatmap } from "./fitness/VisceralFatHeatmap";
 import { BodyRadarChart } from "./fitness/BodyRadarChart";
 import { MetabolicClock } from "./fitness/MetabolicClock";
 import { AnatomicalHeatmap } from "./fitness/AnatomicalHeatmap";
+import { HevyDashboard } from "./fitness/HevyDashboard";
 
 const PROFILE_COLORS = [
     "#9b87f5", "#33C3F0", "#F97316", "#10B981",
@@ -322,8 +323,9 @@ export function FitnessTab() {
                     {activeProfile && (
                         <Tabs defaultValue="dashboard" className="w-full">
                             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 w-full">
-                                <TabsList className="grid w-full grid-cols-4 max-w-2xl bg-gray-100/80 p-1">
+                                <TabsList className="grid w-full grid-cols-5 max-w-3xl bg-gray-100/80 p-1">
                                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                                    <TabsTrigger value="treinos">🏋️ Treinos</TabsTrigger>
                                     <TabsTrigger value="charts">Evolução</TabsTrigger>
                                     <TabsTrigger value="history">Histórico</TabsTrigger>
                                     <TabsTrigger value="leaderboard">Ranking 🏆</TabsTrigger>
@@ -455,6 +457,10 @@ export function FitnessTab() {
                                     </div>
                                 </div>
 
+                            </TabsContent>
+
+                            <TabsContent value="treinos" className="mt-6">
+                                <HevyDashboard />
                             </TabsContent>
 
                             <TabsContent value="charts">

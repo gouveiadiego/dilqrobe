@@ -1,0 +1,796 @@
+/* ============================================================
+   HEVY INTEGRATION — Sharp Athletic Design System
+   Primary: #FF6B2B (energy orange)  |  Dark: #111827
+   No purple. No generic blue. No bento grids.
+   ============================================================ */
+
+/* ─── Tokens ──────────────────────────────────────────────── */
+:root {
+    --hevy-orange: #FF6B2B;
+    --hevy-orange-dim: rgba(255, 107, 43, 0.15);
+    --hevy-orange-glow: rgba(255, 107, 43, 0.3);
+    --hevy-dark: #111827;
+    --hevy-mid: #374151;
+    --hevy-muted: #6B7280;
+    --hevy-line: #E5E7EB;
+    --hevy-bg: #F9FAFB;
+    --hevy-white: #ffffff;
+    --hevy-radius: 4px;
+    --hevy-radius-lg: 8px;
+    --hevy-transition: 200ms ease;
+}
+
+/* ─── HevySetupCard ──────────────────────────────────────── */
+.hevy-setup-card {
+    background: var(--hevy-white);
+    border: 1.5px solid var(--hevy-line);
+    border-radius: var(--hevy-radius-lg);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.hevy-setup-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--hevy-orange);
+    border-radius: 0 2px 2px 0;
+}
+
+.hevy-setup-card--loading {
+    min-height: 120px;
+}
+
+.hevy-setup-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.hevy-setup-card__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hevy-setup-card__status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.hevy-setup-card__status-dot--active  { background: #10B981; box-shadow: 0 0 6px rgba(16,185,129,0.5); }
+.hevy-setup-card__status-dot--inactive { background: var(--hevy-muted); }
+
+.hevy-setup-card__brand-name {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--hevy-dark);
+}
+
+.hevy-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.hevy-badge--active  { background: rgba(16,185,129,0.1); color: #059669; }
+.hevy-badge--inactive { background: rgba(107,114,128,0.1); color: var(--hevy-muted); }
+.hevy-badge__icon { width: 11px; height: 11px; }
+
+.hevy-setup-card__stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: var(--hevy-bg);
+    border-radius: var(--hevy-radius);
+    border: 1px solid var(--hevy-line);
+}
+
+.hevy-setup-card__stat {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+}
+
+.hevy-setup-card__stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--hevy-dark);
+    line-height: 1;
+}
+
+.hevy-setup-card__stat-label {
+    font-size: 0.72rem;
+    color: var(--hevy-muted);
+    font-weight: 500;
+}
+
+.hevy-setup-card__stat-icon { width: 13px; height: 13px; color: var(--hevy-muted); }
+.hevy-setup-card__stat-divider { width: 1px; height: 28px; background: var(--hevy-line); }
+
+.hevy-setup-card__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.hevy-setup-card__label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--hevy-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.hevy-setup-card__label-icon { width: 12px; height: 12px; }
+
+.hevy-setup-card__hint {
+    font-size: 0.72rem;
+    color: var(--hevy-muted);
+    line-height: 1.4;
+}
+
+.hevy-setup-card__link {
+    color: var(--hevy-orange);
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+.hevy-setup-card__link:hover { text-decoration: underline; }
+.hevy-setup-card__link-icon { width: 10px; height: 10px; }
+
+.hevy-setup-card__input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.hevy-setup-card__input {
+    flex: 1;
+    height: 38px;
+    padding: 0 0.75rem;
+    border: 1.5px solid var(--hevy-line);
+    border-radius: var(--hevy-radius);
+    font-size: 0.85rem;
+    color: var(--hevy-dark);
+    background: var(--hevy-white);
+    transition: border-color var(--hevy-transition);
+    outline: none;
+}
+.hevy-setup-card__input:focus { border-color: var(--hevy-orange); }
+
+.hevy-setup-card__toggle-visibility {
+    width: 38px;
+    height: 38px;
+    border: 1.5px solid var(--hevy-line);
+    border-radius: var(--hevy-radius);
+    background: var(--hevy-bg);
+    cursor: pointer;
+    font-size: 0.65rem;
+    color: var(--hevy-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color var(--hevy-transition);
+}
+.hevy-setup-card__toggle-visibility:hover { border-color: var(--hevy-orange); }
+
+.hevy-setup-card__actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.hevy-setup-card__connected-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.hevy-setup-card__secondary-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.hevy-setup-card__security-note {
+    font-size: 0.68rem;
+    color: var(--hevy-muted);
+    margin: 0;
+}
+
+/* ─── Buttons ────────────────────────────────────────────── */
+.hevy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    height: 36px;
+    padding: 0 1rem;
+    border-radius: var(--hevy-radius);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all var(--hevy-transition);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+.hevy-btn--primary {
+    background: var(--hevy-orange);
+    color: white;
+    border-color: var(--hevy-orange);
+}
+.hevy-btn--primary:hover:not(:disabled) { background: #e85d22; }
+.hevy-btn--primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.hevy-btn--ghost {
+    background: transparent;
+    color: var(--hevy-mid);
+    border-color: var(--hevy-line);
+}
+.hevy-btn--ghost:hover { background: var(--hevy-bg); border-color: var(--hevy-mid); }
+
+.hevy-btn--danger {
+    background: transparent;
+    color: #DC2626;
+    border-color: #FCA5A5;
+    padding: 0 0.6rem;
+}
+.hevy-btn--danger:hover { background: #FEF2F2; }
+
+.hevy-btn--full { width: 100%; }
+.hevy-btn__icon { width: 14px; height: 14px; flex-shrink: 0; }
+.hevy-btn__spinner { width: 14px; height: 14px; animation: spin 1s linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Workout Feed ───────────────────────────────────────── */
+.hevy-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.hevy-feed--empty {
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    text-align: center;
+    color: var(--hevy-muted);
+}
+
+.hevy-feed__empty-icon { width: 40px; height: 40px; margin-bottom: 0.75rem; opacity: 0.3; }
+.hevy-feed__empty-title { font-size: 1rem; font-weight: 700; color: var(--hevy-dark); }
+.hevy-feed__empty-desc  { font-size: 0.8rem; margin-top: 0.25rem; }
+
+.hevy-feed__section-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--hevy-muted);
+    margin-bottom: 0.75rem;
+}
+
+.hevy-feed__rest-day {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--hevy-bg);
+    border-radius: var(--hevy-radius-lg);
+    border: 1px dashed var(--hevy-line);
+}
+
+.hevy-feed__rest-icon { font-size: 1.5rem; }
+.hevy-feed__rest-label { font-size: 0.85rem; font-weight: 700; color: var(--hevy-mid); }
+.hevy-feed__rest-hint  { font-size: 0.72rem; color: var(--hevy-muted); }
+
+.hevy-feed__list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+/* ─── Weekly Strip ───────────────────────────────────────── */
+.hevy-week-strip {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.hevy-week-strip__day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.5rem 0.25rem;
+    border-radius: var(--hevy-radius);
+    background: var(--hevy-bg);
+    border: 1px solid var(--hevy-line);
+    transition: all var(--hevy-transition);
+}
+
+.hevy-week-strip__day--today {
+    border-color: var(--hevy-orange);
+    background: var(--hevy-orange-dim);
+}
+
+.hevy-week-strip__day--trained { border-color: var(--hevy-line); }
+
+.hevy-week-strip__label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--hevy-muted);
+}
+
+.hevy-week-strip__dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--hevy-line);
+    transition: all var(--hevy-transition);
+}
+
+.hevy-week-strip__day--trained .hevy-week-strip__dot {
+    transform: scale(1.2);
+}
+
+.hevy-week-strip__vol {
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: var(--hevy-orange);
+}
+
+/* ─── Workout Card ───────────────────────────────────────── */
+.hevy-workout-card {
+    display: flex;
+    background: var(--hevy-white);
+    border: 1px solid var(--hevy-line);
+    border-radius: var(--hevy-radius-lg);
+    overflow: hidden;
+    transition: all var(--hevy-transition);
+    position: relative;
+}
+
+.hevy-workout-card:hover {
+    border-color: rgba(255, 107, 43, 0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    transform: translateY(-1px);
+}
+
+.hevy-workout-card--featured {
+    border-color: var(--hevy-orange);
+    box-shadow: 0 0 0 1px var(--hevy-orange-dim);
+}
+
+.hevy-workout-card__accent-bar {
+    width: 3px;
+    flex-shrink: 0;
+}
+
+.hevy-workout-card__body {
+    flex: 1;
+    padding: 0.875rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.hevy-workout-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.hevy-workout-card__title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--hevy-dark);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.hevy-workout-card__date {
+    font-size: 0.7rem;
+    color: var(--hevy-muted);
+    margin: 0.15rem 0 0;
+    text-transform: capitalize;
+}
+
+.hevy-workout-card__today-badge {
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.2rem 0.5rem;
+    background: var(--hevy-orange);
+    color: white;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+}
+
+.hevy-workout-card__stats {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.hevy-stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--hevy-mid);
+}
+
+.hevy-stat-chip__icon { width: 12px; height: 12px; color: var(--hevy-muted); }
+.hevy-stat-chip__label {}
+
+.hevy-workout-card__muscles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.hevy-muscle-tag {
+    font-size: 0.64rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid;
+    border-radius: 2px;
+    text-transform: capitalize;
+    letter-spacing: 0.03em;
+}
+
+/* ─── Heatmap ────────────────────────────────────────────── */
+.hevy-heatmap {
+    background: var(--hevy-white);
+    border: 1.5px solid var(--hevy-line);
+    border-radius: var(--hevy-radius-lg);
+    padding: 1.25rem;
+    overflow-x: auto;
+}
+
+.hevy-heatmap__header { margin-bottom: 1rem; }
+
+.hevy-heatmap__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.hevy-heatmap__title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--hevy-dark);
+    margin: 0;
+}
+
+.hevy-heatmap__subtitle {
+    font-size: 0.72rem;
+    color: var(--hevy-muted);
+    margin: 0.25rem 0 0;
+}
+
+.hevy-heatmap__streak {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.hevy-heatmap__streak-icon { width: 16px; height: 16px; color: var(--hevy-orange); }
+.hevy-heatmap__streak-count { font-size: 1.2rem; font-weight: 900; color: var(--hevy-dark); }
+.hevy-heatmap__streak-label { font-size: 0.7rem; color: var(--hevy-muted); }
+
+.hevy-heatmap__day-labels {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    margin-bottom: 4px;
+    min-width: 0;
+}
+
+.hevy-heatmap__day-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--hevy-muted);
+    text-align: center;
+}
+
+.hevy-heatmap__grid {
+    display: grid;
+    grid-template-rows: repeat(7, 1fr); /* rows = days of week */
+    grid-auto-flow: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.hevy-heatmap__cell {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    transition: transform var(--hevy-transition), opacity var(--hevy-transition);
+    cursor: default;
+}
+
+.hevy-heatmap__cell:hover { transform: scale(1.4); z-index: 1; }
+
+.hevy-heatmap__cell--empty   { background: #F3F4F6; }
+.hevy-heatmap__cell--l1      { background: #FED7AA; }
+.hevy-heatmap__cell--l2      { background: #FB923C; }
+.hevy-heatmap__cell--l3      { background: #FF6B2B; }
+.hevy-heatmap__cell--l4      { background: #9A3412; }
+.hevy-heatmap__cell--future  { opacity: 0.3; }
+
+.hevy-heatmap__legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 0.75rem;
+    justify-content: flex-end;
+}
+
+.hevy-heatmap__legend-label { font-size: 0.62rem; color: var(--hevy-muted); }
+.hevy-heatmap__legend-cell  { width: 10px; height: 10px; border-radius: 2px; }
+
+/* ─── Progress Chart ─────────────────────────────────────── */
+.hevy-progress-chart {
+    background: var(--hevy-white);
+    border: 1.5px solid var(--hevy-line);
+    border-radius: var(--hevy-radius-lg);
+    padding: 1.25rem;
+}
+
+.hevy-progress-chart--empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem;
+    text-align: center;
+    color: var(--hevy-muted);
+    font-size: 0.85rem;
+}
+
+.hevy-progress-chart__empty-icon { width: 40px; height: 40px; margin-bottom: 0.75rem; opacity: 0.3; }
+
+.hevy-progress-chart__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.hevy-progress-chart__title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--hevy-dark);
+    margin: 0 0 0.35rem;
+}
+
+.hevy-progress-chart__pr-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--hevy-orange);
+}
+
+.hevy-progress-chart__pr-icon { width: 12px; height: 12px; }
+
+.hevy-progress-chart__no-data {
+    text-align: center;
+    padding: 2rem;
+    font-size: 0.82rem;
+    color: var(--hevy-muted);
+}
+
+.hevy-progress-chart__footer {
+    font-size: 0.68rem;
+    color: var(--hevy-muted);
+    margin: 0.5rem 0 0;
+    text-align: right;
+}
+
+/* ─── Exercise Selector ──────────────────────────────────── */
+.hevy-exercise-selector {
+    position: relative;
+    min-width: 180px;
+}
+
+.hevy-exercise-selector__trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    height: 34px;
+    padding: 0 0.75rem;
+    border: 1.5px solid var(--hevy-line);
+    border-radius: var(--hevy-radius);
+    background: var(--hevy-white);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--hevy-dark);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color var(--hevy-transition);
+}
+.hevy-exercise-selector__trigger:hover { border-color: var(--hevy-orange); }
+
+.hevy-exercise-selector__chevron {
+    width: 14px; height: 14px;
+    color: var(--hevy-muted);
+    transition: transform var(--hevy-transition);
+    flex-shrink: 0;
+}
+
+.hevy-exercise-selector__dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    width: 100%;
+    min-width: 200px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--hevy-white);
+    border: 1.5px solid var(--hevy-line);
+    border-radius: var(--hevy-radius-lg);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 50;
+    padding: 0.25rem;
+}
+
+.hevy-exercise-selector__option {
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--hevy-radius);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--hevy-mid);
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    transition: all var(--hevy-transition);
+}
+.hevy-exercise-selector__option:hover { background: var(--hevy-bg); color: var(--hevy-dark); }
+.hevy-exercise-selector__option--active { background: var(--hevy-orange-dim); color: var(--hevy-orange); font-weight: 700; }
+
+/* ─── Chart Tooltip ──────────────────────────────────────── */
+.hevy-chart-tooltip {
+    background: var(--hevy-dark);
+    color: white;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--hevy-radius-lg);
+    font-size: 0.78rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.hevy-chart-tooltip__date  { font-size: 0.68rem; opacity: 0.6; margin-bottom: 0.2rem; }
+.hevy-chart-tooltip__weight { font-size: 1.1rem; font-weight: 900; color: var(--hevy-orange); }
+.hevy-chart-tooltip__vol   { font-size: 0.7rem; opacity: 0.7; }
+.hevy-chart-tooltip__pr    { font-size: 0.7rem; color: #FCD34D; margin-top: 0.2rem; }
+
+/* ─── Skeleton ───────────────────────────────────────────── */
+.hevy-skeleton {
+    background: linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 50%, #F3F4F6 75%);
+    background-size: 200% 100%;
+    animation: hevy-shimmer 1.5s infinite;
+    border-radius: var(--hevy-radius-lg);
+    height: 80px;
+}
+
+.hevy-skeleton--wide  { height: 120px; }
+.hevy-skeleton--tall  { height: 260px; }
+
+@keyframes hevy-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .hevy-week-strip { gap: 0.25rem; }
+    .hevy-week-strip__day { padding: 0.35rem 0.1rem; }
+    .hevy-heatmap__cell { width: 9px; height: 9px; }
+    .hevy-exercise-selector { min-width: 140px; }
+}
+
+/* ─── HevyDashboard ──────────────────────────────────────── */
+.hevy-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.hevy-dashboard__topbar {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.hevy-dashboard__settings-btn--active {
+    background: var(--hevy-orange-dim);
+    border-color: var(--hevy-orange);
+    color: var(--hevy-orange);
+}
+
+.hevy-dashboard__settings-panel {
+    animation: hevy-slide-down 200ms ease;
+    max-width: 480px;
+}
+
+@keyframes hevy-slide-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.hevy-dashboard__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.hevy-dashboard__feed-col  { display: flex; flex-direction: column; gap: 1rem; }
+.hevy-dashboard__charts-col { display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* Onboarding state */
+.hevy-dashboard__onboarding {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    border: 1.5px dashed var(--hevy-line);
+    border-radius: 12px;
+    background: var(--hevy-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.hevy-dashboard__onboarding-icon { font-size: 3rem; }
+.hevy-dashboard__onboarding-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--hevy-dark);
+    margin: 0;
+}
+.hevy-dashboard__onboarding-desc {
+    font-size: 0.85rem;
+    color: var(--hevy-muted);
+    max-width: 360px;
+    line-height: 1.5;
+    margin: 0;
+}
+.hevy-dashboard__setup-card-wrap {
+    width: 100%;
+    max-width: 440px;
+    text-align: left;
+    margin-top: 0.75rem;
+}
+
+@media (max-width: 900px) {
+    .hevy-dashboard__grid { grid-template-columns: 1fr; }
+}
+
