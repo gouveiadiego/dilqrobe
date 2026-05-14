@@ -87,14 +87,27 @@ serve(async (req) => {
         const maxPages = fetchAll ? 50 : 3; // 50 pages = up to 750 workouts
 
         while (hasMore && currentPage <= page + maxPages - 1) {
-          const resp = await hevyFetch(`/v1/workouts?page=${currentPage}&pageSize=15`, apiKey);
+          // A API do Hevy retorna um histórico de eventos de treinos
+          const resp = await hevyFetch(`/v1/workouts/events?page=${currentPage}&pageSize=15`, apiKey);
           if (!resp.ok) break;
 
           const data = await resp.json();
-          const workouts = data.workouts || [];
-          allWorkouts.push(...workouts);
+          let items: any[] = [];
+          
+          if (data.events && Array.isArray(data.events)) {
+            items = data.events
+              .filter((e: any) => e.type === "updated" && e.workout)
+              .map((e: any) => e.workout);
+          } else if (data.workouts && Array.isArray(data.workouts)) {
+            items = data.workouts;
+          } else if (Array.isArray(data)) {
+            items = data;
+          }
 
-          hasMore = workouts.length === 15;
+          allWorkouts.push(...items);
+
+          const fetchedCount = data.events ? data.events.length : items.length;
+          hasMore = fetchedCount === 15;
           currentPage++;
         }
 
