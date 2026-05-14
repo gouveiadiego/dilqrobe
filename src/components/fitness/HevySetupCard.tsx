@@ -15,6 +15,8 @@ export function HevySetupCard() {
         isTestingConnection,
         syncWorkouts,
         isSyncing,
+        syncAllWorkouts,
+        isSyncingAll,
         deleteIntegration,
     } = useHevyIntegration();
 
@@ -143,13 +145,26 @@ export function HevySetupCard() {
                 <div className="hevy-setup-card__connected-actions">
                     <button
                         onClick={() => syncWorkouts()}
-                        disabled={isSyncing}
+                        disabled={isSyncing || isSyncingAll}
                         className="hevy-btn hevy-btn--primary hevy-btn--full"
                     >
                         <RefreshCw className={`hevy-btn__icon ${isSyncing ? "animate-spin" : ""}`} />
-                        {isSyncing ? "Sincronizando..." : "Sincronizar Treinos (Manual)"}
+                        {isSyncing ? "Sincronizando..." : "Sincronizar Recentes"}
                     </button>
-                    <div className="hevy-setup-card__secondary-actions">
+                    <button
+                        onClick={() => {
+                            if (window.confirm("Isso pode levar alguns segundos dependendo do tamanho do seu histórico. Deseja continuar?")) {
+                                syncAllWorkouts();
+                            }
+                        }}
+                        disabled={isSyncing || isSyncingAll}
+                        className="hevy-btn hevy-btn--ghost hevy-btn--full"
+                        style={{ marginTop: '-4px', borderColor: 'var(--hevy-line)' }}
+                    >
+                        <RefreshCw className={`hevy-btn__icon ${isSyncingAll ? "animate-spin" : ""}`} />
+                        {isSyncingAll ? "Buscando histórico..." : "Sincronizar Todo o Histórico"}
+                    </button>
+                    <div className="hevy-setup-card__secondary-actions mt-2">
                         <button onClick={handleTest} disabled={isTestingConnection} className="hevy-btn hevy-btn--ghost">
                             <Wifi className="hevy-btn__icon" />
                             {isTestingConnection ? "Testando..." : "Testar API"}

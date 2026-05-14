@@ -130,6 +130,20 @@ export const useHevyIntegration = () => {
         onError: () => toast.error("Erro ao sincronizar treinos"),
     });
 
+    // Sync ALL historical workouts
+    const syncAllMutation = useMutation({
+        mutationFn: async () => {
+            const result = await callHevyProxy("sync_workouts", { page: 1, fetchAll: true });
+            return result as { success: boolean; synced: number };
+        },
+        onSuccess: (data) => {
+            toast.success(`🏆 ${data.synced} treinos históricos sincronizados!`);
+            queryClient.invalidateQueries({ queryKey: ["hevy-workouts"] });
+            queryClient.invalidateQueries({ queryKey: ["hevy-integration"] });
+        },
+        onError: () => toast.error("Erro ao sincronizar histórico"),
+    });
+
     // Delete integration
     const deleteIntegrationMutation = useMutation({
         mutationFn: async () => {
@@ -158,6 +172,8 @@ export const useHevyIntegration = () => {
         isTestingConnection: testConnectionMutation.isPending,
         syncWorkouts: syncMutation.mutateAsync,
         isSyncing: syncMutation.isPending,
+        syncAllWorkouts: syncAllMutation.mutateAsync,
+        isSyncingAll: syncAllMutation.isPending,
         deleteIntegration: deleteIntegrationMutation.mutate,
     };
 };

@@ -37,7 +37,7 @@ serve(async (req) => {
       });
     }
 
-    const { action, page = 1, workoutId } = await req.json();
+    const { action, page = 1, workoutId, fetchAll } = await req.json();
 
     // 2. Fetch the user's API key from hevy_integrations
     const { data: integration, error: integrationError } = await supabase
@@ -84,7 +84,7 @@ serve(async (req) => {
         const allWorkouts: any[] = [];
         let currentPage = page;
         let hasMore = true;
-        const maxPages = 3;
+        const maxPages = fetchAll ? 50 : 3; // 50 pages = up to 750 workouts
 
         while (hasMore && currentPage <= page + maxPages - 1) {
           const resp = await hevyFetch(`/v1/workouts?page=${currentPage}&pageSize=15`, apiKey);
