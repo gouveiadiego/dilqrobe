@@ -102,7 +102,7 @@ export function HevyWeeklyHeatmap() {
                     week.map(({ date, dateStr, workout, isFuture }, di) => {
                         const level = isFuture ? 0 : (workout ? getIntensityLevel(workout.volume_kg) : 0);
                         const title = workout
-                            ? `${format(date, "dd/MM/yyyy")} — ${workout.title} (${workout.volume_kg.toFixed(0)} kg)`
+                            ? `${format(date, "dd/MM/yyyy")} — ${workout.title} (${(workout.volume_kg ?? 0).toFixed(0)} kg)`
                             : format(date, "dd/MM/yyyy", { locale: ptBR });
 
                         return (
