@@ -3,6 +3,7 @@ import { useHevyIntegration } from "@/hooks/useHevyIntegration";
 import { Key, Wifi, WifiOff, RefreshCw, Trash2, ExternalLink, CheckCircle2, Clock, Copy, Webhook } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 export function HevySetupCard() {
     const {
