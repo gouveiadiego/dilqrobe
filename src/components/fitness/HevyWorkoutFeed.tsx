@@ -112,7 +112,7 @@ export function HevyWorkoutFeed() {
                             />
                             {workout && (
                                 <span className="hevy-week-strip__vol">
-                                    {workout.volume_kg > 0 ? `${(workout.volume_kg / 1000).toFixed(1)}t` : "✓"}
+                                    {(workout.volume_kg ?? 0) > 0 ? `${((workout.volume_kg ?? 0) / 1000).toFixed(1)}t` : "✓"}
                                 </span>
                             )}
                         </div>
@@ -164,7 +164,7 @@ function WorkoutCard({ workout, featured = false }: { workout: any; featured?: b
                 <div className="hevy-workout-card__stats">
                     <StatChip icon={<Clock />} label={formatDuration(workout.duration_seconds)} />
                     <StatChip icon={<Zap />} label={`${workout.exercise_count} exerc.`} />
-                    <StatChip icon={<TrendingUp />} label={`${workout.volume_kg.toFixed(0)} kg`} />
+                    <StatChip icon={<TrendingUp />} label={`${(workout.volume_kg ?? 0).toFixed(0)} kg`} />
                 </div>
 
                 {/* Muscle groups */}

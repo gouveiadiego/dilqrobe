@@ -1126,6 +1126,93 @@ export type Database = {
         }
         Relationships: []
       }
+      hevy_integrations: {
+        Row: {
+          api_key: string
+          created_at: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          updated_at: string
+          user_id: string
+          webhook_secret: string | null
+          workout_count: number | null
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          updated_at?: string
+          user_id: string
+          webhook_secret?: string | null
+          workout_count?: number | null
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          updated_at?: string
+          user_id?: string
+          webhook_secret?: string | null
+          workout_count?: number | null
+        }
+        Relationships: []
+      }
+      hevy_workouts_cache: {
+        Row: {
+          description: string | null
+          duration_seconds: number | null
+          exercise_count: number | null
+          exercises: Json | null
+          hevy_workout_id: string
+          id: string
+          muscle_groups: string[] | null
+          raw_data: Json | null
+          set_count: number | null
+          synced_at: string
+          title: string | null
+          user_id: string
+          volume_kg: number | null
+          workout_date: string
+        }
+        Insert: {
+          description?: string | null
+          duration_seconds?: number | null
+          exercise_count?: number | null
+          exercises?: Json | null
+          hevy_workout_id: string
+          id?: string
+          muscle_groups?: string[] | null
+          raw_data?: Json | null
+          set_count?: number | null
+          synced_at?: string
+          title?: string | null
+          user_id: string
+          volume_kg?: number | null
+          workout_date: string
+        }
+        Update: {
+          description?: string | null
+          duration_seconds?: number | null
+          exercise_count?: number | null
+          exercises?: Json | null
+          hevy_workout_id?: string
+          id?: string
+          muscle_groups?: string[] | null
+          raw_data?: Json | null
+          set_count?: number | null
+          synced_at?: string
+          title?: string | null
+          user_id?: string
+          volume_kg?: number | null
+          workout_date?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string
