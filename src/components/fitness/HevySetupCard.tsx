@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useHevyIntegration } from "@/hooks/useHevyIntegration";
-import { Key, Wifi, WifiOff, RefreshCw, Trash2, ExternalLink, CheckCircle2, Clock } from "lucide-react";
+import { Key, Wifi, WifiOff, RefreshCw, Trash2, ExternalLink, CheckCircle2, Clock, Copy, Webhook } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -147,12 +147,12 @@ export function HevySetupCard() {
                         className="hevy-btn hevy-btn--primary hevy-btn--full"
                     >
                         <RefreshCw className={`hevy-btn__icon ${isSyncing ? "animate-spin" : ""}`} />
-                        {isSyncing ? "Sincronizando..." : "Sincronizar Treinos"}
+                        {isSyncing ? "Sincronizando..." : "Sincronizar Treinos (Manual)"}
                     </button>
                     <div className="hevy-setup-card__secondary-actions">
                         <button onClick={handleTest} disabled={isTestingConnection} className="hevy-btn hevy-btn--ghost">
                             <Wifi className="hevy-btn__icon" />
-                            {isTestingConnection ? "Testando..." : "Testar"}
+                            {isTestingConnection ? "Testando..." : "Testar API"}
                         </button>
                         <button onClick={() => setMode("edit")} className="hevy-btn hevy-btn--ghost">
                             <Key className="hevy-btn__icon" />
@@ -169,6 +169,63 @@ export function HevySetupCard() {
                             <Trash2 className="hevy-btn__icon" />
                         </button>
                     </div>
+
+                    {/* Webhook Configuration Section */}
+                    {integration?.webhook_secret && (
+                        <div className="mt-4 p-4 rounded-lg bg-gray-50 border border-gray-200 text-left">
+                            <h4 className="flex items-center gap-2 text-sm font-bold text-gray-800 mb-2">
+                                <Webhook className="w-4 h-4 text-orange-500" />
+                                Webhook (Sincronização Automática)
+                            </h4>
+                            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+                                Cole as informações abaixo na seção "Webhooks" no site do Hevy para receber seus treinos instantaneamente no DilQ Orbe.
+                            </p>
+                            
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                        URL onde pretendes receber notificações:
+                                    </label>
+                                    <div className="flex bg-white border border-gray-200 rounded text-xs p-2 justify-between items-center group">
+                                        <span className="truncate text-gray-600 font-mono">
+                                            https://wgnvrxubwifcscrbkimm.supabase.co/functions/v1/hevy-webhook
+                                        </span>
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText("https://wgnvrxubwifcscrbkimm.supabase.co/functions/v1/hevy-webhook");
+                                                toast.success("URL copiada!");
+                                            }}
+                                            className="text-gray-400 hover:text-orange-500 p-1"
+                                            title="Copiar URL"
+                                        >
+                                            <Copy className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                                        Cabeçalho de autorização (exatamente assim):
+                                    </label>
+                                    <div className="flex bg-white border border-gray-200 rounded text-xs p-2 justify-between items-center group">
+                                        <span className="truncate text-gray-600 font-mono">
+                                            Bearer {integration.webhook_secret}
+                                        </span>
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(`Bearer ${integration.webhook_secret}`);
+                                                toast.success("Token copiado!");
+                                            }}
+                                            className="text-gray-400 hover:text-orange-500 p-1"
+                                            title="Copiar Token"
+                                        >
+                                            <Copy className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

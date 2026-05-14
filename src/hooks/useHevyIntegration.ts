@@ -9,6 +9,7 @@ export interface HevyIntegration {
     user_id: string;
     api_key: string;
     is_active: boolean;
+    webhook_secret: string;
     last_sync_at: string | null;
     workout_count: number;
     created_at: string;
