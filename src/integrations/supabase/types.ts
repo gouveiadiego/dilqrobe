@@ -892,6 +892,42 @@ export type Database = {
         }
         Relationships: []
       }
+      fitness_bioimpedance: {
+        Row: {
+          created_at: string
+          gordura_percentual: number | null
+          id: string
+          massa_magra_kg: number | null
+          medicao_data: string
+          peso_kg: number
+          tmb_kcal: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gordura_percentual?: number | null
+          id?: string
+          massa_magra_kg?: number | null
+          medicao_data?: string
+          peso_kg: number
+          tmb_kcal?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gordura_percentual?: number | null
+          id?: string
+          massa_magra_kg?: number | null
+          medicao_data?: string
+          peso_kg?: number
+          tmb_kcal?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fitness_measurements: {
         Row: {
           bmi: number | null
@@ -962,6 +998,165 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fitness_nutrition_goals: {
+        Row: {
+          calories_rest: number
+          calories_with_workout: number
+          carbs_g_rest: number
+          carbs_g_with_workout: number
+          created_at: string
+          fat_g: number
+          id: string
+          protein_g: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calories_rest: number
+          calories_with_workout: number
+          carbs_g_rest: number
+          carbs_g_with_workout: number
+          created_at?: string
+          fat_g: number
+          id?: string
+          protein_g: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calories_rest?: number
+          calories_with_workout?: number
+          carbs_g_rest?: number
+          carbs_g_with_workout?: number
+          created_at?: string
+          fat_g?: number
+          id?: string
+          protein_g?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fitness_nutrition_logs: {
+        Row: {
+          calories: number
+          carbs_g: number
+          created_at: string
+          fat_g: number
+          food_name: string
+          id: string
+          log_date: string
+          protein_g: number
+          quantity: number | null
+          unit: string | null
+          user_id: string
+        }
+        Insert: {
+          calories?: number
+          carbs_g?: number
+          created_at?: string
+          fat_g?: number
+          food_name: string
+          id?: string
+          log_date?: string
+          protein_g?: number
+          quantity?: number | null
+          unit?: string | null
+          user_id: string
+        }
+        Update: {
+          calories?: number
+          carbs_g?: number
+          created_at?: string
+          fat_g?: number
+          food_name?: string
+          id?: string
+          log_date?: string
+          protein_g?: number
+          quantity?: number | null
+          unit?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fitness_nutrition_profile: {
+        Row: {
+          alergias: string | null
+          alimentos_evitar: string | null
+          altura_cm: number
+          atividade_fora_treino: Database["public"]["Enums"]["activity_level"]
+          created_at: string
+          dietas_anteriores: string | null
+          ergogenicos_quais: string | null
+          frequencia_treino: Database["public"]["Enums"]["training_frequency"]
+          horas_sono: number | null
+          id: string
+          idade: number
+          intolerancias: string | null
+          nivel_estresse: Database["public"]["Enums"]["stress_level"] | null
+          objetivo: Database["public"]["Enums"]["nutrition_objective"]
+          observacoes_coach: string | null
+          peso_kg: number | null
+          restricao_alimentar:
+            | Database["public"]["Enums"]["dietary_restriction"]
+            | null
+          sexo: string | null
+          updated_at: string
+          usa_ergogenicos: boolean | null
+          user_id: string
+        }
+        Insert: {
+          alergias?: string | null
+          alimentos_evitar?: string | null
+          altura_cm: number
+          atividade_fora_treino?: Database["public"]["Enums"]["activity_level"]
+          created_at?: string
+          dietas_anteriores?: string | null
+          ergogenicos_quais?: string | null
+          frequencia_treino?: Database["public"]["Enums"]["training_frequency"]
+          horas_sono?: number | null
+          id?: string
+          idade: number
+          intolerancias?: string | null
+          nivel_estresse?: Database["public"]["Enums"]["stress_level"] | null
+          objetivo?: Database["public"]["Enums"]["nutrition_objective"]
+          observacoes_coach?: string | null
+          peso_kg?: number | null
+          restricao_alimentar?:
+            | Database["public"]["Enums"]["dietary_restriction"]
+            | null
+          sexo?: string | null
+          updated_at?: string
+          usa_ergogenicos?: boolean | null
+          user_id: string
+        }
+        Update: {
+          alergias?: string | null
+          alimentos_evitar?: string | null
+          altura_cm?: number
+          atividade_fora_treino?: Database["public"]["Enums"]["activity_level"]
+          created_at?: string
+          dietas_anteriores?: string | null
+          ergogenicos_quais?: string | null
+          frequencia_treino?: Database["public"]["Enums"]["training_frequency"]
+          horas_sono?: number | null
+          id?: string
+          idade?: number
+          intolerancias?: string | null
+          nivel_estresse?: Database["public"]["Enums"]["stress_level"] | null
+          objetivo?: Database["public"]["Enums"]["nutrition_objective"]
+          observacoes_coach?: string | null
+          peso_kg?: number | null
+          restricao_alimentar?:
+            | Database["public"]["Enums"]["dietary_restriction"]
+            | null
+          sexo?: string | null
+          updated_at?: string
+          usa_ergogenicos?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
       }
       fitness_profiles: {
         Row: {
@@ -2212,7 +2407,11 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      activity_level: "sedentario" | "leve" | "ativo"
+      dietary_restriction: "nenhuma" | "vegetariano" | "vegano"
+      nutrition_objective: "cutting" | "recomp" | "manutencao" | "bulking"
+      stress_level: "baixo" | "medio" | "alto"
+      training_frequency: "1-3x" | "4-5x" | "6-7x"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2339,6 +2538,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      activity_level: ["sedentario", "leve", "ativo"],
+      dietary_restriction: ["nenhuma", "vegetariano", "vegano"],
+      nutrition_objective: ["cutting", "recomp", "manutencao", "bulking"],
+      stress_level: ["baixo", "medio", "alto"],
+      training_frequency: ["1-3x", "4-5x", "6-7x"],
+    },
   },
 } as const
