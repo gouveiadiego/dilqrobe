@@ -27,6 +27,7 @@ import { BodyRadarChart } from "./fitness/BodyRadarChart";
 import { MetabolicClock } from "./fitness/MetabolicClock";
 import { AnatomicalHeatmap } from "./fitness/AnatomicalHeatmap";
 import { HevyDashboard } from "./fitness/HevyDashboard";
+import { NutritionTrainingSync } from "./fitness/NutritionTrainingSync";
 
 const PROFILE_COLORS = [
     "#9b87f5", "#33C3F0", "#F97316", "#10B981",
@@ -399,6 +400,9 @@ export function FitnessTab() {
                                         <FitnessForm profile={activeProfile} />
                                     </Card>
                                 </div>
+
+                                {/* Macros & AI Nutrition Sync */}
+                                <NutritionTrainingSync />
 
                                 {/* Motivators & Body Visualizer */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
