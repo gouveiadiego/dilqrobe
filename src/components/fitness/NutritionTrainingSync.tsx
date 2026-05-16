@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Flame, Moon, CheckCircle2, Loader2, Plus, Brain } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { NutritionSetupForm } from './NutritionSetupForm';
 
 export const NutritionTrainingSync = () => {
   const {
@@ -32,15 +33,9 @@ export const NutritionTrainingSync = () => {
     );
   }
 
-  // If no profile / goals are set yet
+  // If no profile / goals are set yet, show the setup form
   if (!activeGoals) {
-    return (
-      <Card className="w-full">
-        <CardContent className="p-6 text-center text-muted-foreground">
-          Por favor, preencha seu perfil nutricional e registre uma bioimpedância para calcular suas metas.
-        </CardContent>
-      </Card>
-    );
+    return <NutritionSetupForm />;
   }
 
   const proteinLeft = activeGoals.protein_g - (consumedToday?.protein_g || 0);
