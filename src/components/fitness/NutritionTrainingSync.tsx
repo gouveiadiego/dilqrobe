@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Flame, Moon, CheckCircle2, Loader2, Plus, Brain } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { NutritionSetupForm } from './NutritionSetupForm';
 
 export const NutritionTrainingSync = () => {
   const {
