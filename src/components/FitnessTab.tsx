@@ -28,6 +28,7 @@ import { MetabolicClock } from "./fitness/MetabolicClock";
 import { AnatomicalHeatmap } from "./fitness/AnatomicalHeatmap";
 import { HevyDashboard } from "./fitness/HevyDashboard";
 import { NutritionTrainingSync } from "./fitness/NutritionTrainingSync";
+import { NutritionHistoryDiary } from "./fitness/NutritionHistoryDiary";
 
 const PROFILE_COLORS = [
     "#9b87f5", "#33C3F0", "#F97316", "#10B981",
