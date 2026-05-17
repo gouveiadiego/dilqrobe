@@ -405,6 +405,9 @@ export function FitnessTab() {
                                 {/* Macros & AI Nutrition Sync */}
                                 <NutritionTrainingSync />
 
+                                {/* Histórico de refeições e treino */}
+                                <NutritionHistoryDiary />
+
                                 {/* Motivators & Body Visualizer */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                     <div className="lg:col-span-1">
