@@ -1,91 +1,97 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function callGemini(text: string) {
-  if (!geminiApiKey) {
-    throw new Error('A chave da API Gemini (GEMINI_API_KEY) não está configurada nos segredos da Edge Function.');
+async function callAI(text: string) {
+  if (!LOVABLE_API_KEY) {
+    throw new Error('LOVABLE_API_KEY não está configurada.');
   }
 
-  const prompt = `Você é um assistente de nutrição integrado a um sistema fitness.
-  O usuário consumiu a seguinte refeição/alimento, descrito de forma livre:
-  "${text}"
+  const systemPrompt = `Você é um assistente de nutrição. Identifique todos os alimentos consumidos, estime quantidades e calcule macros (proteína, carboidrato, gordura em gramas) e calorias de cada um, além do total.
+Regras: proteína ~4 kcal/g, carboidrato ~4 kcal/g, gordura ~9 kcal/g. As calorias devem bater com (prot*4 + carbo*4 + gord*9).`;
 
-  Sua tarefa é identificar todos os alimentos consumidos, estimar suas quantidades, e calcular os macros (proteína, carboidrato, gordura) e calorias de cada um, além do total da refeição.
-
-  RETORNE ESTRITAMENTE O JSON SOLICITADO NO SCHEMA, E MAIS NENHUM OUTRO TEXTO.
-  Use as seguintes regras:
-  - Proteína tem ~4 kcal por grama
-  - Carboidrato tem ~4 kcal por grama
-  - Gordura tem ~9 kcal por grama
-  As calorias totais de cada alimento devem bater aproximadamente com a soma de (proteína*4 + carbo*4 + gordura*9).
-  `
-
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`, {
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            alimentos: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  nome: { type: "string" },
-                  quantidade: { type: "number" },
-                  unidade: { type: "string" },
-                  proteina_g: { type: "number" },
-                  carbo_g: { type: "number" },
-                  gordura_g: { type: "number" },
-                  calorias: { type: "number" }
+      model: 'google/gemini-2.5-flash',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Refeição consumida: "${text}"` },
+      ],
+      tools: [{
+        type: 'function',
+        function: {
+          name: 'registrar_refeicao',
+          description: 'Registra os alimentos identificados com seus macros e calorias',
+          parameters: {
+            type: 'object',
+            properties: {
+              alimentos: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    nome: { type: 'string' },
+                    quantidade: { type: 'number' },
+                    unidade: { type: 'string' },
+                    proteina_g: { type: 'number' },
+                    carbo_g: { type: 'number' },
+                    gordura_g: { type: 'number' },
+                    calorias: { type: 'number' },
+                  },
+                  required: ['nome', 'quantidade', 'unidade', 'proteina_g', 'carbo_g', 'gordura_g', 'calorias'],
+                  additionalProperties: false,
                 },
-                required: ["nome", "quantidade", "unidade", "proteina_g", "carbo_g", "gordura_g", "calorias"]
-              }
-            },
-            total: {
-              type: "object",
-              properties: {
-                proteina_g: { type: "number" },
-                carbo_g: { type: "number" },
-                gordura_g: { type: "number" },
-                calorias: { type: "number" }
               },
-              required: ["proteina_g", "carbo_g", "gordura_g", "calorias"]
-            }
+              total: {
+                type: 'object',
+                properties: {
+                  proteina_g: { type: 'number' },
+                  carbo_g: { type: 'number' },
+                  gordura_g: { type: 'number' },
+                  calorias: { type: 'number' },
+                },
+                required: ['proteina_g', 'carbo_g', 'gordura_g', 'calorias'],
+                additionalProperties: false,
+              },
+            },
+            required: ['alimentos', 'total'],
+            additionalProperties: false,
           },
-          required: ["alimentos", "total"]
-        }
-      }
+        },
+      }],
+      tool_choice: { type: 'function', function: { name: 'registrar_refeicao' } },
     }),
   });
 
   if (!response.ok) {
     const errorData = await response.text();
-    console.error('Erro na API Gemini:', response.status, errorData);
-    throw new Error(`Erro na API Gemini: ${response.status} - ${errorData}`);
+    console.error('Erro Lovable AI:', response.status, errorData);
+    if (response.status === 429) {
+      throw new Error('Limite de requisições atingido. Aguarde um momento e tente novamente.');
+    }
+    if (response.status === 402) {
+      throw new Error('Créditos do AI Gateway esgotados. Adicione créditos em Settings > Workspace > Usage.');
+    }
+    throw new Error(`Erro Lovable AI: ${response.status}`);
   }
 
   const data = await response.json();
-  
-  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-    throw new Error('Formato de resposta inválido da API Gemini.');
+  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+  if (!toolCall?.function?.arguments) {
+    throw new Error('Resposta inválida da IA.');
   }
-
-  return JSON.parse(data.candidates[0].content.parts[0].text);
+  return JSON.parse(toolCall.function.arguments);
 }
 
 serve(async (req) => {
@@ -103,17 +109,16 @@ serve(async (req) => {
       });
     }
 
-    const result = await callGemini(text);
+    const result = await callAI(text);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro na função ai-nutrition:', error);
-    return new Response(JSON.stringify({ 
-      error: 'Erro interno do servidor',
-      details: error.message || 'Erro desconhecido'
+    return new Response(JSON.stringify({
+      error: error.message || 'Erro desconhecido',
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
