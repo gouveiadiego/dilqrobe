@@ -149,7 +149,6 @@ export const NutritionSetupForm = () => {
               <SelectContent>
                 <SelectItem value="sedentario">Sedentário</SelectItem>
                 <SelectItem value="leve">Leve</SelectItem>
-                <SelectItem value="moderado">Moderado</SelectItem>
                 <SelectItem value="ativo">Ativo</SelectItem>
               </SelectContent>
             </Select>
