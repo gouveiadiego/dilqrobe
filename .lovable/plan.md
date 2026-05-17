@@ -1,65 +1,40 @@
-## Objetivo
 
-Suportar dois tipos de orçamento:
+## O que vou construir
 
-1. **Produtos/Itens** (atual) — Descrição, Quantidade, Valor Unitário, Total automático.
-2. **Serviços** (novo) — Descrição livre/longa, valor opcional por item, mistura permitida. Total geral soma apenas os itens com valor.
+Dois componentes novos na aba Fitness, logo abaixo do card "Sincronização Ativa":
 
-## Decisões confirmadas
+### 1. Histórico de Refeições do dia
+Lista cronológica do que foi registrado hoje (já existe `fitness_nutrition_logs`, só precisa exibir):
+- Cada item mostra: nome do alimento, quantidade/unidade, macros (P/C/G) e calorias
+- Botão de excluir em cada linha (caso registre errado)
+- Totais do dia no rodapé
 
-- Item de Serviço sem valor: **omitir** (não mostrar nada na coluna/linha de valor).
-- Pode **misturar** itens com e sem valor no mesmo orçamento.
-- Total geral aparece somando apenas os itens preenchidos (mesmo que parcial).
+### 2. Diário Treino × Comida (últimos 7 dias)
+Linha do tempo dos últimos 7 dias mostrando lado a lado:
+- **Treino do dia** (de `hevy_workouts_cache`): título, volume kg, grupos musculares — ou "Descanso"
+- **Resumo nutricional** (agregado de `fitness_nutrition_logs`): calorias consumidas vs meta, proteína batida ou não
+- **Indicador visual** de alinhamento: ✅ se bateu meta de proteína, ⚠️ se ficou abaixo, 🔥 destaque para dia de treino
 
-## Fluxo do usuário
+Cada dia expansível para ver a lista de refeições daquele dia.
 
-Ao criar/editar um orçamento, no topo do formulário:
+## Como vai parecer
 
 ```text
-┌─────────────────────────┐   ┌─────────────────────────┐
-│  Produtos / Itens       │   │  Serviços               │
-│  Qtd × Valor Unitário   │   │  Descrição livre        │
-│  Total automático       │   │  Valor opcional         │
-└─────────────────────────┘   └─────────────────────────┘
+┌─ Hoje, 17 mai ─────────────────────────────┐
+│ 🔥 Treino: Push Day · 4.200 kg · Peito/Triceps │
+│ 🍽️  1.850 / 2.400 kcal  · Proteína ✅ 175/174g │
+│   └─ 2 ovos · 1 pão · 30g whey · ...       │
+├─ 16 mai ───────────────────────────────────┤
+│ 🌙 Descanso                                 │
+│ 🍽️  2.100 / 2.160 kcal  · Proteína ⚠️ 140/174g │
+└─────────────────────────────────────────────┘
 ```
 
-- **Produtos**: tabela atual.
-- **Serviços**: lista de blocos, cada bloco com:
-  - Título do serviço (curto)
-  - Descrição detalhada (textarea multilinha)
-  - Toggle "Incluir valor" → quando ativo, mostra campo de Valor.
+## Detalhes técnicos
 
-Listagem: badge "Produtos" / "Serviços" em cada card.
-
-## Mudanças técnicas
-
-**Banco (migration)**:
-- Adicionar coluna `budget_type text not null default 'products'` em `budgets` (mantém compatibilidade — orçamentos antigos viram "products").
-
-**Tipos** (`src/components/budget/types.ts`):
-- `Budget` e `NewBudget`: adicionar `budget_type: 'products' | 'services'`.
-- `BudgetItem`: tornar `quantity` e `unit_price` opcionais; adicionar `title?: string` e `has_value?: boolean`.
-
-**Hook** (`useBudgets.ts`):
-- Persistir e ler `budget_type`. Default `'products'` quando ausente.
-- Cálculo de `total_amount` em Serviços: somar apenas itens com `has_value === true`.
-
-**Formulário** (`BudgetForm.tsx`):
-- Seletor de tipo no topo (2 cards). Bloqueia troca após adicionar itens, ou pede confirmação.
-- Renderização condicional do form de itens:
-  - `BudgetItemsForm` atual → renomeado/refatorado para `ProductItemsForm`.
-  - Novo `ServiceItemsForm` com blocos: título + textarea + toggle de valor.
-
-**Listagem** (`BudgetCard` / `BudgetList`):
-- Badge do tipo.
-- Para Serviços, exibir total normalmente (já calculado).
-
-**PDF** (`generateBudgetPDF.ts`):
-- Se `budget_type === 'services'`:
-  - Sem colunas Qtd/V.Unit. Cada item vira bloco: título em destaque (dourado), descrição justificada, valor à direita só se `has_value`.
-  - Total geral só aparece se algum item tem valor.
-- Se `'products'`: layout atual (já refeito premium).
-
-## Compatibilidade
-
-Orçamentos existentes assumem `budget_type = 'products'` automaticamente via default da migration. Nada quebra.
+- Novo hook `useNutritionHistory(days = 7)` que busca logs + workouts agregados por dia
+- Novo componente `NutritionHistory.tsx` (lista de hoje com delete)
+- Novo componente `NutritionWorkoutDiary.tsx` (timeline 7 dias, accordion por dia)
+- Ambos plugados em `NutritionTrainingSync.tsx` (ou no container da aba Fitness, abaixo dele)
+- Sem mudanças de schema — tabelas `fitness_nutrition_logs` e `hevy_workouts_cache` já têm tudo
+- Cache keys com `user_id` e invalidação após delete/registro novo
