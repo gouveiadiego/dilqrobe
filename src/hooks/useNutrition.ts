@@ -129,6 +129,7 @@ export function useNutrition() {
   return {
     todayWorkout,
     isWorkoutDay,
+    rawGoals,
     activeGoals,
     consumedToday,
     todayLogs,
