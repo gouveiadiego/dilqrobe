@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Flame, Moon, CheckCircle2, Loader2, Plus, Brain } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { NutritionSetupForm } from './NutritionSetupForm';
+import { MacroSuggestions } from './MacroSuggestions';
 
 export const NutritionTrainingSync = () => {
   const {
@@ -189,5 +190,7 @@ export const NutritionTrainingSync = () => {
         </div>
       </CardContent>
     </Card>
+    <MacroSuggestions />
+    </div>
   );
 };
