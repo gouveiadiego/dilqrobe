@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Flame, Moon, CheckCircle2, Loader2, Plus, Brain } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { NutritionSetupForm } from './NutritionSetupForm';
+import { MacroSuggestions } from './MacroSuggestions';
 
 export const NutritionTrainingSync = () => {
   const {
@@ -76,6 +77,7 @@ export const NutritionTrainingSync = () => {
   };
 
   return (
+    <div className="space-y-4">
     <Card className="w-full shadow-lg border-primary/10 overflow-hidden relative">
       {/* Visual background gradient based on workout status */}
       <div className={`absolute top-0 w-full h-1 bg-gradient-to-r ${isWorkoutDay ? 'from-orange-500 to-rose-500' : 'from-indigo-400 to-blue-600'}`} />
@@ -189,5 +191,7 @@ export const NutritionTrainingSync = () => {
         </div>
       </CardContent>
     </Card>
+    <MacroSuggestions />
+    </div>
   );
 };
