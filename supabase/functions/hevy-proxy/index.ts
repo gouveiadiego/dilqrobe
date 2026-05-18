@@ -192,7 +192,7 @@ function computeVolume(exercises: any[]): number {
   let total = 0;
   for (const ex of exercises) {
     for (const set of ex.sets || []) {
-      const weight = set.weight_kg ?? set.weight_lbs ? (set.weight_lbs * 0.453592) : 0;
+      const weight = set.weight_kg ?? (set.weight_lbs ? set.weight_lbs * 0.453592 : 0);
       const reps = set.reps ?? 0;
       total += weight * reps;
     }
