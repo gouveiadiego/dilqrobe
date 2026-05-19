@@ -928,6 +928,48 @@ export type Database = {
         }
         Relationships: []
       }
+      fitness_daily_log: {
+        Row: {
+          cardio_minutes: number
+          created_at: string
+          id: string
+          log_date: string
+          mood: number | null
+          notes: string | null
+          sleep_hours: number | null
+          steps: number
+          updated_at: string
+          user_id: string
+          water_ml: number
+        }
+        Insert: {
+          cardio_minutes?: number
+          created_at?: string
+          id?: string
+          log_date?: string
+          mood?: number | null
+          notes?: string | null
+          sleep_hours?: number | null
+          steps?: number
+          updated_at?: string
+          user_id: string
+          water_ml?: number
+        }
+        Update: {
+          cardio_minutes?: number
+          created_at?: string
+          id?: string
+          log_date?: string
+          mood?: number | null
+          notes?: string | null
+          sleep_hours?: number | null
+          steps?: number
+          updated_at?: string
+          user_id?: string
+          water_ml?: number
+        }
+        Relationships: []
+      }
       fitness_measurements: {
         Row: {
           bmi: number | null
