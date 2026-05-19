@@ -29,6 +29,8 @@ import { AnatomicalHeatmap } from "./fitness/AnatomicalHeatmap";
 import { HevyDashboard } from "./fitness/HevyDashboard";
 import { NutritionTrainingSync } from "./fitness/NutritionTrainingSync";
 import { NutritionHistoryDiary } from "./fitness/NutritionHistoryDiary";
+import { FitnessDailyLog } from "./fitness/FitnessDailyLog";
+import { FitnessWeeklySummary } from "./fitness/FitnessWeeklySummary";
 
 const PROFILE_COLORS = [
     "#9b87f5", "#33C3F0", "#F97316", "#10B981",
@@ -401,6 +403,12 @@ export function FitnessTab() {
                                         <FitnessForm profile={activeProfile} />
                                     </Card>
                                 </div>
+
+                                {/* Weekly Summary + Coach IA */}
+                                <FitnessWeeklySummary />
+
+                                {/* Daily Log: água, sono, passos, cardio */}
+                                <FitnessDailyLog />
 
                                 {/* Macros & AI Nutrition Sync */}
                                 <NutritionTrainingSync />
