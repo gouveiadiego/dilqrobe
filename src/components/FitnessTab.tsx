@@ -404,6 +404,12 @@ export function FitnessTab() {
                                     </Card>
                                 </div>
 
+                                {/* Weekly Summary + Coach IA */}
+                                <FitnessWeeklySummary />
+
+                                {/* Daily Log: água, sono, passos, cardio */}
+                                <FitnessDailyLog />
+
                                 {/* Macros & AI Nutrition Sync */}
                                 <NutritionTrainingSync />
 
