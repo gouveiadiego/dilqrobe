@@ -1,59 +1,59 @@
-# Plano: Diário Treino × Comida — Macros + Sugestões + Fix Volume
+## Ideias para deixar o sistema fitness mais completo
 
-## 1. Bug: volume dos treinos vindo como 0 / null
+Hoje o sistema já cobre: perfis, bioimpedância, medidas corporais, gráficos, insights, integração Hevy (treinos), nutrição (metas, log com IA, histórico, sugestões de refeições). Abaixo, oportunidades organizadas por impacto.
 
-Causa: em `supabase/functions/hevy-webhook/index.ts` (e `hevy-proxy/index.ts`) a função `computeVolume` tem erro de precedência:
+---
 
-```ts
-const weight = set.weight_kg ?? set.weight_lbs ? (set.weight_lbs * 0.453592) : 0;
-```
+### 1. Coach diário e progresso semanal (alto impacto)
+- **Resumo Semanal automático**: card "Sua semana" com aderência de treino (X/Y dias), aderência de macros (% dias na meta), variação de peso, volume total levantado vs semana anterior.
+- **Coach IA diário**: botão "Análise do dia" que cruza treino + nutrição + sono/estresse do `fitness_nutrition_profile` e devolve 1 parágrafo com feedback ("comeu pouco carbo no dia de perna, considere +50g…").
+- **Score de consistência**: 0–100 baseado em treino+macros+peso da semana, com badge visual.
 
-É interpretado como `(set.weight_kg ?? set.weight_lbs) ? (set.weight_lbs * 0.453592) : 0`, então quando só vem `weight_kg`, o resultado vira `NaN`/`0` e o total fica nulo. Confirmado no banco: várias linhas com `weight_kg=20, reps=10` salvas com `volume_kg = null`.
+### 2. Planejamento (preencher lacuna entre "meta" e "execução")
+- **Plano de refeições do dia**: gerar 4–5 refeições (café, almoço, lanche, jantar) que somem as metas, salvas como template. Hoje só temos sugestão pontual.
+- **Lista de compras semanal**: derivada dos templates de refeição.
+- **Plano de treino próximo**: usar histórico Hevy para sugerir próxima carga por exercício (progressive overload).
 
-**Correção:**
-- Reescrever para `const weight = set.weight_kg ?? (set.weight_lbs ? set.weight_lbs * 0.453592 : 0);` nos dois edge functions (`hevy-webhook` e `hevy-proxy`).
-- Adicionar migração SQL que **recalcula `volume_kg` em massa** percorrendo `raw_data->'exercises'->'sets'` para todos os registros já em cache (one-shot UPDATE).
-- Treinos futuros já vêm corretos via webhook.
+### 3. Hidratação, sono e cardio
+- Nova tabela `fitness_daily_log` (água_ml, sono_h, passos, cardio_min, humor).
+- Widget rápido no topo do fitness com +250ml, +1h sono etc.
+- Gráficos correlacionando sono/água com performance no treino.
 
-## 2. Status de macros no diário (Hoje + cada dia)
+### 4. Fotos de progresso
+- Bucket `fitness-photos` (privado) com foto frente/lado/costas mensal.
+- Comparador lado-a-lado por data com slider.
 
-No `NutritionHistoryDiary` hoje só mostra os totais consumidos. Adicionar avaliação por macro contra `activeGoals` (que já considera dia de treino vs descanso):
+### 5. Análise de treino mais profunda (Hevy já está pronto)
+- **PRs automáticos**: detectar novos recordes (1RM estimado por exercício) e exibir badge "🏆 Novo PR".
+- **Heatmap de grupos musculares por semana**: alertar desequilíbrios (ex: "peito 12 séries vs costas 4").
+- **Volume por grupo muscular** em barras, comparando semanas.
 
-- Cada macro (Calorias, Proteína, Carbo, Gordura) ganha:
-  - Barra de progresso compacta (consumido / meta)
-  - Label: `87g / 150g` e `faltam 63g` (ou `+12g acima`)
-  - Cor semântica via tokens: dentro de ±10% = verde; abaixo = amber; muito acima = destructive
-- Resumo no topo do dia "Hoje": chip `Faltam: 63g proteína · 280 kcal` ou `✅ Metas batidas` quando tudo dentro da faixa.
-- Para dias passados: mesmo cálculo, mas usando a meta correta do dia (treino/descanso) — já temos `day.workout` para decidir.
+### 6. Metas e gamificação
+- Tabela `fitness_goals` (tipo: peso/bf%/PR/streak, valor, prazo).
+- Streaks visíveis (dias batendo proteína, dias treinando).
+- Conquistas: "30 dias de proteína", "100kg no supino", etc.
 
-Requer pequena refatoração: expor de `useNutrition` um helper `getGoalsForDay(hadWorkout)` ou recalcular inline no diário a partir de `rawGoals`. Vou expor `rawGoals` no hook para evitar duplicar lógica.
+### 7. Suplementação e medicação
+- Tabela `fitness_supplements` (nome, dose, horário, dias_semana) + lembretes/checkin diário.
+- Útil porque já há `usa_ergogenicos` no perfil mas sem rastreio.
 
-## 3. Sugestões "o que comer para bater" (novo componente)
+### 8. Exportação e compartilhamento
+- Export PDF mensal "Relatório do Mês" (peso, BF%, treinos, macros médios, fotos).
+- Link compartilhável com personal trainer (read-only).
 
-Componente novo `MacroSuggestions.tsx` colocado **logo abaixo do card de "Hoje"** no `NutritionTrainingSync` (não dentro do diário — o diário é histórico):
+### 9. Pequenas melhorias de UX
+- Atalho rápido "Repetir refeição de ontem" no NutritionTrainingSync.
+- Banco pessoal de alimentos (top 20 mais usados, 1-clique).
+- Código de barras / busca por alimento (TACO/OpenFoodFacts).
+- Notificação push no horário de cada refeição planejada.
 
-- Calcula faltantes do dia: `restante = meta − consumido` por macro.
-- Botão "Sugerir refeição para fechar o dia" → chama edge function `ai-nutrition-suggest` (nova) passando os faltantes + preferências básicas.
-- Edge function usa Lovable AI Gateway (`google/gemini-2.5-flash`) com tool `sugerir_refeicoes` retornando 2–3 opções de refeições com nome, ingredientes e macros por opção.
-- Resultado renderizado em cards; botão "Registrar esta refeição" reaproveita `saveLog` do `useNutrition` para inserir os itens direto no log do dia.
+---
 
-Se todas as metas já estão batidas, o componente mostra estado vazio: "✅ Metas do dia batidas — bom descanso/treino!".
+### Minha recomendação (ordem sugerida)
+1. **Resumo Semanal + Coach IA diário** — agrega valor imediato sobre o que já existe.
+2. **Daily Log (água/sono/passos)** — preenche dimensão importante que falta.
+3. **PRs automáticos + Volume por grupo** — aproveita Hevy que já está integrado.
+4. **Fotos de progresso** — alto impacto motivacional, baixo esforço.
+5. **Plano de refeições** — natural evolução da sugestão pontual.
 
-## Detalhes técnicos
-
-**Arquivos alterados:**
-- `supabase/functions/hevy-webhook/index.ts` — fix `computeVolume`
-- `supabase/functions/hevy-proxy/index.ts` — fix `computeVolume`
-- Migração SQL — recalcula `volume_kg` de `hevy_workouts_cache` existente
-- `src/hooks/useNutrition.ts` — expor `rawGoals` + helper de meta por dia
-- `src/components/fitness/NutritionHistoryDiary.tsx` — barras + status por macro, resumo "faltam X"
-- `src/components/fitness/NutritionTrainingSync.tsx` — montar `MacroSuggestions`
-
-**Arquivos novos:**
-- `src/components/fitness/MacroSuggestions.tsx`
-- `supabase/functions/ai-nutrition-suggest/index.ts`
-- `supabase/config.toml` — registrar nova função (verify_jwt = true)
-
-**Sem mudanças de schema** além do UPDATE one-shot para backfill do volume.
-
-**Cache:** invalidar `['nutrition-history', userId]` e `['nutrition-logs-today', userId]` ao registrar sugestão; manter `user_id` em todas as chaves.
+Qual desses caminhos (ou combinação) você quer que eu detalhe e implemente primeiro?
