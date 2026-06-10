@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Edit, Building, Plus, Wallet } from "lucide-react";
+import { Trash2, Edit, Building, Plus, Wallet, History } from "lucide-react";
 import { useBankAccounts, BankAccount } from "@/hooks/useBankAccounts";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { BankBalanceHistoryDialog } from "./BankBalanceHistoryDialog";
 
 interface BankAccountFormProps {
   account?: BankAccount;
