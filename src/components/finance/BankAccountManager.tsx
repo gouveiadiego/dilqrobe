@@ -240,6 +240,16 @@ export const BankAccountManager = ({ open, onOpenChange }: BankAccountManagerPro
                       <span>{formatCurrency(Number(account.initial_balance))}</span>
                     </div>
 
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setHistoryAccount(account)}
+                    >
+                      <History className="h-3 w-3 mr-1" />
+                      Histórico de Saldo
+                    </Button>
+
                     <div className="flex space-x-2">
                       <Dialog>
                         <DialogTrigger asChild>
