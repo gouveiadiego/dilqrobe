@@ -125,6 +125,7 @@ export const BankAccountManager = ({ open, onOpenChange }: BankAccountManagerPro
   const { bankAccounts, loading, createBankAccount, updateBankAccount, deleteBankAccount, getTotalBalance } = useBankAccounts();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
+  const [historyAccount, setHistoryAccount] = useState<BankAccount | null>(null);
 
   const getAccountTypeLabel = (type: string) => {
     const labels = {
