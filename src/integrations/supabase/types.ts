@@ -53,6 +53,50 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_balance_snapshots: {
+        Row: {
+          bank_account_id: string
+          created_at: string
+          id: string
+          note: string | null
+          real_balance: number
+          snapshot_date: string
+          system_balance: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank_account_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          real_balance: number
+          snapshot_date: string
+          system_balance?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank_account_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          real_balance?: number
+          snapshot_date?: string
+          system_balance?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_balance_snapshots_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       body_measurements: {
         Row: {
           abdomen_cm: number | null

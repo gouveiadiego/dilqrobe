@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Edit, Building, Plus, Wallet } from "lucide-react";
+import { Trash2, Edit, Building, Plus, Wallet, History } from "lucide-react";
 import { useBankAccounts, BankAccount } from "@/hooks/useBankAccounts";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { BankBalanceHistoryDialog } from "./BankBalanceHistoryDialog";
 
 interface BankAccountFormProps {
   account?: BankAccount;
@@ -124,6 +125,7 @@ export const BankAccountManager = ({ open, onOpenChange }: BankAccountManagerPro
   const { bankAccounts, loading, createBankAccount, updateBankAccount, deleteBankAccount, getTotalBalance } = useBankAccounts();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
+  const [historyAccount, setHistoryAccount] = useState<BankAccount | null>(null);
 
   const getAccountTypeLabel = (type: string) => {
     const labels = {
@@ -238,6 +240,16 @@ export const BankAccountManager = ({ open, onOpenChange }: BankAccountManagerPro
                       <span>{formatCurrency(Number(account.initial_balance))}</span>
                     </div>
 
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setHistoryAccount(account)}
+                    >
+                      <History className="h-3 w-3 mr-1" />
+                      Histórico de Saldo
+                    </Button>
+
                     <div className="flex space-x-2">
                       <Dialog>
                         <DialogTrigger asChild>
@@ -305,6 +317,12 @@ export const BankAccountManager = ({ open, onOpenChange }: BankAccountManagerPro
             </div>
           )}
         </div>
+
+        <BankBalanceHistoryDialog
+          account={historyAccount}
+          open={!!historyAccount}
+          onOpenChange={(o) => !o && setHistoryAccount(null)}
+        />
       </DialogContent>
     </Dialog>
   );
