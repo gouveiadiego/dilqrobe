@@ -317,6 +317,12 @@ export const BankAccountManager = ({ open, onOpenChange }: BankAccountManagerPro
             </div>
           )}
         </div>
+
+        <BankBalanceHistoryDialog
+          account={historyAccount}
+          open={!!historyAccount}
+          onOpenChange={(o) => !o && setHistoryAccount(null)}
+        />
       </DialogContent>
     </Dialog>
   );
