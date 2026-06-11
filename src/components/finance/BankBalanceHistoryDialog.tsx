@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Dialog,
@@ -25,6 +25,8 @@ import {
   ArrowDownCircle,
   ChevronDown,
   ChevronRight,
+  CalendarRange,
+  X,
 } from "lucide-react";
 import { useBankBalanceHistory } from "@/hooks/useBankBalanceHistory";
 import { BankAccount } from "@/hooks/useBankAccounts";
@@ -57,12 +59,38 @@ export const BankBalanceHistoryDialog = ({ account, open, onOpenChange }: Props)
   const [note, setNote] = useState("");
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({});
 
+  // Filtro de período
+  const [filterStart, setFilterStart] = useState("");
+  const [filterEnd, setFilterEnd] = useState("");
+  const hasFilter = filterStart || filterEnd;
+
   const todayKey = format(new Date(), "yyyy-MM-dd");
 
   // First (most recent) day open by default
   const effectiveOpen = (d: string) => {
     if (openDays[d] !== undefined) return openDays[d];
     return d === history[0]?.date;
+  };
+
+  const filteredHistory = useMemo(() => {
+    if (!hasFilter) return history;
+    return history.filter((day) => {
+      const d = parseISO(day.date);
+      if (filterStart && filterEnd) {
+        return isWithinInterval(d, {
+          start: startOfDay(parseISO(filterStart)),
+          end: endOfDay(parseISO(filterEnd)),
+        });
+      }
+      if (filterStart) return d >= startOfDay(parseISO(filterStart));
+      if (filterEnd) return d <= endOfDay(parseISO(filterEnd));
+      return true;
+    });
+  }, [history, filterStart, filterEnd, hasFilter]);
+
+  const clearFilter = () => {
+    setFilterStart("");
+    setFilterEnd("");
   };
 
   const handleSave = async () => {
