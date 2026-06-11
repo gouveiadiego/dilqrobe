@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Dialog,
@@ -25,6 +25,8 @@ import {
   ArrowDownCircle,
   ChevronDown,
   ChevronRight,
+  CalendarRange,
+  X,
 } from "lucide-react";
 import { useBankBalanceHistory } from "@/hooks/useBankBalanceHistory";
 import { BankAccount } from "@/hooks/useBankAccounts";
@@ -57,12 +59,38 @@ export const BankBalanceHistoryDialog = ({ account, open, onOpenChange }: Props)
   const [note, setNote] = useState("");
   const [openDays, setOpenDays] = useState<Record<string, boolean>>({});
 
+  // Filtro de período
+  const [filterStart, setFilterStart] = useState("");
+  const [filterEnd, setFilterEnd] = useState("");
+  const hasFilter = filterStart || filterEnd;
+
   const todayKey = format(new Date(), "yyyy-MM-dd");
 
   // First (most recent) day open by default
   const effectiveOpen = (d: string) => {
     if (openDays[d] !== undefined) return openDays[d];
     return d === history[0]?.date;
+  };
+
+  const filteredHistory = useMemo(() => {
+    if (!hasFilter) return history;
+    return history.filter((day) => {
+      const d = parseISO(day.date);
+      if (filterStart && filterEnd) {
+        return isWithinInterval(d, {
+          start: startOfDay(parseISO(filterStart)),
+          end: endOfDay(parseISO(filterEnd)),
+        });
+      }
+      if (filterStart) return d >= startOfDay(parseISO(filterStart));
+      if (filterEnd) return d <= endOfDay(parseISO(filterEnd));
+      return true;
+    });
+  }, [history, filterStart, filterEnd, hasFilter]);
+
+  const clearFilter = () => {
+    setFilterStart("");
+    setFilterEnd("");
   };
 
   const handleSave = async () => {
@@ -156,21 +184,51 @@ export const BankBalanceHistoryDialog = ({ account, open, onOpenChange }: Props)
               </div>
             </div>
 
+            {/* Filtro de período */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <CalendarRange className="h-4 w-4 text-muted-foreground" />
+                <h4 className="font-medium">Filtrar por período</h4>
+                {hasFilter && (
+                  <Button variant="ghost" size="sm" className="h-7 ml-auto" onClick={clearFilter}>
+                    <X className="h-3 w-3 mr-1" /> Limpar
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Data inicial</Label>
+                  <Input type="date" value={filterStart} onChange={(e) => setFilterStart(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Data final</Label>
+                  <Input type="date" value={filterEnd} onChange={(e) => setFilterEnd(e.target.value)} />
+                </div>
+              </div>
+            </div>
+
             {/* Statement */}
             <div className="space-y-3">
-              <h4 className="font-medium">Movimentações por dia</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Movimentações por dia</h4>
+                {hasFilter && (
+                  <Badge variant="secondary">
+                    {filteredHistory.length} {filteredHistory.length === 1 ? "dia" : "dias"}
+                  </Badge>
+                )}
+              </div>
 
               {loading && (
                 <p className="text-center text-sm text-muted-foreground py-6">Carregando...</p>
               )}
 
-              {!loading && history.length === 0 && (
+              {!loading && filteredHistory.length === 0 && (
                 <p className="text-center text-sm text-muted-foreground py-6">
-                  Sem movimentações ou registros ainda.
+                  {hasFilter ? "Nenhuma movimentação no período selecionado." : "Sem movimentações ou registros ainda."}
                 </p>
               )}
 
-              {history.map((day) => {
+              {filteredHistory.map((day) => {
                 const isOpen = effectiveOpen(day.date);
                 const dateLabel = format(new Date(day.date + "T00:00:00"), "EEEE, dd 'de' MMMM", {
                   locale: ptBR,
