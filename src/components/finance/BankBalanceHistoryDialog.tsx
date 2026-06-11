@@ -150,39 +150,6 @@ export const BankBalanceHistoryDialog = ({ account, open, onOpenChange }: Props)
               </div>
             </div>
 
-            {/* Form */}
-            <div className="rounded-lg border p-4 space-y-3">
-              <h4 className="font-medium">Registrar saldo real do banco</h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div className="space-y-1">
-                  <Label>Data</Label>
-                  <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Saldo real (R$)</Label>
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                    value={real}
-                    onChange={(e) => setReal(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1 md:col-span-2">
-                  <Label>Observação (opcional)</Label>
-                  <Input
-                    placeholder="Ex: conferido no app do banco"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={!real}>
-                  Salvar registro
-                </Button>
-              </div>
-            </div>
 
             {/* Filtro de período */}
             <div className="rounded-lg border p-4 space-y-3">
