@@ -13,29 +13,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
-import { AlertCircle, CheckCircle2, Trash2 } from "lucide-react";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Trash2,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { useBankBalanceHistory } from "@/hooks/useBankBalanceHistory";
 import { BankAccount } from "@/hooks/useBankAccounts";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+const fmtTime = (iso: string) => {
+  try {
+    return format(new Date(iso), "HH:mm");
+  } catch {
+    return "";
+  }
+};
 
 interface Props {
   account: BankAccount | null;
@@ -52,18 +55,15 @@ export const BankBalanceHistoryDialog = ({ account, open, onOpenChange }: Props)
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [real, setReal] = useState("");
   const [note, setNote] = useState("");
+  const [openDays, setOpenDays] = useState<Record<string, boolean>>({});
 
-  const chartData = useMemo(
-    () =>
-      [...history]
-        .reverse()
-        .map((h) => ({
-          date: format(new Date(h.date + "T00:00:00"), "dd/MM", { locale: ptBR }),
-          Sistema: Number(h.system_balance.toFixed(2)),
-          Real: h.real_balance !== null ? Number(h.real_balance.toFixed(2)) : null,
-        })),
-    [history]
-  );
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+
+  // First (most recent) day open by default
+  const effectiveOpen = (d: string) => {
+    if (openDays[d] !== undefined) return openDays[d];
+    return d === history[0]?.date;
+  };
 
   const handleSave = async () => {
     const v = parseFloat(real.replace(",", "."));
@@ -81,9 +81,9 @@ export const BankBalanceHistoryDialog = ({ account, open, onOpenChange }: Props)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Histórico de Saldo — {account?.bank_name}</DialogTitle>
+          <DialogTitle>Extrato — {account?.bank_name}</DialogTitle>
           <DialogDescription>
-            Compare o saldo do sistema com o saldo real do banco para reconciliar lançamentos.
+            Veja as entradas e saídas de cada dia. Registre o saldo real do banco para conciliar.
           </DialogDescription>
         </DialogHeader>
 
@@ -156,104 +156,157 @@ export const BankBalanceHistoryDialog = ({ account, open, onOpenChange }: Props)
               </div>
             </div>
 
-            {/* Chart */}
-            {chartData.length > 0 && (
-              <div className="rounded-lg border p-4">
-                <h4 className="font-medium mb-3">Evolução do saldo</h4>
-                <div className="h-[260px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis tickFormatter={(v) => fmt(v).replace("R$", "")} />
-                      <Tooltip formatter={(v: number) => fmt(v)} />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="Sistema"
-                        stroke="#3b82f6"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="Real"
-                        stroke="#10b981"
-                        strokeWidth={2}
-                        connectNulls
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
+            {/* Statement */}
+            <div className="space-y-3">
+              <h4 className="font-medium">Movimentações por dia</h4>
 
-            {/* Table */}
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead className="text-right">Sistema</TableHead>
-                    <TableHead className="text-right">Real</TableHead>
-                    <TableHead className="text-right">Diferença</TableHead>
-                    <TableHead>Obs.</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">
-                        Carregando...
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {!loading && history.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground">
-                        Sem movimentações ou registros ainda.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {history.map((h) => (
-                    <TableRow key={h.date}>
-                      <TableCell>
-                        {format(new Date(h.date + "T00:00:00"), "dd/MM/yyyy")}
-                      </TableCell>
-                      <TableCell className="text-right">{fmt(h.system_balance)}</TableCell>
-                      <TableCell className="text-right">
-                        {h.real_balance !== null ? fmt(h.real_balance) : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {h.diff === null ? (
-                          "—"
-                        ) : Math.abs(h.diff) < 0.01 ? (
-                          <Badge variant="outline" className="text-emerald-600 border-emerald-600">
-                            OK
-                          </Badge>
+              {loading && (
+                <p className="text-center text-sm text-muted-foreground py-6">Carregando...</p>
+              )}
+
+              {!loading && history.length === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-6">
+                  Sem movimentações ou registros ainda.
+                </p>
+              )}
+
+              {history.map((day) => {
+                const isOpen = effectiveOpen(day.date);
+                const dateLabel = format(new Date(day.date + "T00:00:00"), "EEEE, dd 'de' MMMM", {
+                  locale: ptBR,
+                });
+                return (
+                  <Collapsible
+                    key={day.date}
+                    open={isOpen}
+                    onOpenChange={(o) => setOpenDays((s) => ({ ...s, [day.date]: o }))}
+                  >
+                    <div className="rounded-lg border overflow-hidden">
+                      <CollapsibleTrigger className="w-full">
+                        <div className="flex items-center justify-between gap-3 p-3 hover:bg-muted/50 transition-colors text-left">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {isOpen ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-medium capitalize truncate">
+                                {dateLabel}
+                                {day.date === todayKey && (
+                                  <Badge variant="secondary" className="ml-2">Hoje</Badge>
+                                )}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {day.transactions.length}{" "}
+                                {day.transactions.length === 1 ? "movimentação" : "movimentações"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <div className="text-right hidden sm:block">
+                              <p className="text-[10px] uppercase text-muted-foreground">Entradas</p>
+                              <p className="text-sm font-semibold text-emerald-600">
+                                +{fmt(day.total_in)}
+                              </p>
+                            </div>
+                            <div className="text-right hidden sm:block">
+                              <p className="text-[10px] uppercase text-muted-foreground">Saídas</p>
+                              <p className="text-sm font-semibold text-rose-600">
+                                -{fmt(day.total_out)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] uppercase text-muted-foreground">Saldo</p>
+                              <p className="text-sm font-bold">{fmt(day.closing_balance)}</p>
+                            </div>
+                            {day.real_balance !== null && (
+                              <Badge
+                                variant="outline"
+                                className={
+                                  Math.abs(day.diff ?? 0) < 0.01
+                                    ? "text-emerald-600 border-emerald-600"
+                                    : "text-amber-600 border-amber-600"
+                                }
+                              >
+                                {Math.abs(day.diff ?? 0) < 0.01 ? "OK" : fmt(day.diff ?? 0)}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+
+                      <CollapsibleContent>
+                        <div className="border-t bg-muted/20 px-3 py-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                          <span>Saldo inicial: <strong className="text-foreground">{fmt(day.opening_balance)}</strong></span>
+                          <span className="sm:hidden">Entradas: <strong className="text-emerald-600">+{fmt(day.total_in)}</strong></span>
+                          <span className="sm:hidden">Saídas: <strong className="text-rose-600">-{fmt(day.total_out)}</strong></span>
+                          <span>Saldo final: <strong className="text-foreground">{fmt(day.closing_balance)}</strong></span>
+                          {day.real_balance !== null && (
+                            <span>
+                              Saldo real banco:{" "}
+                              <strong className="text-foreground">{fmt(day.real_balance)}</strong>
+                              {day.note && <span className="ml-1">— {day.note}</span>}
+                              {day.snapshot_id && (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6 ml-1"
+                                  onClick={() => deleteSnapshot(day.snapshot_id!)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </span>
+                          )}
+                        </div>
+
+                        {day.transactions.length === 0 ? (
+                          <p className="px-4 py-4 text-sm text-muted-foreground">
+                            Nenhuma transação neste dia (apenas registro de saldo).
+                          </p>
                         ) : (
-                          <span className={h.diff > 0 ? "text-emerald-600" : "text-rose-600"}>
-                            {fmt(h.diff)}
-                          </span>
+                          <ul className="divide-y">
+                            {day.transactions.map((t) => {
+                              const isIn = t.amount >= 0;
+                              return (
+                                <li
+                                  key={t.id}
+                                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30"
+                                >
+                                  {isIn ? (
+                                    <ArrowUpCircle className="h-5 w-5 text-emerald-600 shrink-0" />
+                                  ) : (
+                                    <ArrowDownCircle className="h-5 w-5 text-rose-600 shrink-0" />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">
+                                      {t.description || t.received_from || "(sem descrição)"}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      {fmtTime(t.created_at)}
+                                      {t.received_from && t.description ? ` • ${t.received_from}` : ""}
+                                      {t.payment_type ? ` • ${t.payment_type}` : ""}
+                                    </p>
+                                  </div>
+                                  <p
+                                    className={`text-sm font-semibold shrink-0 ${
+                                      isIn ? "text-emerald-600" : "text-rose-600"
+                                    }`}
+                                  >
+                                    {isIn ? "+" : "-"}
+                                    {fmt(Math.abs(t.amount))}
+                                  </p>
+                                </li>
+                              );
+                            })}
+                          </ul>
                         )}
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate">{h.note || "—"}</TableCell>
-                      <TableCell>
-                        {h.snapshot_id && (
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => deleteSnapshot(h.snapshot_id!)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </CollapsibleContent>
+                    </div>
+                  </Collapsible>
+                );
+              })}
             </div>
           </div>
         )}
